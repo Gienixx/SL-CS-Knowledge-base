@@ -1,0 +1,466 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Navigating and Reviewing Tickets in Zendesk</title>
+<style>
+    :root {
+      --bg: #020d18;
+      --bg-deep: #000914;
+      --panel: rgba(3, 20, 34, 0.72);
+      --line: rgba(25, 222, 201, 0.22);
+      --text: #f3f7fb;
+      --muted: #a9b6c3;
+      --subtle: #6f8190;
+      --cyan: #22e1c3;
+      --cyan-soft: rgba(34, 225, 195, 0.12);
+      --radius: 18px;
+      --shadow: 0 28px 80px rgba(0, 0, 0, 0.42);
+    }
+
+    * { box-sizing: border-box; }
+    html { scroll-behavior: smooth; }
+    body {
+      margin: 0;
+      color: var(--text);
+      font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      background:
+        radial-gradient(circle at 78% -5%, rgba(71, 151, 222, 0.34), transparent 32rem),
+        radial-gradient(circle at 22% 12%, rgba(29, 226, 195, 0.08), transparent 24rem),
+        linear-gradient(180deg, var(--bg) 0%, var(--bg-deep) 100%);
+      min-height: 100vh;
+      overflow-x: hidden;
+      letter-spacing: 0.01em;
+    }
+    body::before {
+      content: "";
+      position: fixed;
+      inset: 0;
+      pointer-events: none;
+      opacity: 0.3;
+      background-image:
+        linear-gradient(rgba(28, 213, 195, 0.07) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(28, 213, 195, 0.07) 1px, transparent 1px),
+        radial-gradient(rgba(255, 255, 255, 0.22) 0.7px, transparent 0.8px);
+      background-size: 72px 72px, 72px 72px, 3px 3px;
+      mask-image: linear-gradient(to bottom, rgba(0,0,0,1), rgba(0,0,0,0.18));
+    }
+    .site-header {
+      position: sticky;
+      top: 0;
+      z-index: 50;
+      height: 58px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      border-bottom: 1px solid rgba(115, 184, 220, 0.17);
+      background: rgba(5, 16, 29, 0.82);
+      backdrop-filter: blur(18px);
+    }
+    .nav-shell {
+      width: min(1180px, calc(100% - 44px));
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+    .brand {
+      color: var(--text);
+      text-decoration: none;
+      font-weight: 850;
+      letter-spacing: 0.17em;
+      font-size: 1.02rem;
+      text-transform: uppercase;
+    }
+    .page {
+      width: min(1180px, calc(100% - 44px));
+      margin: 0 auto;
+      padding: 78px 0 110px;
+    }
+    .hero-frame {
+      position: relative;
+      min-height: 426px;
+      border: 1px solid rgba(28, 218, 197, 0.2);
+      border-right: none;
+      padding: 78px 0 48px;
+      margin-left: -4px;
+      background: linear-gradient(90deg, rgba(3, 17, 30, 0.64), rgba(3, 17, 30, 0.14) 62%, transparent);
+    }
+    .ghost-title {
+      position: absolute;
+      top: 66px;
+      left: 42px;
+      max-width: 880px;
+      font-size: clamp(3.4rem, 7.5vw, 6.35rem);
+      line-height: 0.92;
+      letter-spacing: 0.045em;
+      color: rgba(233, 241, 246, 0.08);
+      font-weight: 300;
+      pointer-events: none;
+    }
+    .article-head {
+      position: relative;
+      z-index: 2;
+      width: min(760px, 100%);
+      margin-left: 430px;
+      padding-right: 34px;
+    }
+    .back-link {
+      color: var(--muted);
+      text-decoration: none;
+      font-size: 0.92rem;
+      display: inline-flex;
+      gap: 8px;
+      align-items: center;
+      margin-bottom: 34px;
+    }
+    h1 {
+      margin: 0 0 18px;
+      font-size: clamp(2.3rem, 4.3vw, 4.15rem);
+      line-height: 1.15;
+      letter-spacing: 0.035em;
+      font-weight: 860;
+      max-width: 760px;
+      text-shadow: 0 0 24px rgba(122, 183, 255, 0.18);
+    }
+    .meta {
+      display: flex;
+      align-items: center;
+      gap: 18px;
+      flex-wrap: wrap;
+      color: var(--muted);
+      font-size: 0.96rem;
+      margin-bottom: 40px;
+    }
+    .date-badge {
+      color: var(--cyan);
+      border: 1px solid rgba(34, 225, 195, 0.42);
+      background: rgba(34, 225, 195, 0.08);
+      border-radius: 8px;
+      padding: 7px 13px;
+      font-weight: 700;
+      box-shadow: inset 0 0 22px rgba(34, 225, 195, 0.06);
+    }
+    .dek {
+      margin: 0;
+      font-size: clamp(1.65rem, 2.95vw, 3.2rem);
+      line-height: 1.1;
+      letter-spacing: 0.02em;
+      font-weight: 840;
+      max-width: 740px;
+    }
+    .content-grid {
+      display: grid;
+      grid-template-columns: 260px minmax(0, 760px);
+      gap: 58px;
+      justify-content: end;
+      margin-top: 72px;
+      align-items: start;
+    }
+
+    .toc {
+      position: sticky;
+      top: 86px;
+      align-self: start;
+      padding: 24px;
+      border: 1px solid var(--line);
+      background: rgba(1, 14, 25, 0.52);
+      box-shadow: var(--shadow);
+      border-radius: var(--radius);
+    }
+
+    .toc p {
+      color: var(--text);
+      margin: 0 0 14px;
+      text-transform: uppercase;
+      font-size: 0.76rem;
+      letter-spacing: 0.16em;
+      font-weight: 800;
+    }
+
+    .toc a {
+      display: block;
+      color: var(--muted);
+      text-decoration: none;
+      padding: 9px 0;
+      font-size: 0.9rem;
+      line-height: 1.35;
+      border-bottom: 1px solid rgba(255,255,255,0.045);
+    }
+
+    .toc a:hover {
+      color: var(--cyan);
+    }
+
+    article {
+      padding-bottom: 80px;
+    }
+    .section {
+      position: relative;
+      margin-bottom: 38px;
+      padding: 34px 36px;
+      border: 1px solid rgba(28, 218, 197, 0.16);
+      background: linear-gradient(180deg, rgba(6, 25, 41, 0.72), rgba(2, 13, 24, 0.64));
+      border-radius: var(--radius);
+      box-shadow: var(--shadow);
+      overflow: hidden;
+    }
+    .section::before {
+      content: "";
+      position: absolute;
+      inset: 0 0 auto;
+      height: 1px;
+      background: linear-gradient(90deg, transparent, rgba(34, 225, 195, 0.58), transparent);
+      opacity: 0.7;
+    }
+
+    .section::after {
+      content: "";
+      position: absolute;
+      width: 190px;
+      height: 190px;
+      right: -95px;
+      top: -95px;
+      border-radius: 50%;
+      background: radial-gradient(circle, rgba(34, 225, 195, 0.11), transparent 62%);
+      pointer-events: none;
+    }
+
+    h2, h3 {
+      position: relative;
+      margin-top: 0;
+      color: var(--text);
+    }
+
+    h2 {
+      margin-bottom: 18px;
+      font-size: clamp(1.45rem, 2vw, 2.1rem);
+      line-height: 1.15;
+      letter-spacing: 0.02em;
+    }
+    h3 {
+      margin-bottom: 12px;
+      color: #dfe8f1;
+      font-size: 1.08rem;
+      line-height: 1.35;
+    }
+    p, li {
+      color: #d8e2ea;
+      font-size: 1.02rem;
+      line-height: 1.78;
+    }
+    p { margin: 0 0 16px; }
+    strong { color: #fff; font-weight: 800; }
+    ul, ol { padding-left: 1.3rem; margin: 14px 0 0; }
+    li { margin-bottom: 9px; }
+    ul ul {
+      margin-top: 10px;
+    }
+    .callout {
+      padding: 24px;
+      margin-top: 22px;
+      border-radius: 15px;
+      border: 1px solid rgba(255, 183, 107, 0.24);
+      background: linear-gradient(135deg, rgba(255, 183, 107, 0.1), rgba(255, 141, 204, 0.045));
+    }
+    .footer-note {
+      color: var(--subtle);
+      text-align: center;
+      padding: 36px 0 0;
+      font-size: 0.88rem;
+    }
+    @media (max-width: 850px) {
+      .hero-frame { border-right: 1px solid rgba(28, 218, 197, 0.2); padding: 54px 18px 34px; }
+      .ghost-title { display: none; }
+      .article-head { margin-left: 0; padding-right: 0; }
+      .content-grid { display: block; margin-top: 44px; }
+      .toc { position: relative; top: 0; margin-bottom: 24px; }
+      .section { padding: 28px 24px; }
+    }
+    @media (max-width: 520px) {
+      .page, .nav-shell { width: min(100% - 28px, 1180px); }
+      .brand { font-size: 0.98rem; }
+      h1 { font-size: 2.18rem; }
+      .dek { font-size: 1.55rem; }
+      .section { padding: 24px 18px; }
+    }
+</style>
+</head>
+<body>
+  <header class="site-header">
+    <div class="nav-shell">
+      <a class="brand" href="../index-modular.html" aria-label="Support Knowledge Base Home">Support KB</a>
+    </div>
+  </header>
+
+  <main class="page">
+    <section class="hero-frame" aria-labelledby="article-title">
+      <div class="ghost-title">Zendesk<br>Support Article</div>
+      <div class="article-head">
+        <a class="back-link" href="../KB.html">← Back to Knowledge Base</a>
+        <h1 id="article-title">Navigating and Reviewing Tickets in Zendesk</h1>
+        <div class="meta">
+        <span class="date-badge">June 13, 2026</span>
+          <span>By: Arby Benito</span>
+        </div>
+        <p class="dek">Guide on how to locate and understand how Zendesk Works</p>
+      </div>
+    </section>
+
+    <div class="content-grid">
+      <aside class="toc" aria-label="Table of contents">
+        <p>Article Map</p>
+        <a href="#overview">Overview</a>
+        <a href="#accessing">Accessing Your Assigned Tickets</a>
+        <a href="#ticket-list">Understanding the Ticket List View</a>
+        <a href="#opening">Opening a Ticket</a>
+        <a href="#layout">Ticket Layout Overview</a>
+        <a href="#left-panel">Left Panel</a>
+        <a href="#middle-panel">Middle Panel</a>
+        <a href="#composer">Response Composer</a>
+        <a href="#right-panel">Right Panel</a>
+        <a href="#history">Interaction History</a>
+        <a href="#summary">Summary</a>
+      </aside>
+
+      <article>
+        <section id="overview" class="section">
+          <h2>Overview</h2>
+          <p>Our team uses Zendesk as our ticketing platform to manage and respond to user concerns efficiently. Zendesk allows agents to track requests, review ticket history, and manage ongoing conversations in one centralized location.</p>
+          <p>This guide explains how to locate and open tickets within Zendesk and understand the information displayed inside each ticket.</p>
+        </section>
+
+        <section id="accessing" class="section">
+          <h2>Accessing Your Assigned Tickets</h2>
+          <p>Once logged into Zendesk, navigate to your assigned ticket queue.</p>
+          <p>Open tickets assigned to you are organized under your personal ticket bucket labeled:</p>
+          <div class="callout">(Agent Name) - Unsolved Tickets</div>
+          <p>This view displays all active tickets that still require action or resolution.</p>
+        </section>
+
+        <section id="ticket-list" class="section">
+          <h2>Understanding the Ticket List View</h2>
+          <p>Inside your Unsolved Tickets bucket, each row represents an individual support request.</p>
+          <p>The ticket list contains the following information:</p>
+          <ul>
+            <li>Subject - Brief description or title of the concern submitted.</li>
+            <li>Requester Name - Name of the user who created the request.</li>
+            <li>Ticket ID - Unique identifier assigned to the ticket.</li>
+            <li>Date Logged to Zendesk - Date and time when the ticket was created.</li>
+            <li>Most Recent Update - Timestamp of the latest activity on the ticket.</li>
+            <li>Assigned Agent - Name of the support agent currently handling the case.</li>
+            <li>Application Used - Indicates which platform the user is contacting from:
+              <ul>
+                <li>Eureka</li>
+                <li>SurveyPop</li>
+                <li>SurveySpin</li>
+              </ul>
+            </li>
+          </ul>
+          <p>Reviewing these fields helps agents quickly prioritize and identify tickets before opening them.</p>
+        </section>
+
+        <section id="opening" class="section">
+          <h2>Opening a Ticket</h2>
+          <p>To review the full details of a support request:</p>
+          <ol>
+            <li>Locate the ticket from your (Agent Name) - Unsolved Tickets list.</li>
+            <li>Click anywhere on the ticket row.</li>
+          </ol>
+          <p>Once selected, Zendesk will open the ticket details in a new working tab.</p>
+        </section>
+
+        <section id="layout" class="section">
+          <h2>Ticket Layout Overview</h2>
+          <p>After opening a ticket, Zendesk is divided into three primary panels:</p>
+          <ul>
+            <li>Left Panel - Ticket details and user attributes</li>
+            <li>Middle Panel - Conversation and response area</li>
+            <li>Right Panel - User profile and interaction history</li>
+          </ul>
+        </section>
+
+        <section id="left-panel" class="section">
+          <h2>Left Panel - Ticket Details and Attributes</h2>
+          <p>The left side panel contains ticket information and account-related fields used during investigation.</p>
+          <h3>Ticket Information</h3>
+          <ul>
+            <li><strong>Requester Name</strong> - Displays the name of the user who submitted the request.</li>
+            <li><strong>Assignee</strong> - Shows the support agent currently assigned to the ticket.</li>
+            <li><strong>Followers</strong> - Lists users following the ticket for visibility purposes. This field can generally be ignored during standard handling.</li>
+            <li><strong>Tags</strong> - Displays the ticket tags associated with the case. Tags help categorize concerns and route tickets appropriately.</li>
+            <li><strong>Priority</strong> - Indicates the urgency level of the request: Low, Normal, High, Urgent.</li>
+          </ul>
+          <h3>User and Account Information</h3>
+          <ul>
+            <li><strong>Platform</strong> - Displays the device platform being used: Android, iOS, Web.</li>
+            <li><strong>Concerns</strong> - Displays the category or issue associated with the user's request.</li>
+            <li><strong>Account Status</strong> - Shows the current state of the account: Active, Banned, Deleted, Inbox Full, Unknown / No Account.</li>
+            <li><strong>Device Location</strong> - Indicates the detected device region.</li>
+            <li><strong>Country</strong> - Displays the country code.</li>
+          </ul>
+          <h3>Additional Verification and Financial Information</h3>
+          <p>The following fields reference values available in the Admin Tool:</p>
+          <ul>
+            <li><strong>Fraud Score</strong> - Available in the Admin Tool under the User side table.</li>
+            <li><strong>SMS Verified</strong> - Displays the user's SMS verification status.</li>
+            <li><strong>Lifetime Earnings</strong> - Available in the Admin Tool under the Money side table.</li>
+            <li><strong>Lifetime Revenue</strong> - Available in the Admin Tool under the Money side table.</li>
+            <li><strong>SMS Number</strong> - Available in the Admin Tool under the Verification side table.</li>
+          </ul>
+        </section>
+
+        <section id="middle-panel" class="section">
+          <h2>Middle Panel - Ticket Conversation View</h2>
+          <p>The middle section is where agents review and respond to tickets.</p>
+          <h3>Subject Line</h3>
+          <p>At the top of the panel, the Subject field is displayed. This field is editable and may be updated when necessary to better reflect the concern.</p>
+          <h3>Conversation Thread</h3>
+          <p>Below the subject is the email conversation history.</p>
+          <ul>
+            <li>Blue-Green Bubble - User messages</li>
+            <li>Grey Bubble - Support responses</li>
+            <li>Orange Bubble - Internal notes</li>
+          </ul>
+          <p>Internal notes are visible only to internal teams and are not sent to users.</p>
+        </section>
+
+        <section id="composer" class="section">
+          <h2>Response Composer</h2>
+          <p>At the bottom of the conversation panel is the response editor.</p>
+          <ul>
+            <li><strong>Public Reply</strong> - Sends a message directly to the user.</li>
+            <li><strong>Internal Note</strong> - Creates an internal note only and appears highlighted in orange.</li>
+            <li><strong>To</strong> - Displays the recipient email address.</li>
+            <li><strong>CC</strong> - Adds another recipient into the email thread.</li>
+          </ul>
+        </section>
+
+        <section id="right-panel" class="section">
+          <h2>Right Panel - User Profile and History</h2>
+          <p>The right-side panel contains user-specific information.</p>
+          <ul>
+            <li>User's Name</li>
+            <li>Pop-out icon that opens the user's Zendesk profile</li>
+            <li>User's Email</li>
+            <li>User's Local Time</li>
+            <li>User's Local Language</li>
+            <li>User Notes</li>
+          </ul>
+        </section>
+
+        <section id="history" class="section">
+          <h2>Interaction History</h2>
+          <p>At the bottom of the right panel is the Interaction History section. This area displays previous tickets created by the same user, including the current active ticket.</p>
+          <p>Reviewing interaction history helps identify repeat concerns, previous resolutions, and ongoing account patterns.</p>
+        </section>
+
+        <section id="summary" class="section">
+          <h2>Summary</h2>
+          <p>Zendesk serves as the central workspace for handling support requests. Agents begin by reviewing tickets in their Unsolved Tickets bucket, then investigate ticket details through the left panel, manage communication in the middle panel, and reference user history and profile details from the right panel.</p>
+        </section>
+      </article>
+    </div>
+  </main>
+</body>
+</html>
