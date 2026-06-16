@@ -1,0 +1,262 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>4 Brilliant tips for Dealing with Angry Customers</title>
+<style>
+    :root {
+      --bg: #020d18;
+      --bg-deep: #000914;
+      --panel: rgba(3, 20, 34, 0.72);
+      --line: rgba(25, 222, 201, 0.22);
+      --text: #f3f7fb;
+      --muted: #a9b6c3;
+      --subtle: #6f8190;
+      --cyan: #22e1c3;
+      --cyan-soft: rgba(34, 225, 195, 0.12);
+      --radius: 18px;
+      --shadow: 0 28px 80px rgba(0, 0, 0, 0.42);
+    }
+    * { box-sizing: border-box; }
+    html { scroll-behavior: smooth; }
+    body {
+      margin: 0;
+      color: var(--text);
+      font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      background:
+        radial-gradient(circle at 78% -5%, rgba(71, 151, 222, 0.34), transparent 32rem),
+        radial-gradient(circle at 22% 12%, rgba(29, 226, 195, 0.08), transparent 24rem),
+        linear-gradient(180deg, var(--bg) 0%, var(--bg-deep) 100%);
+      min-height: 100vh;
+      overflow-x: hidden;
+      letter-spacing: 0.01em;
+    }
+    body::before {
+      content: "";
+      position: fixed;
+      inset: 0;
+      pointer-events: none;
+      opacity: 0.3;
+      background-image:
+        linear-gradient(rgba(28, 213, 195, 0.07) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(28, 213, 195, 0.07) 1px, transparent 1px),
+        radial-gradient(rgba(255, 255, 255, 0.22) 0.7px, transparent 0.8px);
+      background-size: 72px 72px, 72px 72px, 3px 3px;
+      mask-image: linear-gradient(to bottom, rgba(0,0,0,1), rgba(0,0,0,0.18));
+    }
+    .site-header {
+      position: sticky;
+      top: 0;
+      z-index: 50;
+      height: 58px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      border-bottom: 1px solid rgba(115, 184, 220, 0.17);
+      background: rgba(5, 16, 29, 0.82);
+      backdrop-filter: blur(18px);
+    }
+    .nav-shell {
+      width: min(1180px, calc(100% - 44px));
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+    .brand {
+      color: var(--text);
+      text-decoration: none;
+      font-weight: 850;
+      letter-spacing: 0.17em;
+      font-size: 1.02rem;
+      text-transform: uppercase;
+    }
+    .page {
+      width: min(1180px, calc(100% - 44px));
+      margin: 0 auto;
+      padding: 78px 0 110px;
+    }
+    .hero-frame {
+      min-height: auto;
+      border: 1px solid rgba(28, 218, 197, 0.2);
+      border-right: none;
+      padding: 62px 0 44px;
+      margin-left: -4px;
+      background: linear-gradient(90deg, rgba(3, 17, 30, 0.64), rgba(3, 17, 30, 0.14) 62%, transparent);
+    }
+    .article-head {
+      width: min(760px, 100%);
+      margin-left: 42px;
+      padding-right: 34px;
+    }
+    .back-link {
+      color: var(--muted);
+      text-decoration: none;
+      font-size: 0.92rem;
+      display: inline-flex;
+      gap: 8px;
+      align-items: center;
+      margin-bottom: 34px;
+    }
+    h1 {
+      margin: 0 0 18px;
+      font-size: clamp(2.3rem, 4.3vw, 4.15rem);
+      line-height: 1.15;
+      letter-spacing: 0.035em;
+      font-weight: 860;
+      max-width: 760px;
+      text-shadow: 0 0 24px rgba(122, 183, 255, 0.18);
+    }
+    .meta {
+      display: flex;
+      align-items: center;
+      gap: 18px;
+      flex-wrap: wrap;
+      color: var(--muted);
+      font-size: 0.96rem;
+      margin-bottom: 40px;
+    }
+    .date-badge {
+      color: var(--cyan);
+      border: 1px solid rgba(34, 225, 195, 0.42);
+      background: rgba(34, 225, 195, 0.08);
+      border-radius: 8px;
+      padding: 7px 13px;
+      font-weight: 700;
+      box-shadow: inset 0 0 22px rgba(34, 225, 195, 0.06);
+    }
+    .dek {
+      margin: 0;
+      font-size: clamp(1.65rem, 2.95vw, 3.2rem);
+      line-height: 1.1;
+      letter-spacing: 0.02em;
+      font-weight: 840;
+      max-width: 740px;
+    }
+    .content-grid {
+      display: grid;
+      grid-template-columns: minmax(0, 760px);
+      justify-content: end;
+      margin-top: 72px;
+    }
+    article { padding-bottom: 80px; }
+    .section {
+      position: relative;
+      margin-bottom: 38px;
+      padding: 34px 36px;
+      border: 1px solid rgba(28, 218, 197, 0.16);
+      background: linear-gradient(180deg, rgba(6, 25, 41, 0.72), rgba(2, 13, 24, 0.64));
+      border-radius: var(--radius);
+      box-shadow: var(--shadow);
+      overflow: hidden;
+    }
+    .section::before {
+      content: "";
+      position: absolute;
+      inset: 0 0 auto;
+      height: 1px;
+      background: linear-gradient(90deg, transparent, rgba(34, 225, 195, 0.58), transparent);
+      opacity: 0.7;
+    }
+    h2, h3 { margin-top: 0; color: var(--text); }
+    h2 {
+      margin-bottom: 18px;
+      font-size: clamp(1.45rem, 2vw, 2.1rem);
+      line-height: 1.15;
+      letter-spacing: 0.02em;
+    }
+    p, li {
+      color: #d8e2ea;
+      font-size: 1.02rem;
+      line-height: 1.78;
+    }
+    p { margin: 0 0 16px; }
+    strong { color: #fff; font-weight: 800; }
+    ul { padding-left: 1.3rem; margin: 14px 0 0; }
+    li { margin-bottom: 9px; }
+    .callout {
+      padding: 24px;
+      margin-top: 22px;
+      border-radius: 15px;
+      border: 1px solid rgba(255, 183, 107, 0.24);
+      background: linear-gradient(135deg, rgba(255, 183, 107, 0.1), rgba(255, 141, 204, 0.045));
+    }
+    @media (max-width: 850px) {
+      .hero-frame { border-right: 1px solid rgba(28, 218, 197, 0.2); padding: 54px 18px 34px; }
+      .article-head { margin-left: 0; padding-right: 0; }
+      .content-grid { display: block; margin-top: 44px; }
+      .section { padding: 28px 24px; }
+    }
+    @media (max-width: 520px) {
+      .page, .nav-shell { width: min(100% - 28px, 1180px); }
+      .brand { font-size: 0.98rem; }
+      h1 { font-size: 2.18rem; }
+      .dek { font-size: 1.55rem; }
+      .section { padding: 24px 18px; }
+    }
+</style>
+</head>
+<body>
+  <header class="site-header">
+    <div class="nav-shell">
+      <a class="brand" href="KB.html" aria-label="Support Knowledge Base Home">Support KB</a>
+    </div>
+  </header>
+
+  <main class="page">
+    <section class="hero-frame" aria-labelledby="article-title">
+      <div class="article-head">
+        <a class="back-link" href="KB.html">← Back to Knowledge Base</a>
+        <h1 id="article-title">4 Brilliant tips for Dealing with Angry Customers</h1>
+        <div class="meta">
+          <span class="date-badge">Updated 10/14/2024</span>
+          <span>By Avery Augustine</span>
+        </div>
+        <p class="dek">The Muse offers four ways to calm tense moments. Small things, like using a customer's name, can shift the whole tone.</p>
+      </div>
+    </section>
+
+    <div class="content-grid">
+      <article>
+        <section class="section">
+          <p>Angry customers are one of the hardest parts of support work. The Muse offers four ways to calm tense moments. Small things, like using a customer's name, can shift the whole tone.</p>
+          <p>I’m not exactly a people person. Or, rather, I’m not exactly an angry people person.</p>
+          <p>But in my job in a technical support department, I have to talk to not-so-satisfied customers fairly often. And in the beginning, my conversations usually sounded a little like this:</p>
+          <div class="callout">
+              “I’m so sorry, but…”<br>
+              “What we can do is…”<br>
+              “I know you’re upset and…”
+          </div>
+          <p>I couldn’t get a word in edgewise. My customers were relentless, I was hesitant, and as a result, I usually wasn’t able to actually solve the problem.</p>
+          <p>Then, a new employee, Dean, came on board. He sat cattycorner to me, so I constantly overheard his phone conversations and immediately recognized the ease he had when he dealt with angry clients. He never lost his cool, hardly ever had to transfer the call to our boss, and somehow, never let the angry client affect his good mood.</p>
+          <p>He shared some tips that have helped me learn to listen better, stammer less, and hang up the phone with a sense of accomplishment instead of dread.</p>
+        </section>
+
+        <section class="section">
+          <h2>1. There’s Power in a Name</h2>
+          <p>One of the first things I noticed about Dean’s conversations was how many times he interjected the caller’s name into the conversation.</p>
+          <p>Addressing your client with their name sounds a lot more sincere than using a generic label. Once you use a name, you’re speaking with a real person who has a legitimate reason behind the frustration.</p>
+        </section>
+
+        <section class="section">
+          <h2>2. Smile When You Talk</h2>
+          <p>Smiling when you speak helps your voice convey friendliness and openness. Staying straight-faced removes that warmth from your voice.</p>
+          <p>For angry clients, you might have to fake it, but forcing a smile does wonders when it comes to calming someone down.</p>
+        </section>
+
+        <section class="section">
+          <h2>3. Connect With Your Audience</h2>
+          <p>Some customers want to get straight to the point. Others want more pleasantries. The key is to listen to the tone, knowledge, and personality of the person you’re talking to.</p>
+          <p>This kind of mirroring helps the customer feel understood and more open to your assistance.</p>
+        </section>
+
+        <section class="section">
+          <h2>4. Let Them Vent</h2>
+          <p>Often, clients are looking to release their frustration. Giving the client full rein over the conversation for the first few minutes helps them blow off some steam and eventually focus on getting to a resolution.</p>
+          <p>Sometimes the best move is to mute, listen, and let the moment pass before offering a solution.</p>
+        </section>
+      </article>
+    </div>
+  </main>
+</body>
+</html>

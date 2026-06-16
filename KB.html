@@ -1,0 +1,221 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Knowledgebase</title>
+<style>
+    *{margin:0;padding:0;box-sizing:border-box;font-family:Arial,Helvetica,sans-serif}
+    body{
+        background:radial-gradient(circle at 10% 80%, rgba(0,245,255,.78), transparent 24rem),
+        radial-gradient(circle at 76% 88%, rgba(0,245,255,.58), transparent 20rem),
+        linear-gradient(110deg,#0f1621,#080d13 58%,#070b10);
+        color:#444;min-height:100vh;
+    }
+    .hero{height:180px;background:radial-gradient(circle at 10% 80%, rgba(0,245,255,.78), transparent 24rem),radial-gradient(circle at 76% 88%, rgba(0,245,255,.58), transparent 20rem),linear-gradient(110deg,#0f1621,#080d13 58%,#070b10);display:flex;justify-content:center;align-items:center;position:relative}
+    .logo{position:absolute;left:50px;width:80px;height:80px;object-fit:contain}
+    .hero h1{color:#fff;font-size:3rem;font-weight:700;text-align:center}
+    .search-section{max-width:1100px;margin:-30px auto 0;background:transparent;border-radius:8px;padding:50px 30px 80px;text-align:center}
+    .search-section h2{font-size:2rem;margin-bottom:10px;color:#fff}
+    .search-section p{color:#d7f9fb;margin-bottom:25px}
+    .search-box{max-width:600px;margin:auto}
+    .search-box input{width:100%;padding:15px;border:1px solid #ddd;border-radius:4px;font-size:16px;outline:none}
+    .cards{max-width:1100px;margin:-40px auto 60px;display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:25px;padding:0 20px}
+    .card{background:#fff;padding:40px 25px;text-align:center;border-radius:8px;box-shadow:0 8px 20px rgba(0,0,0,.08);transition:.3s;cursor:pointer}
+    .card:hover{transform:translateY(-5px)}
+    .card .icon{font-size:50px;margin-bottom:20px}
+    .card h3{margin-bottom:15px;color:#555}
+    .card p{color:#777;line-height:1.6}
+    .ticket-section{max-width:1100px;margin:30px auto 70px;background:#fff;padding:35px;border-radius:8px;box-shadow:0 8px 20px rgba(0,0,0,.08);display:none}
+    .ticket-section h2{color:#555;margin-bottom:8px}
+    .ticket-section table{width:100%;border-collapse:collapse}
+    .ticket-section th,.ticket-section td{padding:14px;border-bottom:1px solid #eee;text-align:left}
+    .ticket-section th{background:#f3f1ff;color:#555}
+    .ticket-section a{color:#6c3cff;text-decoration:none;font-weight:600}
+    .ticket-section a:hover{text-decoration:underline}
+    .article-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:22px;margin-top:24px}
+    .article-card{background:#f7f9f9;border:1px solid #e5ecef;border-radius:8px;overflow:hidden;text-align:left;transition:.3s}
+    .article-card:hover{transform:translateY(-4px);box-shadow:0 10px 24px rgba(0,0,0,.12)}
+    .article-image-placeholder{height:145px;background:linear-gradient(135deg,#d7f9fb,#67C090);color:#2f5f69;display:flex;align-items:center;justify-content:center;font-weight:700;text-align:center;padding:16px}
+    .article-content{padding:18px}
+    .article-content h3{color:#333;font-size:1.05rem;margin-bottom:10px}
+    .article-content p{color:#666;font-size:.95rem;line-height:1.5;margin-bottom:14px}
+    .article-meta{color:#67C090;font-size:.85rem;font-weight:700}
+</style>
+</head>
+<body>
+<script>
+const links = {
+    "TICKETS": [
+        { name: "CS Templates and tagging", url: "https://docs.google.com/document/d/1NOUNP8ODsNmdqXLro60I9HktWvvuBeeqXXqVrWh27Q4/edit?tab=t.0" },
+        { name: "Slack", url: "https://app.slack.com/client/TTAF5UQUT/CULLGAHC6" }
+    ],
+    "CASHOUTS": [
+        { name: "Newsletter", url: "https://example.com/newsletter" },
+        { name: "Promo Campaign", url: "https://example.com/promo" }
+    ],
+    "LINKS": [
+        { name: "Demo Compilations", url: "https://drive.google.com/drive/folders/1-XRG19rNkVpaG75W9puN3CNiJVJKlQYX" },
+        { name: "Meeting Comilations", url: "https://drive.google.com/drive/folders/1nt6ozbXVdq-lhA9MVSXnsm6Bt50Hdrx5?usp=sharing" }
+    ]
+};
+
+    const cashoutArticles = [
+        {
+            title: "Cashout Review Checklist",
+            description: "A quick guide for checking payout requests before they are approved.",
+            status: "Click here to read.",
+            url: "https://example.com/cashout-review-checklist"
+        },
+        {
+            title: "Fraud Pattern Indicators",
+            description: "Common red flags that help you spot suspicious cashout activity earlier.",
+            status: "Click here to read.",
+            url: "https://example.com/fraud-pattern-indicators"
+        },
+        {
+            title: "Escalation Rules for Cashouts",
+            description: "When to pause a payout and send it to a lead or fraud reviewer.",
+            status: "Ready for article"
+        },
+        {
+            title: "Payment Validation Notes",
+            description: "Reference points for confirming payment details and avoiding processing errors.",
+            status: "Ready for article"
+        }
+    ];
+
+    const ticketArticles = [
+        {
+            title: "Navigating and Reviewing Tickets in Zendesk",
+            description: "Guide on how to locate and understand how Zendesk Works",
+            status: "Click here to read.",
+            image: "article1.png",
+            url: "file:C:/Users/Gienixx/Eureka/github-pages-static/article1.html"
+        },
+        {
+            title: "4 Brilliant tips for Dealing with Angry Customers",
+            description: "Angry customers are one of the hardest parts of support work. The Muse offers four ways to calm tense moments. Small things, like using a customer's name, can shift the whole tone.",
+            status: "Click here to read.",
+            image: "article2.png",
+            url: "file:C:/Users/Gienixx/Eureka/github-pages-static/article2.html"
+        },
+        { 
+            title: "Not Rewarded", 
+            description: "How to identify, review, and resolve tickets from users who report they were not rewarded after completing a survey", 
+            status: "Click here to read.", 
+            url: "file:///C:/Users/Gienixx/Eureka/github-pages-static/article3.html" 
+    },
+    { title: "Escalation Process", description: "Placeholder for when and how support tickets should be escalated.", status: "Ready for article" },
+    { title: "Slack Communication", description: "Placeholder for internal Slack channels, updates, and support coordination.", status: "Ready for article" },
+    { title: "Quality Checklist", description: "Placeholder for final checks before marking a ticket solved.", status: "Ready for article" }
+];
+
+
+    function renderArticleGrid(articles) {
+        const grid = document.createElement("div");
+        grid.className = "article-grid";
+
+        articles.forEach((article) => {
+            const card = document.createElement("article");
+            card.className = "article-card";
+            const imageMarkup = article.image
+                ? `<img src="${article.image}" alt="${article.title}" style="width:100%;height:145px;object-fit:cover;display:block;">`
+                : `<div class="article-image-placeholder">Image Placeholder</div>`;
+            const inner = `
+                ${imageMarkup}
+                <div class="article-content">
+                    <h3>${article.title}</h3>
+                    <p>${article.description}</p>
+                    <div class="article-meta">${article.status}</div>
+                </div>`;
+            card.innerHTML = article.url ? `<a href="${article.url}" style="display:block;color:inherit;text-decoration:none;">${inner}</a>` : inner;
+            grid.appendChild(card);
+        });
+
+        return grid;
+    }
+function showTicketsTable(category){
+    const ticketSection = document.getElementById("ticketSection");
+    ticketSection.style.display = "block";
+    ticketSection.scrollIntoView({behavior:"smooth"});
+
+    const ticketHeader = document.getElementById("ticketHeader");
+    const ticketContent = document.getElementById("ticketContent");
+    ticketContent.innerHTML = "";
+
+    if(category === "TICKETS"){
+        ticketHeader.textContent = "Ticket Articles";
+        ticketContent.appendChild(renderArticleGrid(ticketArticles));
+        return;
+    }
+
+    if(category === "CASHOUTS"){
+        ticketHeader.textContent = "Cashout Articles";
+        ticketContent.appendChild(renderArticleGrid(cashoutArticles));
+        return;
+    }
+
+    ticketHeader.textContent = category + " Links";
+    const table = document.createElement("table");
+    table.innerHTML = `<thead><tr><th>Name</th><th>Link</th></tr></thead><tbody></tbody>`;
+    const tableBody = table.querySelector("tbody");
+    (links[category] || []).forEach((item) => {
+        const row = document.createElement("tr");
+        row.innerHTML = `<td>${item.name}</td><td><a href="${item.url}" target="_blank">Open Link</a></td>`;
+        tableBody.appendChild(row);
+    });
+    ticketContent.appendChild(table);
+}
+
+function goToLanding(){ window.location.href = "index.html"; }
+
+document.addEventListener("DOMContentLoaded", () => {
+    const searchInput = document.getElementById("searchInput");
+    const cards = document.querySelectorAll(".card");
+    searchInput.addEventListener("input", () => {
+        const query = searchInput.value.toLowerCase().trim();
+        cards.forEach((card) => {
+            card.style.display = card.textContent.toLowerCase().includes(query) ? "block" : "none";
+        });
+    });
+});
+</script>
+
+<section class="hero">
+    <img src="ES.png" alt="Eureka Logo" class="logo" style="cursor:pointer;" onclick="goToLanding()">
+    <h1>Knowledgebase</h1>
+</section>
+
+<section class="search-section">
+    <h2>Your Dose of Know-How</h2>
+    <p>All the information you need</p>
+    <div class="search-box">
+        <input type="text" id="searchInput" placeholder="Search">
+    </div>
+</section>
+
+<section class="cards">
+    <div class="card" onclick="showTicketsTable('TICKETS')">
+        <div class="icon">🎟</div>
+        <h3>Tickets</h3>
+        <p>Learn what different scripts you can use to communicate with your customers.</p>
+    </div>
+    <div class="card" onclick="showTicketsTable('CASHOUTS')">
+        <div class="icon">💳</div>
+        <h3>Cashouts</h3>
+        <p>Learn how to process Cashouts and detect fraud patterns.</p>
+    </div>
+    <div class="card" onclick="showTicketsTable('LINKS')">
+        <div class="icon">▶️</div>
+        <h3>Links</h3>
+        <p>Where you'll see all the links for the videos and demos.</p>
+    </div>
+</section>
+
+<section class="ticket-section" id="ticketSection">
+    <h2 id="ticketHeader">Links</h2>
+    <div id="ticketContent"></div>
+</section>
+</body>
+</html>
