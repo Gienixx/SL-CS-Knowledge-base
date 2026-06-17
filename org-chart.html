@@ -1,0 +1,55 @@
+<!DOCTYPE html>
+<html lang="en" data-assets="assets/">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Organizational Chart | SocialLoop CS Base</title>
+    <script>
+        if (!localStorage.getItem("loggedIn")) {
+            window.location.href = "login.html";
+        }
+    </script>
+    <link rel="stylesheet" href="styles.css?v=org-chart-page-1">
+    <style>
+        .org-chart-page-nav {
+            padding: 22px 10% 0;
+        }
+
+        .org-chart-back {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            min-height: 44px;
+            padding: 0 16px;
+            border-radius: 999px;
+            border: 1px solid rgba(255, 194, 26, 0.24);
+            background: rgba(255, 194, 26, 0.12);
+            color: #241b5d;
+            text-decoration: none;
+            font-weight: 600;
+            transition: transform 160ms ease, background 160ms ease, color 160ms ease;
+            box-shadow: 0 14px 28px rgba(36, 27, 93, 0.08);
+        }
+
+        .org-chart-back:hover {
+            transform: translateY(-1px);
+            background: rgba(255, 194, 26, 0.18);
+            color: #1b1347;
+        }
+    </style>
+</head>
+<body>
+    <div class="org-chart-page-nav">
+        <a class="org-chart-back" href="dashboard.html">&larr; Back to Dashboard</a>
+    </div>
+    <div data-include="partials/org-chart.html"></div>
+    <div data-include="partials/modals-arez.html"></div>
+    <div data-include="partials/modals-jean.html"></div>
+    <div data-include="partials/modals-gen.html"></div>
+    <div data-include="partials/modals-ford.html"></div>
+    <div data-include="partials/modals-amora.html"></div>
+    <div data-include="partials/modals-jerson.html"></div>
+    <div data-include="partials/modals-tristan.html"></div>
+    <script src="scripts/index.js?v=org-chart-page-1"></script>
+</body>
+</html>

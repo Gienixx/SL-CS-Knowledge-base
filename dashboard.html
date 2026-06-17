@@ -1,0 +1,595 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Dashboard | SocialLoop CS Base</title>
+  <script>
+    if (!localStorage.getItem("loggedIn")) {
+      window.location.href = "login.html";
+    }
+
+    function logout() {
+      localStorage.removeItem("loggedIn");
+      window.location.href = "login.html";
+    }
+  </script>
+  <style>
+    :root {
+      --bg-top: #fbf8f1;
+      --bg-mid: #f4eee1;
+      --bg-deep: #efe7d7;
+      --panel: #ffffff;
+      --panel-soft: #f9f5ed;
+      --panel-tint: #f4eee1;
+      --line: rgba(36, 27, 93, 0.08);
+      --line-strong: rgba(255, 194, 26, 0.55);
+      --text: #2b2459;
+      --muted: #6f678f;
+      --cyan: #241b5d;
+      --green: #6f678f;
+      --rose: #bda96d;
+      --amber: #ffc21a;
+      --shadow: 0 22px 50px rgba(36, 27, 93, 0.12);
+      --radius: 18px;
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    html,
+    body {
+      margin: 0;
+      min-height: 100%;
+      font-family: "Poppins", Arial, sans-serif;
+      color: var(--text);
+    }
+
+    body {
+      background:
+        radial-gradient(circle at 10% 80%, rgba(255, 194, 26, 0.24), transparent 24rem),
+        radial-gradient(circle at 76% 12%, rgba(36, 27, 93, 0.12), transparent 22rem),
+        linear-gradient(110deg, var(--bg-top), var(--bg-mid) 58%, var(--bg-deep));
+      overflow-x: hidden;
+    }
+
+    body::before {
+      content: "";
+      position: fixed;
+      inset: 0;
+      pointer-events: none;
+      opacity: 0.16;
+      background-image:
+        linear-gradient(rgba(36, 27, 93, 0.05) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(36, 27, 93, 0.05) 1px, transparent 1px);
+      background-size: 72px 72px, 72px 72px;
+      mask-image: linear-gradient(to bottom, rgba(0, 0, 0, 1), rgba(0, 0, 0, 0.24));
+    }
+
+    .page {
+      position: relative;
+      width: min(1380px, calc(100% - 40px));
+      margin: 0 auto;
+      padding: 28px 0 40px;
+    }
+
+    .topbar {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 18px;
+      margin-bottom: 22px;
+    }
+
+    .brand-block h1 {
+      margin: 0;
+      font-size: clamp(1.8rem, 3vw, 2.5rem);
+      line-height: 1;
+      color: var(--cyan);
+    }
+
+    .brand-block p {
+      margin: 8px 0 0;
+      color: var(--muted);
+      font-size: 0.98rem;
+    }
+
+    .top-actions {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 12px;
+    }
+
+    .action-link {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      min-height: 44px;
+      padding: 0 16px;
+      border-radius: 999px;
+      border: 1px solid var(--line-strong);
+      background: rgba(255, 255, 255, 0.85);
+      color: var(--text);
+      text-decoration: none;
+      font-weight: 600;
+      transition: transform 160ms ease, border-color 160ms ease, background 160ms ease, color 160ms ease;
+    }
+
+    .action-link:hover {
+      transform: translateY(-1px);
+      background: rgba(255, 194, 26, 0.12);
+      color: var(--cyan);
+    }
+
+    .dashboard-grid {
+      display: grid;
+      grid-template-columns: 1.7fr repeat(5, minmax(170px, 1fr));
+      gap: 14px;
+      align-items: stretch;
+    }
+
+    .panel,
+    .agent-card {
+      background: linear-gradient(180deg, rgba(255, 255, 255, 0.96), rgba(250, 246, 238, 0.98));
+      border: 1px solid var(--line);
+      border-radius: var(--radius);
+      box-shadow: var(--shadow);
+      overflow: hidden;
+      min-height: 100%;
+    }
+
+    .panel-header,
+    .agent-header {
+      padding: 12px 14px;
+      background: linear-gradient(180deg, rgba(255,255,255,0.94), rgba(244,238,225,0.96));
+      border-bottom: 1px solid var(--line);
+      font-size: 0.9rem;
+      font-weight: 700;
+      color: var(--text);
+    }
+
+    .overview {
+      display: grid;
+      grid-template-rows: auto auto 1fr;
+    }
+
+    .today-block {
+      padding: 16px 18px 10px;
+    }
+
+    .eyebrow {
+      display: inline-block;
+      margin-bottom: 10px;
+      color: var(--muted);
+      font-size: 0.84rem;
+      letter-spacing: 0.06em;
+      text-transform: uppercase;
+    }
+
+    .metric-row {
+      display: flex;
+      align-items: baseline;
+      gap: 10px;
+      margin-bottom: 10px;
+    }
+
+    .metric-row strong {
+      font-size: clamp(2.3rem, 4vw, 3.3rem);
+      line-height: 0.95;
+      color: var(--text);
+    }
+
+    .metric-row span {
+      color: var(--muted);
+      font-size: 0.94rem;
+    }
+
+    .unassigned {
+      margin: 10px 18px 14px;
+      padding: 12px 14px;
+      border-radius: 14px;
+      background: linear-gradient(135deg, rgba(255, 194, 26, 0.18), rgba(255, 255, 255, 0.86));
+      border: 1px solid rgba(255, 194, 26, 0.24);
+      display: flex;
+      align-items: baseline;
+      gap: 10px;
+    }
+
+    .unassigned strong {
+      font-size: 2.4rem;
+      line-height: 1;
+    }
+
+    .unassigned span {
+      color: var(--muted);
+    }
+
+    .summary-body {
+      padding: 0 18px 18px;
+      display: grid;
+      gap: 18px;
+    }
+
+    .list-card,
+    .chart-card {
+      padding: 16px;
+      border-radius: 16px;
+      background: rgba(255, 255, 255, 0.9);
+      border: 1px solid var(--line);
+    }
+
+    .section-title {
+      margin: 0 0 12px;
+      color: var(--text);
+      font-size: 0.95rem;
+      font-weight: 700;
+    }
+
+    .mini-list {
+      display: grid;
+      gap: 8px;
+    }
+
+    .mini-row {
+      display: flex;
+      justify-content: space-between;
+      gap: 10px;
+      color: var(--muted);
+      font-size: 0.9rem;
+      padding-bottom: 8px;
+      border-bottom: 1px solid var(--line);
+    }
+
+    .mini-row:last-child {
+      padding-bottom: 0;
+      border-bottom: 0;
+    }
+
+    .mini-row strong {
+      color: var(--text);
+      font-weight: 600;
+    }
+
+    .chart-card svg {
+      width: 100%;
+      height: 170px;
+      display: block;
+    }
+
+    .legend {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 12px;
+      margin-bottom: 10px;
+      color: var(--muted);
+      font-size: 0.8rem;
+    }
+
+    .legend span {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .legend i {
+      width: 10px;
+      height: 10px;
+      border-radius: 50%;
+      display: inline-block;
+    }
+
+    .agent-card {
+      display: grid;
+      grid-template-rows: auto 92px 1fr;
+    }
+
+    .agent-photo {
+      width: 100%;
+      height: 92px;
+      object-fit: cover;
+      display: block;
+      background: linear-gradient(135deg, rgba(255,255,255,0.8), rgba(244,238,225,0.9));
+    }
+
+    .agent-body {
+      padding: 14px;
+      display: grid;
+      gap: 16px;
+    }
+
+    .agent-role {
+      color: var(--amber);
+      font-size: 0.82rem;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      margin-top: -6px;
+    }
+
+    .big-stat strong {
+      display: block;
+      font-size: 2.5rem;
+      line-height: 0.95;
+      color: var(--text);
+    }
+
+    .big-stat span {
+      display: block;
+      margin-top: 4px;
+      color: var(--muted);
+      font-size: 0.86rem;
+      line-height: 1.4;
+    }
+
+    .agent-foot {
+      margin-top: auto;
+      padding-top: 14px;
+      border-top: 1px solid var(--line);
+      display: grid;
+      gap: 12px;
+    }
+
+    .pill-stat {
+      padding: 12px 12px 10px;
+      border-radius: 14px;
+      background: rgba(255, 255, 255, 0.82);
+      border: 1px solid var(--line);
+    }
+
+    .pill-stat.alert {
+      background: linear-gradient(135deg, rgba(255, 194, 26, 0.16), rgba(255, 255, 255, 0.84));
+      border-color: rgba(255, 194, 26, 0.22);
+    }
+
+    .pill-stat strong {
+      display: block;
+      font-size: 2rem;
+      line-height: 0.95;
+      margin-bottom: 4px;
+    }
+
+    .pill-stat span {
+      color: var(--muted);
+      font-size: 0.82rem;
+      line-height: 1.35;
+    }
+
+    .footer-note {
+      margin-top: 16px;
+      color: var(--muted);
+      text-align: right;
+      font-size: 0.84rem;
+    }
+
+    @media (max-width: 1260px) {
+      .dashboard-grid {
+        grid-template-columns: repeat(3, minmax(220px, 1fr));
+      }
+
+      .overview {
+        grid-column: 1 / -1;
+      }
+    }
+
+    @media (max-width: 860px) {
+      .page {
+        width: min(100% - 24px, 1380px);
+        padding-top: 18px;
+      }
+
+      .topbar {
+        flex-direction: column;
+        align-items: flex-start;
+      }
+
+      .dashboard-grid {
+        grid-template-columns: 1fr;
+      }
+
+      .agent-card {
+        grid-template-rows: auto 140px 1fr;
+      }
+
+      .agent-photo {
+        height: 140px;
+      }
+
+      .logout-btn {
+        position: static;
+        transform: none;
+      }
+    }
+  </style>
+</head>
+<body>
+  <main class="page">
+    <div class="topbar">
+      <div class="brand-block">
+        <h1>Support Dashboard</h1>
+        <p>Live-style team snapshot using the current SocialLoop support roster and the landing-page palette.</p>
+      </div>
+      <div class="top-actions">
+        <a class="action-link" href="index-modular.html">Back to Home</a>
+        <a class="action-link" href="KB.html">Knowledge Base</a>
+        <a class="action-link" href="org-chart.html">Organizational Chart</a>
+        <a class="action-link" href="#" onclick="logout(); return false;">Logout</a>
+      </div>
+    </div>
+
+    <section class="dashboard-grid" aria-label="Support dashboard overview">
+      <article class="panel overview">
+        <div class="panel-header">Today</div>
+
+        <div class="today-block">
+          <span class="eyebrow">Today</span>
+          <div class="metric-row">
+            <strong>--</strong>
+            <span>First Response Time</span>
+          </div>
+        </div>
+
+        <div class="unassigned">
+          <strong>--</strong>
+          <span>Unassigned</span>
+        </div>
+
+        <div class="summary-body">
+          <div class="list-card">
+            <h2 class="section-title">FRT by agent</h2>
+            <div class="mini-list">
+              <div class="mini-row"><span>Arez</span><strong>--</strong></div>
+              <div class="mini-row"><span>Amora</span><strong>--</strong></div>
+              <div class="mini-row"><span>Ford</span><strong>--</strong></div>
+              <div class="mini-row"><span>Gen</span><strong>--</strong></div>
+            </div>
+          </div>
+
+          <div class="chart-card">
+            <h2 class="section-title">Closed conversations this week</h2>
+            <div class="legend">
+              <span><i style="background:#241b5d"></i>Arez</span>
+              <span><i style="background:#6f678f"></i>Amora</span>
+              <span><i style="background:#241b5d"></i>Ford</span>
+              <span><i style="background:#ffc21a"></i>Gen</span>
+            </div>
+            <svg viewBox="0 0 340 170" aria-label="Weekly performance chart">
+              <g opacity="0.18" stroke="#241b5d">
+                <line x1="24" y1="18" x2="24" y2="146"></line>
+                <line x1="24" y1="146" x2="320" y2="146"></line>
+                <line x1="24" y1="114" x2="320" y2="114"></line>
+                <line x1="24" y1="82" x2="320" y2="82"></line>
+                <line x1="24" y1="50" x2="320" y2="50"></line>
+              </g>
+              <polyline fill="none" stroke="#6f678f" stroke-width="4" points="30,92 86,90 142,86 198,68 254,74 310,110"></polyline>
+              <polyline fill="none" stroke="#241b5d" stroke-width="4" points="30,66 86,82 142,84 198,56 254,90 310,92"></polyline>
+              <polyline fill="none" stroke="#bda96d" stroke-width="4" points="30,60 86,60 142,100 198,96 254,58 310,56"></polyline>
+              <polyline fill="none" stroke="#ffc21a" stroke-width="4" points="30,76 86,104 142,106 198,78 254,104 310,76"></polyline>
+              <g fill="#6f678f" font-size="11" font-family="Poppins, Arial, sans-serif">
+                <text x="8" y="148">--</text>
+                <text x="2" y="116">--</text>
+                <text x="2" y="84">--</text>
+                <text x="2" y="52">--</text>
+                <text x="28" y="164">1 Mar</text>
+                <text x="128" y="164">3 Mar</text>
+                <text x="228" y="164">5 Mar</text>
+              </g>
+            </svg>
+          </div>
+        </div>
+      </article>
+
+      <article class="agent-card">
+        <div class="agent-header">Arez</div>
+        <img class="agent-photo" src="assets/Arez.png" alt="Arez" />
+        <div class="agent-body">
+          <div class="agent-role">Cashout Team</div>
+          <div class="big-stat">
+            <strong>--</strong>
+            <span>Open conversations</span>
+          </div>
+          <div class="agent-foot">
+            <div class="pill-stat">
+              <strong>--</strong>
+              <span>Closed this week</span>
+            </div>
+            <div class="pill-stat">
+              <strong>--</strong>
+              <span>Time to close</span>
+            </div>
+          </div>
+        </div>
+      </article>
+
+      <article class="agent-card">
+        <div class="agent-header">Amora</div>
+        <img class="agent-photo" src="assets/amora.png" alt="Amora" />
+        <div class="agent-body">
+          <div class="agent-role">Support Team</div>
+          <div class="big-stat">
+            <strong>--</strong>
+            <span>Open conversations</span>
+          </div>
+          <div class="agent-foot">
+            <div class="pill-stat">
+              <strong>--</strong>
+              <span>Closed this week</span>
+            </div>
+            <div class="pill-stat">
+              <strong>--</strong>
+              <span>Time to close</span>
+            </div>
+          </div>
+        </div>
+      </article>
+
+      <article class="agent-card">
+        <div class="agent-header">Ford</div>
+        <img class="agent-photo" src="assets/Ford.png" alt="Ford" />
+        <div class="agent-body">
+          <div class="agent-role">Support Team</div>
+          <div class="big-stat">
+            <strong>--</strong>
+            <span>Open conversations</span>
+          </div>
+          <div class="agent-foot">
+            <div class="pill-stat">
+              <strong>--</strong>
+              <span>Closed this week</span>
+            </div>
+            <div class="pill-stat">
+              <strong>--</strong>
+              <span>Time to close</span>
+            </div>
+          </div>
+        </div>
+      </article>
+
+      <article class="agent-card">
+        <div class="agent-header">Gen</div>
+        <img class="agent-photo" src="assets/Gen.png" alt="Gen" />
+        <div class="agent-body">
+          <div class="agent-role">Support Team</div>
+          <div class="big-stat">
+            <strong>--</strong>
+            <span>Open conversations</span>
+          </div>
+          <div class="agent-foot">
+            <div class="pill-stat">
+              <strong>--</strong>
+              <span>Closed this week</span>
+            </div>
+            <div class="pill-stat alert">
+              <strong>--</strong>
+              <span>Time to close</span>
+            </div>
+          </div>
+        </div>
+      </article>
+
+      <article class="agent-card">
+        <div class="agent-header">Jean</div>
+        <img class="agent-photo" src="assets/Jean.png" alt="Jean" />
+        <div class="agent-body">
+          <div class="agent-role">Support Team</div>
+          <div class="big-stat">
+            <strong>--</strong>
+            <span>Open conversations</span>
+          </div>
+          <div class="agent-foot">
+            <div class="pill-stat">
+              <strong>--</strong>
+              <span>Closed this week</span>
+            </div>
+            <div class="pill-stat">
+              <strong>--</strong>
+              <span>Time to close</span>
+            </div>
+          </div>
+        </div>
+      </article>
+    </section>
+
+    <p class="footer-note">Static dashboard mockup for the current team setup.</p>
+  </main>
+</body>
+</html>

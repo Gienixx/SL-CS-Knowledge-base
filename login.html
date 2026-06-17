@@ -1,0 +1,397 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Login | SocialLoop CS Base</title>
+  <style>
+    :root {
+      --bg: #fbf8f1;
+      --bg-alt: #f4eee1;
+      --panel: rgba(255, 255, 255, 0.94);
+      --line: rgba(36, 27, 93, 0.08);
+      --line-strong: rgba(255, 194, 26, 0.42);
+      --text: #2b2459;
+      --muted: #6f678f;
+      --cyan: #241b5d;
+      --amber: #ffc21a;
+      --cyan-soft: rgba(255, 194, 26, 0.12);
+      --radius: 18px;
+      --shadow: 0 28px 80px rgba(36, 27, 93, 0.12);
+      font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    html,
+    body {
+      margin: 0;
+      min-height: 100%;
+    }
+
+    body {
+      color: var(--text);
+      background:
+        radial-gradient(circle at 10% 12%, rgba(255, 194, 26, 0.24), transparent 24rem),
+        radial-gradient(circle at 88% 16%, rgba(36, 27, 93, 0.12), transparent 26rem),
+        linear-gradient(180deg, var(--bg) 0%, var(--bg-alt) 100%);
+      overflow-x: hidden;
+    }
+
+    body::before {
+      content: "";
+      position: fixed;
+      inset: 0;
+      pointer-events: none;
+      opacity: 0.16;
+      background-image:
+        linear-gradient(rgba(36, 27, 93, 0.05) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(36, 27, 93, 0.05) 1px, transparent 1px);
+      background-size: 72px 72px, 72px 72px;
+      mask-image: linear-gradient(to bottom, rgba(0, 0, 0, 1), rgba(0, 0, 0, 0.16));
+    }
+
+    .page {
+      position: relative;
+      min-height: 100vh;
+      display: grid;
+      place-items: center;
+      padding: 32px 18px;
+    }
+
+    .login-shell {
+      width: min(980px, 100%);
+      display: grid;
+      grid-template-columns: 1.05fr 0.95fr;
+      gap: 24px;
+      align-items: stretch;
+    }
+
+    .hero-panel,
+    .form-panel {
+      border: 1px solid var(--line);
+      border-radius: var(--radius);
+      box-shadow: var(--shadow);
+      overflow: hidden;
+      background: linear-gradient(180deg, rgba(255, 255, 255, 0.96), rgba(250, 246, 238, 0.96));
+    }
+
+    .hero-panel {
+      padding: 42px;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+      position: relative;
+    }
+
+    .brand {
+      display: inline-flex;
+      align-items: center;
+      gap: 12px;
+      text-decoration: none;
+      color: var(--text);
+      font-weight: 800;
+      letter-spacing: 0.14em;
+      text-transform: uppercase;
+      font-size: 0.95rem;
+    }
+
+    .brand-mark {
+      width: 28px;
+      height: 22px;
+      display: grid;
+      grid-template-columns: repeat(3, 7px);
+      gap: 4px;
+      align-items: end;
+    }
+
+    .brand-mark span {
+      display: block;
+      background: var(--amber, #ffc21a);
+      border-radius: 1px;
+      box-shadow: 0 0 18px rgba(255, 194, 26, 0.42);
+    }
+
+    .brand-mark span:nth-child(1) { height: 7px; }
+    .brand-mark span:nth-child(2) { height: 22px; }
+    .brand-mark span:nth-child(3) { height: 13px; }
+
+    .hero-copy {
+      margin-top: 44px;
+      max-width: 420px;
+    }
+
+    .hero-copy h1 {
+      margin: 0 0 16px;
+      font-size: clamp(2.4rem, 4vw, 4.3rem);
+      line-height: 0.98;
+      letter-spacing: 0.03em;
+    }
+
+    .hero-copy p {
+      margin: 0;
+      color: var(--muted);
+      font-size: 1.02rem;
+      line-height: 1.72;
+    }
+
+    .login-meta {
+      margin-top: 28px;
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+    }
+
+    .pill {
+      border: 1px solid rgba(255, 194, 26, 0.22);
+      background: rgba(255, 194, 26, 0.12);
+      color: var(--cyan);
+      border-radius: 999px;
+      padding: 8px 12px;
+      font-size: 0.84rem;
+      font-weight: 700;
+    }
+
+    .form-panel {
+      padding: 42px;
+      background:
+        linear-gradient(180deg, rgba(255, 255, 255, 0.98), rgba(248, 243, 233, 0.94));
+    }
+
+    .form-panel h2 {
+      margin: 0 0 10px;
+      font-size: 1.9rem;
+    }
+
+    .form-panel .subtext {
+      margin: 0 0 28px;
+      color: var(--muted);
+      line-height: 1.65;
+    }
+
+    form {
+      display: grid;
+      gap: 18px;
+    }
+
+    label {
+      display: block;
+      margin: 0 0 8px;
+      font-size: 0.92rem;
+      font-weight: 700;
+      color: var(--text);
+    }
+
+    input {
+      width: 100%;
+      border: 1px solid var(--line);
+      background: rgba(255, 255, 255, 0.96);
+      color: var(--text);
+      border-radius: 12px;
+      padding: 14px 16px;
+      font-size: 1rem;
+      outline: none;
+      transition: border-color 180ms ease, box-shadow 180ms ease, background 180ms ease;
+    }
+
+    input:focus {
+      border-color: var(--line-strong);
+      box-shadow: 0 0 0 4px var(--cyan-soft);
+      background: #ffffff;
+    }
+
+    .form-row {
+      display: grid;
+      gap: 8px;
+    }
+
+    .form-tools {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      flex-wrap: wrap;
+      font-size: 0.92rem;
+      color: var(--muted);
+    }
+
+    .remember {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .remember input {
+      width: 16px;
+      height: 16px;
+      margin: 0;
+      accent-color: var(--cyan);
+    }
+
+    .forgot {
+      color: var(--cyan);
+      text-decoration: none;
+    }
+
+    .forgot:hover {
+      text-decoration: underline;
+    }
+
+    .actions {
+      display: grid;
+      gap: 12px;
+      margin-top: 6px;
+    }
+
+    .btn {
+      border: 0;
+      border-radius: 12px;
+      padding: 14px 16px;
+      font-size: 1rem;
+      font-weight: 800;
+      cursor: pointer;
+      transition: transform 160ms ease, box-shadow 160ms ease, background 160ms ease;
+    }
+
+    .btn:hover {
+      transform: translateY(-1px);
+    }
+
+    .btn-primary {
+      background: linear-gradient(135deg, #ffc21a, #ffe08a);
+      color: var(--text);
+      box-shadow: 0 14px 28px rgba(255, 194, 26, 0.18);
+    }
+
+    .btn-secondary {
+      background: rgba(255, 255, 255, 0.9);
+      color: var(--text);
+      border: 1px solid var(--line);
+      text-decoration: none;
+      text-align: center;
+    }
+
+    .footer-note {
+      margin-top: 18px;
+      color: var(--muted);
+      font-size: 0.88rem;
+      line-height: 1.5;
+      text-align: center;
+    }
+
+    .status {
+      min-height: 1.25em;
+      margin: -2px 0 0;
+      color: var(--muted);
+      font-size: 0.92rem;
+    }
+
+    .status.error {
+      color: #9b5560;
+    }
+
+    .status.success {
+      color: #6f678f;
+    }
+
+    @media (max-width: 860px) {
+      .login-shell {
+        grid-template-columns: 1fr;
+      }
+
+      .hero-panel,
+      .form-panel {
+        padding: 28px;
+      }
+    }
+
+    @media (max-width: 520px) {
+      .page {
+        padding: 18px 12px;
+      }
+
+      .hero-copy h1 {
+        font-size: 2.3rem;
+      }
+
+      .form-panel h2 {
+        font-size: 1.6rem;
+      }
+    }
+  </style>
+</head>
+<body>
+  <main class="page">
+    <section class="login-shell" aria-labelledby="login-title">
+      <div class="hero-panel">
+        <a class="brand" href="index-modular.html" aria-label="Back to home">
+          <span class="brand-mark" aria-hidden="true"><span></span><span></span><span></span></span>
+          SocialLoop CS Base
+        </a>
+
+        <div class="hero-copy">
+          <h1 id="login-title">Welcome back</h1>
+          <p>Sign in to access the knowledge base, support pages, and internal resources.</p>
+          <div class="login-meta" aria-label="Login highlights">
+            <span class="pill">Secure access</span>
+            <span class="pill">Team resources</span>
+            <span class="pill">Fast entry</span>
+          </div>
+        </div>
+      </div>
+
+      <div class="form-panel">
+        <h2>Login</h2>
+        <p class="subtext">Use your team credentials to continue.</p>
+
+        <form id="loginForm" action="#" method="post">
+          <div class="form-row">
+            <label for="email">Email</label>
+            <input type="email" id="email" name="email" placeholder="you@example.com" autocomplete="email" required />
+          </div>
+
+          <div class="form-row">
+            <label for="password">Password</label>
+            <input type="password" id="password" name="password" placeholder="Your password" autocomplete="current-password" required />
+          </div>
+
+          <div class="form-tools">
+            <label class="remember" for="remember">
+              <input type="checkbox" id="remember" name="remember" />
+              Remember me
+            </label>
+            <a class="forgot" href="contact.html">Need help?</a>
+          </div>
+
+          <div class="actions">
+            <button class="btn btn-primary" type="submit">Sign In</button>
+            <a class="btn btn-secondary" href="index-modular.html">Back to Home</a>
+          </div>
+        </form>
+
+        <p class="status" id="loginStatus" aria-live="polite"></p>
+
+        <p class="footer-note">This is a basic front-end login shell. Connect it to your auth flow when you're ready.</p>
+      </div>
+    </section>
+  </main>
+  <script>
+    if (localStorage.getItem("loggedIn")) {
+      window.location.replace("dashboard.html");
+    }
+
+    const loginForm = document.getElementById("loginForm");
+    const loginStatus = document.getElementById("loginStatus");
+
+    loginForm.addEventListener("submit", (event) => {
+      event.preventDefault();
+      localStorage.setItem("loggedIn", "true");
+      loginStatus.textContent = "Login successful. Redirecting...";
+      loginStatus.className = "status success";
+      window.location.href = "dashboard.html";
+    });
+  </script>
+</body>
+</html>
