@@ -28,9 +28,9 @@ document.addEventListener('DOMContentLoaded', async () => {
     console.log('LOGIN MATCH:', allowedUser)
 
     if (error || !allowedUser) {
-      await supabase.auth.signOut()
-        alert('You are not authorized to access this site.')
-      window.location.href = './login.html'
+      console.log('WHITELIST ERROR:', error)
+      console.log('ALLOWED USER:', allowedUser)
+        alert('Access check failed. Check console.')
     return
   }
 
