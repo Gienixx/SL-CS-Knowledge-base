@@ -18,14 +18,13 @@ document.addEventListener('DOMContentLoaded', async () => {
       return
     }
 
-    const { data: allowedUser, error } = await supabase
-      .from('login')
-      .select('email')
-      .eq('email', user.email)
-      .maybesingle()
+    const email = user.email.trim().toLowerCase()
 
-    console.log('AUTH USER:', user.email)
-    console.log('LOGIN MATCH:', allowedUser)
+    const { data: allowedUser, error } = await supabase
+        .from('login')
+        .select('email')
+        .eq('email', email)
+        .maybeSingle()
 
     if (error || !allowedUser) {
       console.log('WHITELIST ERROR:', error)
