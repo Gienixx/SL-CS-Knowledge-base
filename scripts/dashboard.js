@@ -29,13 +29,10 @@ document.addEventListener('DOMContentLoaded', async () => {
 
     if (error || !allowedUser) {
       await supabase.auth.signOut()
-
-      alert('You are not authorized to access this site.')
-
+        alert('You are not authorized to access this site.')
       window.location.href = './login.html'
-
-      return
-    }
+    return
+  }
 
     console.log('Dashboard access granted')
 
