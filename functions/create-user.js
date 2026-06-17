@@ -1,8 +1,8 @@
 export async function onRequestPost(context) {
   try {
     const { email, password } = await context.request.json()
+    const cleanEmail = email.trim().toLowerCase()
 
-    // Create auth user
     const authResponse = await fetch(
       `${context.env.SUPABASE_URL}/auth/v1/admin/users`,
       {
@@ -13,7 +13,7 @@ export async function onRequestPost(context) {
           Authorization: `Bearer ${context.env.SUPABASE_SERVICE_ROLE_KEY}`
         },
         body: JSON.stringify({
-          email,
+          email: cleanEmail,
           password,
           email_confirm: true
         })
@@ -23,13 +23,10 @@ export async function onRequestPost(context) {
     const authData = await authResponse.json()
 
     if (!authResponse.ok) {
-      return Response.json(authData, {
-        status: authResponse.status
-      })
+      return Response.json(authData, { status: authResponse.status })
     }
 
-    // Insert into login table
-    await fetch(
+    const loginResponse = await fetch(
       `${context.env.SUPABASE_URL}/rest/v1/login`,
       {
         method: 'POST',
@@ -37,23 +34,34 @@ export async function onRequestPost(context) {
           apikey: context.env.SUPABASE_SERVICE_ROLE_KEY,
           Authorization: `Bearer ${context.env.SUPABASE_SERVICE_ROLE_KEY}`,
           'Content-Type': 'application/json',
-          Prefer: 'return=minimal'
+          Prefer: 'return=representation'
         },
         body: JSON.stringify({
           id: authData.id,
-          email: email
+          email: cleanEmail
         })
       }
     )
 
+    const loginData = await loginResponse.json()
+
+    if (!loginResponse.ok) {
+      return Response.json(
+        {
+          error: 'Auth user created, but login table insert failed.',
+          details: loginData
+        },
+        { status: loginResponse.status }
+      )
+    }
+
     return Response.json({
-      success: true
+      success: true,
+      user: authData,
+      login: loginData
     })
 
   } catch (error) {
-    return Response.json(
-      { error: error.message },
-      { status: 500 }
-    )
+    return Response.json({ error: error.message }, { status: 500 })
   }
 }
