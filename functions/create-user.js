@@ -2,7 +2,8 @@ export async function onRequestPost(context) {
   try {
     const { email, password } = await context.request.json()
 
-    const response = await fetch(
+    // Create auth user
+    const authResponse = await fetch(
       `${context.env.SUPABASE_URL}/auth/v1/admin/users`,
       {
         method: 'POST',
@@ -19,9 +20,36 @@ export async function onRequestPost(context) {
       }
     )
 
-    const result = await response.json()
+    const authData = await authResponse.json()
 
-    return Response.json(result, { status: response.status })
+    if (!authResponse.ok) {
+      return Response.json(authData, {
+        status: authResponse.status
+      })
+    }
+
+    // Insert into login table
+    await fetch(
+      `${context.env.SUPABASE_URL}/rest/v1/login`,
+      {
+        method: 'POST',
+        headers: {
+          apikey: context.env.SUPABASE_SERVICE_ROLE_KEY,
+          Authorization: `Bearer ${context.env.SUPABASE_SERVICE_ROLE_KEY}`,
+          'Content-Type': 'application/json',
+          Prefer: 'return=minimal'
+        },
+        body: JSON.stringify({
+          id: authData.id,
+          email: email
+        })
+      }
+    )
+
+    return Response.json({
+      success: true
+    })
+
   } catch (error) {
     return Response.json(
       { error: error.message },
