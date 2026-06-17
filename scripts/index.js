@@ -1,3 +1,5 @@
+import { supabase } from './supabaseClient.js';
+
 function isRelativeUrl(value) {
     return value && !/^(?:[a-z][a-z0-9+.-]*:|\/\/|\/|#|mailto:|tel:|data:)/i.test(value);
 }
@@ -276,6 +278,16 @@ function setupModals() {
 
 document.addEventListener("DOMContentLoaded", async () => {
     try {
+
+        // TEMP SUPABASE TEST
+        const { data, error } = await supabase
+            .from('login')
+            .select('*')
+            .limit(1)
+
+        console.log('SUPABASE DATA:', data)
+        console.log('SUPABASE ERROR:', error)
+
         await loadIncludes();
         setupModals();
         reportModularStatus();
@@ -287,3 +299,4 @@ document.addEventListener("DOMContentLoaded", async () => {
         );
     }
 });
+
