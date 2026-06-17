@@ -5,8 +5,8 @@ export async function onRequestPost(context) {
     const { email, password } = await context.request.json()
 
     const supabase = createClient(
-      context.env.https://kfhyckyrgplkqhsbuwnx.supabase.co,
-      context.env.eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImtmaHlja3lyZ3Bsa3Foc2J1d254Iiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc4MTYzNDAzMCwiZXhwIjoyMDk3MjEwMDMwfQ.ViKwUMvn_-RPIcohWriFadpp0HD6fyxWGz2nAbAZhPY
+      context.env.SUPABASE_URL,
+      context.env.SUPABASE_SERVICE_ROLE_KEY
     )
 
     const { data, error } = await supabase.auth.admin.createUser({
