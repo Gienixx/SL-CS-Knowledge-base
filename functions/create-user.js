@@ -13,9 +13,9 @@ export async function onRequestPost(context) {
           Authorization: `Bearer ${context.env.SUPABASE_SERVICE_ROLE_KEY}`
         },
         body: JSON.stringify({
-          body: JSON.stringify({
-          email: cleanEmail
-        })
+          email: cleanEmail,
+          password,
+          email_confirm: true
         })
       }
     )
@@ -37,7 +37,6 @@ export async function onRequestPost(context) {
           Prefer: 'return=representation'
         },
         body: JSON.stringify({
-          id: authData.id,
           email: cleanEmail
         })
       }
