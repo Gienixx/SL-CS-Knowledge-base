@@ -4,16 +4,6 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Dashboard | SocialLoop CS Base</title>
-  <script>
-    if (!localStorage.getItem("loggedIn")) {
-      window.location.href = "login.html";
-    }
-
-    function logout() {
-      localStorage.removeItem("loggedIn");
-      window.location.href = "login.html";
-    }
-  </script>
   <style>
     :root {
       --bg-top: #fbf8f1;
@@ -592,5 +582,6 @@
 
     <p class="footer-note">Static dashboard mockup for the current team setup.</p>
   </main>
+  <script type="module" src="./scripts/dashboard.js?v=1"></script>
 </body>
 </html>
