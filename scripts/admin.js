@@ -18,9 +18,13 @@ form.addEventListener('submit', async (event) => {
   const result = await response.json()
 
   if (!response.ok) {
-    message.textContent = result.error || 'Failed to create user'
-    return
-  }
+  console.log('CREATE USER ERROR:', result)
+
+  message.textContent =
+    result.error + ': ' + JSON.stringify(result.details)
+
+  return
+}
 
   message.textContent = 'User created successfully'
   form.reset()
