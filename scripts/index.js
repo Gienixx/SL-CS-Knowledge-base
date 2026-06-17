@@ -278,16 +278,6 @@ function setupModals() {
 
 document.addEventListener("DOMContentLoaded", async () => {
     try {
-
-        // TEMP SUPABASE TEST
-        const { data, error } = await supabase
-            .from('login')
-            .select('*')
-            .limit(1)
-
-        console.log('SUPABASE DATA:', data)
-        console.log('SUPABASE ERROR:', error)
-
         await loadIncludes();
         setupModals();
         reportModularStatus();
