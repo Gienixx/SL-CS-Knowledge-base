@@ -9,6 +9,7 @@ window.logout = logout
 
 document.addEventListener('DOMContentLoaded', async () => {
   try {
+
     const {
       data: { user }
     } = await supabase.auth.getUser()
@@ -20,27 +21,29 @@ document.addEventListener('DOMContentLoaded', async () => {
 
     const email = user.email.trim().toLowerCase()
 
-    const email = user.email.trim().toLowerCase()
+    const { data: rows, error } = await supabase
+      .from('login')
+      .select('email')
 
-const { data: rows, error } = await supabase
-  .from('login')
-  .select('email')
+    console.log('AUTH EMAIL:', email)
+    console.log('LOGIN ROWS:', rows)
+    console.log('LOGIN ERROR:', error)
 
-console.log('AUTH EMAIL:', email)
-console.log('LOGIN ROWS:', rows)
-console.log('LOGIN ERROR:', error)
+    const allowedUser = rows?.find(
+      row =>
+        row.email?.trim().toLowerCase() === email
+    )
 
-const allowedUser = rows?.find(
-  row => row.email?.trim().toLowerCase() === email
-)
+    console.log('ALLOWED USER:', allowedUser)
 
-if (!allowedUser) {
-  alert('Access check failed. Check console.')
-  return
-}
+    if (!allowedUser) {
+      alert('Access check failed. Check console.')
+      return
+    }
 
-console.log('ACCESS GRANTED')
+    console.log('ACCESS GRANTED')
 
-    window.location.href = './login.html'
+  } catch (error) {
+    console.error('Dashboard error:', error)
   }
 })
