@@ -22,8 +22,8 @@ document.addEventListener('DOMContentLoaded', async () => {
     const email = user.email.trim().toLowerCase()
 
     const { data: rows, error } = await supabase
-      .from('login')
-      .select('email')
+  .from('login')
+  .select('email, is_admin')
 
     console.log('AUTH EMAIL:', email)
     console.log('LOGIN ROWS:', rows)
@@ -41,6 +41,11 @@ document.addEventListener('DOMContentLoaded', async () => {
       return
     }
 
+    const userManagementBtn = document.getElementById('userManagementBtn')
+
+    if (allowedUser.is_admin === true && userManagementBtn) {
+        userManagementBtn.style.display = 'inline-flex'
+    }
     console.log('ACCESS GRANTED')
 
   } catch (error) {
