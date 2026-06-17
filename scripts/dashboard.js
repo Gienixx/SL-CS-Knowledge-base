@@ -9,7 +9,6 @@ window.logout = logout
 
 document.addEventListener('DOMContentLoaded', async () => {
   try {
-
     const {
       data: { user }
     } = await supabase.auth.getUser()
@@ -22,31 +21,36 @@ document.addEventListener('DOMContentLoaded', async () => {
     const email = user.email.trim().toLowerCase()
 
     const { data: rows, error } = await supabase
-  .from('login')
-  .select('email, is_admin')
+      .from('login')
+      .select('email, is_admin')
 
-    console.log('AUTH EMAIL:', email)
-    console.log('LOGIN ROWS:', rows)
-    console.log('LOGIN ERROR:', error)
-
-    const allowedUser = rows?.find(
-      row =>
-        row.email?.trim().toLowerCase() === email
-    )
-
-    console.log('ALLOWED USER:', allowedUser)
-
-    if (!allowedUser) {
-      alert('Access check failed. Check console.')
+    if (error) {
+      console.error('LOGIN ERROR:', error)
+      alert('Access check failed.')
       return
     }
 
+    const allowedUser = rows?.find(
+      row => row.email?.trim().toLowerCase() === email
+    )
+
+    if (!allowedUser) {
+      alert('Access check failed.')
+      return
+    }
+
+    const changePasswordBtn = document.getElementById('changePasswordBtn')
     const userManagementBtn = document.getElementById('userManagementBtn')
 
-    if (allowedUser.is_admin === true && userManagementBtn) {
-        userManagementBtn.style.display = 'inline-flex'
+    if (allowedUser.is_admin === true) {
+      if (userManagementBtn) userManagementBtn.style.display = 'inline-flex'
+      if (changePasswordBtn) changePasswordBtn.style.display = 'none'
+    } else {
+      if (changePasswordBtn) changePasswordBtn.style.display = 'inline-flex'
+      if (userManagementBtn) userManagementBtn.style.display = 'none'
     }
-    console.log('ACCESS GRANTED')
+
+    console.log('ACCESS GRANTED:', email)
 
   } catch (error) {
     console.error('Dashboard error:', error)
