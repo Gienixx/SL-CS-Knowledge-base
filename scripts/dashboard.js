@@ -14,25 +14,34 @@ document.addEventListener('DOMContentLoaded', async () => {
       error: userError
     } = await supabase.auth.getUser()
 
+    console.log('AUTH USER:', user)
+    console.log('AUTH ERROR:', userError)
+
     if (userError || !user) {
       window.location.href = './login.html'
       return
     }
 
-    const { data: allowedUser, error } = await supabase
+    const email = user.email.trim().toLowerCase()
+
+    const { data: allowedUser, error: allowedError } = await supabase
       .from('login')
       .select('email')
-      .eq('email', user.email)
-      .single()
+      .ilike('email', email)
+      .maybeSingle()
 
-    if (error || !allowedUser) {
+    console.log('CHECKING EMAIL:', email)
+    console.log('ALLOWED USER:', allowedUser)
+    console.log('ALLOWED ERROR:', allowedError)
+
+    if (allowedError || !allowedUser) {
       await supabase.auth.signOut()
       alert('You are not authorized to access this site.')
       window.location.href = './login.html'
       return
     }
 
-    console.log('Dashboard access granted:', user.email)
+    console.log('Dashboard access granted:', email)
 
   } catch (error) {
     console.error('Dashboard auth error:', error)
