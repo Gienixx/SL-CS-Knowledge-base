@@ -1,4 +1,4 @@
-import { supabase } from '.scripts/supabaseClient.js'
+import { supabase } from './supabaseClient.js'
 
 function isRelativeUrl(value) {
     return value && !/^(?:[a-z][a-z0-9+.-]*:|\/\/|\/|#|mailto:|tel:|data:)/i.test(value);
