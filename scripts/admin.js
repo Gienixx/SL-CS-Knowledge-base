@@ -15,24 +15,41 @@ form.addEventListener('submit', async (event) => {
     body: JSON.stringify({ email, password })
   })
 
-  const text = await response.text()
-
-  console.log('STATUS:', response.status)
-  console.log('RAW RESPONSE:', text)
-
-  let result = {}
-
-  try {
-    result = JSON.parse(text)
-  } catch {
-    result = { raw: text }
-  }
+  const result = await response.json()
 
   if (!response.ok || !result.success) {
-    message.textContent = JSON.stringify(result)
+    message.textContent = result.error || JSON.stringify(result)
     return
   }
 
   message.textContent = 'User created successfully'
   form.reset()
+})
+
+const changePasswordForm = document.getElementById('changePasswordForm')
+const changePasswordMessage = document.getElementById('changePasswordMessage')
+
+changePasswordForm.addEventListener('submit', async (event) => {
+  event.preventDefault()
+
+  const email = document.getElementById('changeEmail').value.trim()
+  const password = document.getElementById('newPassword').value
+
+  const response = await fetch('/change-password', {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json'
+    },
+    body: JSON.stringify({ email, password })
+  })
+
+  const result = await response.json()
+
+  if (!response.ok) {
+    changePasswordMessage.textContent = result.error || 'Failed to change password'
+    return
+  }
+
+  changePasswordMessage.textContent = 'Password changed successfully'
+  changePasswordForm.reset()
 })
