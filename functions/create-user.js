@@ -1,26 +1,31 @@
-import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
-
 export async function onRequestPost(context) {
   try {
     const { email, password } = await context.request.json()
 
-    const supabase = createClient(
-      context.env.SUPABASE_URL,
-      context.env.SUPABASE_SERVICE_ROLE_KEY
+    const response = await fetch(
+      `${context.env.SUPABASE_URL}/auth/v1/admin/users`,
+      {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          apikey: context.env.SUPABASE_SERVICE_ROLE_KEY,
+          Authorization: `Bearer ${context.env.SUPABASE_SERVICE_ROLE_KEY}`
+        },
+        body: JSON.stringify({
+          email,
+          password,
+          email_confirm: true
+        })
+      }
     )
 
-    const { data, error } = await supabase.auth.admin.createUser({
-      email,
-      password,
-      email_confirm: true
-    })
+    const result = await response.json()
 
-    if (error) {
-      return Response.json({ error: error.message }, { status: 400 })
-    }
-
-    return Response.json({ user: data.user })
+    return Response.json(result, { status: response.status })
   } catch (error) {
-    return Response.json({ error: error.message }, { status: 500 })
+    return Response.json(
+      { error: error.message },
+      { status: 500 }
+    )
   }
 }
