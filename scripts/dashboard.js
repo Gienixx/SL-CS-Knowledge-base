@@ -9,48 +9,39 @@ window.logout = logout
 
 document.addEventListener('DOMContentLoaded', async () => {
   try {
-    const auth = await supabase.auth.getUser()
-
-    console.log('AUTH:', auth)
-
-    const user = auth?.data?.user
+    const {
+      data: { user }
+    } = await supabase.auth.getUser()
 
     if (!user) {
-      alert('No logged in user')
       window.location.href = './login.html'
       return
     }
 
-    const email = user.email?.trim()
-
-    console.log('USER EMAIL:', email)
-
-    const result = await supabase
+    const { data: allowedUser, error } = await supabase
       .from('login')
-      .select('*')
+      .select('email')
+      .eq('email', user.email)
+      .single()
 
-    console.log('LOGIN TABLE:', result)
+    console.log('AUTH USER:', user.email)
+    console.log('LOGIN MATCH:', allowedUser)
 
-    const allowed =
-      result.data?.find(
-        row =>
-          row.email?.trim().toLowerCase() ===
-          email?.toLowerCase()
-      )
+    if (error || !allowedUser) {
+      await supabase.auth.signOut()
 
-    console.log('MATCH:', allowed)
+      alert('You are not authorized to access this site.')
 
-    if (!allowed) {
-      alert(
-        `Email not found in login table:\n${email}`
-      )
+      window.location.href = './login.html'
 
       return
     }
 
-    console.log('ACCESS GRANTED')
+    console.log('Dashboard access granted')
 
-  } catch (err) {
-    console.error(err)
+  } catch (error) {
+    console.error(error)
+
+    window.location.href = './login.html'
   }
 })
