@@ -1,5 +1,52 @@
+import { supabase } from './supabaseClient.js'
+
+async function checkAdminAccess() {
+  const {
+    data: { user }
+  } = await supabase.auth.getUser()
+
+  if (!user) {
+    window.location.href = './login.html'
+    return false
+  }
+
+  const email = user.email.trim().toLowerCase()
+
+  const { data: rows, error } = await supabase
+    .from('login')
+    .select('email, is_admin')
+
+  if (error) {
+    alert('Unable to verify admin access.')
+    window.location.href = './dashboard.html'
+    return false
+  }
+
+  const allowedUser = rows?.find(
+    row => row.email?.trim().toLowerCase() === email
+  )
+
+  if (!allowedUser || allowedUser.is_admin !== true) {
+    alert('Admin access only.')
+    window.location.href = './dashboard.html'
+    return false
+  }
+
+  return true
+}
+
+const isAdmin = await checkAdminAccess()
+
+if (!isAdmin) {
+  throw new Error('Admin access denied')
+}
+
 const form = document.getElementById('addUserForm')
 const message = document.getElementById('message')
+
+if (!form) {
+  throw new Error('addUserForm not found')
+}
 
 form.addEventListener('submit', async (event) => {
   event.preventDefault()
@@ -26,8 +73,15 @@ form.addEventListener('submit', async (event) => {
   form.reset()
 })
 
-const changePasswordForm = document.getElementById('changePasswordForm')
-const changePasswordMessage = document.getElementById('changePasswordMessage')
+const changePasswordForm =
+  document.getElementById('changePasswordForm')
+
+const changePasswordMessage =
+  document.getElementById('changePasswordMessage')
+
+if (!changePasswordForm) {
+  throw new Error('changePasswordForm not found')
+}
 
 changePasswordForm.addEventListener('submit', async (event) => {
   event.preventDefault()
