@@ -13,9 +13,9 @@ export async function onRequestPost(context) {
           Authorization: `Bearer ${context.env.SUPABASE_SERVICE_ROLE_KEY}`
         },
         body: JSON.stringify({
-          email: cleanEmail,
-          password,
-          email_confirm: true
+          body: JSON.stringify({
+          email: cleanEmail
+        })
         })
       }
     )
