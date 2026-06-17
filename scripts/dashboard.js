@@ -22,7 +22,7 @@ document.addEventListener('DOMContentLoaded', async () => {
       .from('login')
       .select('email')
       .eq('email', user.email)
-      .single()
+      .maybesingle()
 
     console.log('AUTH USER:', user.email)
     console.log('LOGIN MATCH:', allowedUser)
