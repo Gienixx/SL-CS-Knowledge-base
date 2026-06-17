@@ -20,23 +20,26 @@ document.addEventListener('DOMContentLoaded', async () => {
 
     const email = user.email.trim().toLowerCase()
 
-    const { data: allowedUser, error } = await supabase
-        .from('login')
-        .select('email')
-        .eq('email', email)
-        .maybeSingle()
+    const email = user.email.trim().toLowerCase()
 
-    if (error || !allowedUser) {
-      console.log('WHITELIST ERROR:', error)
-      console.log('ALLOWED USER:', allowedUser)
-        alert('Access check failed. Check console.')
-    return
-  }
+const { data: rows, error } = await supabase
+  .from('login')
+  .select('email')
 
-    console.log('Dashboard access granted')
+console.log('AUTH EMAIL:', email)
+console.log('LOGIN ROWS:', rows)
+console.log('LOGIN ERROR:', error)
 
-  } catch (error) {
-    console.error(error)
+const allowedUser = rows?.find(
+  row => row.email?.trim().toLowerCase() === email
+)
+
+if (!allowedUser) {
+  alert('Access check failed. Check console.')
+  return
+}
+
+console.log('ACCESS GRANTED')
 
     window.location.href = './login.html'
   }
