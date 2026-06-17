@@ -377,21 +377,6 @@
       </div>
     </section>
   </main>
-  <script>
-    if (localStorage.getItem("loggedIn")) {
-      window.location.replace("dashboard.html");
-    }
-
-    const loginForm = document.getElementById("loginForm");
-    const loginStatus = document.getElementById("loginStatus");
-
-    loginForm.addEventListener("submit", (event) => {
-      event.preventDefault();
-      localStorage.setItem("loggedIn", "true");
-      loginStatus.textContent = "Login successful. Redirecting...";
-      loginStatus.className = "status success";
-      window.location.href = "dashboard.html";
-    });
-  </script>
+ <script type="module" src="./scripts/login.js?v=1"></script>
 </body>
 </html>
