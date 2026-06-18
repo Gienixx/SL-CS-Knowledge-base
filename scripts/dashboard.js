@@ -38,7 +38,11 @@ document.addEventListener('DOMContentLoaded', async () => {
       alert('Access check failed.')
       return
     }
-
+    const addArticleBtn = document.getElementById('addArticleBtn')
+      if (allowedUser.can_edit_articles === true && addArticleBtn) {
+      addArticleBtn.style.display = 'inline-flex'
+      }
+    
     const changePasswordBtn = document.getElementById('changePasswordBtn')
     const userManagementBtn = document.getElementById('userManagementBtn')
 
