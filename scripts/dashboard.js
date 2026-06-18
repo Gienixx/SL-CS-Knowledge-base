@@ -22,7 +22,7 @@ document.addEventListener('DOMContentLoaded', async () => {
 
     const { data: rows, error } = await supabase
       .from('login')
-      .select('email, is_admin')
+      .select('email, is_admin, can_edit_articles')
 
     if (error) {
       console.error('LOGIN ERROR:', error)
