@@ -1,81 +1,155 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
-  <title>Admin Add User</title>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>User Management | SocialLoop CS Base</title>
+  <link rel="stylesheet" href="styles.css?v=modal-details-3">
+
+  <style>
+    .admin-page {
+      min-height: 100vh;
+      padding: 40px 10%;
+      background:
+        radial-gradient(circle at 12% 18%, rgba(255, 194, 26, 0.20), transparent 22rem),
+        radial-gradient(circle at 86% 12%, rgba(36, 27, 93, 0.10), transparent 24rem),
+        linear-gradient(180deg, var(--sl-cream) 0%, #fffdfa 48%, var(--sl-cream-soft) 100%);
+    }
+
+    .admin-shell {
+      max-width: 980px;
+      margin: 0 auto;
+    }
+
+    .admin-topbar {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 16px;
+      margin-bottom: 28px;
+      flex-wrap: wrap;
+    }
+
+    .admin-title h1 {
+      color: var(--sl-navy);
+      font-size: clamp(2rem, 4vw, 3rem);
+      margin-bottom: 8px;
+    }
+
+    .admin-title p {
+      color: var(--sl-muted);
+      line-height: 1.6;
+    }
+
+    .admin-card {
+      background: linear-gradient(180deg, rgba(255,255,255,0.96), rgba(250,246,238,0.98));
+      border: 1px solid var(--sl-border);
+      border-radius: 22px;
+      box-shadow: var(--sl-shadow);
+      padding: 28px;
+      margin-bottom: 22px;
+    }
+
+    .admin-card h2 {
+      color: var(--sl-navy);
+      margin-bottom: 18px;
+    }
+
+    .admin-form {
+      display: grid;
+      gap: 14px;
+    }
+
+    .admin-form input,
+    .admin-form textarea {
+      width: 100%;
+      border: 1px solid var(--sl-border);
+      border-radius: 14px;
+      padding: 14px 16px;
+      font-size: 1rem;
+      color: var(--sl-text);
+      background: rgba(255,255,255,0.9);
+      outline: none;
+    }
+
+    .admin-form input:focus,
+    .admin-form textarea:focus {
+      border-color: rgba(255, 194, 26, 0.7);
+      box-shadow: 0 0 0 4px rgba(255, 194, 26, 0.14);
+    }
+
+    .admin-btn,
+    .admin-link {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      min-height: 42px;
+      padding: 0 18px;
+      border-radius: 999px;
+      border: 1px solid rgba(255, 194, 26, 0.55);
+      background: var(--sl-navy);
+      color: #fff;
+      text-decoration: none;
+      font-weight: 700;
+      cursor: pointer;
+    }
+
+    .admin-link {
+      background: rgba(255,255,255,0.88);
+      color: var(--sl-navy);
+    }
+
+    .admin-btn:hover,
+    .admin-link:hover {
+      transform: translateY(-1px);
+    }
+
+    .admin-status {
+      margin-top: 12px;
+      color: var(--sl-muted);
+      font-weight: 600;
+    }
+  </style>
 </head>
 
 <body>
+  <main class="admin-page">
+    <div class="admin-shell">
+      <div class="admin-topbar">
+        <div class="admin-title">
+          <h1>User Management</h1>
+          <p>Add users and manage passwords for SocialLoop CS Base access.</p>
+        </div>
 
-<div style="padding:20px;">
-  <a
-    href="./dashboard.html"
-    style="
-      display:inline-block;
-      padding:10px 18px;
-      border-radius:10px;
-      background:#ffc21a;
-      color:#241b5d;
-      text-decoration:none;
-      font-weight:700;
-    "
-  >
-    ← Back to Dashboard
-  </a>
-</div>
+        <a class="admin-link" href="./dashboard.html">← Back to Dashboard</a>
+      </div>
 
-<h1>Add User</h1>
+      <section id="addUserSection" class="admin-card">
+        <h2>Add User</h2>
 
-<form id="addUserForm">
+        <form id="addUserForm" class="admin-form">
+          <input type="email" id="email" placeholder="User email" required>
+          <input type="password" id="password" placeholder="Temporary password" required>
+          <button class="admin-btn" type="submit">Add User</button>
+        </form>
 
-  <input
-    type="email"
-    id="email"
-    placeholder="Email"
-    required
-  >
+        <p id="message" class="admin-status"></p>
+      </section>
 
-  <input
-    type="password"
-    id="password"
-    placeholder="Password"
-    required
-  >
+      <section class="admin-card">
+        <h2>Change Password</h2>
 
-  <button type="submit">
-    Add User
-  </button>
+        <form id="changePasswordForm" class="admin-form">
+          <input type="email" id="changeEmail" placeholder="User email" required>
+          <input type="password" id="newPassword" placeholder="New password" required>
+          <button class="admin-btn" type="submit">Change Password</button>
+        </form>
 
-</form>
+        <p id="changePasswordMessage" class="admin-status"></p>
+      </section>
+    </div>
+  </main>
 
-  <hr>
-
-<h1>Change User Password</h1>
-
-<form id="changePasswordForm">
-  <input
-    type="email"
-    id="changeEmail"
-    placeholder="User email"
-    required
-  >
-
-  <input
-    type="password"
-    id="newPassword"
-    placeholder="New password"
-    required
-  >
-
-  <button type="submit">
-    Change Password
-  </button>
-</form>
-
-<p id="changePasswordMessage"></p>
-  
-<p id="message"></p>
-
-<script type="module" src="./scripts/admin.js"></script>
-
+  <script type="module" src="./scripts/admin.js?v=1"></script>
 </body>
 </html>
