@@ -129,9 +129,164 @@ function renderArticle(article) {
   dekElement.textContent =
     excerpt ||
     `${category} knowledge base article`
+  function stripInlineFormatting(text) {
+  return String(text ?? '')
+    .replace(
+      /\*\*\*([^*\n]+)\*\*\*/g,
+      '$1'
+    )
+    .replace(
+      /\*\*([^*\n]+)\*\*/g,
+      '$1'
+    )
+    .replace(
+      /\*([^*\n]+)\*/g,
+      '$1'
+    )
+}
 
-  renderTableOfContents(sections)
-  renderSections(sections)
+function appendInlineFormatting(
+  container,
+  text
+) {
+  const value = String(text ?? '')
+
+  const formattingPattern =
+    /(\*\*\*[^*\n]+?\*\*\*|\*\*[^*\n]+?\*\*|\*[^*\n]+?\*)/g
+
+  let previousIndex = 0
+
+  for (
+    const match of value.matchAll(formattingPattern)
+  ) {
+    const matchIndex = match.index ?? 0
+
+    if (matchIndex > previousIndex) {
+      container.appendChild(
+        document.createTextNode(
+          value.slice(
+            previousIndex,
+            matchIndex
+          )
+        )
+      )
+    }
+
+    const formattedText = match[0]
+
+    if (
+      formattedText.startsWith('***') &&
+      formattedText.endsWith('***')
+    ) {
+      const strong =
+        document.createElement('strong')
+
+      const emphasis =
+        document.createElement('em')
+
+      emphasis.textContent =
+        formattedText.slice(3, -3)
+
+      strong.appendChild(emphasis)
+      container.appendChild(strong)
+    } else if (
+      formattedText.startsWith('**') &&
+      formattedText.endsWith('**')
+    ) {
+      const strong =
+        document.createElement('strong')
+
+      strong.textContent =
+        formattedText.slice(2, -2)
+
+      container.appendChild(strong)
+    } else {
+      const emphasis =
+        document.createElement('em')
+
+      emphasis.textContent =
+        formattedText.slice(1, -1)
+
+      container.appendChild(emphasis)
+    }
+
+    previousIndex =
+      matchIndex + formattedText.length
+  }
+
+  if (previousIndex < value.length) {
+    container.appendChild(
+      document.createTextNode(
+        value.slice(previousIndex)
+      )
+    )
+  }
+}
+  function renderTableOfContents(sections) {
+  tocLinks.replaceChildren()
+
+  const usedIds = new Set()
+
+  sections.forEach((section, index) => {
+    const plainTitle =
+      stripInlineFormatting(section.title)
+
+    const id = createUniqueSectionId(
+      plainTitle,
+      index,
+      usedIds
+    )
+
+    section.id = id
+
+    const link =
+      document.createElement('a')
+
+    link.href = `#${id}`
+    link.textContent = plainTitle
+
+    tocLinks.appendChild(link)
+  })
+}
+  function renderSections(sections) {
+  articleBody.replaceChildren()
+
+  for (const sectionData of sections) {
+    const section =
+      document.createElement('section')
+
+    section.id = sectionData.id
+    section.className = 'section'
+
+    const heading =
+      document.createElement('h2')
+
+    appendInlineFormatting(
+      heading,
+      sectionData.title
+    )
+
+    section.appendChild(heading)
+
+    if (!sectionData.blocks.length) {
+      const emptyParagraph =
+        document.createElement('p')
+
+      emptyParagraph.textContent =
+        'No additional information was provided.'
+
+      section.appendChild(emptyParagraph)
+    }
+
+    for (const block of sectionData.blocks) {
+      section.appendChild(
+        renderContentBlock(block)
+      )
+    }
+
+    articleBody.appendChild(section)
+  }
+}
 
   loadingSection.hidden = true
   errorSection.hidden = true
@@ -346,9 +501,9 @@ function createExcerpt(sections, rawContent) {
 
 function shortenText(text, maximumLength) {
   const normalized =
-    String(text ?? '')
-      .replace(/\s+/g, ' ')
-      .trim()
+  stripInlineFormatting(text)
+    .replace(/\s+/g, ' ')
+    .trim()
 
   if (normalized.length <= maximumLength) {
     return normalized
@@ -426,7 +581,10 @@ function renderContentBlock(block) {
     const heading =
       document.createElement('h3')
 
-    heading.textContent = block.text
+    appendInlineFormatting(
+      heading,
+      block.text
+    )
 
     return heading
   }
@@ -436,7 +594,11 @@ function renderContentBlock(block) {
       document.createElement('div')
 
     callout.className = 'callout'
-    callout.textContent = block.text
+
+    appendInlineFormatting(
+      callout,
+      block.text
+    )
 
     return callout
   }
@@ -454,7 +616,11 @@ function renderContentBlock(block) {
       const item =
         document.createElement('li')
 
-      item.textContent = itemText
+      appendInlineFormatting(
+        item,
+        itemText
+      )
+
       list.appendChild(item)
     }
 
@@ -464,7 +630,10 @@ function renderContentBlock(block) {
   const paragraph =
     document.createElement('p')
 
-  paragraph.textContent = block.text
+  appendInlineFormatting(
+    paragraph,
+    block.text
+  )
 
   return paragraph
 }
