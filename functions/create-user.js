@@ -379,7 +379,8 @@ const authResponse = await fetch(
         name
      }
    })
-
+  }
+ 
 const authData =
   await authResponse.json()
 
