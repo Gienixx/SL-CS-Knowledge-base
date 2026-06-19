@@ -102,7 +102,7 @@ async function loadDatabaseArticles() {
   const { data, error } = await supabase
     .from('articles')
     .select(
-      'id, title, content, tag, author_name, published'
+      'id, title, description, content, tag, author_name, published'
     )
     .eq('published', true)
 
@@ -128,7 +128,9 @@ async function loadDatabaseArticles() {
 
     const article = {
       title: row.title || 'Untitled Article',
-      description: createExcerpt(row.content),
+      description:
+        String(row.description ?? '').trim() ||
+        createExcerpt(row.content),
       status: row.author_name
         ? `Written by ${row.author_name}`
         : 'Click here to read.',
