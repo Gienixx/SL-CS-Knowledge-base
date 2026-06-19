@@ -1,109 +1,378 @@
 import { supabase } from './supabaseClient.js'
 
-async function checkAdminAccess() {
-  const {
-    data: { user }
-  } = await supabase.auth.getUser()
+const addUserForm =
+document.getElementById('addUserForm')
 
-  if (!user) {
-    window.location.href = './login.html'
-    return false
-  }
-
-  const email = user.email.trim().toLowerCase()
-
-  const { data: rows, error } = await supabase
-    .from('login')
-    .select('email, is_admin')
-
-  if (error) {
-    alert('Unable to verify admin access.')
-    window.location.href = './dashboard.html'
-    return false
-  }
-
-  const allowedUser = rows?.find(
-    row => row.email?.trim().toLowerCase() === email
-  )
-
-  if (!allowedUser || allowedUser.is_admin !== true) {
-    alert('Admin access only.')
-    window.location.href = './dashboard.html'
-    return false
-  }
-
-  return true
-}
-
-const isAdmin = await checkAdminAccess()
-
-if (!isAdmin) {
-  throw new Error('Admin access denied')
-}
-
-const form = document.getElementById('addUserForm')
-const message = document.getElementById('message')
-
-if (!form) {
-  throw new Error('addUserForm not found')
-}
-
-form.addEventListener('submit', async (event) => {
-  event.preventDefault()
-
-  const email = document.getElementById('email').value.trim()
-  const password = document.getElementById('password').value
-
-  const response = await fetch('/create-user', {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json'
-    },
-    body: JSON.stringify({ email, password })
-  })
-
-  const result = await response.json()
-
-  if (!response.ok || !result.success) {
-    message.textContent = result.error || JSON.stringify(result)
-    return
-  }
-
-  message.textContent = 'User created successfully'
-  form.reset()
-})
+const addUserMessage =
+document.getElementById('message')
 
 const changePasswordForm =
-  document.getElementById('changePasswordForm')
+document.getElementById('changePasswordForm')
 
 const changePasswordMessage =
-  document.getElementById('changePasswordMessage')
+document.getElementById('changePasswordMessage')
 
-if (!changePasswordForm) {
-  throw new Error('changePasswordForm not found')
+function getErrorMessage(error) {
+if (
+error &&
+typeof error.message === 'string'
+) {
+return error.message
 }
 
-changePasswordForm.addEventListener('submit', async (event) => {
-  event.preventDefault()
+return 'An unexpected error occurred.'
+}
 
-  const email = document.getElementById('changeEmail').value.trim()
-  const password = document.getElementById('newPassword').value
+function redirectToLogin() {
+window.location.replace('./login.html')
+}
 
-  const response = await fetch('/change-password', {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json'
-    },
-    body: JSON.stringify({ email, password })
-  })
+function redirectToDashboard() {
+window.location.replace('./dashboard.html')
+}
 
-  const result = await response.json()
+async function requireAdminAccess() {
+const {
+data: { session },
+error: sessionError
+} = await supabase.auth.getSession()
 
-  if (!response.ok) {
-    changePasswordMessage.textContent = result.error || 'Failed to change password'
+if (sessionError) {
+throw sessionError
+}
+
+if (!session?.user) {
+redirectToLogin()
+return null
+}
+
+const email =
+session.user.email
+?.trim()
+.toLowerCase()
+
+if (!email) {
+redirectToLogin()
+return null
+}
+
+const {
+data: allowedUser,
+error: permissionError
+} = await supabase
+.from('login')
+.select('is_admin')
+.ilike('email', email)
+.maybeSingle()
+
+if (permissionError) {
+throw permissionError
+}
+
+if (
+!allowedUser ||
+allowedUser.is_admin !== true
+) {
+alert('Admin access only.')
+redirectToDashboard()
+return null
+}
+
+return session
+}
+
+async function getAccessToken() {
+const {
+data: { session },
+error
+} = await supabase.auth.getSession()
+
+if (error) {
+throw error
+}
+
+if (!session?.access_token) {
+throw new Error(
+'Your session has expired. Please sign in again.'
+)
+}
+
+return session.access_token
+}
+
+async function sendAdminRequest(
+endpoint,
+payload
+) {
+const accessToken =
+await getAccessToken()
+
+const response = await fetch(
+endpoint,
+{
+method: 'POST',
+headers: {
+'Content-Type':
+'application/json',
+
+```
+    Authorization:
+      `Bearer ${accessToken}`
+  },
+
+  body: JSON.stringify(payload)
+}
+```
+
+)
+
+const responseText =
+await response.text()
+
+let result = {}
+
+if (responseText) {
+try {
+result =
+JSON.parse(responseText)
+} catch {
+result = {
+error: responseText
+}
+}
+}
+
+if (!response.ok) {
+throw new Error(
+result.error ||
+result.message ||
+`Request failed with status ${response.status}.`
+)
+}
+
+return result
+}
+
+function setButtonLoading(
+button,
+loading,
+loadingText,
+normalText
+) {
+if (!button) {
+return
+}
+
+button.disabled = loading
+button.textContent =
+loading
+? loadingText
+: normalText
+}
+
+function initializeAddUserForm() {
+if (
+!addUserForm ||
+!addUserMessage
+) {
+return
+}
+
+addUserForm.addEventListener(
+'submit',
+async event => {
+event.preventDefault()
+
+```
+  const emailInput =
+    document.getElementById('email')
+
+  const passwordInput =
+    document.getElementById('password')
+
+  const submitButton =
+    addUserForm.querySelector(
+      'button[type="submit"]'
+    )
+
+  const email =
+    emailInput?.value
+      .trim()
+      .toLowerCase() ?? ''
+
+  const password =
+    passwordInput?.value ?? ''
+
+  if (!email || !password) {
+    addUserMessage.textContent =
+      'Enter an email address and temporary password.'
+
     return
   }
 
-  changePasswordMessage.textContent = 'Password changed successfully'
-  changePasswordForm.reset()
-})
+  setButtonLoading(
+    submitButton,
+    true,
+    'Adding User...',
+    'Add User'
+  )
+
+  addUserMessage.textContent =
+    'Creating user...'
+
+  try {
+    await sendAdminRequest(
+      '/create-user',
+      {
+        email,
+        password
+      }
+    )
+
+    addUserForm.reset()
+
+    addUserMessage.textContent =
+      'User created successfully.'
+  } catch (error) {
+    console.error(
+      'Create-user error:',
+      error
+    )
+
+    addUserMessage.textContent =
+      `Unable to create user: ${getErrorMessage(error)}`
+  } finally {
+    setButtonLoading(
+      submitButton,
+      false,
+      'Adding User...',
+      'Add User'
+    )
+  }
+}
+```
+
+)
+}
+
+function initializePasswordForm() {
+if (
+!changePasswordForm ||
+!changePasswordMessage
+) {
+return
+}
+
+changePasswordForm.addEventListener(
+'submit',
+async event => {
+event.preventDefault()
+
+```
+  const emailInput =
+    document.getElementById(
+      'changeEmail'
+    )
+
+  const passwordInput =
+    document.getElementById(
+      'newPassword'
+    )
+
+  const submitButton =
+    changePasswordForm.querySelector(
+      'button[type="submit"]'
+    )
+
+  const email =
+    emailInput?.value
+      .trim()
+      .toLowerCase() ?? ''
+
+  const password =
+    passwordInput?.value ?? ''
+
+  if (!email || !password) {
+    changePasswordMessage.textContent =
+      'Enter the user email and new password.'
+
+    return
+  }
+
+  setButtonLoading(
+    submitButton,
+    true,
+    'Updating Password...',
+    'Change Password'
+  )
+
+  changePasswordMessage.textContent =
+    'Updating password...'
+
+  try {
+    await sendAdminRequest(
+      '/change-password',
+      {
+        email,
+        password
+      }
+    )
+
+    changePasswordForm.reset()
+
+    changePasswordMessage.textContent =
+      'Password changed successfully.'
+  } catch (error) {
+    console.error(
+      'Change-password error:',
+      error
+    )
+
+    changePasswordMessage.textContent =
+      `Unable to change password: ${getErrorMessage(error)}`
+  } finally {
+    setButtonLoading(
+      submitButton,
+      false,
+      'Updating Password...',
+      'Change Password'
+    )
+  }
+}
+```
+
+)
+}
+
+async function initializeAdminPage() {
+try {
+const session =
+await requireAdminAccess()
+
+```
+if (!session) {
+  return
+}
+
+initializeAddUserForm()
+initializePasswordForm()
+```
+
+} catch (error) {
+console.error(
+'Admin page initialization error:',
+error
+)
+
+```
+alert(
+  'Unable to verify admin access.'
+)
+
+redirectToDashboard()
+```
+
+}
+}
+
+initializeAdminPage()
