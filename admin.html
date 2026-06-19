@@ -60,7 +60,7 @@
       gap: 14px;
     }
 
-    .admin-form input,
+    .admin-form input:not([type="checkbox"]),
     .admin-form textarea {
       width: 100%;
       border: 1px solid var(--sl-border);
@@ -72,12 +72,34 @@
       outline: none;
     }
 
-    .admin-form input:focus,
+    .admin-form input:not([type="checkbox"]):focus,
     .admin-form textarea:focus {
       border-color: rgba(255, 194, 26, 0.7);
       box-shadow: 0 0 0 4px rgba(255, 194, 26, 0.14);
     }
 
+    .admin-checkbox {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      color: var(--sl-text);
+      font-weight: 600;
+      cursor: pointer;
+    }
+
+    .admin-checkbox input {
+      width: 18px;
+      height: 18px;
+      accent-color: var(--sl-navy);
+      cursor: pointer;
+    }
+
+    .admin-permissions {
+      display: grid;
+      gap: 10px;
+      padding: 8px 0;
+    }
+    
     .admin-btn,
     .admin-link {
       display: inline-flex;
@@ -130,6 +152,19 @@
         <form id="addUserForm" class="admin-form">
           <input type="email" id="email" placeholder="User email" required>
           <input type="password" id="password" placeholder="Temporary password" required>
+
+        <div class="admin-permissions">
+          <label class="admin-checkbox">
+          <input type="checkbox" id="isAdmin">
+          <span>Administrator account</span>
+        </label>
+
+        <label class="admin-checkbox">
+          <input type="checkbox" id="canEditArticles">
+          <span>Editor access</span>
+        </label>
+        </div>
+
           <button class="admin-btn" type="submit">Add User</button>
         </form>
 
