@@ -1,12 +1,31 @@
 import { supabase } from './supabaseClient.js'
 
-const titleElement = document.getElementById('articleTitle')
-const metaElement = document.getElementById('articleMeta')
-const contentElement = document.getElementById('articleContent')
-const errorElement = document.getElementById('articleError')
+const titleElement =
+  document.getElementById('articleTitle')
+
+const metaElement =
+  document.getElementById('articleMeta')
+
+const contentElement =
+  document.getElementById('articleContent')
+
+const errorElement =
+  document.getElementById('articleError')
 
 async function loadArticle() {
-  const params = new URLSearchParams(window.location.search)
+  if (
+    !titleElement ||
+    !metaElement ||
+    !contentElement ||
+    !errorElement
+  ) {
+    console.error('Article display elements were not found.')
+    return
+  }
+
+  const params =
+    new URLSearchParams(window.location.search)
+
   const articleId = params.get('id')
 
   if (!articleId) {
@@ -14,29 +33,60 @@ async function loadArticle() {
     return
   }
 
-  const { data: article, error } = await supabase
+  const {
+    data: article,
+    error
+  } = await supabase
     .from('articles')
-    .select('title, content, tag, author_email, created_at')
+    .select(
+      'title, content, tag, author_name, published'
+    )
     .eq('id', articleId)
     .eq('published', true)
     .maybeSingle()
 
-  if (error || !article) {
+  if (error) {
     console.error('Article loading error:', error)
-    showError('The requested article could not be found.')
+
+    showError(
+      `Unable to load article: ${error.message}`
+    )
+
     return
   }
 
-  document.title = `${article.title} | SocialLoop CS Base`
-  titleElement.textContent = article.title
-  contentElement.textContent = article.content
+  if (!article) {
+    showError(
+      'The requested article could not be found or is not published.'
+    )
+
+    return
+  }
+
+  const normalizedTag = String(article.tag ?? '')
+    .trim()
+    .toLowerCase()
 
   const category =
-    article.tag === 'cashouts' ? 'Cashouts' : 'Tickets'
+    normalizedTag === 'cashouts'
+      ? 'Cashouts'
+      : 'Tickets'
 
-  const createdDate = new Date(article.created_at).toLocaleDateString()
+  document.title =
+    `${article.title} | SocialLoop CS Base`
 
-  metaElement.textContent = `${category} • ${createdDate}`
+  titleElement.textContent =
+    article.title || 'Untitled Article'
+
+  contentElement.textContent =
+    article.content || ''
+
+  errorElement.textContent = ''
+
+  metaElement.textContent =
+    article.author_name
+      ? `${category} • Written by ${article.author_name}`
+      : category
 }
 
 function showError(message) {
