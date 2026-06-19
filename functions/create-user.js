@@ -1,36 +1,20 @@
-function jsonResponse(
-data,
-status = 200
-) {
-return new Response(
-JSON.stringify(data),
-{
+function jsonResponse(data, status = 200) {
+return new Response(JSON.stringify(data), {
 status,
 headers: {
-'Content-Type':
-'application/json; charset=utf-8',
-
- 
-    'Cache-Control':
-      'no-store'
-  }
+'Content-Type': 'application/json; charset=utf-8',
+'Cache-Control': 'no-store'
 }
- 
-
-)
+})
 }
 
 function getBearerToken(request) {
 const authorization =
-request.headers.get(
-'Authorization'
-)
+request.headers.get('Authorization')
 
 if (
 !authorization ||
-!authorization.startsWith(
-'Bearer '
-)
+!authorization.startsWith('Bearer ')
 ) {
 return null
 }
@@ -58,13 +42,15 @@ throw new Error(
 }
 
 return {
-supabaseUrl:
-SUPABASE_URL.replace(//+$/, ''),
+supabaseUrl: SUPABASE_URL.endsWith('/')
+? SUPABASE_URL.slice(0, -1)
+: SUPABASE_URL,
 
  
-anonKey:eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImtmaHlja3lyZ3Bsa3Foc2J1d254Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODE2MzQwMzAsImV4cCI6MjA5NzIxMDAzMH0.fx_VADGD6VWoRjV_Sk25rMVrVjWCiYugw2oYS2D8Rpo,
+anonKey: SUPABASE_ANON_KEY,
 
-serviceRoleKey:eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImtmaHlja3lyZ3Bsa3Foc2J1d254Iiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc4MTYzNDAzMCwiZXhwIjoyMDk3MjEwMDMwfQ.ViKwUMvn_-RPIcohWriFadpp0HD6fyxWGz2nAbAZhPY
+serviceRoleKey:
+  SUPABASE_SERVICE_ROLE_KEY
  
 
 }
@@ -72,21 +58,23 @@ serviceRoleKey:eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJl
 
 async function requireAdmin(context) {
 const accessToken =
-getBearerToken(
-context.request
-)
+getBearerToken(context.request)
 
 if (!accessToken) {
 return {
 authorized: false,
-response: jsonResponse(
-{
-error:
-'Authentication required.'
-},
-401
-)
+
+ 
+  response: jsonResponse(
+    {
+      error:
+        'Authentication required.'
+    },
+    401
+  )
 }
+ 
+
 }
 
 const {
@@ -113,14 +101,18 @@ apikey: anonKey,
 if (!userResponse.ok) {
 return {
 authorized: false,
-response: jsonResponse(
-{
-error:
-'Your session is invalid or has expired.'
-},
-401
-)
+
+ 
+  response: jsonResponse(
+    {
+      error:
+        'Your session is invalid or has expired.'
+    },
+    401
+  )
 }
+ 
+
 }
 
 const authenticatedUser =
@@ -134,14 +126,18 @@ authenticatedUser.email
 if (!email) {
 return {
 authorized: false,
-response: jsonResponse(
-{
-error:
-'The authenticated account has no email address.'
-},
-401
-)
+
+ 
+  response: jsonResponse(
+    {
+      error:
+        'The authenticated account has no email address.'
+    },
+    401
+  )
 }
+ 
+
 }
 
 const permissionUrl =
@@ -169,8 +165,7 @@ await fetch(
 permissionUrl.toString(),
 {
 headers: {
-apikey:
-serviceRoleKey,
+apikey: serviceRoleKey,
 
  
       Authorization:
@@ -181,17 +176,15 @@ serviceRoleKey,
  
 
 if (!permissionResponse.ok) {
-const details =
-await permissionResponse.text()
-
- 
 console.error(
-  'Admin permission lookup failed:',
-  details
+'Admin permission lookup failed:',
+await permissionResponse.text()
 )
 
+ 
 return {
   authorized: false,
+
   response: jsonResponse(
     {
       error:
@@ -213,19 +206,22 @@ permissionRows[0]?.is_admin !== true
 ) {
 return {
 authorized: false,
-response: jsonResponse(
-{
-error:
-'Administrator access required.'
-},
-403
-)
+
+ 
+  response: jsonResponse(
+    {
+      error:
+        'Administrator access required.'
+    },
+    403
+  )
 }
+ 
+
 }
 
 return {
 authorized: true,
-authenticatedUser,
 supabaseUrl,
 serviceRoleKey
 }
@@ -241,20 +237,27 @@ return
 }
 
 try {
-await fetch(
+const response = await fetch(
 `${supabaseUrl}/auth/v1/admin/users/${encodeURIComponent(userId)}`,
 {
 method: 'DELETE',
-headers: {
-apikey:
-serviceRoleKey,
 
  
+    headers: {
+      apikey: serviceRoleKey,
+
       Authorization:
         `Bearer ${serviceRoleKey}`
     }
   }
 )
+
+if (!response.ok) {
+  console.error(
+    'Unable to roll back Auth user:',
+    await response.text()
+  )
+}
  
 
 } catch (error) {
@@ -340,8 +343,7 @@ const authResponse = await fetch(
       'Content-Type':
         'application/json',
 
-      apikey:
-        serviceRoleKey,
+      apikey: serviceRoleKey,
 
       Authorization:
         `Bearer ${serviceRoleKey}`
@@ -382,8 +384,7 @@ const loginResponse = await fetch(
       Prefer:
         'return=representation',
 
-      apikey:
-        serviceRoleKey,
+      apikey: serviceRoleKey,
 
       Authorization:
         `Bearer ${serviceRoleKey}`
@@ -405,9 +406,7 @@ let loginData = null
 if (loginResponseText) {
   try {
     loginData =
-      JSON.parse(
-        loginResponseText
-      )
+      JSON.parse(loginResponseText)
   } catch {
     loginData =
       loginResponseText
@@ -437,6 +436,7 @@ if (!loginResponse.ok) {
 
 return jsonResponse({
   success: true,
+
   user: {
     id: authData.id,
     email: authData.email
