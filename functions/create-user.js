@@ -295,6 +295,12 @@ try {
   )
 }
 
+const name =
+  typeof requestBody.name ===
+  'string'
+    ? requestBody.name.trim()
+    : ''
+ 
 const email =
   typeof requestBody.email ===
   'string'
@@ -313,6 +319,16 @@ const password =
 
 const canEditArticles =
   requestBody.canEditArticles === true
+
+if (!name) {
+  return jsonResponse(
+    {
+      error:
+        'A user name is required.'
+    },
+    400
+  )
+}
  
 if (!email) {
   return jsonResponse(
@@ -357,10 +373,12 @@ const authResponse = await fetch(
     body: JSON.stringify({
       email,
       password,
-      email_confirm: true
-    })
-  }
-)
+      email_confirm: true,
+
+      user_metadata: {
+        name
+     }
+   })
 
 const authData =
   await authResponse.json()
@@ -396,12 +414,11 @@ const loginResponse = await fetch(
     },
 
     body: JSON.stringify({
-     email,
-     is_admin: isAdmin,
-     can_edit_articles: canEditArticles
-   })
-  }
-)
+      name,
+      email,
+      is_admin: isAdmin,
+      can_edit_articles: canEditArticles
+    })
 
 const loginResponseText =
   await loginResponse.text()
@@ -443,10 +460,10 @@ return jsonResponse({
   success: true,
 
   user: {
-    id: authData.id,
-    email: authData.email
-  }
-})
+  id: authData.id,
+  name,
+  email: authData.email
+}
  
 
 } catch (error) {
