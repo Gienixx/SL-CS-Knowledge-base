@@ -5,9 +5,15 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Knowledgebase</title>
 
-<script>
-if (!localStorage.getItem("loggedIn")) {
-  window.location.href = "login.html"
+<script type="module">
+import { supabase } from './scripts/supabaseClient.js'
+
+const {
+  data: { user }
+} = await supabase.auth.getUser()
+
+if (!user) {
+  window.location.replace('./login.html')
 }
 </script>
 
