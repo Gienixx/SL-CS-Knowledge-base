@@ -6,11 +6,26 @@ const message = document.getElementById('message')
 const submitButton =
   form?.querySelector('button[type="submit"]')
 
+const descriptionInput =
+  document.getElementById('description')
+
+const descriptionCount =
+  document.getElementById('descriptionCount')
+
 const contentInput =
   document.getElementById('content')
 
 const formatButtons =
   document.querySelectorAll('[data-format]')
+
+function updateDescriptionCount() {
+  if (!descriptionInput || !descriptionCount) {
+    return
+  }
+
+  descriptionCount.textContent =
+    `${descriptionInput.value.length} / 300`
+}
 
 function replaceSelection(
   replacement,
@@ -93,12 +108,9 @@ function insertHeading(prefix, placeholder) {
   const replacement =
     `${spacing}${prefix}${selectedText}\n\n`
 
-  const placeholderPosition =
-    spacing.length + prefix.length
-
   replaceSelection(
     replacement,
-    placeholderPosition,
+    spacing.length + prefix.length,
     selectedText.length
   )
 }
@@ -110,22 +122,18 @@ function prefixSelectedLines(
   const selectedText =
     getSelectedText().trim() || placeholder
 
-  const lines =
-    selectedText.split(/\r?\n/)
-
   const formattedLines =
-    lines.map((line, index) => {
-      const cleanLine = line.trim()
-
-      return prefixFactory(index) + cleanLine
-    })
+    selectedText
+      .split(/\r?\n/)
+      .map((line, index) => {
+        return prefixFactory(index) + line.trim()
+      })
 
   const spacing = getLeadingSpacing()
 
-  const replacement =
+  replaceSelection(
     `${spacing}${formattedLines.join('\n')}\n\n`
-
-  replaceSelection(replacement)
+  )
 }
 
 function insertArticleTemplate() {
@@ -135,7 +143,7 @@ function insertArticleTemplate() {
 
   const template = `## Overview
 
-Write a short introduction explaining what this article covers.
+Write the article overview here.
 
 ## Main Process
 
@@ -161,16 +169,12 @@ Add supporting information under this subheading.
 
 Summarize the key information from the article.`
 
-  const existingContent =
-    contentInput.value.trim()
-
-  if (!existingContent) {
+  if (!contentInput.value.trim()) {
     contentInput.value = template
   } else {
-    const shouldInsert =
-      window.confirm(
-        'The editor already contains text. Add the template below the existing content?'
-      )
+    const shouldInsert = window.confirm(
+      'The editor already contains text. Add the template below the existing content?'
+    )
 
     if (!shouldInsert) {
       return
@@ -181,29 +185,23 @@ Summarize the key information from the article.`
   }
 
   contentInput.focus()
+
   contentInput.setSelectionRange(
     contentInput.value.length,
     contentInput.value.length
   )
 
-  message.textContent =
-    'Article template inserted.'
+  message.textContent = 'Article template inserted.'
 }
 
 function applyFormatting(format) {
   switch (format) {
     case 'section':
-      insertHeading(
-        '## ',
-        'Section title'
-      )
+      insertHeading('## ', 'Section title')
       break
 
     case 'subheading':
-      insertHeading(
-        '### ',
-        'Subheading'
-      )
+      insertHeading('### ', 'Subheading')
       break
 
     case 'bullets':
@@ -230,15 +228,10 @@ function applyFormatting(format) {
     case 'template':
       insertArticleTemplate()
       break
-
-    default:
-      console.warn(
-        `Unknown formatting option: ${format}`
-      )
   }
 }
 
-function initializeFormattingToolbar() {
+function initializeEditorControls() {
   formatButtons.forEach(button => {
     button.addEventListener('click', () => {
       applyFormatting(button.dataset.format)
@@ -253,13 +246,16 @@ function initializeFormattingToolbar() {
       }
 
       event.preventDefault()
-
-      replaceSelection(
-        '  ',
-        2
-      )
+      replaceSelection('  ', 2)
     }
   )
+
+  descriptionInput?.addEventListener(
+    'input',
+    updateDescriptionCount
+  )
+
+  updateDescriptionCount()
 }
 
 async function initializeArticleEditor() {
@@ -267,6 +263,7 @@ async function initializeArticleEditor() {
     !form ||
     !message ||
     !submitButton ||
+    !descriptionInput ||
     !contentInput
   ) {
     console.error(
@@ -276,7 +273,7 @@ async function initializeArticleEditor() {
     return
   }
 
-  initializeFormattingToolbar()
+  initializeEditorControls()
 
   const {
     data: { user },
@@ -322,10 +319,7 @@ async function initializeArticleEditor() {
       `Unable to verify article editor access: ${permissionError.message}`
     )
 
-    window.location.replace(
-      './dashboard.html'
-    )
-
+    window.location.replace('./dashboard.html')
     return
   }
 
@@ -334,11 +328,7 @@ async function initializeArticleEditor() {
     allowedUser.can_edit_articles !== true
   ) {
     alert('Article editor access only.')
-
-    window.location.replace(
-      './dashboard.html'
-    )
-
+    window.location.replace('./dashboard.html')
     return
   }
 
@@ -353,18 +343,18 @@ async function initializeArticleEditor() {
     async event => {
       event.preventDefault()
 
-      const titleInput =
-        document.getElementById('title')
-
-      const tagInput =
-        document.getElementById('tag')
-
       const title =
-        titleInput?.value.trim() ?? ''
+        document
+          .getElementById('title')
+          ?.value.trim() ?? ''
+
+      const description =
+        descriptionInput.value.trim()
 
       const tag =
-        tagInput?.value
-          .trim()
+        document
+          .getElementById('tag')
+          ?.value.trim()
           .toLowerCase() ?? ''
 
       const content =
@@ -377,18 +367,25 @@ async function initializeArticleEditor() {
 
       if (
         !title ||
+        !description ||
         !content ||
         !validTags.includes(tag)
       ) {
         message.textContent =
-          'Please enter a title, choose a category, and add article content.'
+          'Please enter a title, description, category, and article content.'
+
+        return
+      }
+
+      if (description.length > 300) {
+        message.textContent =
+          'The article description cannot exceed 300 characters.'
 
         return
       }
 
       submitButton.disabled = true
-      message.textContent =
-        'Saving article...'
+      message.textContent = 'Saving article...'
 
       const {
         error: insertError
@@ -396,6 +393,7 @@ async function initializeArticleEditor() {
         .from('articles')
         .insert({
           title,
+          description,
           content,
           tag,
           author_name: authorName,
@@ -420,6 +418,7 @@ async function initializeArticleEditor() {
         'Article saved successfully.'
 
       form.reset()
+      updateDescriptionCount()
     }
   )
 }
