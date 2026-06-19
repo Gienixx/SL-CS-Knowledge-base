@@ -3,17 +3,32 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
   <title>Add Article | SocialLoop CS Base</title>
-  <link rel="stylesheet" href="styles.css?v=modal-details-3">
+
+  <link rel="stylesheet" href="./styles.css?v=modal-details-3">
 
   <style>
     .article-page {
       min-height: 100vh;
       padding: 40px 10%;
       background:
-        radial-gradient(circle at 12% 18%, rgba(255, 194, 26, 0.20), transparent 22rem),
-        radial-gradient(circle at 86% 12%, rgba(36, 27, 93, 0.10), transparent 24rem),
-        linear-gradient(180deg, var(--sl-cream) 0%, #fffdfa 48%, var(--sl-cream-soft) 100%);
+        radial-gradient(
+          circle at 12% 18%,
+          rgba(255, 194, 26, 0.20),
+          transparent 22rem
+        ),
+        radial-gradient(
+          circle at 86% 12%,
+          rgba(36, 27, 93, 0.10),
+          transparent 24rem
+        ),
+        linear-gradient(
+          180deg,
+          var(--sl-cream) 0%,
+          #fffdfa 48%,
+          var(--sl-cream-soft) 100%
+        );
     }
 
     .article-shell {
@@ -42,7 +57,12 @@
     }
 
     .article-card {
-      background: linear-gradient(180deg, rgba(255,255,255,0.96), rgba(250,246,238,0.98));
+      background:
+        linear-gradient(
+          180deg,
+          rgba(255, 255, 255, 0.96),
+          rgba(250, 246, 238, 0.98)
+        );
       border: 1px solid var(--sl-border);
       border-radius: 22px;
       box-shadow: var(--sl-shadow);
@@ -63,8 +83,12 @@
       padding: 14px 16px;
       font-size: 1rem;
       color: var(--sl-text);
-      background: rgba(255,255,255,0.9);
+      background: rgba(255, 255, 255, 0.9);
       outline: none;
+    }
+
+    .article-form select {
+      cursor: pointer;
     }
 
     .article-form textarea {
@@ -74,6 +98,7 @@
     }
 
     .article-form input:focus,
+    .article-form select:focus,
     .article-form textarea:focus {
       border-color: rgba(255, 194, 26, 0.7);
       box-shadow: 0 0 0 4px rgba(255, 194, 26, 0.14);
@@ -95,8 +120,13 @@
       cursor: pointer;
     }
 
+    .article-btn:disabled {
+      cursor: wait;
+      opacity: 0.65;
+    }
+
     .article-link {
-      background: rgba(255,255,255,0.88);
+      background: rgba(255, 255, 255, 0.88);
       color: var(--sl-navy);
     }
 
@@ -104,6 +134,7 @@
       margin-top: 12px;
       color: var(--sl-muted);
       font-weight: 600;
+      line-height: 1.5;
     }
   </style>
 </head>
@@ -114,29 +145,56 @@
       <div class="article-topbar">
         <div class="article-title">
           <h1>Add Article</h1>
-          <p>Create a new knowledge base article for the SocialLoop CS Base.</p>
+
+          <p>
+            Create a new knowledge base article for the SocialLoop CS Base.
+          </p>
         </div>
 
-        <a class="article-link" href="./dashboard.html">← Back to Dashboard</a>
+        <a class="article-link" href="./dashboard.html">
+          ← Back to Dashboard
+        </a>
       </div>
 
       <section class="article-card">
         <form id="articleForm" class="article-form">
-          <input id="title" type="text" placeholder="Article title" required>
+          <input
+            id="title"
+            type="text"
+            placeholder="Article title"
+            autocomplete="off"
+            required
+          >
+
           <select id="tag" required>
-          <option value="">Select article category</option>
-          <option value="tickets">Tickets</option>
-          <option value="cashouts">Cashouts</option>
+            <option value="">Select article category</option>
+            <option value="tickets">Tickets</option>
+            <option value="cashouts">Cashouts</option>
           </select>
-          <textarea id="content" placeholder="Article content" required></textarea>
-          <button class="article-btn" type="submit">Save Article</button>
+
+          <textarea
+            id="content"
+            placeholder="Article content"
+            required
+          ></textarea>
+
+          <button class="article-btn" type="submit">
+            Save Article
+          </button>
         </form>
 
-        <p id="message" class="article-status"></p>
+        <p
+          id="message"
+          class="article-status"
+          aria-live="polite"
+        ></p>
       </section>
     </div>
   </main>
 
-  <script type="module" src="./scripts/add-article.js?v=1"></script>
+  <script
+    type="module"
+    src="./scripts/add-article.js?v=2"
+  ></script>
 </body>
 </html>
