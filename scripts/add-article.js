@@ -27,19 +27,24 @@ async function initializeArticleEditor() {
     error: permissionError
   } = await supabase
     .from('login')
-    .select('can_edit_articles')
+    .select('name, can_edit_articles')
     .ilike('email', email)
     .maybeSingle()
 
-  if (
-    permissionError ||
-    !allowedUser ||
-    allowedUser.can_edit_articles !== true
-  ) {
+  if (permissionError) {
+    console.error('Permission check error:', permissionError)
+    alert('Unable to verify article editor access.')
+    window.location.replace('./dashboard.html')
+    return
+  }
+
+  if (!allowedUser || allowedUser.can_edit_articles !== true) {
     alert('Article editor access only.')
     window.location.replace('./dashboard.html')
     return
   }
+
+  const authorName = allowedUser.name?.trim() || email
 
   form.addEventListener('submit', async event => {
     event.preventDefault()
@@ -56,21 +61,21 @@ async function initializeArticleEditor() {
     submitButton.disabled = true
     message.textContent = 'Saving article...'
 
-    const { error } = await supabase
+    const { error: insertError } = await supabase
       .from('articles')
       .insert({
         title,
         content,
         tag,
-        author_email: email,
-        published: true
+        author_name: authorName
       })
 
     submitButton.disabled = false
 
-    if (error) {
-      console.error('Article insert error:', error)
-      message.textContent = `Unable to save article: ${error.message}`
+    if (insertError) {
+      console.error('Article insert error:', insertError)
+      message.textContent =
+        `Unable to save article: ${insertError.message}`
       return
     }
 
