@@ -10,12 +10,12 @@ headers: {
 'Content-Type':
 'application/json; charset=utf-8',
 
-```
+ 
     'Cache-Control':
       'no-store'
   }
 }
-```
+ 
 
 )
 }
@@ -61,13 +61,13 @@ return {
 supabaseUrl:
 SUPABASE_URL.replace(//+$/, ''),
 
-```
+ 
 anonKey:
   SUPABASE_ANON_KEY,
 
 serviceRoleKey:
   SUPABASE_SERVICE_ROLE_KEY
-```
+ 
 
 }
 }
@@ -103,12 +103,12 @@ const userResponse = await fetch(
 headers: {
 apikey: anonKey,
 
-```
+ 
     Authorization:
       `Bearer ${accessToken}`
   }
 }
-```
+ 
 
 )
 
@@ -174,19 +174,19 @@ headers: {
 apikey:
 serviceRoleKey,
 
-```
+ 
       Authorization:
         `Bearer ${serviceRoleKey}`
     }
   }
 )
-```
+ 
 
 if (!permissionResponse.ok) {
 const details =
 await permissionResponse.text()
 
-```
+ 
 console.error(
   'Admin permission lookup failed:',
   details
@@ -202,7 +202,7 @@ return {
     500
   )
 }
-```
+ 
 
 }
 
@@ -251,13 +251,13 @@ headers: {
 apikey:
 serviceRoleKey,
 
-```
+ 
       Authorization:
         `Bearer ${serviceRoleKey}`
     }
   }
 )
-```
+ 
 
 } catch (error) {
 console.error(
@@ -274,7 +274,7 @@ try {
 const adminCheck =
 await requireAdmin(context)
 
-```
+ 
 if (!adminCheck.authorized) {
   return adminCheck.response
 }
@@ -444,7 +444,7 @@ return jsonResponse({
     email: authData.email
   }
 })
-```
+ 
 
 } catch (error) {
 console.error(
@@ -452,7 +452,7 @@ console.error(
 error
 )
 
-```
+ 
 return jsonResponse(
   {
     error:
@@ -461,7 +461,7 @@ return jsonResponse(
   },
   500
 )
-```
+ 
 
 }
 }
