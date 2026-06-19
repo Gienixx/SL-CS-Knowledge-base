@@ -39,7 +39,7 @@
     }
 
     .admin-shell {
-      max-width: 980px;
+      max-width: 1200px;
       margin: 0 auto;
     }
 
@@ -140,6 +140,96 @@
       display: none;
     }
 
+    .users-card-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 16px;
+      margin-bottom: 18px;
+      flex-wrap: wrap;
+    }
+
+    .users-card-header h2 {
+      margin-bottom: 0;
+    }
+
+    .users-table-wrapper {
+      width: 100%;
+      overflow-x: auto;
+      border:
+        1px solid var(--sl-border);
+      border-radius: 16px;
+      background: #fff;
+    }
+
+    .users-table {
+      width: 100%;
+      min-width: 780px;
+      border-collapse: collapse;
+    }
+
+    .users-table th,
+    .users-table td {
+      padding: 15px 16px;
+      text-align: left;
+      vertical-align: middle;
+      border-bottom:
+        1px solid var(--sl-border);
+      color: var(--sl-text);
+    }
+
+    .users-table th {
+      background:
+        rgba(36, 27, 93, 0.06);
+
+      color: var(--sl-navy);
+      font-size: 0.85rem;
+      text-transform: uppercase;
+      letter-spacing: 0.04em;
+    }
+
+    .users-table tbody tr:hover {
+      background:
+        rgba(255, 194, 26, 0.06);
+    }
+
+    .users-table tbody tr:last-child td {
+      border-bottom: none;
+    }
+
+    .users-table-id {
+      max-width: 240px;
+      font-family: monospace;
+      font-size: 0.85rem;
+      overflow-wrap: anywhere;
+    }
+
+    .users-table-empty {
+      padding: 30px !important;
+      text-align: center !important;
+      color: var(--sl-muted) !important;
+    }
+
+    .user-status {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      min-width: 52px;
+      padding: 5px 10px;
+      border-radius: 999px;
+      font-size: 0.82rem;
+      font-weight: 700;
+    }
+
+    .user-status-yes {
+      color: #176b3a;
+      background: #dcf7e7;
+    }
+
+    .user-status-no {
+      color: #735d12;
+      background: #fff2bd;
+    }
     .admin-btn,
     .admin-link {
       display: inline-flex;
