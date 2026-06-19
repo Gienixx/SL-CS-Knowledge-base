@@ -52,6 +52,7 @@ async function loadArticle() {
     .from('articles')
     .select(`
       title,
+      description,
       content,
       tag,
       author_name,
@@ -90,7 +91,10 @@ function renderArticle(article) {
 
   const content =
     String(article.content ?? '').trim()
-
+  
+  const description =
+    String(article.description ?? '').trim()
+  
   const normalizedTag =
     String(article.tag ?? '')
       .trim()
@@ -102,7 +106,9 @@ function renderArticle(article) {
       : 'Ticket'
 
   const sections = parseArticleContent(content)
-  const excerpt = createExcerpt(sections, content)
+  const excerpt =
+    description ||
+    createExcerpt(sections, content)
 
   document.title =
     `${title} | SocialLoop CS Base`
