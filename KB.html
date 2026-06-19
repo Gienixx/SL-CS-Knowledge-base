@@ -9,11 +9,11 @@
 import { supabase } from './scripts/supabaseClient.js'
 
 const {
-  data: { user }
-} = await supabase.auth.getUser()
+  data: { session }
+} = await supabase.auth.getSession()
 
-if (!user) {
-  window.location.replace('./login.html')
+if (!session) {
+  window.location.replace(`./login.html?redirectTo=${encodeURIComponent('./KB.html')}`)
 }
 </script>
 
