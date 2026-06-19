@@ -13,7 +13,7 @@ function jsonResponse(data, status = 200) {
     }
   )
 }
-
+ 
 function getBearerToken(request) {
   const authorization =
     request.headers.get(
