@@ -2,18 +2,40 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+  <meta
+    name="viewport"
+    content="width=device-width, initial-scale=1.0"
+  >
+
   <title>User Management | SocialLoop CS Base</title>
-  <link rel="stylesheet" href="styles.css?v=modal-details-3">
+
+  <link
+    rel="stylesheet"
+    href="styles.css?v=modal-details-3"
+  >
 
   <style>
     .admin-page {
       min-height: 100vh;
       padding: 40px 10%;
       background:
-        radial-gradient(circle at 12% 18%, rgba(255, 194, 26, 0.20), transparent 22rem),
-        radial-gradient(circle at 86% 12%, rgba(36, 27, 93, 0.10), transparent 24rem),
-        linear-gradient(180deg, var(--sl-cream) 0%, #fffdfa 48%, var(--sl-cream-soft) 100%);
+        radial-gradient(
+          circle at 12% 18%,
+          rgba(255, 194, 26, 0.20),
+          transparent 22rem
+        ),
+        radial-gradient(
+          circle at 86% 12%,
+          rgba(36, 27, 93, 0.10),
+          transparent 24rem
+        ),
+        linear-gradient(
+          180deg,
+          var(--sl-cream) 0%,
+          #fffdfa 48%,
+          var(--sl-cream-soft) 100%
+        );
     }
 
     .admin-shell {
@@ -42,7 +64,13 @@
     }
 
     .admin-card {
-      background: linear-gradient(180deg, rgba(255,255,255,0.96), rgba(250,246,238,0.98));
+      background:
+        linear-gradient(
+          180deg,
+          rgba(255, 255, 255, 0.96),
+          rgba(250, 246, 238, 0.98)
+        );
+
       border: 1px solid var(--sl-border);
       border-radius: 22px;
       box-shadow: var(--sl-shadow);
@@ -52,6 +80,13 @@
 
     .admin-card h2 {
       color: var(--sl-navy);
+      margin-bottom: 18px;
+    }
+
+    .admin-card-description {
+      color: var(--sl-muted);
+      line-height: 1.6;
+      margin-top: -8px;
       margin-bottom: 18px;
     }
 
@@ -68,14 +103,15 @@
       padding: 14px 16px;
       font-size: 1rem;
       color: var(--sl-text);
-      background: rgba(255,255,255,0.9);
+      background: rgba(255, 255, 255, 0.9);
       outline: none;
     }
 
     .admin-form input:not([type="checkbox"]):focus,
     .admin-form textarea:focus {
       border-color: rgba(255, 194, 26, 0.7);
-      box-shadow: 0 0 0 4px rgba(255, 194, 26, 0.14);
+      box-shadow:
+        0 0 0 4px rgba(255, 194, 26, 0.14);
     }
 
     .admin-checkbox {
@@ -99,7 +135,11 @@
       gap: 10px;
       padding: 8px 0;
     }
-    
+
+    .admin-permissions[hidden] {
+      display: none;
+    }
+
     .admin-btn,
     .admin-link {
       display: inline-flex;
@@ -108,7 +148,8 @@
       min-height: 42px;
       padding: 0 18px;
       border-radius: 999px;
-      border: 1px solid rgba(255, 194, 26, 0.55);
+      border:
+        1px solid rgba(255, 194, 26, 0.55);
       background: var(--sl-navy);
       color: #fff;
       text-decoration: none;
@@ -117,19 +158,25 @@
     }
 
     .admin-link {
-      background: rgba(255,255,255,0.88);
+      background: rgba(255, 255, 255, 0.88);
       color: var(--sl-navy);
     }
 
-    .admin-btn:hover,
+    .admin-btn:hover:not(:disabled),
     .admin-link:hover {
       transform: translateY(-1px);
+    }
+
+    .admin-btn:disabled {
+      opacity: 0.65;
+      cursor: not-allowed;
     }
 
     .admin-status {
       margin-top: 12px;
       color: var(--sl-muted);
       font-weight: 600;
+      overflow-wrap: anywhere;
     }
   </style>
 </head>
@@ -140,51 +187,186 @@
       <div class="admin-topbar">
         <div class="admin-title">
           <h1>User Management</h1>
-          <p>Add users and manage passwords for SocialLoop CS Base access.</p>
+
+          <p>
+            Add users, edit account permissions,
+            and manage passwords for SocialLoop CS Base.
+          </p>
         </div>
 
-        <a class="admin-link" href="./dashboard.html">← Back to Dashboard</a>
+        <a
+          class="admin-link"
+          href="./dashboard.html"
+        >
+          ← Back to Dashboard
+        </a>
       </div>
 
-      <section id="addUserSection" class="admin-card">
+      <section
+        id="addUserSection"
+        class="admin-card"
+      >
         <h2>Add User</h2>
 
-        <form id="addUserForm" class="admin-form">
-          <input type="email" id="email" placeholder="User email" required>
-          <input type="password" id="password" placeholder="Temporary password" required>
+        <form
+          id="addUserForm"
+          class="admin-form"
+        >
+          <input
+            type="email"
+            id="email"
+            placeholder="User email"
+            required
+          >
 
-        <div class="admin-permissions">
-          <label class="admin-checkbox">
-          <input type="checkbox" id="isAdmin">
-          <span>Administrator account</span>
-        </label>
+          <input
+            type="password"
+            id="password"
+            placeholder="Temporary password"
+            minlength="8"
+            required
+          >
 
-        <label class="admin-checkbox">
-          <input type="checkbox" id="canEditArticles">
-          <span>Editor access</span>
-        </label>
-        </div>
+          <div class="admin-permissions">
+            <label class="admin-checkbox">
+              <input
+                type="checkbox"
+                id="isAdmin"
+              >
 
-          <button class="admin-btn" type="submit">Add User</button>
+              <span>Administrator account</span>
+            </label>
+
+            <label class="admin-checkbox">
+              <input
+                type="checkbox"
+                id="canEditArticles"
+              >
+
+              <span>Editor access</span>
+            </label>
+          </div>
+
+          <button
+            class="admin-btn"
+            type="submit"
+          >
+            Add User
+          </button>
         </form>
 
-        <p id="message" class="admin-status"></p>
+        <p
+          id="message"
+          class="admin-status"
+        ></p>
+      </section>
+
+      <section class="admin-card">
+        <h2>Edit User Access</h2>
+
+        <p class="admin-card-description">
+          Enter a user's email address to load and
+          update their current administrator and editor permissions.
+        </p>
+
+        <form
+          id="editUserForm"
+          class="admin-form"
+        >
+          <input
+            type="email"
+            id="editUserEmail"
+            placeholder="User email"
+            required
+          >
+
+          <button
+            class="admin-btn"
+            id="loadUserSettingsBtn"
+            type="button"
+          >
+            Load Current Settings
+          </button>
+
+          <div
+            id="editUserPermissions"
+            class="admin-permissions"
+            hidden
+          >
+            <label class="admin-checkbox">
+              <input
+                type="checkbox"
+                id="editIsAdmin"
+              >
+
+              <span>Administrator account</span>
+            </label>
+
+            <label class="admin-checkbox">
+              <input
+                type="checkbox"
+                id="editCanEditArticles"
+              >
+
+              <span>Editor access</span>
+            </label>
+
+            <button
+              class="admin-btn"
+              type="submit"
+            >
+              Save Settings
+            </button>
+          </div>
+        </form>
+
+        <p
+          id="editUserMessage"
+          class="admin-status"
+        ></p>
       </section>
 
       <section class="admin-card">
         <h2>Change Password</h2>
 
-        <form id="changePasswordForm" class="admin-form">
-          <input type="email" id="changeEmail" placeholder="User email" required>
-          <input type="password" id="newPassword" placeholder="New password" required>
-          <button class="admin-btn" type="submit">Change Password</button>
+        <form
+          id="changePasswordForm"
+          class="admin-form"
+        >
+          <input
+            type="email"
+            id="changeEmail"
+            placeholder="User email"
+            required
+          >
+
+          <input
+            type="password"
+            id="newPassword"
+            placeholder="New password"
+            minlength="8"
+            required
+          >
+
+          <button
+            class="admin-btn"
+            type="submit"
+          >
+            Change Password
+          </button>
         </form>
 
-        <p id="changePasswordMessage" class="admin-status"></p>
+        <p
+          id="changePasswordMessage"
+          class="admin-status"
+        ></p>
       </section>
     </div>
   </main>
 
-  <script type="module" src="./scripts/admin.js?v=2"></script>
+  <script
+    type="module"
+    src="./scripts/admin.js?v=3"
+  ></script>
 </body>
 </html>
