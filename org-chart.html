@@ -1,17 +1,73 @@
 <html>
 <head> 
     <link rel="stylesheet" href="styles.css?v=modal-details-3">
+    <style>
+
+ .org-page {
+      min-height: 100vh;
+      padding: 40px 10%;
+      background:
+        radial-gradient(circle at 12% 18%, rgba(255, 194, 26, 0.20), transparent 22rem),
+        radial-gradient(circle at 86% 12%, rgba(36, 27, 93, 0.10), transparent 24rem),
+        linear-gradient(180deg, var(--sl-cream) 0%, #fffdfa 48%, var(--sl-cream-soft) 100%);
+    }
+
+    .org-shell {
+      max-width: 980px;
+      margin: 0 auto;
+    }
+
+    .org-topbar {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 16px;
+      margin-bottom: 28px;
+      flex-wrap: wrap;
+    }
+
+    .org-title h1 {
+      color: var(--sl-navy);
+      font-size: clamp(2rem, 4vw, 3rem);
+      margin-bottom: 8px;
+    }
+
+    .org-title p {
+      color: var(--sl-muted);
+      line-height: 1.6;
+    } 
+    
+    .org-link { 
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      min-height: 42px;
+      padding: 0 18px;
+      border-radius: 999px;
+      border: 1px solid rgba(255, 194, 26, 0.55);
+      background: var(--sl-navy);
+
+
+      color: #fff;
+      text-decoration: none;
+      font-weight: 700;
+      cursor: pointer;
+    }
+    
 </head>
 <body>
-    <div class="org-chart-page-nav">
-        <a class="org-chart-back" href="./dashboard.html">
-            &larr; Back to Dashboard
-        </a>
-    </div>
+    <main class="org-page"> 
+    <div class="org-shell"> 
+      <div class="org-topbar"> 
+        <div class="org-title"> 
+          <h1>Organizational Chart</h1>  
+        </div>
 
+        <a class="org-link" href="./dashboard.html">← Back to Dashboard</a> 
+      </div>
+        
     <section class="org-chart">
     <h2>Organizational Chart</h2>
-
     <div class="org-level">
         <div class="org-card">
             <a href="https://www.linkedin.com/in/kirbygee/" target="_blank">
