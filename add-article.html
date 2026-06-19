@@ -358,6 +358,26 @@
                 <button
                   class="format-button"
                   type="button"
+                  data-format="bold"
+                  title="Bold selected text"
+                  aria-label="Bold selected text"
+                >
+                  <strong>B</strong>
+                </button>
+
+                <button
+                  class="format-button"
+                  type="button"
+                  data-format="italic"
+                  title="Italicize selected text"
+                  aria-label="Italicize selected text"
+                >
+                  <em>I</em>
+                </button>
+                
+                <button
+                  class="format-button"
+                  type="button"
                   data-format="section"
                 >
                   Section
@@ -413,12 +433,13 @@
             </div>
 
             <div class="format-help">
-              <strong>Formatting guide:</strong>
-              Sections create cards and appear in the Article Map.
-              Subheadings organize details inside a section.
-              Bullets, numbered steps, and callouts are formatted
-              automatically when the article is opened.
-            </div>
+                <strong>Formatting guide:</strong>
+                Sections create cards and appear in the Article Map.
+                Subheadings organize details inside a section.
+                Use <strong>Bold</strong> and <em>Italic</em> for inline emphasis.
+                Bullets, numbered steps, and callouts are formatted
+                automatically when the article is opened.
+              </div>
           </div>
 
           <button
@@ -440,7 +461,7 @@
 
   <script
     type="module"
-    src="./scripts/add-article.js?v=4"
+    src="./scripts/add-article.js?v=5"
   ></script>
 </body>
 </html>
