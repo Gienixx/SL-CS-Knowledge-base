@@ -2,49 +2,127 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+  <meta
+    name="viewport"
+    content="width=device-width, initial-scale=1.0"
+  >
+
   <title>Article | SocialLoop CS Base</title>
+
   <link rel="stylesheet" href="./styles.css">
 
   <style>
+    body {
+      min-height: 100vh;
+      padding: 40px 20px;
+      background:
+        radial-gradient(
+          circle at 12% 18%,
+          rgba(255, 194, 26, 0.20),
+          transparent 22rem
+        ),
+        radial-gradient(
+          circle at 86% 12%,
+          rgba(36, 27, 93, 0.10),
+          transparent 24rem
+        ),
+        linear-gradient(
+          180deg,
+          var(--sl-cream) 0%,
+          #fffdfa 48%,
+          var(--sl-cream-soft) 100%
+        );
+    }
+
     .database-article {
       max-width: 900px;
-      margin: 40px auto;
+      margin: 0 auto;
       padding: 32px;
-      background: white;
+      background: rgba(255, 255, 255, 0.96);
+      border: 1px solid var(--sl-border);
       border-radius: 20px;
       box-shadow: var(--sl-shadow);
+    }
+
+    .article-back-link {
+      display: inline-flex;
+      margin-bottom: 28px;
+      color: var(--sl-navy);
+      text-decoration: none;
+      font-weight: 700;
+    }
+
+    .article-back-link:hover {
+      text-decoration: underline;
     }
 
     .database-article h1 {
       color: var(--sl-navy);
       margin-bottom: 12px;
+      line-height: 1.25;
     }
 
     .database-article-meta {
       color: var(--sl-muted);
       margin-bottom: 28px;
+      line-height: 1.5;
     }
 
     .database-article-content {
       line-height: 1.8;
       white-space: pre-wrap;
+      overflow-wrap: anywhere;
       color: var(--sl-text);
+    }
+
+    .article-error {
+      margin-top: 18px;
+      color: #a42828;
+      font-weight: 600;
+      line-height: 1.6;
     }
   </style>
 </head>
 
 <body>
   <main class="database-article">
-    <a href="./KB.html">← Back to Knowledge Base</a>
+    <a
+      class="article-back-link"
+      href="./KB.html"
+    >
+      ← Back to Knowledge Base
+    </a>
 
-    <h1 id="articleTitle">Loading article...</h1>
-    <p id="articleMeta" class="database-article-meta"></p>
-    <div id="articleContent" class="database-article-content"></div>
-    <p id="articleError"></p>
+    <h1 id="articleTitle">
+      Loading article...
+    </h1>
+
+    <p
+      id="articleMeta"
+      class="database-article-meta"
+    ></p>
+
+    <div
+      id="articleContent"
+      class="database-article-content"
+    ></div>
+
+    <p
+      id="articleError"
+      class="article-error"
+      aria-live="polite"
+    ></p>
   </main>
 
-  <script type="module" src="./scripts/article.js"></script>
-  <script type="module" src="./scripts/auth-guard.js"></script>
+  <script
+    type="module"
+    src="./scripts/article.js?v=2"
+  ></script>
+
+  <script
+    type="module"
+    src="./scripts/auth-guard.js"
+  ></script>
 </body>
 </html>
