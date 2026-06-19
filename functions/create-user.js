@@ -308,7 +308,12 @@ const password =
   'string'
     ? requestBody.password
     : ''
+ const isAdmin =
+  requestBody.isAdmin === true
 
+const canEditArticles =
+  requestBody.canEditArticles === true
+ 
 if (!email) {
   return jsonResponse(
     {
@@ -391,10 +396,10 @@ const loginResponse = await fetch(
     },
 
     body: JSON.stringify({
-      email,
-      is_admin: false,
-      can_edit_articles: false
-    })
+     email,
+     is_admin: isAdmin,
+     can_edit_articles: canEditArticles
+   })
   }
 )
 
