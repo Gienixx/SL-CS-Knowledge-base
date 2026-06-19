@@ -73,6 +73,28 @@ function getSelectedText() {
   )
 }
 
+function wrapSelectedText(
+  openingMarker,
+  closingMarker,
+  placeholder
+) {
+  if (!contentInput) {
+    return
+  }
+
+  const selectedText =
+    getSelectedText() || placeholder
+
+  const replacement =
+    `${openingMarker}${selectedText}${closingMarker}`
+
+  replaceSelection(
+    replacement,
+    openingMarker.length,
+    selectedText.length
+  )
+}
+
 function getLeadingSpacing() {
   if (!contentInput) {
     return ''
@@ -204,6 +226,22 @@ function applyFormatting(format) {
       insertHeading('### ', 'Subheading')
       break
 
+    case 'bold':
+      wrapSelectedText(
+        '**',
+        '**',
+        'bold text'
+      )
+      break
+
+    case 'italic':
+      wrapSelectedText(
+        '*',
+        '*',
+        'italic text'
+      )
+      break
+
     case 'bullets':
       prefixSelectedLines(
         () => '- ',
@@ -239,24 +277,50 @@ function initializeEditorControls() {
   })
 
   contentInput?.addEventListener(
-    'keydown',
-    event => {
-      if (event.key !== 'Tab') {
-        return
-      }
+  'keydown',
+  event => {
+    const modifierPressed =
+      event.ctrlKey || event.metaKey
 
+    const pressedKey =
+      event.key.toLowerCase()
+
+    if (
+      modifierPressed &&
+      pressedKey === 'b'
+    ) {
+      event.preventDefault()
+
+      wrapSelectedText(
+        '**',
+        '**',
+        'bold text'
+      )
+
+      return
+    }
+
+    if (
+      modifierPressed &&
+      pressedKey === 'i'
+    ) {
+      event.preventDefault()
+
+      wrapSelectedText(
+        '*',
+        '*',
+        'italic text'
+      )
+
+      return
+    }
+
+    if (event.key === 'Tab') {
       event.preventDefault()
       replaceSelection('  ', 2)
     }
-  )
-
-  descriptionInput?.addEventListener(
-    'input',
-    updateDescriptionCount
-  )
-
-  updateDescriptionCount()
-}
+  }
+)
 
 async function initializeArticleEditor() {
   if (
