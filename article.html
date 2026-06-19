@@ -1,0 +1,50 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Article | SocialLoop CS Base</title>
+  <link rel="stylesheet" href="./styles.css">
+
+  <style>
+    .database-article {
+      max-width: 900px;
+      margin: 40px auto;
+      padding: 32px;
+      background: white;
+      border-radius: 20px;
+      box-shadow: var(--sl-shadow);
+    }
+
+    .database-article h1 {
+      color: var(--sl-navy);
+      margin-bottom: 12px;
+    }
+
+    .database-article-meta {
+      color: var(--sl-muted);
+      margin-bottom: 28px;
+    }
+
+    .database-article-content {
+      line-height: 1.8;
+      white-space: pre-wrap;
+      color: var(--sl-text);
+    }
+  </style>
+</head>
+
+<body>
+  <main class="database-article">
+    <a href="./KB.html">← Back to Knowledge Base</a>
+
+    <h1 id="articleTitle">Loading article...</h1>
+    <p id="articleMeta" class="database-article-meta"></p>
+    <div id="articleContent" class="database-article-content"></div>
+    <p id="articleError"></p>
+  </main>
+
+  <script type="module" src="./scripts/article.js"></script>
+  <script type="module" src="./scripts/auth-guard.js"></script>
+</body>
+</html>
