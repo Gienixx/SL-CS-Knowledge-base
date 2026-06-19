@@ -3,36 +3,53 @@ import { supabase } from './supabaseClient.js'
 const loginForm = document.getElementById('loginForm')
 const loginStatus = document.getElementById('loginStatus')
 
-const {
-  data: { user }
-} = await supabase.auth.getUser()
+function getReturnPage() {
+    const params = new URLSearchParams(window.location.search)
+    const returnTo = params.get('returnTo')
 
-if (user) {
-  window.location.replace('./dashboard.html')
+    if (
+        returnTo &&
+        returnTo.startsWith('/') &&
+        !returnTo.startsWith('//')
+    ) {
+        return returnTo
+    }
+
+    return './dashboard.html'
 }
 
-loginForm.addEventListener('submit', async (event) => {
-  event.preventDefault()
+const returnPage = getReturnPage()
 
-  const email = document.getElementById('email').value.trim()
-  const password = document.getElementById('password').value
+const {
+    data: { session }
+} = await supabase.auth.getSession()
 
-  loginStatus.textContent = 'Signing in...'
-  loginStatus.className = 'status'
+if (session?.user) {
+    window.location.replace(returnPage)
+} else {
+    loginForm.addEventListener('submit', async (event) => {
+        event.preventDefault()
 
-  const { error } = await supabase.auth.signInWithPassword({
-    email,
-    password
-  })
+        const email = document.getElementById('email').value.trim()
+        const password = document.getElementById('password').value
 
-  if (error) {
-    loginStatus.textContent = error.message
-    loginStatus.className = 'status error'
-    return
-  }
+        loginStatus.textContent = 'Signing in...'
+        loginStatus.className = 'status'
 
-  loginStatus.textContent = 'Login successful. Redirecting...'
-  loginStatus.className = 'status success'
+        const { error } = await supabase.auth.signInWithPassword({
+            email,
+            password
+        })
 
-  window.location.href = './dashboard.html'
-})
+        if (error) {
+            loginStatus.textContent = error.message
+            loginStatus.className = 'status error'
+            return
+        }
+
+        loginStatus.textContent = 'Login successful. Redirecting...'
+        loginStatus.className = 'status success'
+
+        window.location.replace(returnPage)
+    })
+}
