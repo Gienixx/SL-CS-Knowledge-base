@@ -1,390 +1,372 @@
-import { supabase } from './supabaseClient.js'
-
-const addUserForm =
-document.getElementById('addUserForm')
-
-const addUserMessage =
-document.getElementById('message')
-
-const changePasswordForm =
-document.getElementById('changePasswordForm')
-
-const changePasswordMessage =
-document.getElementById('changePasswordMessage')
-
-function getErrorMessage(error) {
-if (
-error &&
-typeof error.message === 'string'
-) {
-return error.message
-}
-
-return 'An unexpected error occurred.'
-}
-
-function redirectToLogin() {
-window.location.replace('./login.html')
-}
-
-function redirectToDashboard() {
-window.location.replace('./dashboard.html')
-}
-
-async function requireAdminAccess() {
-const {
-data: { session },
-error: sessionError
-} = await supabase.auth.getSession()
-
-if (sessionError) {
-throw sessionError
-}
-
-if (!session?.user) {
-redirectToLogin()
-return null
-}
-
-const email =
-session.user.email
-?.trim()
-.toLowerCase()
-
-if (!email) {
-redirectToLogin()
-return null
-}
-
-const {
-data: allowedUser,
-error: permissionError
-} = await supabase
-.from('login')
-.select('is_admin')
-.ilike('email', email)
-.maybeSingle()
-
-if (permissionError) {
-throw permissionError
-}
-
-if (
-!allowedUser ||
-allowedUser.is_admin !== true
-) {
-alert('Admin access only.')
-redirectToDashboard()
-return null
-}
-
-return session
-}
-
-async function getAccessToken() {
-const {
-data: { session },
-error
-} = await supabase.auth.getSession()
-
-if (error) {
-throw error
-}
-
-if (!session?.access_token) {
-throw new Error(
-'Your session has expired. Please sign in again.'
-)
-}
-
-return session.access_token
-}
-
-async function sendAdminRequest(
-endpoint,
-payload
-) {
-const accessToken =
-await getAccessToken()
-
-const response = await fetch(
-endpoint,
-{
-method: 'POST',
-headers: {
-'Content-Type':
-'application/json',
-
-
-    Authorization:
-      `Bearer ${accessToken}`
-  },
-
-  body: JSON.stringify(payload)
-}
-
-
-)
-
-const responseText =
-await response.text()
-
-let result = {}
-
-if (responseText) {
-try {
-result =
-JSON.parse(responseText)
-} catch {
-result = {
-error: responseText
-}
-}
-}
-
-if (!response.ok) {
-throw new Error(
-result.error ||
-result.message ||
-`Request failed with status ${response.status}.`
-)
-}
-
-return result
-}
-
-function setButtonLoading(
-button,
-loading,
-loadingText,
-normalText
-) {
-if (!button) {
-return
-}
-
-button.disabled = loading
-button.textContent =
-loading
-? loadingText
-: normalText
-}
-
-function initializeAddUserForm() {
-if (
-!addUserForm ||
-!addUserMessage
-) {
-return
-}
-
-addUserForm.addEventListener(
-'submit',
-async event => {
-event.preventDefault()
-
-
-  const emailInput =
-    document.getElementById('email')
-
-  const passwordInput =
-    document.getElementById('password')
-  const isAdminInput =
-  document.getElementById('isAdmin')
-
-const canEditArticlesInput =
-  document.getElementById('canEditArticles')
-  const submitButton =
-    addUserForm.querySelector(
-      'button[type="submit"]'
-    )
-
-  const email =
-    emailInput?.value
-      .trim()
-      .toLowerCase() ?? ''
-
-  const password =
-    passwordInput?.value ?? ''
-
-    const isAdmin =
-      isAdminInput?.checked === true
-
-    const canEditArticles =
-      canEditArticlesInput?.checked === true
-  
-    if (!email || !password) {
-    addUserMessage.textContent =
-      'Enter an email address and temporary password.'
-
-    return
-  }
-
-  setButtonLoading(
-    submitButton,
-    true,
-    'Adding User...',
-    'Add User'
-  )
-
-  addUserMessage.textContent =
-    'Creating user...'
-
-  try {
-    await sendAdminRequest(
-      '/create-user',
-      {
-        email,
-        password,
-        isAdmin,
-        canEditArticles
-      }
-    )
-
-    addUserForm.reset()
-
-    addUserMessage.textContent =
-      'User created successfully.'
-  } catch (error) {
-    console.error(
-      'Create-user error:',
-      error
-    )
-
-    addUserMessage.textContent =
-      `Unable to create user: ${getErrorMessage(error)}`
-  } finally {
-    setButtonLoading(
-      submitButton,
-      false,
-      'Adding User...',
-      'Add User'
-    )
-  }
-}
-
-
-)
-}
-
-function initializePasswordForm() {
-if (
-!changePasswordForm ||
-!changePasswordMessage
-) {
-return
-}
-
-changePasswordForm.addEventListener(
-'submit',
-async event => {
-event.preventDefault()
-
-
-  const emailInput =
-    document.getElementById(
-      'changeEmail'
-    )
-
-  const passwordInput =
-    document.getElementById(
-      'newPassword'
-    )
-
-  const submitButton =
-    changePasswordForm.querySelector(
-      'button[type="submit"]'
-    )
-
-  const email =
-    emailInput?.value
-      .trim()
-      .toLowerCase() ?? ''
-
-  const password =
-    passwordInput?.value ?? ''
-
-  if (!email || !password) {
-    changePasswordMessage.textContent =
-      'Enter the user email and new password.'
-
-    return
-  }
-
-  setButtonLoading(
-    submitButton,
-    true,
-    'Updating Password...',
-    'Change Password'
-  )
-
-  changePasswordMessage.textContent =
-    'Updating password...'
-
-  try {
-    await sendAdminRequest(
-      '/change-password',
-      {
-        email,
-        password
-      }
-    )
-
-    changePasswordForm.reset()
-
-    changePasswordMessage.textContent =
-      'Password changed successfully.'
-  } catch (error) {
-    console.error(
-      'Change-password error:',
-      error
-    )
-
-    changePasswordMessage.textContent =
-      `Unable to change password: ${getErrorMessage(error)}`
-  } finally {
-    setButtonLoading(
-      submitButton,
-      false,
-      'Updating Password...',
-      'Change Password'
-    )
-  }
-}
-
-
-)
-}
-
-async function initializeAdminPage() {
-try {
-const session =
-await requireAdminAccess()
-
-
-if (!session) {
-  return
-}
-
-initializeAddUserForm()
-initializePasswordForm()
-
-
-} catch (error) {
-console.error(
-'Admin page initialization error:',
-error
-)
-
-
-alert(
-  'Unable to verify admin access.'
-)
-
-redirectToDashboard()
-
-
-}
-}
-
-initializeAdminPage()
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+
+  <meta
+    name="viewport"
+    content="width=device-width, initial-scale=1.0"
+  >
+
+  <title>User Management | SocialLoop CS Base</title>
+
+  <link
+    rel="stylesheet"
+    href="styles.css?v=modal-details-3"
+  >
+
+  <style>
+    .admin-page {
+      min-height: 100vh;
+      padding: 40px 10%;
+      background:
+        radial-gradient(
+          circle at 12% 18%,
+          rgba(255, 194, 26, 0.20),
+          transparent 22rem
+        ),
+        radial-gradient(
+          circle at 86% 12%,
+          rgba(36, 27, 93, 0.10),
+          transparent 24rem
+        ),
+        linear-gradient(
+          180deg,
+          var(--sl-cream) 0%,
+          #fffdfa 48%,
+          var(--sl-cream-soft) 100%
+        );
+    }
+
+    .admin-shell {
+      max-width: 980px;
+      margin: 0 auto;
+    }
+
+    .admin-topbar {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 16px;
+      margin-bottom: 28px;
+      flex-wrap: wrap;
+    }
+
+    .admin-title h1 {
+      color: var(--sl-navy);
+      font-size: clamp(2rem, 4vw, 3rem);
+      margin-bottom: 8px;
+    }
+
+    .admin-title p {
+      color: var(--sl-muted);
+      line-height: 1.6;
+    }
+
+    .admin-card {
+      background:
+        linear-gradient(
+          180deg,
+          rgba(255, 255, 255, 0.96),
+          rgba(250, 246, 238, 0.98)
+        );
+
+      border: 1px solid var(--sl-border);
+      border-radius: 22px;
+      box-shadow: var(--sl-shadow);
+      padding: 28px;
+      margin-bottom: 22px;
+    }
+
+    .admin-card h2 {
+      color: var(--sl-navy);
+      margin-bottom: 18px;
+    }
+
+    .admin-card-description {
+      color: var(--sl-muted);
+      line-height: 1.6;
+      margin-top: -8px;
+      margin-bottom: 18px;
+    }
+
+    .admin-form {
+      display: grid;
+      gap: 14px;
+    }
+
+    .admin-form input:not([type="checkbox"]),
+    .admin-form textarea {
+      width: 100%;
+      border: 1px solid var(--sl-border);
+      border-radius: 14px;
+      padding: 14px 16px;
+      font-size: 1rem;
+      color: var(--sl-text);
+      background: rgba(255, 255, 255, 0.9);
+      outline: none;
+    }
+
+    .admin-form input:not([type="checkbox"]):focus,
+    .admin-form textarea:focus {
+      border-color: rgba(255, 194, 26, 0.7);
+      box-shadow:
+        0 0 0 4px rgba(255, 194, 26, 0.14);
+    }
+
+    .admin-checkbox {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      color: var(--sl-text);
+      font-weight: 600;
+      cursor: pointer;
+    }
+
+    .admin-checkbox input {
+      width: 18px;
+      height: 18px;
+      accent-color: var(--sl-navy);
+      cursor: pointer;
+    }
+
+    .admin-permissions {
+      display: grid;
+      gap: 10px;
+      padding: 8px 0;
+    }
+
+    .admin-permissions[hidden] {
+      display: none;
+    }
+
+    .admin-btn,
+    .admin-link {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      min-height: 42px;
+      padding: 0 18px;
+      border-radius: 999px;
+      border:
+        1px solid rgba(255, 194, 26, 0.55);
+      background: var(--sl-navy);
+      color: #fff;
+      text-decoration: none;
+      font-weight: 700;
+      cursor: pointer;
+    }
+
+    .admin-link {
+      background: rgba(255, 255, 255, 0.88);
+      color: var(--sl-navy);
+    }
+
+    .admin-btn:hover:not(:disabled),
+    .admin-link:hover {
+      transform: translateY(-1px);
+    }
+
+    .admin-btn:disabled {
+      opacity: 0.65;
+      cursor: not-allowed;
+    }
+
+    .admin-status {
+      margin-top: 12px;
+      color: var(--sl-muted);
+      font-weight: 600;
+      overflow-wrap: anywhere;
+    }
+  </style>
+</head>
+
+<body>
+  <main class="admin-page">
+    <div class="admin-shell">
+      <div class="admin-topbar">
+        <div class="admin-title">
+          <h1>User Management</h1>
+
+          <p>
+            Add users, edit account permissions,
+            and manage passwords for SocialLoop CS Base.
+          </p>
+        </div>
+
+        <a
+          class="admin-link"
+          href="./dashboard.html"
+        >
+          ← Back to Dashboard
+        </a>
+      </div>
+
+      <section
+        id="addUserSection"
+        class="admin-card"
+      >
+        <h2>Add User</h2>
+
+        <form
+          id="addUserForm"
+          class="admin-form"
+        >
+          <input
+            type="email"
+            id="email"
+            placeholder="User email"
+            required
+          >
+
+          <input
+            type="password"
+            id="password"
+            placeholder="Temporary password"
+            minlength="8"
+            required
+          >
+
+          <div class="admin-permissions">
+            <label class="admin-checkbox">
+              <input
+                type="checkbox"
+                id="isAdmin"
+              >
+
+              <span>Administrator account</span>
+            </label>
+
+            <label class="admin-checkbox">
+              <input
+                type="checkbox"
+                id="canEditArticles"
+              >
+
+              <span>Editor access</span>
+            </label>
+          </div>
+
+          <button
+            class="admin-btn"
+            type="submit"
+          >
+            Add User
+          </button>
+        </form>
+
+        <p
+          id="message"
+          class="admin-status"
+        ></p>
+      </section>
+
+      <section class="admin-card">
+        <h2>Edit User Access</h2>
+
+        <p class="admin-card-description">
+          Enter a user's email address to load and
+          update their current administrator and editor permissions.
+        </p>
+
+        <form
+          id="editUserForm"
+          class="admin-form"
+        >
+          <input
+            type="email"
+            id="editUserEmail"
+            placeholder="User email"
+            required
+          >
+
+          <button
+            class="admin-btn"
+            id="loadUserSettingsBtn"
+            type="button"
+          >
+            Load Current Settings
+          </button>
+
+          <div
+            id="editUserPermissions"
+            class="admin-permissions"
+            hidden
+          >
+            <label class="admin-checkbox">
+              <input
+                type="checkbox"
+                id="editIsAdmin"
+              >
+
+              <span>Administrator account</span>
+            </label>
+
+            <label class="admin-checkbox">
+              <input
+                type="checkbox"
+                id="editCanEditArticles"
+              >
+
+              <span>Editor access</span>
+            </label>
+
+            <button
+              class="admin-btn"
+              type="submit"
+            >
+              Save Settings
+            </button>
+          </div>
+        </form>
+
+        <p
+          id="editUserMessage"
+          class="admin-status"
+        ></p>
+      </section>
+
+      <section class="admin-card">
+        <h2>Change Password</h2>
+
+        <form
+          id="changePasswordForm"
+          class="admin-form"
+        >
+          <input
+            type="email"
+            id="changeEmail"
+            placeholder="User email"
+            required
+          >
+
+          <input
+            type="password"
+            id="newPassword"
+            placeholder="New password"
+            minlength="8"
+            required
+          >
+
+          <button
+            class="admin-btn"
+            type="submit"
+          >
+            Change Password
+          </button>
+        </form>
+
+        <p
+          id="changePasswordMessage"
+          class="admin-status"
+        ></p>
+      </section>
+    </div>
+  </main>
+
+  <script
+    type="module"
+    src="./scripts/admin.js?v=3"
+  ></script>
+</body>
+</html>
