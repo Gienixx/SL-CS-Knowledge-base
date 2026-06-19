@@ -115,14 +115,14 @@ headers: {
 'Content-Type':
 'application/json',
 
-```
+
     Authorization:
       `Bearer ${accessToken}`
   },
 
   body: JSON.stringify(payload)
 }
-```
+
 
 )
 
@@ -183,13 +183,17 @@ addUserForm.addEventListener(
 async event => {
 event.preventDefault()
 
-```
+
   const emailInput =
     document.getElementById('email')
 
   const passwordInput =
     document.getElementById('password')
+  const isAdminInput =
+  document.getElementById('isAdmin')
 
+const canEditArticlesInput =
+  document.getElementById('canEditArticles')
   const submitButton =
     addUserForm.querySelector(
       'button[type="submit"]'
@@ -203,7 +207,13 @@ event.preventDefault()
   const password =
     passwordInput?.value ?? ''
 
-  if (!email || !password) {
+    const isAdmin =
+      isAdminInput?.checked === true
+
+    const canEditArticles =
+      canEditArticlesInput?.checked === true
+  
+    if (!email || !password) {
     addUserMessage.textContent =
       'Enter an email address and temporary password.'
 
@@ -225,7 +235,9 @@ event.preventDefault()
       '/create-user',
       {
         email,
-        password
+        password,
+        isAdmin,
+        canEditArticles
       }
     )
 
@@ -250,7 +262,7 @@ event.preventDefault()
     )
   }
 }
-```
+
 
 )
 }
@@ -268,7 +280,7 @@ changePasswordForm.addEventListener(
 async event => {
 event.preventDefault()
 
-```
+
   const emailInput =
     document.getElementById(
       'changeEmail'
@@ -339,7 +351,7 @@ event.preventDefault()
     )
   }
 }
-```
+
 
 )
 }
@@ -349,14 +361,14 @@ try {
 const session =
 await requireAdminAccess()
 
-```
+
 if (!session) {
   return
 }
 
 initializeAddUserForm()
 initializePasswordForm()
-```
+
 
 } catch (error) {
 console.error(
@@ -364,13 +376,13 @@ console.error(
 error
 )
 
-```
+
 alert(
   'Unable to verify admin access.'
 )
 
 redirectToDashboard()
-```
+
 
 }
 }
