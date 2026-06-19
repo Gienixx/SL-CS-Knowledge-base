@@ -64,16 +64,16 @@
     }
 
     .article-card {
+      padding: 28px;
+      border: 1px solid var(--sl-border);
+      border-radius: 22px;
       background:
         linear-gradient(
           180deg,
           rgba(255, 255, 255, 0.96),
           rgba(250, 246, 238, 0.98)
         );
-      border: 1px solid var(--sl-border);
-      border-radius: 22px;
       box-shadow: var(--sl-shadow);
-      padding: 28px;
     }
 
     .article-form {
@@ -96,28 +96,33 @@
     .article-form select,
     .article-form textarea {
       width: 100%;
+      padding: 14px 16px;
       border: 1px solid var(--sl-border);
       border-radius: 14px;
-      padding: 14px 16px;
-      font-size: 1rem;
+      outline: none;
       color: var(--sl-text);
       background: rgba(255, 255, 255, 0.9);
-      outline: none;
+      font-family: "Poppins", Arial, sans-serif;
+      font-size: 1rem;
     }
 
     .article-form select {
       cursor: pointer;
     }
 
-    .article-form textarea {
+    .description-input {
+      min-height: 105px;
+      resize: vertical;
+      line-height: 1.6;
+    }
+
+    .content-input {
       min-height: 390px;
       resize: vertical;
       line-height: 1.7;
-      border-radius: 0 0 14px 14px;
-      font-family:
-        "Poppins",
-        Arial,
-        sans-serif;
+      border: none !important;
+      border-radius: 0 0 14px 14px !important;
+      box-shadow: none !important;
     }
 
     .article-form input:focus,
@@ -133,17 +138,6 @@
       border: 1px solid var(--sl-border);
       border-radius: 14px;
       background: rgba(255, 255, 255, 0.9);
-    }
-
-    .editor-shell textarea {
-      border: none;
-      border-top: 1px solid var(--sl-border);
-      box-shadow: none;
-    }
-
-    .editor-shell textarea:focus {
-      border-color: var(--sl-border);
-      box-shadow: none;
     }
 
     .format-toolbar {
@@ -182,15 +176,10 @@
       background: rgba(255, 194, 26, 0.12);
     }
 
-    .format-button:focus-visible {
-      outline: 3px solid rgba(255, 194, 26, 0.28);
-      outline-offset: 2px;
-    }
-
     .format-button.template-button {
       margin-left: auto;
-      background: var(--sl-navy);
       color: #fff;
+      background: var(--sl-navy);
       border-color: var(--sl-navy);
     }
 
@@ -208,6 +197,12 @@
       color: var(--sl-navy);
     }
 
+    .character-count {
+      color: var(--sl-muted);
+      font-size: 0.8rem;
+      text-align: right;
+    }
+
     .article-btn,
     .article-link {
       display: inline-flex;
@@ -215,10 +210,10 @@
       justify-content: center;
       min-height: 42px;
       padding: 0 18px;
-      border-radius: 999px;
       border: 1px solid rgba(255, 194, 26, 0.55);
-      background: var(--sl-navy);
+      border-radius: 999px;
       color: #fff;
+      background: var(--sl-navy);
       text-decoration: none;
       font-weight: 700;
       cursor: pointer;
@@ -230,8 +225,8 @@
     }
 
     .article-link {
-      background: rgba(255, 255, 255, 0.88);
       color: var(--sl-navy);
+      background: rgba(255, 255, 255, 0.88);
     }
 
     .article-status {
@@ -303,6 +298,30 @@
           <div class="field-group">
             <label
               class="field-label"
+              for="description"
+            >
+              Article description
+            </label>
+
+            <textarea
+              id="description"
+              class="description-input"
+              maxlength="300"
+              placeholder="Write a short description that will appear on the article card and below the article title."
+              required
+            ></textarea>
+
+            <div
+              id="descriptionCount"
+              class="character-count"
+            >
+              0 / 300
+            </div>
+          </div>
+
+          <div class="field-group">
+            <label
+              class="field-label"
               for="tag"
             >
               Category
@@ -340,7 +359,6 @@
                   class="format-button"
                   type="button"
                   data-format="section"
-                  title="Insert a new article section"
                 >
                   Section
                 </button>
@@ -349,7 +367,6 @@
                   class="format-button"
                   type="button"
                   data-format="subheading"
-                  title="Insert a subheading"
                 >
                   Subheading
                 </button>
@@ -358,7 +375,6 @@
                   class="format-button"
                   type="button"
                   data-format="bullets"
-                  title="Create a bullet list"
                 >
                   Bullets
                 </button>
@@ -367,7 +383,6 @@
                   class="format-button"
                   type="button"
                   data-format="numbered"
-                  title="Create a numbered list"
                 >
                   Numbered
                 </button>
@@ -376,7 +391,6 @@
                   class="format-button"
                   type="button"
                   data-format="callout"
-                  title="Create a highlighted callout"
                 >
                   Callout
                 </button>
@@ -385,7 +399,6 @@
                   class="format-button template-button"
                   type="button"
                   data-format="template"
-                  title="Insert a complete article template"
                 >
                   Insert Template
                 </button>
@@ -393,6 +406,7 @@
 
               <textarea
                 id="content"
+                class="content-input"
                 placeholder="Write your article or use the formatting buttons above."
                 required
               ></textarea>
@@ -426,7 +440,7 @@
 
   <script
     type="module"
-    src="./scripts/add-article.js?v=3"
+    src="./scripts/add-article.js?v=4"
   ></script>
 </body>
 </html>
