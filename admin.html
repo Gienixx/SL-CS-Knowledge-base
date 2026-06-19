@@ -153,6 +153,8 @@
       background: var(--sl-navy);
       color: #fff;
       text-decoration: none;
+      font-family: inherit;
+      font-size: 0.95rem;
       font-weight: 700;
       cursor: pointer;
     }
@@ -176,7 +178,23 @@
       margin-top: 12px;
       color: var(--sl-muted);
       font-weight: 600;
+      line-height: 1.5;
       overflow-wrap: anywhere;
+    }
+
+    @media (max-width: 700px) {
+      .admin-page {
+        padding: 24px 16px;
+      }
+
+      .admin-card {
+        padding: 20px;
+      }
+
+      .admin-btn,
+      .admin-link {
+        width: 100%;
+      }
     }
   </style>
 </head>
@@ -184,7 +202,7 @@
 <body>
   <main class="admin-page">
     <div class="admin-shell">
-      <div class="admin-topbar">
+      <header class="admin-topbar">
         <div class="admin-title">
           <h1>User Management</h1>
 
@@ -200,7 +218,7 @@
         >
           ← Back to Dashboard
         </a>
-      </div>
+      </header>
 
       <section
         id="addUserSection"
@@ -212,26 +230,30 @@
           id="addUserForm"
           class="admin-form"
         >
-        <input
-          type="text"
-          id="name"
-          placeholder="User name"
-          autocomplete="name"
-          required
-        >
+          <input
+            type="text"
+            id="name"
+            name="name"
+            placeholder="User name"
+            autocomplete="name"
+            required
+          >
 
-        <input
-          type="email"
-          id="email"
-          placeholder="User email"
-          autocomplete="email"
-          required
-        >
+          <input
+            type="email"
+            id="email"
+            name="email"
+            placeholder="User email"
+            autocomplete="email"
+            required
+          >
 
           <input
             type="password"
             id="password"
+            name="password"
             placeholder="Temporary password"
+            autocomplete="new-password"
             minlength="8"
             required
           >
@@ -241,6 +263,7 @@
               <input
                 type="checkbox"
                 id="isAdmin"
+                name="isAdmin"
               >
 
               <span>Administrator account</span>
@@ -250,6 +273,7 @@
               <input
                 type="checkbox"
                 id="canEditArticles"
+                name="canEditArticles"
               >
 
               <span>Editor access</span>
@@ -267,6 +291,7 @@
         <p
           id="message"
           class="admin-status"
+          aria-live="polite"
         ></p>
       </section>
 
@@ -285,7 +310,9 @@
           <input
             type="email"
             id="editUserEmail"
+            name="editUserEmail"
             placeholder="User email"
+            autocomplete="email"
             required
           >
 
@@ -306,6 +333,7 @@
               <input
                 type="checkbox"
                 id="editIsAdmin"
+                name="editIsAdmin"
               >
 
               <span>Administrator account</span>
@@ -315,6 +343,7 @@
               <input
                 type="checkbox"
                 id="editCanEditArticles"
+                name="editCanEditArticles"
               >
 
               <span>Editor access</span>
@@ -332,6 +361,7 @@
         <p
           id="editUserMessage"
           class="admin-status"
+          aria-live="polite"
         ></p>
       </section>
 
@@ -345,14 +375,18 @@
           <input
             type="email"
             id="changeEmail"
+            name="changeEmail"
             placeholder="User email"
+            autocomplete="email"
             required
           >
 
           <input
             type="password"
             id="newPassword"
+            name="newPassword"
             placeholder="New password"
+            autocomplete="new-password"
             minlength="8"
             required
           >
@@ -368,6 +402,7 @@
         <p
           id="changePasswordMessage"
           class="admin-status"
+          aria-live="polite"
         ></p>
       </section>
     </div>
@@ -375,7 +410,7 @@
 
   <script
     type="module"
-    src="./scripts/admin.js?v=3"
+    src="./scripts/admin.js?v=4"
   ></script>
 </body>
 </html>
