@@ -2,168 +2,168 @@ import { supabase } from './supabaseClient.js'
 
 const form = document.getElementById('articleForm')
 const message = document.getElementById('message')
+const titleInput = document.getElementById('title')
+const descriptionInput = document.getElementById('description')
+const descriptionCount = document.getElementById('descriptionCount')
+const tagInput = document.getElementById('tag')
+const contentInput = document.getElementById('content')
 
 const submitButton =
-  form?.querySelector('button[type="submit"]')
-
-const descriptionInput =
-  document.getElementById('description')
-
-const descriptionCount =
-  document.getElementById('descriptionCount')
-
-const contentInput =
-  document.getElementById('content')
+form?.querySelector('button[type="submit"]')
 
 const formatButtons =
-  document.querySelectorAll('[data-format]')
+document.querySelectorAll('[data-format]')
 
 function updateDescriptionCount() {
-  if (!descriptionInput || !descriptionCount) {
-    return
-  }
+if (!descriptionInput || !descriptionCount) {
+return
+}
 
-  descriptionCount.textContent =
-    `${descriptionInput.value.length} / 300`
+descriptionCount.textContent =
+`${descriptionInput.value.length} / 300`
 }
 
 function replaceSelection(
-  replacement,
-  selectionStartOffset = replacement.length,
-  selectionLength = 0
+replacement,
+selectionStartOffset = replacement.length,
+selectionLength = 0
 ) {
-  if (!contentInput) {
-    return
-  }
+if (!contentInput) {
+return
+}
 
-  const start = contentInput.selectionStart
-  const end = contentInput.selectionEnd
-  const currentValue = contentInput.value
+const start = contentInput.selectionStart
+const end = contentInput.selectionEnd
+const currentValue = contentInput.value
+const scrollPosition = contentInput.scrollTop
 
-  contentInput.value =
-    currentValue.slice(0, start) +
-    replacement +
-    currentValue.slice(end)
+contentInput.value =
+currentValue.slice(0, start) +
+replacement +
+currentValue.slice(end)
 
-  const selectionStart =
-    start + selectionStartOffset
+const newSelectionStart =
+start + selectionStartOffset
 
-  contentInput.focus()
+contentInput.focus()
 
-  contentInput.setSelectionRange(
-    selectionStart,
-    selectionStart + selectionLength
-  )
+contentInput.setSelectionRange(
+newSelectionStart,
+newSelectionStart + selectionLength
+)
 
-  contentInput.dispatchEvent(
-    new Event('input', {
-      bubbles: true
-    })
-  )
+contentInput.scrollTop = scrollPosition
+
+contentInput.dispatchEvent(
+new Event('input', {
+bubbles: true
+})
+)
 }
 
 function getSelectedText() {
-  if (!contentInput) {
-    return ''
-  }
+if (!contentInput) {
+return ''
+}
 
-  return contentInput.value.slice(
-    contentInput.selectionStart,
-    contentInput.selectionEnd
-  )
+return contentInput.value.slice(
+contentInput.selectionStart,
+contentInput.selectionEnd
+)
 }
 
 function wrapSelectedText(
-  openingMarker,
-  closingMarker,
-  placeholder
+openingMarker,
+closingMarker,
+placeholder
 ) {
-  if (!contentInput) {
-    return
-  }
+if (!contentInput) {
+return
+}
 
-  const selectedText =
-    getSelectedText() || placeholder
+const selectedText =
+getSelectedText() || placeholder
 
-  const replacement =
-    `${openingMarker}${selectedText}${closingMarker}`
+const replacement =
+`${openingMarker}${selectedText}${closingMarker}`
 
-  replaceSelection(
-    replacement,
-    openingMarker.length,
-    selectedText.length
-  )
+replaceSelection(
+replacement,
+openingMarker.length,
+selectedText.length
+)
 }
 
 function getLeadingSpacing() {
-  if (!contentInput) {
-    return ''
-  }
+if (!contentInput) {
+return ''
+}
 
-  const beforeSelection =
-    contentInput.value.slice(
-      0,
-      contentInput.selectionStart
-    )
+const textBeforeCursor =
+contentInput.value.slice(
+0,
+contentInput.selectionStart
+)
 
-  if (!beforeSelection) {
-    return ''
-  }
+if (!textBeforeCursor) {
+return ''
+}
 
-  if (beforeSelection.endsWith('\n\n')) {
-    return ''
-  }
+if (textBeforeCursor.endsWith('\n\n')) {
+return ''
+}
 
-  if (beforeSelection.endsWith('\n')) {
-    return '\n'
-  }
+if (textBeforeCursor.endsWith('\n')) {
+return '\n'
+}
 
-  return '\n\n'
+return '\n\n'
 }
 
 function insertHeading(prefix, placeholder) {
-  const selectedText =
-    getSelectedText().trim() || placeholder
+const selectedText =
+getSelectedText().trim() || placeholder
 
-  const spacing = getLeadingSpacing()
+const spacing = getLeadingSpacing()
 
-  const replacement =
-    `${spacing}${prefix}${selectedText}\n\n`
+const replacement =
+`${spacing}${prefix}${selectedText}\n\n`
 
-  replaceSelection(
-    replacement,
-    spacing.length + prefix.length,
-    selectedText.length
-  )
+replaceSelection(
+replacement,
+spacing.length + prefix.length,
+selectedText.length
+)
 }
 
 function prefixSelectedLines(
-  prefixFactory,
-  placeholder
+prefixFactory,
+placeholder
 ) {
-  const selectedText =
-    getSelectedText().trim() || placeholder
+const selectedText =
+getSelectedText().trim() || placeholder
 
-  const formattedLines =
-    selectedText
-      .split(/\r?\n/)
-      .map((line, index) => {
-        return prefixFactory(index) + line.trim()
-      })
+const lines =
+selectedText.split(/\r?\n/)
 
-  const spacing = getLeadingSpacing()
+const formattedLines =
+lines.map((line, index) => {
+return `${prefixFactory(index)}${line.trim()}`
+})
 
-  replaceSelection(
-    `${spacing}${formattedLines.join('\n')}\n\n`
-  )
+const spacing = getLeadingSpacing()
+
+replaceSelection(
+`${spacing}${formattedLines.join('\n')}\n\n`
+)
 }
 
 function insertArticleTemplate() {
-  if (!contentInput) {
-    return
-  }
+if (!contentInput || !message) {
+return
+}
 
-  const template = `## Overview
+const template = `## Overview
 
 Write the article overview here.
 
@@ -175,9 +175,9 @@ Explain the main process or workflow here.
 
 Add supporting information under this subheading.
 
-- First important point
-- Second important point
-- Third important point
+* First important point
+* Second important point
+* Third important point
 
 ## Resolution Steps
 
@@ -191,266 +191,322 @@ Add supporting information under this subheading.
 
 Summarize the key information from the article.`
 
-  if (!contentInput.value.trim()) {
-    contentInput.value = template
-  } else {
-    const shouldInsert = window.confirm(
-      'The editor already contains text. Add the template below the existing content?'
-    )
+if (!contentInput.value.trim()) {
+contentInput.value = template
+} else {
+const shouldInsert = window.confirm(
+'The editor already contains text. Add the template below the existing content?'
+)
 
-    if (!shouldInsert) {
-      return
-    }
+```
+if (!shouldInsert) {
+  return
+}
 
-    contentInput.value =
-      `${contentInput.value.trim()}\n\n${template}`
-  }
+contentInput.value =
+  `${contentInput.value.trim()}\n\n${template}`
+```
 
-  contentInput.focus()
+}
 
-  contentInput.setSelectionRange(
-    contentInput.value.length,
-    contentInput.value.length
-  )
+contentInput.focus()
 
-  message.textContent = 'Article template inserted.'
+contentInput.setSelectionRange(
+contentInput.value.length,
+contentInput.value.length
+)
+
+contentInput.dispatchEvent(
+new Event('input', {
+bubbles: true
+})
+)
+
+message.textContent =
+'Article template inserted.'
 }
 
 function applyFormatting(format) {
-  switch (format) {
-    case 'section':
-      insertHeading('## ', 'Section title')
-      break
+switch (format) {
+case 'bold':
+wrapSelectedText(
+'**',
+'**',
+'bold text'
+)
+break
 
-    case 'subheading':
-      insertHeading('### ', 'Subheading')
-      break
+```
+case 'italic':
+  wrapSelectedText(
+    '*',
+    '*',
+    'italic text'
+  )
+  break
 
-    case 'bold':
-      wrapSelectedText(
-        '**',
-        '**',
-        'bold text'
-      )
-      break
+case 'section':
+  insertHeading(
+    '## ',
+    'Section title'
+  )
+  break
 
-    case 'italic':
-      wrapSelectedText(
-        '*',
-        '*',
-        'italic text'
-      )
-      break
+case 'subheading':
+  insertHeading(
+    '### ',
+    'Subheading'
+  )
+  break
 
-    case 'bullets':
-      prefixSelectedLines(
-        () => '- ',
-        'List item'
-      )
-      break
+case 'bullets':
+  prefixSelectedLines(
+    () => '- ',
+    'List item'
+  )
+  break
 
-    case 'numbered':
-      prefixSelectedLines(
-        index => `${index + 1}. `,
-        'Step description'
-      )
-      break
+case 'numbered':
+  prefixSelectedLines(
+    index => `${index + 1}. `,
+    'Step description'
+  )
+  break
 
-    case 'callout':
-      prefixSelectedLines(
-        () => '> ',
-        'Important note'
-      )
-      break
+case 'callout':
+  prefixSelectedLines(
+    () => '> ',
+    'Important note'
+  )
+  break
 
-    case 'template':
-      insertArticleTemplate()
-      break
-  }
+case 'template':
+  insertArticleTemplate()
+  break
+
+default:
+  console.warn(
+    `Unknown formatting option: ${format}`
+  )
+```
+
+}
 }
 
 function initializeEditorControls() {
-  formatButtons.forEach(button => {
-    button.addEventListener('click', () => {
-      applyFormatting(button.dataset.format)
-    })
-  })
+formatButtons.forEach(button => {
+button.addEventListener('click', () => {
+applyFormatting(
+button.dataset.format
+)
+})
+})
 
-  contentInput?.addEventListener(
-  'keydown',
-  event => {
-    const modifierPressed =
-      event.ctrlKey || event.metaKey
+contentInput?.addEventListener(
+'keydown',
+event => {
+const modifierPressed =
+event.ctrlKey || event.metaKey
 
-    const pressedKey =
-      event.key.toLowerCase()
+```
+  const pressedKey =
+    event.key.toLowerCase()
 
-    if (
-      modifierPressed &&
-      pressedKey === 'b'
-    ) {
-      event.preventDefault()
+  if (
+    modifierPressed &&
+    pressedKey === 'b'
+  ) {
+    event.preventDefault()
 
-      wrapSelectedText(
-        '**',
-        '**',
-        'bold text'
-      )
+    wrapSelectedText(
+      '**',
+      '**',
+      'bold text'
+    )
 
-      return
-    }
-
-    if (
-      modifierPressed &&
-      pressedKey === 'i'
-    ) {
-      event.preventDefault()
-
-      wrapSelectedText(
-        '*',
-        '*',
-        'italic text'
-      )
-
-      return
-    }
-
-    if (event.key === 'Tab') {
-      event.preventDefault()
-      replaceSelection('  ', 2)
-    }
+    return
   }
+
+  if (
+    modifierPressed &&
+    pressedKey === 'i'
+  ) {
+    event.preventDefault()
+
+    wrapSelectedText(
+      '*',
+      '*',
+      'italic text'
+    )
+
+    return
+  }
+
+  if (event.key === 'Tab') {
+    event.preventDefault()
+    replaceSelection('  ', 2)
+  }
+}
+```
+
 )
 
+descriptionInput?.addEventListener(
+'input',
+updateDescriptionCount
+)
+
+updateDescriptionCount()
+}
+
+function getErrorMessage(error) {
+if (
+error &&
+typeof error.message === 'string'
+) {
+return error.message
+}
+
+return 'An unexpected error occurred.'
+}
+
 async function initializeArticleEditor() {
-  if (
-    !form ||
-    !message ||
-    !submitButton ||
-    !descriptionInput ||
-    !contentInput
-  ) {
-    console.error(
-      'Article editor elements could not be found.'
-    )
+if (
+!form ||
+!message ||
+!submitButton ||
+!titleInput ||
+!descriptionInput ||
+!tagInput ||
+!contentInput
+) {
+console.error(
+'Required article editor elements were not found.'
+)
 
-    return
-  }
+```
+return
+```
 
-  initializeEditorControls()
+}
 
-  const {
-    data: { user },
-    error: userError
-  } = await supabase.auth.getUser()
+submitButton.disabled = true
+initializeEditorControls()
 
-  if (userError) {
-    console.error(
-      'Authentication error:',
-      userError
-    )
-  }
+try {
+const {
+data: { user },
+error: userError
+} = await supabase.auth.getUser()
 
-  if (userError || !user) {
-    window.location.replace('./login.html')
-    return
-  }
+```
+if (userError) {
+  throw userError
+}
 
-  const email =
-    user.email?.trim().toLowerCase()
+if (!user) {
+  window.location.replace(
+    './login.html'
+  )
 
-  if (!email) {
-    window.location.replace('./login.html')
-    return
-  }
+  return
+}
 
-  const {
-    data: allowedUser,
-    error: permissionError
-  } = await supabase
-    .from('login')
-    .select('name, can_edit_articles')
-    .ilike('email', email)
-    .maybeSingle()
+const email =
+  user.email?.trim().toLowerCase()
 
-  if (permissionError) {
-    console.error(
-      'Permission check error:',
-      permissionError
-    )
+if (!email) {
+  window.location.replace(
+    './login.html'
+  )
 
-    alert(
-      `Unable to verify article editor access: ${permissionError.message}`
-    )
+  return
+}
 
-    window.location.replace('./dashboard.html')
-    return
-  }
+const {
+  data: allowedUser,
+  error: permissionError
+} = await supabase
+  .from('login')
+  .select(
+    'name, can_edit_articles'
+  )
+  .ilike('email', email)
+  .maybeSingle()
 
-  if (
-    !allowedUser ||
-    allowedUser.can_edit_articles !== true
-  ) {
-    alert('Article editor access only.')
-    window.location.replace('./dashboard.html')
-    return
-  }
+if (permissionError) {
+  throw permissionError
+}
 
-  const authorName =
-    allowedUser.name?.trim() ||
-    user.user_metadata?.full_name?.trim() ||
-    user.user_metadata?.name?.trim() ||
-    email
+if (
+  !allowedUser ||
+  allowedUser.can_edit_articles !== true
+) {
+  alert('Article editor access only.')
 
-  form.addEventListener(
-    'submit',
-    async event => {
-      event.preventDefault()
+  window.location.replace(
+    './dashboard.html'
+  )
 
-      const title =
-        document
-          .getElementById('title')
-          ?.value.trim() ?? ''
+  return
+}
 
-      const description =
-        descriptionInput.value.trim()
+const authorName =
+  allowedUser.name?.trim() ||
+  user.user_metadata?.full_name?.trim() ||
+  user.user_metadata?.name?.trim() ||
+  email
 
-      const tag =
-        document
-          .getElementById('tag')
-          ?.value.trim()
-          .toLowerCase() ?? ''
+submitButton.disabled = false
 
-      const content =
-        contentInput.value.trim()
+form.addEventListener(
+  'submit',
+  async event => {
+    event.preventDefault()
 
-      const validTags = [
-        'tickets',
-        'cashouts'
-      ]
+    const title =
+      titleInput.value.trim()
 
-      if (
-        !title ||
-        !description ||
-        !content ||
-        !validTags.includes(tag)
-      ) {
-        message.textContent =
-          'Please enter a title, description, category, and article content.'
+    const description =
+      descriptionInput.value.trim()
 
-        return
-      }
+    const tag =
+      tagInput.value
+        .trim()
+        .toLowerCase()
 
-      if (description.length > 300) {
-        message.textContent =
-          'The article description cannot exceed 300 characters.'
+    const content =
+      contentInput.value.trim()
 
-        return
-      }
+    const validTags = [
+      'tickets',
+      'cashouts'
+    ]
 
-      submitButton.disabled = true
-      message.textContent = 'Saving article...'
+    if (
+      !title ||
+      !description ||
+      !content ||
+      !validTags.includes(tag)
+    ) {
+      message.textContent =
+        'Please enter a title, description, category, and article content.'
 
+      return
+    }
+
+    if (description.length > 300) {
+      message.textContent =
+        'The article description cannot exceed 300 characters.'
+
+      return
+    }
+
+    submitButton.disabled = true
+    message.textContent =
+      'Saving article...'
+
+    try {
       const {
         error: insertError
       } = await supabase
@@ -464,27 +520,44 @@ async function initializeArticleEditor() {
           published: true
         })
 
-      submitButton.disabled = false
-
       if (insertError) {
-        console.error(
-          'Article insert error:',
-          insertError
-        )
-
-        message.textContent =
-          `Unable to save article: ${insertError.message}`
-
-        return
+        throw insertError
       }
-
-      message.textContent =
-        'Article saved successfully.'
 
       form.reset()
       updateDescriptionCount()
+
+      message.textContent =
+        'Article saved successfully.'
+    } catch (error) {
+      console.error(
+        'Article insert error:',
+        error
+      )
+
+      message.textContent =
+        `Unable to save article: ${getErrorMessage(error)}`
+    } finally {
+      submitButton.disabled = false
     }
-  )
+  }
+)
+```
+
+} catch (error) {
+console.error(
+'Article editor initialization error:',
+error
+)
+
+```
+message.textContent =
+  `Unable to open the article editor: ${getErrorMessage(error)}`
+
+submitButton.disabled = true
+```
+
+}
 }
 
 initializeArticleEditor()
