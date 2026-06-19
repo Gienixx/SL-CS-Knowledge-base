@@ -1,30 +1,20 @@
 function jsonResponse(data, status = 200) {
-  return new Response(
-    JSON.stringify(data),
-    {
-      status,
-      headers: {
-        'Content-Type': 'application/json; charset=utf-8',
-        'Cache-Control': 'no-store'
-      }
-    }
-  )
+return new Response(JSON.stringify(data), {
+status,
+headers: {
+'Content-Type': 'application/json; charset=utf-8',
+'Cache-Control': 'no-store'
 }
-
-)
+})
 }
 
 function getBearerToken(request) {
 const authorization =
-request.headers.get(
-'Authorization'
-)
+request.headers.get('Authorization')
 
 if (
 !authorization ||
-!authorization.startsWith(
-'Bearer '
-)
+!authorization.startsWith('Bearer ')
 ) {
 return null
 }
@@ -52,37 +42,38 @@ throw new Error(
 }
 
 return {
-supabaseUrl:
-SUPABASE_URL.replace(//+$/, ''),
+supabaseUrl: SUPABASE_URL.endsWith('/')
+? SUPABASE_URL.slice(0, -1)
+: SUPABASE_URL,
 
-```
-anonKey:
-  SUPABASE_ANON_KEY,
+ 
+anonKey: SUPABASE_ANON_KEY,
 
 serviceRoleKey:
   SUPABASE_SERVICE_ROLE_KEY
-```
+ 
 
 }
 }
 
 async function requireAdmin(context) {
 const accessToken =
-getBearerToken(
-context.request
-)
+getBearerToken(context.request)
 
 if (!accessToken) {
 return {
 authorized: false,
-response: jsonResponse(
-{
-error:
-'Authentication required.'
-},
-401
-)
+
+ 
+  response: jsonResponse(
+    {
+      error: 'Authentication required.'
+    },
+    401
+  )
 }
+ 
+
 }
 
 const {
@@ -96,27 +87,27 @@ const userResponse = await fetch(
 {
 headers: {
 apikey: anonKey,
-
-```
-    Authorization:
-      `Bearer ${accessToken}`
-  }
+Authorization:
+`Bearer ${accessToken}`
 }
-```
-
+}
 )
 
 if (!userResponse.ok) {
 return {
 authorized: false,
-response: jsonResponse(
-{
-error:
-'Your session is invalid or has expired.'
-},
-401
-)
+
+ 
+  response: jsonResponse(
+    {
+      error:
+        'Your session is invalid or has expired.'
+    },
+    401
+  )
 }
+ 
+
 }
 
 const authenticatedUser =
@@ -130,14 +121,18 @@ authenticatedUser.email
 if (!email) {
 return {
 authorized: false,
-response: jsonResponse(
-{
-error:
-'The authenticated account has no email address.'
-},
-401
-)
+
+ 
+  response: jsonResponse(
+    {
+      error:
+        'The authenticated account has no email address.'
+    },
+    401
+  )
 }
+ 
+
 }
 
 const permissionUrl =
@@ -165,16 +160,15 @@ await fetch(
 permissionUrl.toString(),
 {
 headers: {
-apikey:
-serviceRoleKey,
+apikey: serviceRoleKey,
 
-```
+ 
       Authorization:
         `Bearer ${serviceRoleKey}`
     }
   }
 )
-```
+ 
 
 if (!permissionResponse.ok) {
 console.error(
@@ -182,9 +176,10 @@ console.error(
 await permissionResponse.text()
 )
 
-```
+ 
 return {
   authorized: false,
+
   response: jsonResponse(
     {
       error:
@@ -193,7 +188,7 @@ return {
     500
   )
 }
-```
+ 
 
 }
 
@@ -206,14 +201,18 @@ permissionRows[0]?.is_admin !== true
 ) {
 return {
 authorized: false,
-response: jsonResponse(
-{
-error:
-'Administrator access required.'
-},
-403
-)
+
+ 
+  response: jsonResponse(
+    {
+      error:
+        'Administrator access required.'
+    },
+    403
+  )
 }
+ 
+
 }
 
 return {
@@ -237,7 +236,7 @@ new URL(
 `${supabaseUrl}/auth/v1/admin/users`
 )
 
-```
+ 
 usersUrl.searchParams.set(
   'page',
   String(page)
@@ -253,8 +252,7 @@ const usersResponse =
     usersUrl.toString(),
     {
       headers: {
-        apikey:
-          serviceRoleKey,
+        apikey: serviceRoleKey,
 
         Authorization:
           `Bearer ${serviceRoleKey}`
@@ -297,7 +295,7 @@ if (users.length < perPage) {
 }
 
 page += 1
-```
+ 
 
 }
 
@@ -311,7 +309,7 @@ try {
 const adminCheck =
 await requireAdmin(context)
 
-```
+ 
 if (!adminCheck.authorized) {
   return adminCheck.response
 }
@@ -380,34 +378,33 @@ const targetUser =
 if (!targetUser) {
   return jsonResponse(
     {
-      error:
-        'User not found.'
+      error: 'User not found.'
     },
     404
   )
 }
 
-const updateResponse = await fetch(
-  `${supabaseUrl}/auth/v1/admin/users/${encodeURIComponent(targetUser.id)}`,
-  {
-    method: 'PUT',
+const updateResponse =
+  await fetch(
+    `${supabaseUrl}/auth/v1/admin/users/${encodeURIComponent(targetUser.id)}`,
+    {
+      method: 'PUT',
 
-    headers: {
-      'Content-Type':
-        'application/json',
+      headers: {
+        'Content-Type':
+          'application/json',
 
-      apikey:
-        serviceRoleKey,
+        apikey: serviceRoleKey,
 
-      Authorization:
-        `Bearer ${serviceRoleKey}`
-    },
+        Authorization:
+          `Bearer ${serviceRoleKey}`
+      },
 
-    body: JSON.stringify({
-      password
-    })
-  }
-)
+      body: JSON.stringify({
+        password
+      })
+    }
+  )
 
 const updateData =
   await updateResponse.json()
@@ -427,7 +424,7 @@ if (!updateResponse.ok) {
 return jsonResponse({
   success: true
 })
-```
+ 
 
 } catch (error) {
 console.error(
@@ -435,7 +432,7 @@ console.error(
 error
 )
 
-```
+ 
 return jsonResponse(
   {
     error:
@@ -444,7 +441,7 @@ return jsonResponse(
   },
   500
 )
-```
+ 
 
 }
 }
