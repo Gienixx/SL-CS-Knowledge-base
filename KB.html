@@ -1,152 +1,490 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Knowledgebase</title>
+  <meta charset="UTF-8">
 
-<style>
-    :root{
-        --sl-navy:#241b5d;
-        --sl-navy-deep:#1b1347;
-        --sl-cream:#fbf8f1;
-        --sl-cream-soft:#f4eee1;
-        --sl-gold:#ffc21a;
-        --sl-gold-soft:#ffe08a;
-        --sl-text:#2b2459;
-        --sl-muted:#6f678f;
-        --sl-card:#ffffff;
-        --sl-border:rgba(36,27,93,0.08);
-        --sl-shadow:0 22px 50px rgba(36, 27, 93, 0.12);
+  <meta
+    name="viewport"
+    content="width=device-width, initial-scale=1.0"
+  >
+
+  <title>Knowledgebase</title>
+
+  <style>
+    :root {
+      --sl-navy: #241b5d;
+      --sl-navy-deep: #1b1347;
+      --sl-cream: #fbf8f1;
+      --sl-cream-soft: #f4eee1;
+      --sl-gold: #ffc21a;
+      --sl-gold-soft: #ffe08a;
+      --sl-text: #2b2459;
+      --sl-muted: #6f678f;
+      --sl-card: #ffffff;
+      --sl-border: rgba(36, 27, 93, 0.08);
+      --sl-shadow: 0 22px 50px rgba(36, 27, 93, 0.12);
     }
-    *{margin:0;padding:0;box-sizing:border-box;font-family:"Poppins",Arial,Helvetica,sans-serif}
-    body{
-        min-height:100vh;
-        color:var(--sl-text);
-        background:
-        radial-gradient(circle at 12% 18%, rgba(255, 194, 26, 0.22), transparent 22rem),
-        radial-gradient(circle at 86% 12%, rgba(36, 27, 93, 0.10), transparent 24rem),
-        linear-gradient(180deg, var(--sl-cream) 0%, #fffdfa 48%, var(--sl-cream-soft) 100%);
-        overflow-x:hidden;
+
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+      font-family: "Poppins", Arial, Helvetica, sans-serif;
     }
-    body::before{
-        content:"";
-        position:fixed;
-        inset:0;
-        pointer-events:none;
-        opacity:.16;
-        background-image:
-        linear-gradient(rgba(36,27,93,0.05) 1px, transparent 1px),
-        linear-gradient(90deg, rgba(36,27,93,0.05) 1px, transparent 1px);
-        background-size:72px 72px,72px 72px;
-        mask-image:linear-gradient(to bottom, rgba(0,0,0,1), rgba(0,0,0,0.24));
+
+    body {
+      min-height: 100vh;
+      color: var(--sl-text);
+      background:
+        radial-gradient(
+          circle at 12% 18%,
+          rgba(255, 194, 26, 0.22),
+          transparent 22rem
+        ),
+        radial-gradient(
+          circle at 86% 12%,
+          rgba(36, 27, 93, 0.10),
+          transparent 24rem
+        ),
+        linear-gradient(
+          180deg,
+          var(--sl-cream) 0%,
+          #fffdfa 48%,
+          var(--sl-cream-soft) 100%
+        );
+      overflow-x: hidden;
     }
-    .hero{
-        height:180px;
-        background:linear-gradient(180deg, rgba(255,255,255,0.96), rgba(248,243,233,0.96));
-        border-bottom:1px solid var(--sl-border);
-        display:flex;
-        justify-content:center;
-        align-items:center;
-        position:relative;
-        overflow:hidden;
+
+    body::before {
+      content: "";
+      position: fixed;
+      inset: 0;
+      pointer-events: none;
+      opacity: 0.16;
+      background-image:
+        linear-gradient(
+          rgba(36, 27, 93, 0.05) 1px,
+          transparent 1px
+        ),
+        linear-gradient(
+          90deg,
+          rgba(36, 27, 93, 0.05) 1px,
+          transparent 1px
+        );
+      background-size: 72px 72px, 72px 72px;
+      mask-image:
+        linear-gradient(
+          to bottom,
+          rgba(0, 0, 0, 1),
+          rgba(0, 0, 0, 0.24)
+        );
     }
-    .hero::after{
-        content:"";
-        position:absolute;
-        inset:auto -8% -70px auto;
-        width:340px;
-        height:340px;
-        border-radius:50%;
-        background:radial-gradient(circle, rgba(255,194,26,0.14), transparent 62%);
-        pointer-events:none;
+
+    .hero {
+      height: 180px;
+      background:
+        linear-gradient(
+          180deg,
+          rgba(255, 255, 255, 0.96),
+          rgba(248, 243, 233, 0.96)
+        );
+      border-bottom: 1px solid var(--sl-border);
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      position: relative;
+      overflow: hidden;
     }
-    .logo{position:absolute;left:50px;width:80px;height:80px;object-fit:contain}
-    .hero h1{color:var(--sl-navy);font-size:3rem;font-weight:700;text-align:center}
-    .logout-btn{
-        position:absolute;
-        right:50px;
-        top:50%;
-        transform:translateY(-50%);
-        padding:12px 18px;
-        border:1px solid var(--sl-border);
-        border-radius:999px;
-        background:linear-gradient(135deg, var(--sl-navy), var(--sl-navy-deep));
-        color:#fff;
-        font-weight:700;
-        cursor:pointer;
-        box-shadow:var(--sl-shadow);
-        transition:transform .2s ease, background .2s ease;
+
+    .hero::after {
+      content: "";
+      position: absolute;
+      inset: auto -8% -70px auto;
+      width: 340px;
+      height: 340px;
+      border-radius: 50%;
+      background:
+        radial-gradient(
+          circle,
+          rgba(255, 194, 26, 0.14),
+          transparent 62%
+        );
+      pointer-events: none;
     }
-    .logout-btn:hover{transform:translateY(-50%) scale(1.03);background:linear-gradient(135deg, #3a3078, var(--sl-navy))}
-    .search-section{max-width:1100px;margin:-30px auto 0;background:transparent;border-radius:8px;padding:50px 30px 80px;text-align:center}
-    .search-section h2{font-size:2rem;margin-bottom:10px;color:var(--sl-navy)}
-    .search-section p{color:var(--sl-muted);margin-bottom:25px}
-    .search-box{max-width:600px;margin:auto}
-    .search-box input{width:100%;padding:15px;border:1px solid var(--sl-border);border-radius:14px;font-size:16px;outline:none;background:rgba(255,255,255,0.92);color:var(--sl-text);box-shadow:0 10px 24px rgba(36,27,93,0.06)}
-    .search-box input:focus{border-color:rgba(255,194,26,0.45);box-shadow:0 0 0 4px rgba(255,194,26,0.12)}
-    .cards{max-width:1100px;margin:-40px auto 60px;display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:25px;padding:0 20px}
-    .card{background:linear-gradient(180deg, rgba(255,255,255,0.96), rgba(250,246,238,0.96));padding:40px 25px;text-align:center;border-radius:20px;border:1px solid var(--sl-border);box-shadow:var(--sl-shadow);transition:.3s;cursor:pointer}
-    .card:hover{transform:translateY(-5px);border-color:rgba(255,194,26,0.2)}
-    .card .icon{font-size:50px;margin-bottom:20px}
-    .card h3{margin-bottom:15px;color:var(--sl-navy)}
-    .card p{color:var(--sl-muted);line-height:1.6}
-    .ticket-section{max-width:1100px;margin:30px auto 70px;background:linear-gradient(180deg, rgba(255,255,255,0.98), rgba(248,243,233,0.96));padding:35px;border-radius:20px;border:1px solid var(--sl-border);box-shadow:var(--sl-shadow);display:none}
-    .ticket-section h2{color:var(--sl-navy);margin-bottom:8px}
-    .ticket-section table{width:100%;border-collapse:collapse}
-    .ticket-section th,.ticket-section td{padding:14px;border-bottom:1px solid var(--sl-border);text-align:left}
-    .ticket-section th{background:rgba(255,194,26,0.12);color:var(--sl-navy)}
-    .ticket-section a{color:var(--sl-navy);text-decoration:none;font-weight:600}
-    .ticket-section a:hover{text-decoration:underline;color:var(--sl-gold)}
-    .article-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:22px;margin-top:24px}
-    .article-card{background:linear-gradient(180deg, rgba(255,255,255,0.98), rgba(250,246,238,0.98));border:1px solid var(--sl-border);border-radius:18px;overflow:hidden;text-align:left;transition:.3s;box-shadow:var(--sl-shadow)}
-    .article-card:hover{transform:translateY(-4px);box-shadow:0 16px 32px rgba(36,27,93,.12)}
-    .article-image-placeholder{height:145px;background:linear-gradient(135deg, rgba(255,255,255,0.95), rgba(255,194,26,0.12));color:var(--sl-navy);display:flex;align-items:center;justify-content:center;font-weight:700;text-align:center;padding:16px}
-    .article-content{padding:18px}
-    .article-content h3{color:var(--sl-navy);font-size:1.05rem;margin-bottom:10px}
-    .article-content p{color:var(--sl-muted);font-size:.95rem;line-height:1.5;margin-bottom:14px}
-    .article-meta{color:var(--sl-gold);font-size:.85rem;font-weight:700}
-</style>
+
+    .logo {
+      position: absolute;
+      left: 50px;
+      width: 80px;
+      height: 80px;
+      object-fit: contain;
+    }
+
+    .hero h1 {
+      color: var(--sl-navy);
+      font-size: 3rem;
+      font-weight: 700;
+      text-align: center;
+    }
+
+    .logout-btn {
+      position: absolute;
+      right: 50px;
+      top: 50%;
+      transform: translateY(-50%);
+      padding: 12px 18px;
+      border: 1px solid var(--sl-border);
+      border-radius: 999px;
+      background:
+        linear-gradient(
+          135deg,
+          var(--sl-navy),
+          var(--sl-navy-deep)
+        );
+      color: #fff;
+      font-weight: 700;
+      cursor: pointer;
+      box-shadow: var(--sl-shadow);
+      transition:
+        transform 0.2s ease,
+        background 0.2s ease;
+    }
+
+    .logout-btn:hover {
+      transform: translateY(-50%) scale(1.03);
+      background:
+        linear-gradient(
+          135deg,
+          #3a3078,
+          var(--sl-navy)
+        );
+    }
+
+    .search-section {
+      max-width: 1100px;
+      margin: -30px auto 0;
+      padding: 50px 30px 80px;
+      text-align: center;
+    }
+
+    .search-section h2 {
+      font-size: 2rem;
+      margin-bottom: 10px;
+      color: var(--sl-navy);
+    }
+
+    .search-section p {
+      color: var(--sl-muted);
+      margin-bottom: 25px;
+    }
+
+    .search-box {
+      max-width: 600px;
+      margin: auto;
+    }
+
+    .search-box input {
+      width: 100%;
+      padding: 15px;
+      border: 1px solid var(--sl-border);
+      border-radius: 14px;
+      font-size: 16px;
+      outline: none;
+      background: rgba(255, 255, 255, 0.92);
+      color: var(--sl-text);
+      box-shadow: 0 10px 24px rgba(36, 27, 93, 0.06);
+    }
+
+    .search-box input:focus {
+      border-color: rgba(255, 194, 26, 0.45);
+      box-shadow: 0 0 0 4px rgba(255, 194, 26, 0.12);
+    }
+
+    .cards {
+      max-width: 1100px;
+      margin: -40px auto 60px;
+      display: grid;
+      grid-template-columns:
+        repeat(auto-fit, minmax(280px, 1fr));
+      gap: 25px;
+      padding: 0 20px;
+    }
+
+    .card {
+      background:
+        linear-gradient(
+          180deg,
+          rgba(255, 255, 255, 0.96),
+          rgba(250, 246, 238, 0.96)
+        );
+      padding: 40px 25px;
+      text-align: center;
+      border-radius: 20px;
+      border: 1px solid var(--sl-border);
+      box-shadow: var(--sl-shadow);
+      transition: 0.3s;
+      cursor: pointer;
+    }
+
+    .card:hover {
+      transform: translateY(-5px);
+      border-color: rgba(255, 194, 26, 0.2);
+    }
+
+    .card .icon {
+      font-size: 50px;
+      margin-bottom: 20px;
+    }
+
+    .card h3 {
+      margin-bottom: 15px;
+      color: var(--sl-navy);
+    }
+
+    .card p {
+      color: var(--sl-muted);
+      line-height: 1.6;
+    }
+
+    .ticket-section {
+      max-width: 1100px;
+      margin: 30px auto 70px;
+      background:
+        linear-gradient(
+          180deg,
+          rgba(255, 255, 255, 0.98),
+          rgba(248, 243, 233, 0.96)
+        );
+      padding: 35px;
+      border-radius: 20px;
+      border: 1px solid var(--sl-border);
+      box-shadow: var(--sl-shadow);
+      display: none;
+    }
+
+    .ticket-section h2 {
+      color: var(--sl-navy);
+      margin-bottom: 8px;
+    }
+
+    .ticket-section table {
+      width: 100%;
+      border-collapse: collapse;
+    }
+
+    .ticket-section th,
+    .ticket-section td {
+      padding: 14px;
+      border-bottom: 1px solid var(--sl-border);
+      text-align: left;
+    }
+
+    .ticket-section th {
+      background: rgba(255, 194, 26, 0.12);
+      color: var(--sl-navy);
+    }
+
+    .ticket-section a {
+      color: var(--sl-navy);
+      text-decoration: none;
+      font-weight: 600;
+    }
+
+    .ticket-section a:hover {
+      text-decoration: underline;
+      color: var(--sl-gold);
+    }
+
+    .article-grid {
+      display: grid;
+      grid-template-columns:
+        repeat(auto-fit, minmax(240px, 1fr));
+      gap: 22px;
+      margin-top: 24px;
+    }
+
+    .article-card {
+      background:
+        linear-gradient(
+          180deg,
+          rgba(255, 255, 255, 0.98),
+          rgba(250, 246, 238, 0.98)
+        );
+      border: 1px solid var(--sl-border);
+      border-radius: 18px;
+      overflow: hidden;
+      text-align: left;
+      transition: 0.3s;
+      box-shadow: var(--sl-shadow);
+    }
+
+    .article-card:hover {
+      transform: translateY(-4px);
+      box-shadow: 0 16px 32px rgba(36, 27, 93, 0.12);
+    }
+
+    .article-image-placeholder {
+      height: 145px;
+      background:
+        linear-gradient(
+          135deg,
+          rgba(255, 255, 255, 0.95),
+          rgba(255, 194, 26, 0.12)
+        );
+      color: var(--sl-navy);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-weight: 700;
+      text-align: center;
+      padding: 16px;
+    }
+
+    .article-content {
+      padding: 18px;
+    }
+
+    .article-content h3 {
+      color: var(--sl-navy);
+      font-size: 1.05rem;
+      margin-bottom: 10px;
+    }
+
+    .article-content p {
+      color: var(--sl-muted);
+      font-size: 0.95rem;
+      line-height: 1.5;
+      margin-bottom: 14px;
+    }
+
+    .article-meta {
+      color: var(--sl-gold);
+      font-size: 0.85rem;
+      font-weight: 700;
+    }
+
+    .load-error {
+      color: #a42828;
+      line-height: 1.6;
+      margin-top: 16px;
+    }
+
+    @media (max-width: 700px) {
+      .hero {
+        height: auto;
+        min-height: 180px;
+        padding: 30px 20px;
+        flex-direction: column;
+        gap: 20px;
+      }
+
+      .logo,
+      .logout-btn {
+        position: static;
+        transform: none;
+      }
+
+      .logout-btn:hover {
+        transform: scale(1.03);
+      }
+
+      .hero h1 {
+        font-size: 2.2rem;
+      }
+    }
+  </style>
 </head>
+
 <body>
-<script type="module" src="./scripts/kb.js?v=1"></script>
+  <section class="hero">
+    <img
+      src="./assets/ES.png"
+      alt="Eureka Logo"
+      class="logo"
+      onclick="goToLanding()"
+      style="cursor: pointer;"
+    >
 
-<section class="hero">
-    <img src="assets/ES.png" alt="Eureka Logo" class="logo" style="cursor:pointer;" onclick="goToLanding()">
     <h1>Knowledgebase</h1>
-    <button class="logout-btn" type="button" onclick="window.location.href='dashboard.html'">Back to Dashboard</button>
-</section>
 
-<section class="search-section">
+    <button
+      class="logout-btn"
+      type="button"
+      onclick="window.location.href='./dashboard.html'"
+    >
+      Back to Dashboard
+    </button>
+  </section>
+
+  <section class="search-section">
     <h2>Your Dose of Know-How</h2>
     <p>All the information you need</p>
+
     <div class="search-box">
-        <input type="text" id="searchInput" placeholder="Search">
+      <input
+        type="text"
+        id="searchInput"
+        placeholder="Search"
+        autocomplete="off"
+      >
     </div>
-</section>
+  </section>
 
-<section class="cards">
-    <div class="card" onclick="showTicketsTable('TICKETS')">
-        <div class="icon">🎟</div>
-        <h3>Tickets</h3>
-        <p>Learn what different scripts you can use to communicate with your customers.</p>
-    </div>
-    <div class="card" onclick="showTicketsTable('CASHOUTS')">
-        <div class="icon">💳</div>
-        <h3>Cashouts</h3>
-        <p>Learn how to process Cashouts and detect fraud patterns.</p>
-    </div>
-    <div class="card" onclick="showTicketsTable('LINKS')">
-        <div class="icon">▶️</div>
-        <h3>Links</h3>
-        <p>Where you'll see all the links for the videos and demos.</p>
-    </div>
-</section>
+  <section class="cards">
+    <div
+      class="card"
+      onclick="showTicketsTable('TICKETS')"
+    >
+      <div class="icon">🎟</div>
+      <h3>Tickets</h3>
 
-<section class="ticket-section" id="ticketSection">
-    <h2 id="ticketHeader">Links</h2>
+      <p>
+        Learn what different scripts you can use to communicate
+        with your customers.
+      </p>
+    </div>
+
+    <div
+      class="card"
+      onclick="showTicketsTable('CASHOUTS')"
+    >
+      <div class="icon">💳</div>
+      <h3>Cashouts</h3>
+
+      <p>
+        Learn how to process Cashouts and detect fraud patterns.
+      </p>
+    </div>
+
+    <div
+      class="card"
+      onclick="showTicketsTable('LINKS')"
+    >
+      <div class="icon">▶️</div>
+      <h3>Links</h3>
+
+      <p>
+        Where you'll see all the links for the videos and demos.
+      </p>
+    </div>
+  </section>
+
+  <section
+    class="ticket-section"
+    id="ticketSection"
+  >
+    <h2 id="ticketHeader">Articles</h2>
     <div id="ticketContent"></div>
-</section>
-    <script type="module" src="./scripts/auth-guard.js"></script>
+  </section>
+
+  <script
+    type="module"
+    src="./scripts/kb.js?v=4"
+  ></script>
+
+  <script
+    type="module"
+    src="./scripts/auth-guard.js"
+  ></script>
 </body>
 </html>
