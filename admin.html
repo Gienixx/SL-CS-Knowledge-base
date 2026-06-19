@@ -310,6 +310,51 @@
         </a>
       </header>
 
+      <section class="admin-card">
+  <div class="users-card-header">
+    <h2>Available Users</h2>
+
+    <button
+      class="admin-btn"
+      id="refreshUsersButton"
+      type="button"
+    >
+      Refresh
+    </button>
+  </div>
+
+  <div class="users-table-wrapper">
+    <table class="users-table">
+      <thead>
+        <tr>
+          <th>User ID</th>
+          <th>Name</th>
+          <th>Email</th>
+          <th>Admin</th>
+          <th>Editor</th>
+        </tr>
+      </thead>
+
+      <tbody id="usersTableBody">
+        <tr>
+          <td
+            colspan="5"
+            class="users-table-empty"
+          >
+            Loading users...
+          </td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+
+  <p
+    id="usersTableMessage"
+    class="admin-status"
+    aria-live="polite"
+  ></p>
+</section>
+
       <section
         id="addUserSection"
         class="admin-card"
@@ -500,7 +545,7 @@
 
   <script
     type="module"
-    src="./scripts/admin.js?v=4"
+    src="./scripts/admin.js?v=5"
   ></script>
 </body>
 </html>
