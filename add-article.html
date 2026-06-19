@@ -55,6 +55,7 @@
     }
 
     .article-form input,
+    .article-form select,
     .article-form textarea {
       width: 100%;
       border: 1px solid var(--sl-border);
@@ -122,6 +123,11 @@
       <section class="article-card">
         <form id="articleForm" class="article-form">
           <input id="title" type="text" placeholder="Article title" required>
+          <select id="tag" required>
+          <option value="">Select article category</option>
+          <option value="tickets">Tickets</option>
+          <option value="cashouts">Cashouts</option>
+          </select>
           <textarea id="content" placeholder="Article content" required></textarea>
           <button class="article-btn" type="submit">Save Article</button>
         </form>
