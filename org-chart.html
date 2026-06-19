@@ -4,11 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Organizational Chart | SocialLoop CS Base</title>
-    <script>
-        if (!localStorage.getItem("loggedIn")) {
-            window.location.href = "login.html";
-        }
-    </script>
+    
     <link rel="stylesheet" href="styles.css?v=org-chart-page-1">
     <style>
         .org-chart-page-nav {
@@ -51,5 +47,6 @@
     <div data-include="partials/modals-jerson.html"></div>
     <div data-include="partials/modals-tristan.html"></div>
     <script src="scripts/index.js?v=org-chart-page-1"></script>
+    <script type="module" src="./scripts/auth-guard.js"></script>
 </body>
 </html>
