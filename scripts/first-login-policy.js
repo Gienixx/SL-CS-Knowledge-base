@@ -13,7 +13,27 @@ export function requiresFirstLoginPasswordChange(user) {
       ? user.user_metadata
       : {}
 
-  if (metadata.password_change_completed === true) {
+  if (
+    metadata.password_change_completed === true ||
+    metadata.requires_password_change === false ||
+    Boolean(metadata.password_changed_at)
+  ) {
+    return false
+  }
+
+  const lastSignInAt = Date.parse(
+    user.last_sign_in_at || ''
+  )
+
+  const updatedAt = Date.parse(
+    user.updated_at || ''
+  )
+
+  if (
+    Number.isFinite(lastSignInAt) &&
+    Number.isFinite(updatedAt) &&
+    updatedAt > lastSignInAt + 1000
+  ) {
     return false
   }
 
