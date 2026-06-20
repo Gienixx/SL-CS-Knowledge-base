@@ -1,4 +1,7 @@
-import { supabase } from './supabaseClient.js'
+import {
+  supabase,
+  requiresFirstLoginPasswordChange
+} from './supabaseClient.js'
 
 const form = document.getElementById('changePasswordForm')
 const message = document.getElementById('message')
@@ -8,30 +11,6 @@ const backToDashboard = document.getElementById('backToDashboard')
 const firstLoginNotice = document.getElementById('firstLoginNotice')
 const pageTitle = document.getElementById('pageTitle')
 const pageDescription = document.getElementById('pageDescription')
-
-const FIRST_LOGIN_POLICY_START = Date.parse(
-  '2026-06-21T00:00:00.000Z'
-)
-
-function requiresFirstLoginPasswordChange(user) {
-  if (!user) {
-    return false
-  }
-
-  if (
-    user.user_metadata
-      ?.password_change_completed === true
-  ) {
-    return false
-  }
-
-  const createdAt = Date.parse(user.created_at || '')
-
-  return (
-    Number.isFinite(createdAt) &&
-    createdAt >= FIRST_LOGIN_POLICY_START
-  )
-}
 
 function setMessage(text, type = '') {
   if (!message) {
