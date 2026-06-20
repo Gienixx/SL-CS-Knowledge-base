@@ -9,7 +9,7 @@ export const supabase = createClient(
 )
 
 const FIRST_LOGIN_POLICY_START = Date.parse(
-  '2026-06-21T00:00:00.000Z'
+  '2026-06-20T16:00:00.000Z'
 )
 
 export function requiresFirstLoginPasswordChange(user) {
@@ -17,11 +17,38 @@ export function requiresFirstLoginPasswordChange(user) {
     return false
   }
 
+  const metadata =
+    user.user_metadata &&
+    typeof user.user_metadata === 'object'
+      ? user.user_metadata
+      : {}
+
   if (
-    user.user_metadata
-      ?.password_change_completed === true
+    metadata.password_change_completed === true ||
+    metadata.requires_password_change === false ||
+    Boolean(metadata.password_changed_at)
   ) {
     return false
+  }
+
+  const lastSignInAt = Date.parse(
+    user.last_sign_in_at || ''
+  )
+
+  const updatedAt = Date.parse(
+    user.updated_at || ''
+  )
+
+  if (
+    Number.isFinite(lastSignInAt) &&
+    Number.isFinite(updatedAt) &&
+    updatedAt > lastSignInAt + 1000
+  ) {
+    return false
+  }
+
+  if (metadata.requires_password_change === true) {
+    return true
   }
 
   const createdAt = Date.parse(user.created_at || '')
@@ -31,55 +58,3 @@ export function requiresFirstLoginPasswordChange(user) {
     createdAt >= FIRST_LOGIN_POLICY_START
   )
 }
-
-function isPasswordFlowPage() {
-  const pageName = window.location.pathname
-    .split('/')
-    .pop()
-    .toLowerCase()
-
-  return (
-    pageName === 'login.html' ||
-    pageName === 'change-password.html'
-  )
-}
-
-async function enforceFirstLoginPasswordChange() {
-  if (isPasswordFlowPage()) {
-    return
-  }
-
-  const {
-    data: { user }
-  } = await supabase.auth.getUser()
-
-  if (!requiresFirstLoginPasswordChange(user)) {
-    return
-  }
-
-  const {
-    data: { session },
-    error: refreshError
-  } = await supabase.auth.refreshSession()
-
-  if (
-    !refreshError &&
-    !requiresFirstLoginPasswordChange(session?.user)
-  ) {
-    return
-  }
-
-  const passwordPage = new URL(
-    './change-password.html?firstLogin=1',
-    window.location.href
-  )
-
-  window.location.replace(passwordPage.href)
-}
-
-enforceFirstLoginPasswordChange().catch(error => {
-  console.error(
-    'First-login password check failed:',
-    error
-  )
-})
