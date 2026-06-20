@@ -1,7 +1,7 @@
 import { supabase } from './supabaseClient.js'
 import {
   requiresFirstLoginPasswordChange
-} from './first-login-policy.js?v=2'
+} from './first-login-policy.js?v=3'
 
 async function logout() {
   await supabase.auth.signOut()
@@ -26,14 +26,27 @@ document.addEventListener('DOMContentLoaded', async () => {
       return
     }
 
-    if (requiresFirstLoginPasswordChange(user)) {
-      window.location.replace(
-        './change-password.html?firstLogin=1'
-      )
-      return
+    let currentUser = user
+
+    if (requiresFirstLoginPasswordChange(currentUser)) {
+      const {
+        data: { session },
+        error: refreshError
+      } = await supabase.auth.refreshSession()
+
+      if (!refreshError && session?.user) {
+        currentUser = session.user
+      }
+
+      if (requiresFirstLoginPasswordChange(currentUser)) {
+        window.location.replace(
+          './change-password.html?firstLogin=1'
+        )
+        return
+      }
     }
 
-    const email = user.email?.trim().toLowerCase()
+    const email = currentUser.email?.trim().toLowerCase()
 
     if (!email) {
       await supabase.auth.signOut()
