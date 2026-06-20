@@ -1,7 +1,7 @@
+import { supabase } from './supabaseClient.js'
 import {
-  supabase,
   requiresFirstLoginPasswordChange
-} from './supabaseClient.js'
+} from './first-login-policy.js?v=2'
 
 async function logout() {
   await supabase.auth.signOut()
