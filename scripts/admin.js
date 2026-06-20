@@ -1,982 +1,613 @@
 import { supabase } from './supabaseClient.js'
 
-const addUserForm =
-document.getElementById('addUserForm')
+const addUserForm = document.getElementById('addUserForm')
+const addUserMessage = document.getElementById('message')
+const changePasswordForm = document.getElementById('changePasswordForm')
+const changePasswordMessage = document.getElementById('changePasswordMessage')
+const usersTableBody = document.getElementById('usersTableBody')
+const usersTableMessage = document.getElementById('usersTableMessage')
+const refreshUsersButton = document.getElementById('refreshUsersButton')
+const openAddUserModalButton = document.getElementById('openAddUserModalButton')
+const editSelectedUserButton = document.getElementById('editSelectedUserButton')
+const editSelectedUserForm = document.getElementById('editSelectedUserForm')
+const editSelectedUserMessage = document.getElementById('editSelectedUserMessage')
+const editUserId = document.getElementById('editUserId')
+const editUserName = document.getElementById('editUserName')
+const editUserAccountEmail = document.getElementById('editUserAccountEmail')
+const editUserIsAdmin = document.getElementById('editUserIsAdmin')
+const editUserCanEditArticles = document.getElementById('editUserCanEditArticles')
 
-const addUserMessage =
-document.getElementById('message')
-
-const editUserForm =
-document.getElementById('editUserForm')
-
-const editUserMessage =
-document.getElementById(
-'editUserMessage'
-)
-
-const editUserEmail =
-document.getElementById(
-'editUserEmail'
-)
-
-const loadUserSettingsBtn =
-document.getElementById(
-'loadUserSettingsBtn'
-)
-
-const editUserPermissions =
-document.getElementById(
-'editUserPermissions'
-)
-
-const editIsAdmin =
-document.getElementById(
-'editIsAdmin'
-)
-
-const editCanEditArticles =
-document.getElementById(
-'editCanEditArticles'
-)
-
-const changePasswordForm =
-document.getElementById(
-'changePasswordForm'
-)
-
-const changePasswordMessage =
-document.getElementById(
-'changePasswordMessage'
-)
-
-const usersTableBody =
-document.getElementById(
-'usersTableBody'
-)
-
-const usersTableMessage =
-document.getElementById(
-'usersTableMessage'
-)
-
-const refreshUsersButton =
-document.getElementById(
-'refreshUsersButton'
-)
+let usersCache = []
+let selectedUserKey = ''
+let editOriginalEmail = ''
+let lastFocusedElement = null
 
 function normalizeEmail(value) {
-return typeof value === 'string'
-? value.trim().toLowerCase()
-: ''
+  return typeof value === 'string'
+    ? value.trim().toLowerCase()
+    : ''
+}
+
+function getUserKey(user) {
+  return user?.user_id || normalizeEmail(user?.email)
 }
 
 function getErrorMessage(error) {
-if (
-error &&
-typeof error.message === 'string'
-) {
-return error.message
-}
-
-return 'An unexpected error occurred.'
+  return error && typeof error.message === 'string'
+    ? error.message
+    : 'An unexpected error occurred.'
 }
 
 function redirectToLogin() {
-window.location.replace(
-'./login.html'
-)
+  window.location.replace('./login.html')
 }
 
 function redirectToDashboard() {
-window.location.replace(
-'./dashboard.html'
-)
+  window.location.replace('./dashboard.html')
 }
 
 async function requireAdminAccess() {
-const {
-data: { session },
-error: sessionError
-} = await supabase.auth.getSession()
+  const {
+    data: { session },
+    error: sessionError
+  } = await supabase.auth.getSession()
 
-if (sessionError) {
-throw sessionError
-}
+  if (sessionError) {
+    throw sessionError
+  }
 
-if (!session?.user) {
-redirectToLogin()
-return null
-}
+  if (!session?.user) {
+    redirectToLogin()
+    return null
+  }
 
-const email =
-normalizeEmail(
-session.user.email
-)
+  const email = normalizeEmail(session.user.email)
 
-if (!email) {
-redirectToLogin()
-return null
-}
+  if (!email) {
+    redirectToLogin()
+    return null
+  }
 
-const {
-data: allowedUser,
-error: permissionError
-} = await supabase
-.from('login')
-.select('is_admin')
-.ilike('email', email)
-.maybeSingle()
+  const { data: allowedUser, error: permissionError } = await supabase
+    .from('login')
+    .select('is_admin')
+    .ilike('email', email)
+    .maybeSingle()
 
-if (permissionError) {
-throw permissionError
-}
+  if (permissionError) {
+    throw permissionError
+  }
 
-if (
-!allowedUser ||
-allowedUser.is_admin !== true
-) {
-alert('Admin access only.')
+  if (!allowedUser || allowedUser.is_admin !== true) {
+    alert('Admin access only.')
+    redirectToDashboard()
+    return null
+  }
 
-
-redirectToDashboard()
-
-return null
-
-
-}
-
-return session
+  return session
 }
 
 async function getAccessToken() {
-const {
-data: { session },
-error
-} = await supabase.auth.getSession()
+  const {
+    data: { session },
+    error
+  } = await supabase.auth.getSession()
 
-if (error) {
-throw error
+  if (error) {
+    throw error
+  }
+
+  if (!session?.access_token) {
+    throw new Error('Your session has expired. Please sign in again.')
+  }
+
+  return session.access_token
 }
 
-if (!session?.access_token) {
-throw new Error(
-'Your session has expired. Please sign in again.'
-)
+async function parseResponse(response) {
+  const responseText = await response.text()
+
+  if (!responseText) {
+    return {}
+  }
+
+  try {
+    return JSON.parse(responseText)
+  } catch {
+    return { error: responseText }
+  }
 }
 
-return session.access_token
-}
-
-async function parseResponse(
-response
-) {
-const responseText =
-await response.text()
-
-if (!responseText) {
-return {}
-}
-
-try {
-return JSON.parse(responseText)
-} catch {
-return {
-error: responseText
-}
-}
-}
-
-async function sendAdminRequest(
-endpoint,
-payload
-) {
-const accessToken =
-await getAccessToken()
-
-const response =
-await fetch(
-endpoint,
-{
-method: 'POST',
-
-
+async function sendAdminRequest(endpoint, payload) {
+  const accessToken = await getAccessToken()
+  const response = await fetch(endpoint, {
+    method: 'POST',
     headers: {
-      'Content-Type':
-        'application/json',
-
-      Authorization:
-        `Bearer ${accessToken}`
+      'Content-Type': 'application/json',
+      Authorization: `Bearer ${accessToken}`
     },
-
     body: JSON.stringify(payload)
+  })
+
+  const result = await parseResponse(response)
+
+  if (!response.ok) {
+    throw new Error(
+      result.error ||
+      result.message ||
+      `Request failed with status ${response.status}.`
+    )
   }
-)
 
-
-const result =
-await parseResponse(response)
-
-if (!response.ok) {
-throw new Error(
-result.error ||
-result.message ||
-`Request failed with status ${response.status}.`
-)
+  return result
 }
 
-return result
-}
-
-async function sendAdminGetRequest(
-endpoint
-) {
-const accessToken =
-await getAccessToken()
-
-const response =
-await fetch(
-endpoint,
-{
-method: 'GET',
-
-
+async function sendAdminGetRequest(endpoint) {
+  const accessToken = await getAccessToken()
+  const response = await fetch(endpoint, {
+    method: 'GET',
     headers: {
-      Authorization:
-        `Bearer ${accessToken}`
+      Authorization: `Bearer ${accessToken}`
     }
+  })
+
+  const result = await parseResponse(response)
+
+  if (!response.ok) {
+    throw new Error(
+      result.error ||
+      result.message ||
+      `Request failed with status ${response.status}.`
+    )
   }
-)
 
-
-const result =
-await parseResponse(response)
-
-if (!response.ok) {
-throw new Error(
-result.error ||
-result.message ||
-`Request failed with status ${response.status}.`
-)
+  return result
 }
 
-return result
+function setButtonLoading(button, loading, loadingText, normalText) {
+  if (!button) {
+    return
+  }
+
+  button.disabled = loading
+  button.textContent = loading ? loadingText : normalText
 }
 
-function setButtonLoading(
-button,
-loading,
-loadingText,
-normalText
-) {
-if (!button) {
-return
+function openModal(modalId, focusElement) {
+  const modal = document.getElementById(modalId)
+
+  if (!modal) {
+    return
+  }
+
+  lastFocusedElement = document.activeElement
+  modal.hidden = false
+  document.body.classList.add('admin-modal-open')
+
+  window.requestAnimationFrame(() => {
+    focusElement?.focus()
+  })
 }
 
-button.disabled = loading
+function closeModal(modalId) {
+  const modal = document.getElementById(modalId)
 
-button.textContent =
-loading
-? loadingText
-: normalText
+  if (!modal) {
+    return
+  }
+
+  modal.hidden = true
+
+  const anyOpenModal = Array.from(
+    document.querySelectorAll('.admin-modal')
+  ).some(item => !item.hidden)
+
+  if (!anyOpenModal) {
+    document.body.classList.remove('admin-modal-open')
+  }
+
+  if (lastFocusedElement instanceof HTMLElement) {
+    lastFocusedElement.focus()
+  }
 }
 
-function createUsersTableCell(
-value,
-className = ''
-) {
-const cell =
-document.createElement('td')
+function initializeModalControls() {
+  document.querySelectorAll('[data-close-modal]').forEach(button => {
+    button.addEventListener('click', () => {
+      closeModal(button.dataset.closeModal)
+    })
+  })
 
-cell.textContent =
-value === null ||
-value === undefined ||
-value === ''
-? '—'
-: String(value)
+  document.addEventListener('keydown', event => {
+    if (event.key !== 'Escape') {
+      return
+    }
 
-if (className) {
-cell.className = className
+    const openModalElement = Array.from(
+      document.querySelectorAll('.admin-modal')
+    ).find(modal => !modal.hidden)
+
+    if (openModalElement) {
+      closeModal(openModalElement.id)
+    }
+  })
 }
 
-return cell
+function createUsersTableCell(value, className = '') {
+  const cell = document.createElement('td')
+  cell.textContent = value === null || value === undefined || value === ''
+    ? '—'
+    : String(value)
+
+  if (className) {
+    cell.className = className
+  }
+
+  return cell
 }
 
-function createPermissionCell(
-enabled
-) {
-const cell =
-document.createElement('td')
-
-const badge =
-document.createElement('span')
-
-badge.className =
-enabled
-? 'user-status user-status-yes'
-: 'user-status user-status-no'
-
-badge.textContent =
-enabled ? 'Yes' : 'No'
-
-cell.appendChild(badge)
-
-return cell
+function createPermissionCell(enabled) {
+  const cell = document.createElement('td')
+  const badge = document.createElement('span')
+  badge.className = enabled
+    ? 'user-status user-status-yes'
+    : 'user-status user-status-no'
+  badge.textContent = enabled ? 'Yes' : 'No'
+  cell.appendChild(badge)
+  return cell
 }
 
-function showUsersTableMessage(
-message
-) {
-if (!usersTableBody) {
-return
+function updateEditButtonState() {
+  if (editSelectedUserButton) {
+    editSelectedUserButton.disabled = !selectedUserKey
+  }
 }
 
-usersTableBody.innerHTML = ''
+function clearSelectedUser() {
+  selectedUserKey = ''
+  updateEditButtonState()
 
-const row =
-document.createElement('tr')
+  document.querySelectorAll('.user-row-checkbox').forEach(checkbox => {
+    checkbox.checked = false
+    checkbox.closest('tr')?.classList.remove('is-selected')
+  })
+}
 
-const cell =
-document.createElement('td')
+function selectUserCheckbox(checkbox, userKey) {
+  document.querySelectorAll('.user-row-checkbox').forEach(otherCheckbox => {
+    const isCurrent = otherCheckbox === checkbox
+    otherCheckbox.checked = isCurrent && checkbox.checked
+    otherCheckbox.closest('tr')?.classList.toggle(
+      'is-selected',
+      isCurrent && checkbox.checked
+    )
+  })
 
-cell.colSpan = 5
-cell.className =
-'users-table-empty'
+  selectedUserKey = checkbox.checked ? userKey : ''
+  updateEditButtonState()
+}
 
-cell.textContent = message
+function createSelectionCell(user) {
+  const cell = document.createElement('td')
+  cell.className = 'users-table-select'
 
-row.appendChild(cell)
+  const checkbox = document.createElement('input')
+  const userKey = getUserKey(user)
+  checkbox.type = 'checkbox'
+  checkbox.className = 'user-row-checkbox'
+  checkbox.checked = selectedUserKey === userKey
+  checkbox.setAttribute('aria-label', `Select ${user.name || user.email}`)
 
-usersTableBody.appendChild(row)
+  checkbox.addEventListener('change', () => {
+    selectUserCheckbox(checkbox, userKey)
+  })
+
+  cell.appendChild(checkbox)
+  return cell
+}
+
+function showUsersTableMessage(message) {
+  if (!usersTableBody) {
+    return
+  }
+
+  usersTableBody.innerHTML = ''
+  const row = document.createElement('tr')
+  const cell = document.createElement('td')
+  cell.colSpan = 6
+  cell.className = 'users-table-empty'
+  cell.textContent = message
+  row.appendChild(cell)
+  usersTableBody.appendChild(row)
 }
 
 function renderUsers(users) {
-if (!usersTableBody) {
-return
-}
+  if (!usersTableBody) {
+    return
+  }
 
-usersTableBody.innerHTML = ''
+  usersTableBody.innerHTML = ''
 
-if (
-!Array.isArray(users) ||
-users.length === 0
-) {
-showUsersTableMessage(
-'No users were found.'
-)
+  if (!Array.isArray(users) || users.length === 0) {
+    clearSelectedUser()
+    showUsersTableMessage('No users were found.')
+    return
+  }
 
-
-return
-
-
-}
-
-users.forEach(user => {
-const row =
-document.createElement('tr')
-
-
-row.appendChild(
-  createUsersTableCell(
-    user.user_id,
-    'users-table-id'
+  const selectionStillExists = users.some(
+    user => getUserKey(user) === selectedUserKey
   )
-)
 
-row.appendChild(
-  createUsersTableCell(
-    user.name
-  )
-)
+  if (!selectionStillExists) {
+    selectedUserKey = ''
+  }
 
-row.appendChild(
-  createUsersTableCell(
-    user.email
-  )
-)
+  users.forEach(user => {
+    const row = document.createElement('tr')
+    const isSelected = getUserKey(user) === selectedUserKey
 
-row.appendChild(
-  createPermissionCell(
-    user.is_admin === true
-  )
-)
+    row.classList.toggle('is-selected', isSelected)
+    row.appendChild(createSelectionCell(user))
+    row.appendChild(createUsersTableCell(user.user_id, 'users-table-id'))
+    row.appendChild(createUsersTableCell(user.name))
+    row.appendChild(createUsersTableCell(user.email))
+    row.appendChild(createPermissionCell(user.is_admin === true))
+    row.appendChild(createPermissionCell(user.can_edit_articles === true))
+    usersTableBody.appendChild(row)
+  })
 
-row.appendChild(
-  createPermissionCell(
-    user.can_edit_articles === true
-  )
-)
-
-usersTableBody.appendChild(row)
-
-
-})
+  updateEditButtonState()
 }
 
 async function loadUsers() {
-if (
-!usersTableBody ||
-!usersTableMessage
-) {
-return
-}
+  if (!usersTableBody || !usersTableMessage) {
+    return
+  }
 
-showUsersTableMessage(
-'Loading users...'
-)
+  showUsersTableMessage('Loading users...')
+  usersTableMessage.textContent = ''
+  setButtonLoading(refreshUsersButton, true, 'Refreshing...', 'Refresh')
 
-usersTableMessage.textContent = ''
-
-setButtonLoading(
-refreshUsersButton,
-true,
-'Refreshing...',
-'Refresh'
-)
-
-try {
-const result =
-await sendAdminGetRequest(
-'/list-users'
-)
-
-
-const users =
-  Array.isArray(result.users)
-    ? result.users
-    : []
-
-renderUsers(users)
-
-usersTableMessage.textContent =
-  `${users.length} user${
-    users.length === 1
-      ? ''
-      : 's'
-  } found.`
-
-
-} catch (error) {
-console.error(
-'Load users error:',
-error
-)
-
-
-showUsersTableMessage(
-  'Unable to load users.'
-)
-
-usersTableMessage.textContent =
-  getErrorMessage(error)
-
-
-} finally {
-setButtonLoading(
-refreshUsersButton,
-false,
-'Refreshing...',
-'Refresh'
-)
-}
+  try {
+    const result = await sendAdminGetRequest('/list-users')
+    usersCache = Array.isArray(result.users) ? result.users : []
+    renderUsers(usersCache)
+    usersTableMessage.textContent = `${usersCache.length} user${usersCache.length === 1 ? '' : 's'} found.`
+  } catch (error) {
+    console.error('Load users error:', error)
+    usersCache = []
+    clearSelectedUser()
+    showUsersTableMessage('Unable to load users.')
+    usersTableMessage.textContent = getErrorMessage(error)
+  } finally {
+    setButtonLoading(refreshUsersButton, false, 'Refreshing...', 'Refresh')
+  }
 }
 
 function initializeAddUserForm() {
-if (
-!addUserForm ||
-!addUserMessage
-) {
-return
-}
-
-addUserForm.addEventListener(
-'submit',
-async event => {
-event.preventDefault()
-
-
-  const nameInput =
-    document.getElementById(
-      'name'
-    )
-
-  const emailInput =
-    document.getElementById(
-      'email'
-    )
-
-  const passwordInput =
-    document.getElementById(
-      'password'
-    )
-
-  const isAdminInput =
-    document.getElementById(
-      'isAdmin'
-    )
-
-  const canEditArticlesInput =
-    document.getElementById(
-      'canEditArticles'
-    )
-
-  const submitButton =
-    addUserForm.querySelector(
-      'button[type="submit"]'
-    )
-
-  const name =
-    nameInput?.value.trim() ?? ''
-
-  const email =
-    normalizeEmail(
-      emailInput?.value
-    )
-
-  const password =
-    passwordInput?.value ?? ''
-
-  const isAdmin =
-    isAdminInput?.checked === true
-
-  const canEditArticles =
-    canEditArticlesInput
-      ?.checked === true
-
-  if (
-    !name ||
-    !email ||
-    !password
-  ) {
-    addUserMessage.textContent =
-      'Enter the user name, email address, and temporary password.'
-
+  if (!addUserForm || !addUserMessage) {
     return
   }
 
-  if (password.length < 8) {
-    addUserMessage.textContent =
-      'The temporary password must contain at least 8 characters.'
+  openAddUserModalButton?.addEventListener('click', () => {
+    addUserMessage.textContent = ''
+    openModal('addUserModal', document.getElementById('name'))
+  })
 
-    return
-  }
+  addUserForm.addEventListener('submit', async event => {
+    event.preventDefault()
 
-  setButtonLoading(
-    submitButton,
-    true,
-    'Adding User...',
-    'Add User'
-  )
+    const nameInput = document.getElementById('name')
+    const emailInput = document.getElementById('email')
+    const passwordInput = document.getElementById('password')
+    const isAdminInput = document.getElementById('isAdmin')
+    const canEditArticlesInput = document.getElementById('canEditArticles')
+    const submitButton = addUserForm.querySelector('button[type="submit"]')
 
-  addUserMessage.textContent =
-    'Creating user...'
+    const name = nameInput?.value.trim() ?? ''
+    const email = normalizeEmail(emailInput?.value)
+    const password = passwordInput?.value ?? ''
+    const isAdmin = isAdminInput?.checked === true
+    const canEditArticles = canEditArticlesInput?.checked === true
 
-  try {
-    await sendAdminRequest(
-      '/create-user',
-      {
+    if (!name || !email || !password) {
+      addUserMessage.textContent = 'Enter the user name, email address, and temporary password.'
+      return
+    }
+
+    if (password.length < 8) {
+      addUserMessage.textContent = 'The temporary password must contain at least 8 characters.'
+      return
+    }
+
+    setButtonLoading(submitButton, true, 'Adding User...', 'Add User')
+    addUserMessage.textContent = 'Creating user...'
+
+    try {
+      await sendAdminRequest('/create-user', {
         name,
         email,
         password,
         isAdmin,
         canEditArticles
-      }
-    )
+      })
 
-    addUserForm.reset()
-
-    addUserMessage.textContent =
-      'User created successfully.'
-
-    await loadUsers()
-  } catch (error) {
-    console.error(
-      'Create-user error:',
-      error
-    )
-
-    addUserMessage.textContent =
-      `Unable to create user: ${getErrorMessage(error)}`
-  } finally {
-    setButtonLoading(
-      submitButton,
-      false,
-      'Adding User...',
-      'Add User'
-    )
-  }
+      addUserForm.reset()
+      addUserMessage.textContent = 'User created successfully.'
+      clearSelectedUser()
+      await loadUsers()
+      window.setTimeout(() => closeModal('addUserModal'), 500)
+    } catch (error) {
+      console.error('Create-user error:', error)
+      addUserMessage.textContent = `Unable to create user: ${getErrorMessage(error)}`
+    } finally {
+      setButtonLoading(submitButton, false, 'Adding User...', 'Add User')
+    }
+  })
 }
 
-
-)
+function getSelectedUser() {
+  return usersCache.find(user => getUserKey(user) === selectedUserKey) || null
 }
 
-function initializeEditUserForm() {
-if (
-!editUserForm ||
-!editUserMessage ||
-!editUserEmail ||
-!loadUserSettingsBtn ||
-!editUserPermissions ||
-!editIsAdmin ||
-!editCanEditArticles
-) {
-return
-}
-
-let loadedEmail = ''
-
-function clearLoadedSettings() {
-loadedEmail = ''
-
-
-editUserPermissions.hidden =
-  true
-
-editIsAdmin.checked = false
-
-editCanEditArticles.checked =
-  false
-
-
-}
-
-editUserEmail.addEventListener(
-'input',
-() => {
-const currentEmail =
-normalizeEmail(
-editUserEmail.value
-)
-
-
+function initializeEditUserModal() {
   if (
-    loadedEmail &&
-    currentEmail !== loadedEmail
+    !editSelectedUserButton ||
+    !editSelectedUserForm ||
+    !editSelectedUserMessage ||
+    !editUserId ||
+    !editUserName ||
+    !editUserAccountEmail ||
+    !editUserIsAdmin ||
+    !editUserCanEditArticles
   ) {
-    clearLoadedSettings()
-
-    editUserMessage.textContent =
-      'Click Load Current Settings for this email address.'
-  }
-}
-
-
-)
-
-loadUserSettingsBtn.addEventListener(
-'click',
-async () => {
-const email =
-normalizeEmail(
-editUserEmail.value
-)
-
-
-  if (!email) {
-    editUserMessage.textContent =
-      'Enter the user email first.'
-
     return
   }
 
-  clearLoadedSettings()
+  editSelectedUserButton.addEventListener('click', () => {
+    const user = getSelectedUser()
 
-  setButtonLoading(
-    loadUserSettingsBtn,
-    true,
-    'Loading Settings...',
-    'Load Current Settings'
-  )
-
-  editUserMessage.textContent =
-    'Loading current settings...'
-
-  try {
-    const result =
-      await sendAdminRequest(
-        '/user-settings',
-        {
-          action: 'get',
-          email
-        }
-      )
-
-    const currentInputEmail =
-      normalizeEmail(
-        editUserEmail.value
-      )
-
-    if (
-      currentInputEmail !== email
-    ) {
-      editUserMessage.textContent =
-        'The email address changed. Load the settings again.'
-
+    if (!user) {
+      usersTableMessage.textContent = 'Select one user before clicking Edit.'
+      clearSelectedUser()
       return
     }
 
-    editIsAdmin.checked =
-      result.user?.is_admin === true
+    editOriginalEmail = normalizeEmail(user.email)
+    editUserId.value = user.user_id || ''
+    editUserName.value = user.name || ''
+    editUserAccountEmail.value = editOriginalEmail
+    editUserIsAdmin.checked = user.is_admin === true
+    editUserCanEditArticles.checked = user.can_edit_articles === true
+    editSelectedUserMessage.textContent = ''
+    openModal('editUserModal', editUserName)
+  })
 
-    editCanEditArticles.checked =
-      result.user
-        ?.can_edit_articles === true
+  editSelectedUserForm.addEventListener('submit', async event => {
+    event.preventDefault()
 
-    loadedEmail = email
+    const selectedUser = getSelectedUser()
+    const submitButton = editSelectedUserForm.querySelector('button[type="submit"]')
+    const name = editUserName.value.trim()
+    const email = normalizeEmail(editUserAccountEmail.value)
+    const userId = editUserId.value.trim()
+    const isAdmin = editUserIsAdmin.checked === true
+    const canEditArticles = editUserCanEditArticles.checked === true
 
-    editUserPermissions.hidden =
-      false
+    if (!selectedUser || !editOriginalEmail) {
+      editSelectedUserMessage.textContent = 'The selected user is no longer available. Close the modal and select the user again.'
+      return
+    }
 
-    editUserMessage.textContent =
-      'Current user settings loaded.'
-  } catch (error) {
-    console.error(
-      'Load user settings error:',
-      error
-    )
+    if (!name || !email) {
+      editSelectedUserMessage.textContent = 'Enter the user name and email address.'
+      return
+    }
 
-    clearLoadedSettings()
+    setButtonLoading(submitButton, true, 'Saving Changes...', 'Save Changes')
+    editSelectedUserMessage.textContent = 'Saving user changes...'
 
-    editUserMessage.textContent =
-      `Unable to load settings: ${getErrorMessage(error)}`
-  } finally {
-    setButtonLoading(
-      loadUserSettingsBtn,
-      false,
-      'Loading Settings...',
-      'Load Current Settings'
-    )
-  }
-}
+    try {
+      await sendAdminRequest('/user-settings', {
+        action: 'update',
+        userId,
+        originalEmail: editOriginalEmail,
+        name,
+        email,
+        isAdmin,
+        canEditArticles
+      })
 
+      const {
+        data: { session }
+      } = await supabase.auth.getSession()
 
-)
+      const editingSignedInUser =
+        (userId && session?.user?.id === userId) ||
+        normalizeEmail(session?.user?.email) === editOriginalEmail
 
-editUserForm.addEventListener(
-'submit',
-async event => {
-event.preventDefault()
+      if (editingSignedInUser && email !== editOriginalEmail) {
+        const { error: refreshError } = await supabase.auth.refreshSession()
 
-
-  const email =
-    normalizeEmail(
-      editUserEmail.value
-    )
-
-  const submitButton =
-    editUserForm.querySelector(
-      'button[type="submit"]'
-    )
-
-  if (
-    !loadedEmail ||
-    email !== loadedEmail
-  ) {
-    clearLoadedSettings()
-
-    editUserMessage.textContent =
-      'Load the current user settings before saving.'
-
-    return
-  }
-
-  const isAdmin =
-    editIsAdmin.checked === true
-
-  const canEditArticles =
-    editCanEditArticles
-      .checked === true
-
-  setButtonLoading(
-    submitButton,
-    true,
-    'Saving Settings...',
-    'Save Settings'
-  )
-
-  editUserMessage.textContent =
-    'Saving user settings...'
-
-  try {
-    const result =
-      await sendAdminRequest(
-        '/user-settings',
-        {
-          action: 'update',
-          email,
-          isAdmin,
-          canEditArticles
+        if (refreshError) {
+          console.warn('Session refresh after email update failed:', refreshError)
         }
-      )
+      }
 
-    editIsAdmin.checked =
-      result.user?.is_admin === true
-
-    editCanEditArticles.checked =
-      result.user
-        ?.can_edit_articles === true
-
-    editUserMessage.textContent =
-      'User settings updated successfully.'
-
-    await loadUsers()
-  } catch (error) {
-    console.error(
-      'Update user settings error:',
-      error
-    )
-
-    editUserMessage.textContent =
-      `Unable to update settings: ${getErrorMessage(error)}`
-  } finally {
-    setButtonLoading(
-      submitButton,
-      false,
-      'Saving Settings...',
-      'Save Settings'
-    )
-  }
-}
-
-
-)
+      editSelectedUserMessage.textContent = 'User updated successfully.'
+      selectedUserKey = userId || email
+      editOriginalEmail = email
+      await loadUsers()
+      window.setTimeout(() => closeModal('editUserModal'), 500)
+    } catch (error) {
+      console.error('Update user error:', error)
+      editSelectedUserMessage.textContent = `Unable to update user: ${getErrorMessage(error)}`
+    } finally {
+      setButtonLoading(submitButton, false, 'Saving Changes...', 'Save Changes')
+    }
+  })
 }
 
 function initializePasswordForm() {
-if (
-!changePasswordForm ||
-!changePasswordMessage
-) {
-return
-}
-
-changePasswordForm.addEventListener(
-'submit',
-async event => {
-event.preventDefault()
-
-
-  const emailInput =
-    document.getElementById(
-      'changeEmail'
-    )
-
-  const passwordInput =
-    document.getElementById(
-      'newPassword'
-    )
-
-  const submitButton =
-    changePasswordForm.querySelector(
-      'button[type="submit"]'
-    )
-
-  const email =
-    normalizeEmail(
-      emailInput?.value
-    )
-
-  const password =
-    passwordInput?.value ?? ''
-
-  if (!email || !password) {
-    changePasswordMessage.textContent =
-      'Enter the user email and new password.'
-
+  if (!changePasswordForm || !changePasswordMessage) {
     return
   }
 
-  if (password.length < 8) {
-    changePasswordMessage.textContent =
-      'The new password must contain at least 8 characters.'
+  changePasswordForm.addEventListener('submit', async event => {
+    event.preventDefault()
 
-    return
-  }
+    const emailInput = document.getElementById('changeEmail')
+    const passwordInput = document.getElementById('newPassword')
+    const submitButton = changePasswordForm.querySelector('button[type="submit"]')
+    const email = normalizeEmail(emailInput?.value)
+    const password = passwordInput?.value ?? ''
 
-  setButtonLoading(
-    submitButton,
-    true,
-    'Updating Password...',
-    'Change Password'
-  )
+    if (!email || !password) {
+      changePasswordMessage.textContent = 'Enter the user email and new password.'
+      return
+    }
 
-  changePasswordMessage.textContent =
-    'Updating password...'
+    if (password.length < 8) {
+      changePasswordMessage.textContent = 'The new password must contain at least 8 characters.'
+      return
+    }
 
-  try {
-    await sendAdminRequest(
-      '/change-password',
-      {
-        email,
-        password
-      }
-    )
+    setButtonLoading(submitButton, true, 'Updating Password...', 'Change Password')
+    changePasswordMessage.textContent = 'Updating password...'
 
-    changePasswordForm.reset()
-
-    changePasswordMessage.textContent =
-      'Password changed successfully.'
-  } catch (error) {
-    console.error(
-      'Change-password error:',
-      error
-    )
-
-    changePasswordMessage.textContent =
-      `Unable to change password: ${getErrorMessage(error)}`
-  } finally {
-    setButtonLoading(
-      submitButton,
-      false,
-      'Updating Password...',
-      'Change Password'
-    )
-  }
-}
-
-
-)
+    try {
+      await sendAdminRequest('/change-password', { email, password })
+      changePasswordForm.reset()
+      changePasswordMessage.textContent = 'Password changed successfully.'
+    } catch (error) {
+      console.error('Change-password error:', error)
+      changePasswordMessage.textContent = `Unable to change password: ${getErrorMessage(error)}`
+    } finally {
+      setButtonLoading(submitButton, false, 'Updating Password...', 'Change Password')
+    }
+  })
 }
 
 async function initializeAdminPage() {
-try {
-const session =
-await requireAdminAccess()
+  try {
+    const session = await requireAdminAccess()
 
+    if (!session) {
+      return
+    }
 
-if (!session) {
-  return
-}
+    initializeModalControls()
+    initializeAddUserForm()
+    initializeEditUserModal()
+    initializePasswordForm()
 
-initializeAddUserForm()
-initializeEditUserForm()
-initializePasswordForm()
-
-if (refreshUsersButton) {
-  refreshUsersButton.addEventListener(
-    'click',
-    loadUsers
-  )
-}
-
-await loadUsers()
-
-
-} catch (error) {
-console.error(
-'Admin page initialization error:',
-error
-)
-
-
-alert(
-  'Unable to verify admin access.'
-)
-
-redirectToDashboard()
-
-
-}
+    refreshUsersButton?.addEventListener('click', loadUsers)
+    await loadUsers()
+  } catch (error) {
+    console.error('Admin page initialization error:', error)
+    alert('Unable to verify admin access.')
+    redirectToDashboard()
+  }
 }
 
 initializeAdminPage()
