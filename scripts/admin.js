@@ -9,6 +9,7 @@ const usersTableMessage = document.getElementById('usersTableMessage')
 const refreshUsersButton = document.getElementById('refreshUsersButton')
 const openAddUserModalButton = document.getElementById('openAddUserModalButton')
 const editSelectedUserButton = document.getElementById('editSelectedUserButton')
+const deleteSelectedUserButton = document.getElementById('deleteSelectedUserButton')
 const editSelectedUserForm = document.getElementById('editSelectedUserForm')
 const editSelectedUserMessage = document.getElementById('editSelectedUserMessage')
 const editUserId = document.getElementById('editUserId')
@@ -16,6 +17,10 @@ const editUserName = document.getElementById('editUserName')
 const editUserAccountEmail = document.getElementById('editUserAccountEmail')
 const editUserIsAdmin = document.getElementById('editUserIsAdmin')
 const editUserCanEditArticles = document.getElementById('editUserCanEditArticles')
+const deleteUserSummary = document.getElementById('deleteUserSummary')
+const deleteUserMessage = document.getElementById('deleteUserMessage')
+const confirmDeleteUserButton = document.getElementById('confirmDeleteUserButton')
+const cancelDeleteUserButton = document.getElementById('cancelDeleteUserButton')
 
 let usersCache = []
 let selectedUserKey = ''
@@ -257,15 +262,21 @@ function createPermissionCell(enabled) {
   return cell
 }
 
-function updateEditButtonState() {
+function updateSelectionButtonState() {
+  const hasSelectedUser = Boolean(selectedUserKey)
+
   if (editSelectedUserButton) {
-    editSelectedUserButton.disabled = !selectedUserKey
+    editSelectedUserButton.disabled = !hasSelectedUser
+  }
+
+  if (deleteSelectedUserButton) {
+    deleteSelectedUserButton.disabled = !hasSelectedUser
   }
 }
 
 function clearSelectedUser() {
   selectedUserKey = ''
-  updateEditButtonState()
+  updateSelectionButtonState()
 
   document.querySelectorAll('.user-row-checkbox').forEach(checkbox => {
     checkbox.checked = false
@@ -284,7 +295,7 @@ function selectUserCheckbox(checkbox, userKey) {
   })
 
   selectedUserKey = checkbox.checked ? userKey : ''
-  updateEditButtonState()
+  updateSelectionButtonState()
 }
 
 function createSelectionCell(user) {
@@ -356,7 +367,7 @@ function renderUsers(users) {
     usersTableBody.appendChild(row)
   })
 
-  updateEditButtonState()
+  updateSelectionButtonState()
 }
 
 async function loadUsers() {
@@ -548,6 +559,66 @@ function initializeEditUserModal() {
   })
 }
 
+function initializeDeleteUserModal() {
+  if (
+    !deleteSelectedUserButton ||
+    !deleteUserSummary ||
+    !deleteUserMessage ||
+    !confirmDeleteUserButton
+  ) {
+    return
+  }
+
+  deleteSelectedUserButton.addEventListener('click', () => {
+    const user = getSelectedUser()
+
+    if (!user) {
+      usersTableMessage.textContent = 'Select one user before clicking Delete.'
+      clearSelectedUser()
+      return
+    }
+
+    const name = user.name || 'Unnamed user'
+    const email = normalizeEmail(user.email)
+    deleteUserSummary.textContent = `${name} — ${email}`
+    deleteUserMessage.textContent = ''
+    openModal('deleteUserModal', cancelDeleteUserButton)
+  })
+
+  confirmDeleteUserButton.addEventListener('click', async () => {
+    const user = getSelectedUser()
+
+    if (!user) {
+      deleteUserMessage.textContent = 'The selected user is no longer available. Close this popup and select the user again.'
+      return
+    }
+
+    const userId = user.user_id || ''
+    const email = normalizeEmail(user.email)
+
+    setButtonLoading(confirmDeleteUserButton, true, 'Deleting...', 'Yes')
+    deleteUserMessage.textContent = 'Deleting user...'
+
+    try {
+      await sendAdminRequest('/delete-user', {
+        userId,
+        email
+      })
+
+      clearSelectedUser()
+      closeModal('deleteUserModal')
+      await loadUsers()
+      usersTableMessage.textContent = 'User deleted successfully.'
+    } catch (error) {
+      console.error('Delete user error:', error)
+      deleteUserMessage.textContent = `Unable to delete user: ${getErrorMessage(error)}`
+    } finally {
+      setButtonLoading(confirmDeleteUserButton, false, 'Deleting...', 'Yes')
+      updateSelectionButtonState()
+    }
+  })
+}
+
 function initializePasswordForm() {
   if (!changePasswordForm || !changePasswordMessage) {
     return
@@ -599,6 +670,7 @@ async function initializeAdminPage() {
     initializeModalControls()
     initializeAddUserForm()
     initializeEditUserModal()
+    initializeDeleteUserModal()
     initializePasswordForm()
 
     refreshUsersButton?.addEventListener('click', loadUsers)
