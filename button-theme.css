@@ -1,0 +1,196 @@
+```css
+/* button-theme.css */
+
+/*
+ * Repository-wide button theme
+ * Primary button color: #00FF9C
+ */
+
+:root {
+  --button-green: #00FF9C;
+  --button-green-hover: #00E68C;
+  --button-green-active: #00CC7D;
+  --button-green-border: #00CC7D;
+  --button-green-text: #102A23;
+  --button-green-shadow:
+    0 12px 24px rgba(0, 255, 156, 0.22);
+}
+
+/*
+ * Standard button elements
+ */
+
+button,
+input[type="button"],
+input[type="submit"],
+input[type="reset"] {
+  background: var(--button-green) !important;
+  background-color: var(--button-green) !important;
+  background-image: none !important;
+  color: var(--button-green-text) !important;
+  border-color: var(--button-green-border) !important;
+  box-shadow: var(--button-green-shadow) !important;
+}
+
+/*
+ * Links styled as buttons
+ */
+
+a.btn,
+a[class*="btn"],
+a.admin-link,
+a.dashboard-link,
+a.back-link,
+a.primary-action,
+a.secondary-action,
+[role="button"] {
+  background: var(--button-green) !important;
+  background-color: var(--button-green) !important;
+  background-image: none !important;
+  color: var(--button-green-text) !important;
+  border-color: var(--button-green-border) !important;
+  box-shadow: var(--button-green-shadow) !important;
+}
+
+/*
+ * Common repository button classes
+ */
+
+.btn,
+.btn-primary,
+.btn-secondary,
+.admin-btn,
+.login-btn,
+.dashboard-btn,
+.action-btn,
+.primary-btn,
+.secondary-btn,
+.submit-btn,
+.save-btn,
+.add-btn,
+.edit-btn,
+.back-btn,
+.logout-btn,
+.article-btn,
+.contact-btn {
+  background: var(--button-green) !important;
+  background-color: var(--button-green) !important;
+  background-image: none !important;
+  color: var(--button-green-text) !important;
+  border-color: var(--button-green-border) !important;
+  box-shadow: var(--button-green-shadow) !important;
+}
+
+/*
+ * Hover state
+ */
+
+button:hover:not(:disabled),
+input[type="button"]:hover:not(:disabled),
+input[type="submit"]:hover:not(:disabled),
+input[type="reset"]:hover:not(:disabled),
+a.btn:hover,
+a[class*="btn"]:hover,
+a.admin-link:hover,
+a.dashboard-link:hover,
+a.back-link:hover,
+a.primary-action:hover,
+a.secondary-action:hover,
+[role="button"]:hover,
+.btn:hover,
+.btn-primary:hover,
+.btn-secondary:hover,
+.admin-btn:hover:not(:disabled),
+.login-btn:hover:not(:disabled),
+.dashboard-btn:hover:not(:disabled),
+.action-btn:hover:not(:disabled),
+.primary-btn:hover:not(:disabled),
+.secondary-btn:hover:not(:disabled),
+.submit-btn:hover:not(:disabled),
+.save-btn:hover:not(:disabled),
+.add-btn:hover:not(:disabled),
+.edit-btn:hover:not(:disabled),
+.back-btn:hover:not(:disabled),
+.logout-btn:hover:not(:disabled),
+.article-btn:hover:not(:disabled),
+.contact-btn:hover:not(:disabled) {
+  background: var(--button-green-hover) !important;
+  background-color: var(--button-green-hover) !important;
+  background-image: none !important;
+  color: var(--button-green-text) !important;
+  border-color: var(--button-green-border) !important;
+  box-shadow:
+    0 16px 30px rgba(0, 255, 156, 0.32) !important;
+  transform: translateY(-1px);
+}
+
+/*
+ * Active state
+ */
+
+button:active:not(:disabled),
+input[type="button"]:active:not(:disabled),
+input[type="submit"]:active:not(:disabled),
+input[type="reset"]:active:not(:disabled),
+a.btn:active,
+a[class*="btn"]:active,
+[role="button"]:active,
+.btn:active,
+.admin-btn:active:not(:disabled) {
+  background: var(--button-green-active) !important;
+  background-color: var(--button-green-active) !important;
+  box-shadow:
+    0 8px 16px rgba(0, 255, 156, 0.24) !important;
+  transform: translateY(0);
+}
+
+/*
+ * Keyboard focus
+ */
+
+button:focus-visible,
+input[type="button"]:focus-visible,
+input[type="submit"]:focus-visible,
+input[type="reset"]:focus-visible,
+a.btn:focus-visible,
+a[class*="btn"]:focus-visible,
+a.admin-link:focus-visible,
+[role="button"]:focus-visible,
+.btn:focus-visible,
+.admin-btn:focus-visible {
+  outline:
+    3px solid rgba(0, 255, 156, 0.42) !important;
+  outline-offset: 3px;
+}
+
+/*
+ * Disabled state
+ */
+
+button:disabled,
+input[type="button"]:disabled,
+input[type="submit"]:disabled,
+input[type="reset"]:disabled,
+.btn:disabled,
+.admin-btn:disabled,
+.login-btn:disabled,
+.dashboard-btn:disabled,
+.action-btn:disabled,
+.primary-btn:disabled,
+.secondary-btn:disabled,
+.submit-btn:disabled,
+.save-btn:disabled,
+.add-btn:disabled,
+.edit-btn:disabled,
+.logout-btn:disabled {
+  background: var(--button-green) !important;
+  background-color: var(--button-green) !important;
+  background-image: none !important;
+  color: var(--button-green-text) !important;
+  border-color: var(--button-green-border) !important;
+  box-shadow: none !important;
+  opacity: 0.55;
+  cursor: not-allowed;
+  transform: none;
+}
+```
