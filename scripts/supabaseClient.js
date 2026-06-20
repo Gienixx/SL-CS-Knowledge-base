@@ -57,6 +57,18 @@ async function enforceFirstLoginPasswordChange() {
     return
   }
 
+  const {
+    data: { session },
+    error: refreshError
+  } = await supabase.auth.refreshSession()
+
+  if (
+    !refreshError &&
+    !requiresFirstLoginPasswordChange(session?.user)
+  ) {
+    return
+  }
+
   const passwordPage = new URL(
     './change-password.html?firstLogin=1',
     window.location.href
