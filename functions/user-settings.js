@@ -1,81 +1,64 @@
-function jsonResponse(
-  data,
-  status = 200
-) {
-  return new Response(
-    JSON.stringify(data),
-    {
-      status,
-
-      headers: {
-        'Content-Type':
-          'application/json; charset=utf-8',
-
-        'Cache-Control':
-          'no-store'
-      }
+function jsonResponse(data, status = 200) {
+  return new Response(JSON.stringify(data), {
+    status,
+    headers: {
+      'Content-Type': 'application/json; charset=utf-8',
+      'Cache-Control': 'no-store'
     }
-  )
+  })
+}
+
+class RequestError extends Error {
+  constructor(message, status = 500) {
+    super(message)
+    this.status = status
+  }
 }
 
 function getBearerToken(request) {
-  const authorization =
-    request.headers.get(
-      'Authorization'
-    )
+  const authorization = request.headers.get('Authorization')
 
-  if (
-    !authorization ||
-    !authorization.startsWith(
-      'Bearer '
-    )
-  ) {
+  if (!authorization || !authorization.startsWith('Bearer ')) {
     return null
   }
 
-  return authorization
-    .slice('Bearer '.length)
-    .trim()
+  return authorization.slice('Bearer '.length).trim()
 }
 
-function getRequiredEnvironment(
-  context
-) {
+function normalizeEmail(value) {
+  return typeof value === 'string'
+    ? value.trim().toLowerCase()
+    : ''
+}
+
+function normalizeText(value) {
+  return typeof value === 'string'
+    ? value.trim()
+    : ''
+}
+
+function getRequiredEnvironment(context) {
   const {
     SUPABASE_URL,
     SUPABASE_ANON_KEY,
     SUPABASE_SERVICE_ROLE_KEY
   } = context.env
 
-  if (
-    !SUPABASE_URL ||
-    !SUPABASE_ANON_KEY ||
-    !SUPABASE_SERVICE_ROLE_KEY
-  ) {
-    throw new Error(
-      'Supabase environment variables are incomplete.'
-    )
+  if (!SUPABASE_URL || !SUPABASE_ANON_KEY || !SUPABASE_SERVICE_ROLE_KEY) {
+    throw new RequestError('Supabase environment variables are incomplete.', 500)
   }
 
   return {
-    supabaseUrl:
-      SUPABASE_URL.endsWith('/')
-        ? SUPABASE_URL.slice(0, -1)
-        : SUPABASE_URL,
-
-    anonKey:
-      SUPABASE_ANON_KEY,
-
-    serviceRoleKey:
-      SUPABASE_SERVICE_ROLE_KEY
+    supabaseUrl: SUPABASE_URL.endsWith('/')
+      ? SUPABASE_URL.slice(0, -1)
+      : SUPABASE_URL,
+    anonKey: SUPABASE_ANON_KEY,
+    serviceRoleKey: SUPABASE_SERVICE_ROLE_KEY
   }
 }
 
-async function parseResponseBody(
-  response
-) {
-  const responseText =
-    await response.text()
+async function parseResponseBody(response) {
+  const responseText = await response.text()
 
   if (!responseText) {
     return null
@@ -88,522 +71,386 @@ async function parseResponseBody(
   }
 }
 
-function getResponseError(
-  data,
-  fallback
-) {
-  if (
-    data &&
-    typeof data === 'object'
-  ) {
-    return (
-      data.message ||
-      data.error ||
-      fallback
-    )
+function getResponseError(data, fallback) {
+  if (data && typeof data === 'object') {
+    return data.message || data.error || fallback
   }
 
-  if (
-    typeof data === 'string' &&
-    data.trim()
-  ) {
+  if (typeof data === 'string' && data.trim()) {
     return data
   }
 
   return fallback
 }
 
-async function requireAdmin(
-  context
-) {
-  const accessToken =
-    getBearerToken(
-      context.request
+async function serviceRequest(url, serviceRoleKey, options = {}) {
+  const response = await fetch(url, {
+    ...options,
+    headers: {
+      apikey: serviceRoleKey,
+      Authorization: `Bearer ${serviceRoleKey}`,
+      ...(options.headers || {})
+    }
+  })
+
+  const data = await parseResponseBody(response)
+
+  if (!response.ok) {
+    throw new RequestError(
+      getResponseError(data, 'Supabase request failed.'),
+      response.status
     )
+  }
+
+  return data
+}
+
+async function requireAdmin(context) {
+  const accessToken = getBearerToken(context.request)
 
   if (!accessToken) {
-    return {
-      authorized: false,
-
-      response: jsonResponse(
-        {
-          error:
-            'Authentication required.'
-        },
-        401
-      )
-    }
+    throw new RequestError('Authentication required.', 401)
   }
 
   const {
     supabaseUrl,
     anonKey,
     serviceRoleKey
-  } = getRequiredEnvironment(
-    context
-  )
+  } = getRequiredEnvironment(context)
 
-  const userResponse =
-    await fetch(
-      `${supabaseUrl}/auth/v1/user`,
-      {
-        headers: {
-          apikey:
-            anonKey,
+  const userResponse = await fetch(`${supabaseUrl}/auth/v1/user`, {
+    headers: {
+      apikey: anonKey,
+      Authorization: `Bearer ${accessToken}`
+    }
+  })
 
-          Authorization:
-            `Bearer ${accessToken}`
-        }
-      }
-    )
-
-  const authenticatedUser =
-    await parseResponseBody(
-      userResponse
-    )
+  const authenticatedUser = await parseResponseBody(userResponse)
 
   if (!userResponse.ok) {
-    return {
-      authorized: false,
-
-      response: jsonResponse(
-        {
-          error:
-            'Your session is invalid or has expired.'
-        },
-        401
-      )
-    }
+    throw new RequestError('Your session is invalid or has expired.', 401)
   }
 
-  const authenticatedEmail =
-    typeof authenticatedUser?.email ===
-      'string'
-      ? authenticatedUser.email
-          .trim()
-          .toLowerCase()
-      : ''
+  const authenticatedEmail = normalizeEmail(authenticatedUser?.email)
+  const authenticatedUserId = normalizeText(authenticatedUser?.id)
 
   if (!authenticatedEmail) {
-    return {
-      authorized: false,
-
-      response: jsonResponse(
-        {
-          error:
-            'The authenticated account has no email address.'
-        },
-        401
-      )
-    }
+    throw new RequestError('The authenticated account has no email address.', 401)
   }
 
-  const permissionUrl =
-    new URL(
-      `${supabaseUrl}/rest/v1/login`
-    )
+  const permissionUrl = new URL(`${supabaseUrl}/rest/v1/login`)
+  permissionUrl.searchParams.set('select', 'is_admin')
+  permissionUrl.searchParams.set('email', `eq.${authenticatedEmail}`)
+  permissionUrl.searchParams.set('limit', '1')
 
-  permissionUrl.searchParams.set(
-    'select',
-    'is_admin'
+  const permissionRows = await serviceRequest(
+    permissionUrl.toString(),
+    serviceRoleKey
   )
 
-  permissionUrl.searchParams.set(
-    'email',
-    `eq.${authenticatedEmail}`
-  )
-
-  permissionUrl.searchParams.set(
-    'limit',
-    '1'
-  )
-
-  const permissionResponse =
-    await fetch(
-      permissionUrl.toString(),
-      {
-        headers: {
-          apikey:
-            serviceRoleKey,
-
-          Authorization:
-            `Bearer ${serviceRoleKey}`
-        }
-      }
-    )
-
-  const permissionRows =
-    await parseResponseBody(
-      permissionResponse
-    )
-
-  if (!permissionResponse.ok) {
-    console.error(
-      'Admin permission lookup failed:',
-      permissionRows
-    )
-
-    return {
-      authorized: false,
-
-      response: jsonResponse(
-        {
-          error:
-            'Unable to verify administrator permissions.'
-        },
-        500
-      )
-    }
-  }
-
-  if (
-    !Array.isArray(permissionRows) ||
-    permissionRows[0]
-      ?.is_admin !== true
-  ) {
-    return {
-      authorized: false,
-
-      response: jsonResponse(
-        {
-          error:
-            'Administrator access required.'
-        },
-        403
-      )
-    }
+  if (!Array.isArray(permissionRows) || permissionRows[0]?.is_admin !== true) {
+    throw new RequestError('Administrator access required.', 403)
   }
 
   return {
-    authorized: true,
     supabaseUrl,
     serviceRoleKey,
-    authenticatedEmail
+    authenticatedEmail,
+    authenticatedUserId
   }
 }
 
-async function getUserSettings(
+async function getLoginUser(supabaseUrl, serviceRoleKey, email) {
+  const userUrl = new URL(`${supabaseUrl}/rest/v1/login`)
+  userUrl.searchParams.set('select', 'name,email,is_admin,can_edit_articles')
+  userUrl.searchParams.set('email', `eq.${email}`)
+  userUrl.searchParams.set('limit', '1')
+
+  const rows = await serviceRequest(userUrl.toString(), serviceRoleKey)
+
+  return Array.isArray(rows) && rows.length > 0
+    ? rows[0]
+    : null
+}
+
+async function loginEmailExists(supabaseUrl, serviceRoleKey, email) {
+  const userUrl = new URL(`${supabaseUrl}/rest/v1/login`)
+  userUrl.searchParams.set('select', 'email')
+  userUrl.searchParams.set('email', `eq.${email}`)
+  userUrl.searchParams.set('limit', '1')
+
+  const rows = await serviceRequest(userUrl.toString(), serviceRoleKey)
+  return Array.isArray(rows) && rows.length > 0
+}
+
+async function getAuthUserById(
   supabaseUrl,
   serviceRoleKey,
+  userId
+) {
+  if (!userId) {
+    return null
+  }
+
+  const result = await serviceRequest(
+    `${supabaseUrl}/auth/v1/admin/users/${encodeURIComponent(userId)}`,
+    serviceRoleKey
+  )
+
+  return result?.user || result || null
+}
+
+async function updateAuthEmail(
+  supabaseUrl,
+  serviceRoleKey,
+  userId,
   email
 ) {
-  const userUrl =
-    new URL(
-      `${supabaseUrl}/rest/v1/login`
-    )
-
-  userUrl.searchParams.set(
-    'select',
-    'email,is_admin,can_edit_articles'
-  )
-
-  userUrl.searchParams.set(
-    'email',
-    `eq.${email}`
-  )
-
-  userUrl.searchParams.set(
-    'limit',
-    '1'
-  )
-
-  const response =
-    await fetch(
-      userUrl.toString(),
-      {
-        headers: {
-          apikey:
-            serviceRoleKey,
-
-          Authorization:
-            `Bearer ${serviceRoleKey}`
-        }
-      }
-    )
-
-  const responseData =
-    await parseResponseBody(response)
-
-  if (!response.ok) {
-    throw new Error(
-      getResponseError(
-        responseData,
-        'Unable to retrieve user settings.'
-      )
-    )
-  }
-
-  if (
-    !Array.isArray(responseData) ||
-    responseData.length === 0
-  ) {
+  if (!userId) {
     return null
   }
 
-  return responseData[0]
+  return serviceRequest(
+    `${supabaseUrl}/auth/v1/admin/users/${encodeURIComponent(userId)}`,
+    serviceRoleKey,
+    {
+      method: 'PUT',
+      headers: {
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify({ email })
+    }
+  )
 }
 
-async function updateUserSettings(
+async function updateLoginUser(
   supabaseUrl,
   serviceRoleKey,
-  email,
-  isAdmin,
-  canEditArticles
+  originalEmail,
+  updates
 ) {
-  const updateUrl =
-    new URL(
-      `${supabaseUrl}/rest/v1/login`
-    )
+  const updateUrl = new URL(`${supabaseUrl}/rest/v1/login`)
+  updateUrl.searchParams.set('email', `eq.${originalEmail}`)
 
-  updateUrl.searchParams.set(
-    'email',
-    `eq.${email}`
+  const rows = await serviceRequest(
+    updateUrl.toString(),
+    serviceRoleKey,
+    {
+      method: 'PATCH',
+      headers: {
+        'Content-Type': 'application/json',
+        Prefer: 'return=representation'
+      },
+      body: JSON.stringify(updates)
+    }
   )
 
-  const response =
-    await fetch(
-      updateUrl.toString(),
-      {
-        method: 'PATCH',
-
-        headers: {
-          'Content-Type':
-            'application/json',
-
-          Prefer:
-            'return=representation',
-
-          apikey:
-            serviceRoleKey,
-
-          Authorization:
-            `Bearer ${serviceRoleKey}`
-        },
-
-        body: JSON.stringify({
-          is_admin:
-            isAdmin,
-
-          can_edit_articles:
-            canEditArticles
-        })
-      }
-    )
-
-  const responseData =
-    await parseResponseBody(response)
-
-  if (!response.ok) {
-    throw new Error(
-      getResponseError(
-        responseData,
-        'Unable to update user settings.'
-      )
-    )
-  }
-
-  if (
-    !Array.isArray(responseData) ||
-    responseData.length === 0
-  ) {
-    return null
-  }
-
-  return responseData[0]
+  return Array.isArray(rows) && rows.length > 0
+    ? rows[0]
+    : null
 }
 
-export async function onRequestPost(
-  context
-) {
-  try {
-    const adminCheck =
-      await requireAdmin(context)
+function formatUser(user) {
+  return {
+    name: normalizeText(user?.name),
+    email: normalizeEmail(user?.email),
+    is_admin: user?.is_admin === true,
+    can_edit_articles: user?.can_edit_articles === true
+  }
+}
 
-    if (!adminCheck.authorized) {
-      return adminCheck.response
-    }
+export async function onRequestPost(context) {
+  try {
+    const admin = await requireAdmin(context)
 
     let requestBody
 
     try {
-      requestBody =
-        await context.request.json()
+      requestBody = await context.request.json()
     } catch {
-      return jsonResponse(
-        {
-          error:
-            'The request body must contain valid JSON.'
-        },
-        400
-      )
+      throw new RequestError('The request body must contain valid JSON.', 400)
     }
 
-    const action =
-      typeof requestBody.action ===
-        'string'
-        ? requestBody.action
-            .trim()
-            .toLowerCase()
-        : ''
+    const action = normalizeText(requestBody.action).toLowerCase()
 
-    const email =
-      typeof requestBody.email ===
-        'string'
-        ? requestBody.email
-            .trim()
-            .toLowerCase()
-        : ''
-
-    if (!email) {
-      return jsonResponse(
-        {
-          error:
-            'A valid user email is required.'
-        },
-        400
-      )
+    if (action !== 'get' && action !== 'update') {
+      throw new RequestError('A valid settings action is required.', 400)
     }
 
-    if (
-      action !== 'get' &&
-      action !== 'update'
-    ) {
-      return jsonResponse(
-        {
-          error:
-            'A valid settings action is required.'
-        },
-        400
-      )
+    const originalEmail = normalizeEmail(
+      requestBody.originalEmail || requestBody.email
+    )
+
+    if (!originalEmail) {
+      throw new RequestError('A valid user email is required.', 400)
     }
 
-    const {
-      supabaseUrl,
-      serviceRoleKey,
-      authenticatedEmail
-    } = adminCheck
-
-    const existingUser =
-      await getUserSettings(
-        supabaseUrl,
-        serviceRoleKey,
-        email
-      )
+    const existingUser = await getLoginUser(
+      admin.supabaseUrl,
+      admin.serviceRoleKey,
+      originalEmail
+    )
 
     if (!existingUser) {
-      return jsonResponse(
-        {
-          error:
-            'User not found in the login table.'
-        },
-        404
-      )
+      throw new RequestError('User not found in the login table.', 404)
     }
 
     if (action === 'get') {
       return jsonResponse({
         success: true,
-
-        user: {
-          email:
-            existingUser.email,
-
-          is_admin:
-            existingUser.is_admin ===
-            true,
-
-          can_edit_articles:
-            existingUser
-              .can_edit_articles ===
-            true
-        }
+        user: formatUser(existingUser)
       })
     }
 
-    if (
-      typeof requestBody.isAdmin !==
-        'boolean' ||
-      typeof requestBody
-        .canEditArticles !==
-        'boolean'
-    ) {
-      return jsonResponse(
-        {
-          error:
-            'Administrator and editor settings must be true or false.'
-        },
+    const userId = normalizeText(requestBody.userId)
+    const name = normalizeText(requestBody.name || existingUser.name)
+    const email = normalizeEmail(requestBody.email || originalEmail)
+    const isAdmin = requestBody.isAdmin
+    const canEditArticles = requestBody.canEditArticles
+
+    if (!name) {
+      throw new RequestError('A valid user name is required.', 400)
+    }
+
+    if (!email) {
+      throw new RequestError('A valid user email is required.', 400)
+    }
+
+    if (typeof isAdmin !== 'boolean' || typeof canEditArticles !== 'boolean') {
+      throw new RequestError(
+        'Administrator and editor settings must be true or false.',
         400
       )
     }
 
-    const isAdmin =
-      requestBody.isAdmin
+    const editingSelf =
+      (userId && userId === admin.authenticatedUserId) ||
+      originalEmail === admin.authenticatedEmail
 
-    const canEditArticles =
-      requestBody.canEditArticles
-
-    if (
-      email === authenticatedEmail &&
-      isAdmin !== true
-    ) {
-      return jsonResponse(
-        {
-          error:
-            'You cannot remove administrator access from your own account.'
-        },
+    if (editingSelf && isAdmin !== true) {
+      throw new RequestError(
+        'You cannot remove administrator access from your own account.',
         400
       )
     }
 
-    const updatedUser =
-      await updateUserSettings(
-        supabaseUrl,
-        serviceRoleKey,
-        email,
-        isAdmin,
-        canEditArticles
+    const emailChanged = email !== originalEmail
+    let authUser = null
+
+    if (userId) {
+      authUser = await getAuthUserById(
+        admin.supabaseUrl,
+        admin.serviceRoleKey,
+        userId
       )
+
+      if (!authUser) {
+        throw new RequestError('The Supabase Auth user was not found.', 404)
+      }
+
+      const authEmail = normalizeEmail(authUser.email)
+
+      if (authEmail && authEmail !== originalEmail) {
+        throw new RequestError(
+          'The selected User ID does not match the selected email address.',
+          409
+        )
+      }
+    }
+
+    if (emailChanged && !userId) {
+      throw new RequestError(
+        'This email cannot be changed because no Supabase Auth User ID is linked to the account.',
+        400
+      )
+    }
+
+    if (emailChanged && await loginEmailExists(
+      admin.supabaseUrl,
+      admin.serviceRoleKey,
+      email
+    )) {
+      throw new RequestError(
+        'Another user already uses that email address.',
+        409
+      )
+    }
+
+    let authEmailUpdated = false
+
+    if (emailChanged) {
+      await updateAuthEmail(
+        admin.supabaseUrl,
+        admin.serviceRoleKey,
+        userId,
+        email
+      )
+      authEmailUpdated = true
+    }
+
+    let updatedUser
+
+    try {
+      updatedUser = await updateLoginUser(
+        admin.supabaseUrl,
+        admin.serviceRoleKey,
+        originalEmail,
+        {
+          name,
+          email,
+          is_admin: isAdmin,
+          can_edit_articles: canEditArticles
+        }
+      )
+    } catch (error) {
+      if (authEmailUpdated) {
+        try {
+          await updateAuthEmail(
+            admin.supabaseUrl,
+            admin.serviceRoleKey,
+            userId,
+            originalEmail
+          )
+        } catch (rollbackError) {
+          console.error('Unable to roll back auth email:', rollbackError)
+        }
+      }
+
+      throw error
+    }
 
     if (!updatedUser) {
-      return jsonResponse(
-        {
-          error:
-            'User not found in the login table.'
-        },
-        404
-      )
+      if (authEmailUpdated) {
+        try {
+          await updateAuthEmail(
+            admin.supabaseUrl,
+            admin.serviceRoleKey,
+            userId,
+            originalEmail
+          )
+        } catch (rollbackError) {
+          console.error('Unable to roll back auth email:', rollbackError)
+        }
+      }
+
+      throw new RequestError('User not found in the login table.', 404)
     }
 
     return jsonResponse({
       success: true,
-
       user: {
-        email:
-          updatedUser.email,
-
-        is_admin:
-          updatedUser.is_admin ===
-          true,
-
-        can_edit_articles:
-          updatedUser
-            .can_edit_articles ===
-          true
+        user_id: userId,
+        ...formatUser(updatedUser)
       }
     })
   } catch (error) {
-    console.error(
-      'User-settings function error:',
-      error
-    )
+    console.error('User-settings function error:', error)
 
     return jsonResponse(
       {
-        error:
-          error.message ||
-          'Unable to manage user settings.'
+        error: error.message || 'Unable to update user settings.'
       },
-      500
+      Number.isInteger(error.status) ? error.status : 500
     )
   }
 }
