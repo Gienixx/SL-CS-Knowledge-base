@@ -1,28 +1,7 @@
-import { supabase } from './supabaseClient.js'
-
-const FIRST_LOGIN_POLICY_START = Date.parse(
-  '2026-06-21T00:00:00.000Z'
-)
-
-function requiresFirstLoginPasswordChange(user) {
-  if (!user) {
-    return false
-  }
-
-  if (
-    user.user_metadata
-      ?.password_change_completed === true
-  ) {
-    return false
-  }
-
-  const createdAt = Date.parse(user.created_at || '')
-
-  return (
-    Number.isFinite(createdAt) &&
-    createdAt >= FIRST_LOGIN_POLICY_START
-  )
-}
+import {
+  supabase,
+  requiresFirstLoginPasswordChange
+} from './supabaseClient.js'
 
 async function logout() {
   await supabase.auth.signOut()
