@@ -1,12 +1,11 @@
-import { supabase } from './supabaseClient.js'
+import {
+  supabase,
+  requiresFirstLoginPasswordChange
+} from './supabaseClient.js'
 
 const loginForm = document.getElementById('loginForm')
 const loginStatus = document.getElementById('loginStatus')
 const submitButton = loginForm?.querySelector('button[type="submit"]')
-
-const FIRST_LOGIN_POLICY_START = Date.parse(
-  '2026-06-21T00:00:00.000Z'
-)
 
 function getReturnPage() {
   const params = new URLSearchParams(window.location.search)
@@ -21,26 +20,6 @@ function getReturnPage() {
   }
 
   return './dashboard.html'
-}
-
-function requiresFirstLoginPasswordChange(user) {
-  if (!user) {
-    return false
-  }
-
-  if (
-    user.user_metadata
-      ?.password_change_completed === true
-  ) {
-    return false
-  }
-
-  const createdAt = Date.parse(user.created_at || '')
-
-  return (
-    Number.isFinite(createdAt) &&
-    createdAt >= FIRST_LOGIN_POLICY_START
-  )
 }
 
 function getDestination(user) {
