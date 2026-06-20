@@ -2,44 +2,20 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8">
-  <meta
-    name="viewport"
-    content="width=device-width, initial-scale=1.0"
-  >
-
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>User Management | SocialLoop CS Base</title>
 
-  <link
-    rel="stylesheet"
-    href="styles.css?v=modal-details-3"
-  >
-
-  <link
-    rel="stylesheet"
-    href="./button-theme.css?v=1"
-  >
+  <link rel="stylesheet" href="styles.css?v=modal-details-3">
+  <link rel="stylesheet" href="./button-theme.css?v=1">
 
   <style>
     .admin-page {
       min-height: 100vh;
       padding: 40px 10%;
       background:
-        radial-gradient(
-          circle at 12% 18%,
-          rgba(255, 194, 26, 0.20),
-          transparent 22rem
-        ),
-        radial-gradient(
-          circle at 86% 12%,
-          rgba(36, 27, 93, 0.10),
-          transparent 24rem
-        ),
-        linear-gradient(
-          180deg,
-          var(--sl-cream) 0%,
-          #fffdfa 48%,
-          var(--sl-cream-soft) 100%
-        );
+        radial-gradient(circle at 12% 18%, rgba(255, 194, 26, 0.20), transparent 22rem),
+        radial-gradient(circle at 86% 12%, rgba(36, 27, 93, 0.10), transparent 24rem),
+        linear-gradient(180deg, var(--sl-cream) 0%, #fffdfa 48%, var(--sl-cream-soft) 100%);
     }
 
     .admin-shell {
@@ -68,12 +44,7 @@
     }
 
     .admin-card {
-      background:
-        linear-gradient(
-          180deg,
-          rgba(255, 255, 255, 0.96),
-          rgba(250, 246, 238, 0.98)
-        );
+      background: linear-gradient(180deg, rgba(255, 255, 255, 0.96), rgba(250, 246, 238, 0.98));
       border: 1px solid var(--sl-border);
       border-radius: 22px;
       box-shadow: var(--sl-shadow);
@@ -83,13 +54,6 @@
 
     .admin-card h2 {
       color: var(--sl-navy);
-      margin-bottom: 18px;
-    }
-
-    .admin-card-description {
-      color: var(--sl-muted);
-      line-height: 1.6;
-      margin-top: -8px;
       margin-bottom: 18px;
     }
 
@@ -113,8 +77,13 @@
     .admin-form input:not([type="checkbox"]):focus,
     .admin-form textarea:focus {
       border-color: rgba(255, 194, 26, 0.7);
-      box-shadow:
-        0 0 0 4px rgba(255, 194, 26, 0.14);
+      box-shadow: 0 0 0 4px rgba(255, 194, 26, 0.14);
+    }
+
+    .admin-form input[readonly] {
+      background: rgba(36, 27, 93, 0.06);
+      color: var(--sl-muted);
+      cursor: not-allowed;
     }
 
     .admin-checkbox {
@@ -126,7 +95,8 @@
       cursor: pointer;
     }
 
-    .admin-checkbox input {
+    .admin-checkbox input,
+    .user-row-checkbox {
       width: 18px;
       height: 18px;
       accent-color: var(--sl-navy);
@@ -137,10 +107,6 @@
       display: grid;
       gap: 10px;
       padding: 8px 0;
-    }
-
-    .admin-permissions[hidden] {
-      display: none;
     }
 
     .users-card-header {
@@ -166,7 +132,7 @@
 
     .users-table {
       width: 100%;
-      min-width: 780px;
+      min-width: 840px;
       border-collapse: collapse;
     }
 
@@ -187,8 +153,14 @@
       letter-spacing: 0.04em;
     }
 
-    .users-table tbody tr:hover {
-      background: rgba(255, 194, 26, 0.06);
+    .users-table-select {
+      width: 56px;
+      text-align: center !important;
+    }
+
+    .users-table tbody tr:hover,
+    .users-table tbody tr.is-selected {
+      background: rgba(255, 194, 26, 0.08);
     }
 
     .users-table tbody tr:last-child td {
@@ -247,7 +219,8 @@
       cursor: pointer;
     }
 
-    .admin-link {
+    .admin-link,
+    .admin-btn-secondary {
       background: rgba(255, 255, 255, 0.88);
       color: var(--sl-navy);
     }
@@ -258,8 +231,9 @@
     }
 
     .admin-btn:disabled {
-      opacity: 0.65;
+      opacity: 0.45;
       cursor: not-allowed;
+      transform: none;
     }
 
     .admin-status {
@@ -273,7 +247,9 @@
     .users-card-footer {
       display: flex;
       justify-content: flex-end;
+      gap: 12px;
       margin-top: 18px;
+      flex-wrap: wrap;
     }
 
     .admin-modal[hidden] {
@@ -309,12 +285,7 @@
       padding: 28px;
       border: 1px solid var(--sl-border);
       border-radius: 22px;
-      background:
-        linear-gradient(
-          180deg,
-          rgba(255, 255, 255, 0.99),
-          rgba(250, 246, 238, 0.99)
-        );
+      background: linear-gradient(180deg, rgba(255, 255, 255, 0.99), rgba(250, 246, 238, 0.99));
       box-shadow: 0 28px 80px rgba(20, 14, 57, 0.30);
     }
 
@@ -358,6 +329,13 @@
       flex-wrap: wrap;
     }
 
+    .admin-field-note {
+      margin-top: -6px;
+      color: var(--sl-muted);
+      font-size: 0.88rem;
+      line-height: 1.45;
+    }
+
     body.admin-modal-open {
       overflow: hidden;
     }
@@ -391,38 +369,24 @@
       <header class="admin-topbar">
         <div class="admin-title">
           <h1>User Management</h1>
-
-          <p>
-            Add users, edit account permissions,
-            and manage passwords for SocialLoop CS Base.
-          </p>
+          <p>Add users, edit account information, and manage passwords for SocialLoop CS Base.</p>
         </div>
 
-        <a
-          class="admin-link"
-          href="./dashboard.html"
-        >
-          ← Back to Dashboard
-        </a>
+        <a class="admin-link" href="./dashboard.html">← Back to Dashboard</a>
       </header>
 
       <section class="admin-card">
         <div class="users-card-header">
           <h2>Available Users</h2>
 
-          <button
-            class="admin-btn"
-            id="refreshUsersButton"
-            type="button"
-          >
-            Refresh
-          </button>
+          <button class="admin-btn" id="refreshUsersButton" type="button">Refresh</button>
         </div>
 
         <div class="users-table-wrapper">
           <table class="users-table">
             <thead>
               <tr>
+                <th class="users-table-select">Select</th>
                 <th>User ID</th>
                 <th>Name</th>
                 <th>Email</th>
@@ -433,384 +397,108 @@
 
             <tbody id="usersTableBody">
               <tr>
-                <td
-                  colspan="5"
-                  class="users-table-empty"
-                >
-                  Loading users...
-                </td>
+                <td colspan="6" class="users-table-empty">Loading users...</td>
               </tr>
             </tbody>
           </table>
         </div>
 
-        <p
-          id="usersTableMessage"
-          class="admin-status"
-          aria-live="polite"
-        ></p>
+        <p id="usersTableMessage" class="admin-status" aria-live="polite"></p>
 
         <div class="users-card-footer">
-          <button
-            class="admin-btn"
-            id="openAddUserModalButton"
-            type="button"
-          >
-            Add
-          </button>
+          <button class="admin-btn admin-btn-secondary" id="editSelectedUserButton" type="button" disabled>Edit</button>
+          <button class="admin-btn" id="openAddUserModalButton" type="button">Add</button>
         </div>
-      </section>
-
-      <section class="admin-card">
-        <h2>Edit User Access</h2>
-
-        <p class="admin-card-description">
-          Enter a user's email address to load and
-          update their current administrator and editor permissions.
-        </p>
-
-        <form
-          id="editUserForm"
-          class="admin-form"
-        >
-          <input
-            type="email"
-            id="editUserEmail"
-            name="editUserEmail"
-            placeholder="User email"
-            autocomplete="email"
-            required
-          >
-
-          <button
-            class="admin-btn"
-            id="loadUserSettingsBtn"
-            type="button"
-          >
-            Load Current Settings
-          </button>
-
-          <div
-            id="editUserPermissions"
-            class="admin-permissions"
-            hidden
-          >
-            <label class="admin-checkbox">
-              <input
-                type="checkbox"
-                id="editIsAdmin"
-                name="editIsAdmin"
-              >
-
-              <span>Administrator account</span>
-            </label>
-
-            <label class="admin-checkbox">
-              <input
-                type="checkbox"
-                id="editCanEditArticles"
-                name="editCanEditArticles"
-              >
-
-              <span>Editor access</span>
-            </label>
-
-            <button
-              class="admin-btn"
-              type="submit"
-            >
-              Save Settings
-            </button>
-          </div>
-        </form>
-
-        <p
-          id="editUserMessage"
-          class="admin-status"
-          aria-live="polite"
-        ></p>
       </section>
 
       <section class="admin-card">
         <h2>Change Password</h2>
 
-        <form
-          id="changePasswordForm"
-          class="admin-form"
-        >
-          <input
-            type="email"
-            id="changeEmail"
-            name="changeEmail"
-            placeholder="User email"
-            autocomplete="email"
-            required
-          >
-
-          <input
-            type="password"
-            id="newPassword"
-            name="newPassword"
-            placeholder="New password"
-            autocomplete="new-password"
-            minlength="8"
-            required
-          >
-
-          <button
-            class="admin-btn"
-            type="submit"
-          >
-            Change Password
-          </button>
+        <form id="changePasswordForm" class="admin-form">
+          <input type="email" id="changeEmail" name="changeEmail" placeholder="User email" autocomplete="email" required>
+          <input type="password" id="newPassword" name="newPassword" placeholder="New password" autocomplete="new-password" minlength="8" required>
+          <button class="admin-btn" type="submit">Change Password</button>
         </form>
 
-        <p
-          id="changePasswordMessage"
-          class="admin-status"
-          aria-live="polite"
-        ></p>
+        <p id="changePasswordMessage" class="admin-status" aria-live="polite"></p>
       </section>
     </div>
   </main>
 
-  <div
-    class="admin-modal"
-    id="addUserModal"
-    role="dialog"
-    aria-modal="true"
-    aria-labelledby="addUserModalTitle"
-    hidden
-  >
-    <button
-      class="admin-modal-backdrop"
-      id="addUserModalBackdrop"
-      type="button"
-      aria-label="Close add user dialog"
-    ></button>
+  <div class="admin-modal" id="addUserModal" role="dialog" aria-modal="true" aria-labelledby="addUserModalTitle" hidden>
+    <button class="admin-modal-backdrop" type="button" data-close-modal="addUserModal" aria-label="Close add user dialog"></button>
 
     <section class="admin-modal-dialog">
       <div class="admin-modal-header">
         <h2 id="addUserModalTitle">Add User</h2>
-
-        <button
-          class="admin-modal-close"
-          id="closeAddUserModalButton"
-          type="button"
-          aria-label="Close"
-        >
-          ×
-        </button>
+        <button class="admin-modal-close" type="button" data-close-modal="addUserModal" aria-label="Close">×</button>
       </div>
 
-      <form
-        id="addUserForm"
-        class="admin-form"
-      >
-        <input
-          type="text"
-          id="name"
-          name="name"
-          placeholder="User name"
-          autocomplete="name"
-          required
-        >
-
-        <input
-          type="email"
-          id="email"
-          name="email"
-          placeholder="User email"
-          autocomplete="email"
-          required
-        >
-
-        <input
-          type="password"
-          id="password"
-          name="password"
-          placeholder="Temporary password"
-          autocomplete="new-password"
-          minlength="8"
-          required
-        >
+      <form id="addUserForm" class="admin-form">
+        <input type="text" id="name" name="name" placeholder="User name" autocomplete="name" required>
+        <input type="email" id="email" name="email" placeholder="User email" autocomplete="email" required>
+        <input type="password" id="password" name="password" placeholder="Temporary password" autocomplete="new-password" minlength="8" required>
 
         <div class="admin-permissions">
           <label class="admin-checkbox">
-            <input
-              type="checkbox"
-              id="isAdmin"
-              name="isAdmin"
-            >
-
+            <input type="checkbox" id="isAdmin" name="isAdmin">
             <span>Administrator account</span>
           </label>
 
           <label class="admin-checkbox">
-            <input
-              type="checkbox"
-              id="canEditArticles"
-              name="canEditArticles"
-            >
-
+            <input type="checkbox" id="canEditArticles" name="canEditArticles">
             <span>Editor access</span>
           </label>
         </div>
 
         <div class="admin-modal-actions">
-          <button
-            class="admin-link"
-            id="cancelAddUserButton"
-            type="button"
-          >
-            Cancel
-          </button>
-
-          <button
-            class="admin-btn"
-            type="submit"
-          >
-            Add User
-          </button>
+          <button class="admin-btn admin-btn-secondary" type="button" data-close-modal="addUserModal">Cancel</button>
+          <button class="admin-btn" type="submit">Add User</button>
         </div>
       </form>
 
-      <p
-        id="message"
-        class="admin-status"
-        aria-live="polite"
-      ></p>
+      <p id="message" class="admin-status" aria-live="polite"></p>
     </section>
   </div>
 
-  <script
-    type="module"
-    src="./scripts/admin.js?v=5"
-  ></script>
+  <div class="admin-modal" id="editUserModal" role="dialog" aria-modal="true" aria-labelledby="editUserModalTitle" hidden>
+    <button class="admin-modal-backdrop" type="button" data-close-modal="editUserModal" aria-label="Close edit user dialog"></button>
 
-  <script>
-    (() => {
-      const modal =
-        document.getElementById('addUserModal')
+    <section class="admin-modal-dialog">
+      <div class="admin-modal-header">
+        <h2 id="editUserModalTitle">Edit User</h2>
+        <button class="admin-modal-close" type="button" data-close-modal="editUserModal" aria-label="Close">×</button>
+      </div>
 
-      const openButton =
-        document.getElementById('openAddUserModalButton')
+      <form id="editSelectedUserForm" class="admin-form">
+        <input type="text" id="editUserId" name="editUserId" placeholder="User ID" readonly>
+        <p class="admin-field-note">The User ID is generated by Supabase and cannot be edited.</p>
 
-      const closeButton =
-        document.getElementById('closeAddUserModalButton')
+        <input type="text" id="editUserName" name="editUserName" placeholder="User name" autocomplete="name" required>
+        <input type="email" id="editUserAccountEmail" name="editUserAccountEmail" placeholder="User email" autocomplete="email" required>
 
-      const cancelButton =
-        document.getElementById('cancelAddUserButton')
+        <div class="admin-permissions">
+          <label class="admin-checkbox">
+            <input type="checkbox" id="editUserIsAdmin" name="editUserIsAdmin">
+            <span>Administrator account</span>
+          </label>
 
-      const backdrop =
-        document.getElementById('addUserModalBackdrop')
+          <label class="admin-checkbox">
+            <input type="checkbox" id="editUserCanEditArticles" name="editUserCanEditArticles">
+            <span>Editor access</span>
+          </label>
+        </div>
 
-      const firstInput =
-        document.getElementById('name')
+        <div class="admin-modal-actions">
+          <button class="admin-btn admin-btn-secondary" type="button" data-close-modal="editUserModal">Cancel</button>
+          <button class="admin-btn" type="submit">Save Changes</button>
+        </div>
+      </form>
 
-      const addUserMessage =
-        document.getElementById('message')
+      <p id="editSelectedUserMessage" class="admin-status" aria-live="polite"></p>
+    </section>
+  </div>
 
-      let lastFocusedElement = null
-
-      function openModal() {
-        if (!modal) {
-          return
-        }
-
-        lastFocusedElement =
-          document.activeElement
-
-        modal.hidden = false
-        document.body.classList.add(
-          'admin-modal-open'
-        )
-
-        if (addUserMessage) {
-          addUserMessage.textContent = ''
-        }
-
-        window.requestAnimationFrame(() => {
-          firstInput?.focus()
-        })
-      }
-
-      function closeModal() {
-        if (!modal) {
-          return
-        }
-
-        modal.hidden = true
-        document.body.classList.remove(
-          'admin-modal-open'
-        )
-
-        if (
-          lastFocusedElement instanceof HTMLElement
-        ) {
-          lastFocusedElement.focus()
-        } else {
-          openButton?.focus()
-        }
-      }
-
-      openButton?.addEventListener(
-        'click',
-        openModal
-      )
-
-      closeButton?.addEventListener(
-        'click',
-        closeModal
-      )
-
-      cancelButton?.addEventListener(
-        'click',
-        closeModal
-      )
-
-      backdrop?.addEventListener(
-        'click',
-        closeModal
-      )
-
-      document.addEventListener(
-        'keydown',
-        event => {
-          if (
-            event.key === 'Escape' &&
-            modal &&
-            !modal.hidden
-          ) {
-            closeModal()
-          }
-        }
-      )
-
-      if (addUserMessage) {
-        const successObserver =
-          new MutationObserver(() => {
-            if (
-              addUserMessage.textContent.trim() ===
-              'User created successfully.'
-            ) {
-              window.setTimeout(
-                closeModal,
-                700
-              )
-            }
-          })
-
-        successObserver.observe(
-          addUserMessage,
-          {
-            childList: true,
-            subtree: true,
-            characterData: true
-          }
-        )
-      }
-    })()
-  </script>
+  <script type="module" src="./scripts/admin.js?v=6"></script>
 </body>
 </html>
