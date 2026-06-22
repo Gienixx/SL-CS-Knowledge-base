@@ -19,6 +19,10 @@ if (!document.getElementById('articleNestingStyles')) {
       scroll-margin-top: 90px;
     }
 
+    .article-body .step-card {
+      margin-top: 20px;
+    }
+
     .article-body .callout-card {
       border-left: 3px solid var(--gold, #ffc21a);
       background: linear-gradient(
@@ -191,6 +195,20 @@ if (!document.getElementById('articleNestingStyles')) {
       font-size: 1rem;
     }
 
+    .article-body .step-card .rich-table-section.nested-rich-unit {
+      margin: 18px 0 4px;
+      padding: 0;
+      border: 0;
+      border-radius: 0;
+      background: transparent;
+      box-shadow: none;
+      overflow: visible;
+    }
+
+    .article-preview-panel .step-card {
+      margin-top: 16px;
+    }
+
     .article-preview-panel .callout-card {
       margin: 0;
       padding: 18px;
@@ -224,6 +242,16 @@ if (!document.getElementById('articleNestingStyles')) {
     .article-preview-panel .nested-rich-unit .rich-section-title {
       margin-top: 0;
       font-size: 0.92rem;
+    }
+
+    .article-preview-panel .step-card .rich-table-section.nested-rich-unit {
+      margin: 14px 0 2px;
+      padding: 0;
+      border: 0;
+      border-radius: 0;
+      background: transparent;
+      box-shadow: none;
+      overflow: visible;
     }
 
     @media (max-width: 620px) {
