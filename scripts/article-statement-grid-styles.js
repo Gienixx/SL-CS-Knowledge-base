@@ -2,6 +2,12 @@ if (!document.getElementById('articleStatementGridStyles')) {
   const style = document.createElement('style')
   style.id = 'articleStatementGridStyles'
   style.textContent = `
+    .article-body .step-card,
+    .article-preview-panel .step-card {
+      margin-top: 14px !important;
+      margin-bottom: 0 !important;
+    }
+
     .statement-grid-section {
       overflow: hidden;
     }
