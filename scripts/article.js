@@ -4,7 +4,7 @@ import {
   parseArticleContent,
   renderArticleUnit,
   stripInlineFormatting
-} from './article-content-renderer-v5.js?v=1'
+} from './article-content-renderer-v6.js?v=1'
 import './article-nesting-styles.js?v=1'
 import './article-published-parser-styles.js?v=1'
 
