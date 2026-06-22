@@ -1,7 +1,10 @@
 import { supabase } from './supabaseClient.js'
 import {
   setupArticleEditorPreview
-} from './article-editor-preview-v3.js?v=1'
+} from './article-editor-preview-v3.js?v=2'
+import {
+  setupGroupedArticleToolbar
+} from './article-editor-toolbar.js?v=1'
 
 const form = document.getElementById('articleForm')
 const message = document.getElementById('message')
@@ -11,6 +14,7 @@ const descriptionCount = document.getElementById('descriptionCount')
 const tagInput = document.getElementById('tag')
 const contentInput = document.getElementById('content')
 const submitButton = form?.querySelector('button[type="submit"]')
+const toolbar = document.querySelector('.format-toolbar')
 
 let authorInput = null
 
@@ -129,6 +133,36 @@ function prefixSelectedLines(prefixFactory, placeholder) {
   )
 }
 
+function toRoman(number) {
+  const values = [
+    [1000, 'm'],
+    [900, 'cm'],
+    [500, 'd'],
+    [400, 'cd'],
+    [100, 'c'],
+    [90, 'xc'],
+    [50, 'l'],
+    [40, 'xl'],
+    [10, 'x'],
+    [9, 'ix'],
+    [5, 'v'],
+    [4, 'iv'],
+    [1, 'i']
+  ]
+
+  let remaining = Math.max(1, number)
+  let result = ''
+
+  for (const [value, numeral] of values) {
+    while (remaining >= value) {
+      result += numeral
+      remaining -= value
+    }
+  }
+
+  return result
+}
+
 function insertRichBlock(
   blockText,
   selectionOffset,
@@ -149,7 +183,7 @@ function insertStepCard() {
   const block =
     `:::step ${title}\n\n` +
     'Write the instructions for this step here.\n\n' +
-    'Place the cursor before the closing ::: to insert a nested table, rule grid, checklist, or callout.\n' +
+    'Place the cursor before the closing ::: to insert a nested structured block.\n' +
     ':::'
 
   insertRichBlock(block, ':::step '.length, title.length)
@@ -161,7 +195,7 @@ function insertCalloutCard() {
   const block =
     `:::callout ${title}\n\n` +
     'Write the callout details here.\n\n' +
-    'Place the cursor before the closing ::: to insert a nested rule grid or another structured block.\n' +
+    'Place the cursor before the closing ::: to insert a nested structured block.\n' +
     ':::'
 
   insertRichBlock(block, ':::callout '.length, title.length)
@@ -172,8 +206,8 @@ function insertDecisionTable() {
   const block =
     ':::table\n' +
     `${firstHeader} | Resolution\n` +
-    'Below $100 | Reply using the **Not Rewarded** template only. Do not issue credit.\n' +
-    'Above $100 | Reply using the **Not Rewarded** template and issue a credit.\n' +
+    'Below $100 | Add the required resolution.\n' +
+    'Above $100 | Add the required resolution.\n' +
     ':::'
 
   insertRichBlock(
@@ -183,11 +217,13 @@ function insertDecisionTable() {
   )
 }
 
-function insertRuleGrid() {
+function insertRuleBlock(layout) {
   const selectedText = getSelectedText().trim()
   const title = selectedText || 'Credit Rules'
+  const directive =
+    layout === 'list' ? ':::rules-list ' : ':::rules-grid '
   const block =
-    `:::rules ${title}\n` +
+    `${directive}${title}\n` +
     'When issuing credit, follow these limits:\n' +
     "1 | The credit must not exceed the survey's reward amount.\n" +
     '2 | If no survey name is provided, the maximum credit allowed is **up to $1.00 only**.\n' +
@@ -195,7 +231,7 @@ function insertRuleGrid() {
     '4 | Do not issue credit for users below $100 lifetime revenue.\n' +
     ':::'
 
-  insertRichBlock(block, ':::rules '.length, title.length)
+  insertRichBlock(block, directive.length, title.length)
 }
 
 function insertResponseTemplate() {
@@ -216,11 +252,15 @@ function insertResponseTemplate() {
   )
 }
 
-function insertChecklist() {
+function insertChecklist(layout) {
   const selectedText = getSelectedText().trim()
   const title = selectedText || 'Agent Checklist'
+  const directive =
+    layout === 'list'
+      ? ':::checklist-list '
+      : ':::checklist-grid '
   const block =
-    `:::checklist ${title}\n` +
+    `${directive}${title}\n` +
     'Before resolving the ticket, confirm the following:\n' +
     '- First checklist item\n' +
     '- Second checklist item\n' +
@@ -228,11 +268,23 @@ function insertChecklist() {
     '- Fourth checklist item\n' +
     ':::'
 
-  insertRichBlock(
-    block,
-    ':::checklist '.length,
-    title.length
-  )
+  insertRichBlock(block, directive.length, title.length)
+}
+
+function insertStatementGrid() {
+  const selectedText = getSelectedText().trim()
+  const title = selectedText || 'Common User Statements'
+  const block =
+    `:::statements ${title}\n` +
+    'Users may describe the issue in different ways, such as:\n' +
+    '- “I was not rewarded for the survey I completed.”\n' +
+    '- “I didn’t get the reward for my survey.”\n' +
+    '- “I finished the survey but the points were not added.”\n' +
+    '- “I completed the offer, but I did not receive my credit.”\n' +
+    '- “Where is my reward for the survey?”\n' +
+    ':::'
+
+  insertRichBlock(block, ':::statements '.length, title.length)
 }
 
 function insertArticleTemplate() {
@@ -253,18 +305,14 @@ User Lifetime Revenue | Resolution
 Below $100 | Add the required resolution.
 Above $100 | Add the required resolution.
 :::
-
-Add any final instructions for this step.
 :::
 
-:::callout Important credit limits
+## Credit Rules
 
-Review these rules before issuing credit.
-
-:::rules Credit Rules
+:::rules-grid Credit Rules
+When issuing credit, follow these limits:
 1 | Add the first rule.
 2 | Add the second rule.
-:::
 :::
 
 ## Recommended Response Template
@@ -275,7 +323,7 @@ Hi [User Name],
 Write the recommended response here.
 :::
 
-:::checklist Agent Checklist
+:::checklist-grid Agent Checklist
 Before resolving the ticket, confirm the following:
 - First checklist item
 - Second checklist item
@@ -315,19 +363,31 @@ function applyFormatting(format) {
     case 'italic':
       wrapSelectedText('*', '*', 'italic text')
       break
+    case 'underline':
+      wrapSelectedText('++', '++', 'underlined text')
+      break
     case 'section':
       insertHeading('## ', 'Section title')
       break
     case 'subheading':
-      insertHeading('### ', 'Subheading')
+      insertHeading('### ', 'Sub heading')
       break
     case 'bullets':
       prefixSelectedLines(() => '- ', 'List item')
       break
+    case 'indented-bullets':
+      prefixSelectedLines(() => '  - ', 'Indented list item')
+      break
     case 'numbered':
       prefixSelectedLines(
         index => `${index + 1}. `,
-        'Step description'
+        'Numbered item'
+      )
+      break
+    case 'indented-numbered':
+      prefixSelectedLines(
+        index => `  ${toRoman(index + 1)}. `,
+        'Indented numbered item'
       )
       break
     case 'callout':
@@ -340,13 +400,22 @@ function applyFormatting(format) {
       insertDecisionTable()
       break
     case 'rule-grid':
-      insertRuleGrid()
+      insertRuleBlock('grid')
+      break
+    case 'rule-list':
+      insertRuleBlock('list')
       break
     case 'response-template':
       insertResponseTemplate()
       break
-    case 'checklist':
-      insertChecklist()
+    case 'checklist-grid':
+      insertChecklist('grid')
+      break
+    case 'checklist-list':
+      insertChecklist('list')
+      break
+    case 'statement-grid':
+      insertStatementGrid()
       break
     case 'template':
       insertArticleTemplate()
@@ -356,85 +425,10 @@ function applyFormatting(format) {
   }
 }
 
-function createFormatButton(format, label, title) {
-  const button = document.createElement('button')
-  button.className = 'format-button'
-  button.type = 'button'
-  button.dataset.format = format
-  button.textContent = label
-  button.title = title
-  button.setAttribute('aria-label', title)
-  return button
-}
-
-function ensureRichFormattingControls() {
-  const toolbar = document.querySelector('.format-toolbar')
-
-  if (!toolbar) {
-    return
-  }
-
-  const templateButton = toolbar.querySelector(
-    '[data-format="template"]'
-  )
-  const controls = [
-    [
-      'step-card',
-      'Step Card',
-      'Insert an automatically numbered step card'
-    ],
-    [
-      'decision-table',
-      'Decision Table',
-      'Insert a two-column decision table'
-    ],
-    [
-      'rule-grid',
-      'Rule Grid',
-      'Insert a numbered rule card grid'
-    ],
-    [
-      'response-template',
-      'Response Template',
-      'Insert a response template card'
-    ],
-    [
-      'checklist',
-      'Checklist',
-      'Insert a two-column checklist'
-    ]
-  ]
-
-  for (const [format, label, title] of controls) {
-    if (toolbar.querySelector(`[data-format="${format}"]`)) {
-      continue
-    }
-
-    toolbar.insertBefore(
-      createFormatButton(format, label, title),
-      templateButton
-    )
-  }
-
-  const help = document.querySelector('.format-help')
-
-  if (help && !help.querySelector('[data-rich-block-help]')) {
-    const helpText = document.createElement('span')
-    helpText.dataset.richBlockHelp = 'true'
-    helpText.textContent =
-      ' Structured blocks can be nested by placing the cursor before the parent block’s closing ::: marker.'
-    help.appendChild(helpText)
-  }
-}
-
 function initializeEditorControls() {
-  ensureRichFormattingControls()
-
-  document.querySelectorAll('[data-format]').forEach(button => {
-    button.addEventListener('click', event => {
-      event.preventDefault()
-      applyFormatting(button.dataset.format)
-    })
+  setupGroupedArticleToolbar({
+    toolbar,
+    onFormat: applyFormatting
   })
 
   contentInput?.addEventListener('keydown', event => {
@@ -443,13 +437,19 @@ function initializeEditorControls() {
 
     if (modifierPressed && pressedKey === 'b') {
       event.preventDefault()
-      wrapSelectedText('**', '**', 'bold text')
+      applyFormatting('bold')
       return
     }
 
     if (modifierPressed && pressedKey === 'i') {
       event.preventDefault()
-      wrapSelectedText('*', '*', 'italic text')
+      applyFormatting('italic')
+      return
+    }
+
+    if (modifierPressed && pressedKey === 'u') {
+      event.preventDefault()
+      applyFormatting('underline')
       return
     }
 
@@ -458,6 +458,13 @@ function initializeEditorControls() {
       replaceSelection('  ', 2)
     }
   })
+
+  const help = document.querySelector('.format-help')
+
+  if (help) {
+    help.innerHTML =
+      '<strong>Formatting guide:</strong> Use the icon buttons for text emphasis. Open the grouped menus for headings, lists, checklists, and special article layouts. Place the cursor before a structured block’s closing <strong>:::</strong> to nest another format inside it.'
+  }
 
   descriptionInput?.addEventListener(
     'input',
@@ -493,7 +500,8 @@ async function initializeArticleEditor() {
     !descriptionInput ||
     !authorInput ||
     !tagInput ||
-    !contentInput
+    !contentInput ||
+    !toolbar
   ) {
     console.error(
       'Required article editor elements were not found.'
