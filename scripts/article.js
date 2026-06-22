@@ -1,4 +1,10 @@
 import { supabase } from './supabaseClient.js'
+import {
+  createExcerpt,
+  parseArticleContent,
+  renderArticleUnit,
+  stripInlineFormatting
+} from './article-content-renderer.js?v=1'
 
 const titleElement = document.getElementById('articleTitle')
 const dateElement = document.getElementById('articleDate')
@@ -38,27 +44,28 @@ function getErrorMessage(error) {
   return 'An unexpected error occurred.'
 }
 
-function installStepCardStyles() {
-  if (document.getElementById('stepCardStyles')) {
+function installRichContentStyles() {
+  if (document.getElementById('articleRichContentStyles')) {
     return
   }
 
   const style = document.createElement('style')
-  style.id = 'stepCardStyles'
+  style.id = 'articleRichContentStyles'
   style.textContent = `
-    .step-card {
+    .step-card,
+    .response-template-card {
       position: relative;
       margin-bottom: 18px;
-      padding: 20px 20px 18px;
-      border: 1px solid rgba(36, 27, 93, 0.12);
-      border-radius: 14px;
+      padding: 24px 26px;
+      border: 1px solid var(--line);
+      border-radius: var(--radius);
       background:
         linear-gradient(
           180deg,
           rgba(255, 255, 255, 0.98),
           rgba(250, 246, 238, 0.96)
         );
-      box-shadow: 0 10px 26px rgba(36, 27, 93, 0.055);
+      box-shadow: 0 14px 36px rgba(36, 27, 93, 0.07);
       scroll-margin-top: 90px;
     }
 
@@ -70,7 +77,7 @@ function installStepCardStyles() {
       padding: 4px 10px;
       border: 1px solid rgba(255, 194, 26, 0.48);
       border-radius: 999px;
-      color: #241b5d;
+      color: var(--text);
       background: rgba(255, 194, 26, 0.09);
       font-size: 0.68rem;
       font-weight: 850;
@@ -80,57 +87,155 @@ function installStepCardStyles() {
 
     .step-card-title {
       margin: 14px 0 10px;
-      color: #241b5d;
-      font-size: 1.02rem;
+      color: var(--text);
+      font-size: 1.06rem;
       line-height: 1.35;
-      letter-spacing: 0.005em;
-      font-weight: 820;
     }
 
     .step-card p,
-    .step-card li {
-      position: relative;
-      color: #6f678f;
-      font-size: 0.94rem;
-      line-height: 1.72;
+    .step-card li,
+    .response-template-card p,
+    .response-template-card li {
+      color: var(--muted);
+      font-size: 1rem;
+      line-height: 1.74;
     }
 
-    .step-card p {
-      margin: 0 0 14px;
+    .rich-table-wrapper {
+      overflow-x: auto;
+      border: 1px solid rgba(36, 27, 93, 0.12);
+      border-radius: 14px;
+      background: rgba(255, 255, 255, 0.92);
     }
 
-    .step-card p:last-child,
-    .step-card ul:last-child,
-    .step-card ol:last-child,
-    .step-card .callout:last-child {
-      margin-bottom: 0;
+    .rich-table {
+      width: 100%;
+      min-width: 560px;
+      border-collapse: collapse;
     }
 
-    .step-card strong {
-      color: #2b2459;
-      font-weight: 800;
+    .rich-table th,
+    .rich-table td {
+      padding: 18px 20px;
+      text-align: left;
+      vertical-align: top;
+      border-bottom: 1px solid rgba(36, 27, 93, 0.09);
     }
 
-    .step-card ul,
-    .step-card ol {
-      padding-left: 1.25rem;
-      margin: 12px 0 16px;
+    .rich-table th {
+      color: var(--text);
+      background: rgba(255, 194, 26, 0.1);
+      font-size: 0.74rem;
+      font-weight: 850;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
     }
 
-    .step-card li {
-      margin-bottom: 7px;
-    }
-
-    .step-card h3 {
-      margin: 16px 0 8px;
-      color: #241b5d;
+    .rich-table td {
+      color: var(--muted);
       font-size: 0.96rem;
+      line-height: 1.6;
+    }
+
+    .rich-table tbody tr:last-child td {
+      border-bottom: none;
+    }
+
+    .rich-intro {
+      margin-bottom: 18px !important;
+    }
+
+    .rule-grid {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 12px;
+    }
+
+    .rule-card {
+      min-height: 126px;
+      padding: 16px;
+      border: 1px solid rgba(36, 27, 93, 0.11);
+      border-radius: 12px;
+      background: rgba(255, 255, 255, 0.82);
+    }
+
+    .rule-number {
+      display: inline-flex;
+      min-width: 21px;
+      min-height: 21px;
+      align-items: center;
+      justify-content: center;
+      margin-bottom: 10px;
+      border-radius: 6px;
+      color: var(--text);
+      background: rgba(255, 194, 26, 0.14);
+      font-size: 0.72rem;
+      font-weight: 850;
+    }
+
+    .rule-card p {
+      margin: 0;
+      color: var(--muted);
+      font-size: 0.94rem;
+      line-height: 1.65;
+    }
+
+    .response-template-card {
+      border-left: 2px solid var(--text);
+      border-top-left-radius: 12px;
+      border-bottom-left-radius: 12px;
+    }
+
+    .response-template-title {
+      margin: 0 0 14px;
+      color: var(--text);
+      font-size: 0.98rem;
       line-height: 1.4;
     }
 
-    @media (max-width: 520px) {
-      .step-card {
-        padding: 18px 16px 16px;
+    .response-template-card p {
+      margin: 0 0 16px;
+    }
+
+    .response-template-card p:last-child {
+      margin-bottom: 0;
+    }
+
+    .checklist-grid {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 12px 26px;
+      padding: 0 !important;
+      margin: 14px 0 0 !important;
+      list-style: none;
+    }
+
+    .checklist-grid li {
+      display: grid;
+      grid-template-columns: 20px 1fr;
+      gap: 9px;
+      margin: 0 !important;
+    }
+
+    .checklist-mark {
+      color: var(--text);
+      font-size: 1rem;
+      font-weight: 900;
+    }
+
+    .rich-subheading {
+      margin-top: 18px;
+    }
+
+    @media (max-width: 620px) {
+      .rule-grid,
+      .checklist-grid {
+        grid-template-columns: 1fr;
+      }
+
+      .step-card,
+      .response-template-card {
+        padding: 20px 18px;
       }
     }
   `
@@ -138,315 +243,16 @@ function installStepCardStyles() {
   document.head.appendChild(style)
 }
 
-function stripInlineFormatting(text) {
-  return String(text ?? '')
-    .replace(/\*\*\*([^*\n]+)\*\*\*/g, '$1')
-    .replace(/\*\*([^*\n]+)\*\*/g, '$1')
-    .replace(/\*([^*\n]+)\*/g, '$1')
-}
-
-function appendInlineFormatting(container, text) {
-  const value = String(text ?? '')
-  const formattingPattern =
-    /(\*\*\*[^*\n]+?\*\*\*|\*\*[^*\n]+?\*\*|\*[^*\n]+?\*)/g
-
-  let previousIndex = 0
-
-  for (const match of value.matchAll(formattingPattern)) {
-    const matchIndex = match.index ?? 0
-
-    if (matchIndex > previousIndex) {
-      container.appendChild(
-        document.createTextNode(
-          value.slice(previousIndex, matchIndex)
-        )
-      )
-    }
-
-    const formattedText = match[0]
-
-    if (
-      formattedText.startsWith('***') &&
-      formattedText.endsWith('***')
-    ) {
-      const strong = document.createElement('strong')
-      const emphasis = document.createElement('em')
-      emphasis.textContent = formattedText.slice(3, -3)
-      strong.appendChild(emphasis)
-      container.appendChild(strong)
-    } else if (
-      formattedText.startsWith('**') &&
-      formattedText.endsWith('**')
-    ) {
-      const strong = document.createElement('strong')
-      strong.textContent = formattedText.slice(2, -2)
-      container.appendChild(strong)
-    } else {
-      const emphasis = document.createElement('em')
-      emphasis.textContent = formattedText.slice(1, -1)
-      container.appendChild(emphasis)
-    }
-
-    previousIndex = matchIndex + formattedText.length
+function getUnitLabel(unit) {
+  if (unit.kind === 'step') {
+    return `Step ${unit.stepNumber}: ${unit.title}`
   }
 
-  if (previousIndex < value.length) {
-    container.appendChild(
-      document.createTextNode(value.slice(previousIndex))
-    )
-  }
-}
-
-function parseArticleContent(content) {
-  const lines = String(content ?? '')
-    .replace(/\r\n?/g, '\n')
-    .split('\n')
-
-  const sections = []
-  let currentSection = null
-  let currentStep = null
-  let paragraphLines = []
-  let currentList = null
-  let stepNumber = 0
-
-  function activeContainer() {
-    return currentStep || currentSection
+  if (unit.kind === 'table') {
+    return unit.title || 'Decision Table'
   }
 
-  function ensureSection() {
-    if (currentStep) {
-      return currentStep
-    }
-
-    if (!currentSection) {
-      currentSection = {
-        kind: 'section',
-        title: 'Overview',
-        blocks: []
-      }
-      sections.push(currentSection)
-    }
-
-    return currentSection
-  }
-
-  function flushParagraph() {
-    const text = paragraphLines
-      .join(' ')
-      .replace(/\s+/g, ' ')
-      .trim()
-
-    if (text) {
-      ensureSection().blocks.push({
-        type: 'paragraph',
-        text
-      })
-    }
-
-    paragraphLines = []
-  }
-
-  function closeList() {
-    currentList = null
-  }
-
-  function startSection(title) {
-    flushParagraph()
-    closeList()
-    currentStep = null
-    currentSection = {
-      kind: 'section',
-      title: title.trim() || 'Article Section',
-      blocks: []
-    }
-    sections.push(currentSection)
-  }
-
-  function startStep(title) {
-    flushParagraph()
-    closeList()
-    stepNumber += 1
-    currentSection = null
-    currentStep = {
-      kind: 'step',
-      stepNumber,
-      title: title.trim() || `Step ${stepNumber}`,
-      blocks: []
-    }
-    sections.push(currentStep)
-  }
-
-  function addSubheading(text) {
-    flushParagraph()
-    closeList()
-    ensureSection().blocks.push({
-      type: 'subheading',
-      text: text.trim()
-    })
-  }
-
-  for (const rawLine of lines) {
-    const line = rawLine.trim()
-    const stepStartMatch = line.match(/^:::step(?:\s+(.+))?$/i)
-
-    if (!currentStep && stepStartMatch) {
-      startStep(stepStartMatch[1] || '')
-      continue
-    }
-
-    if (currentStep && line === ':::') {
-      flushParagraph()
-      closeList()
-      currentStep = null
-      currentSection = null
-      continue
-    }
-
-    if (!line) {
-      flushParagraph()
-      closeList()
-      continue
-    }
-
-    const subheadingMatch = line.match(/^###\s+(.+)$/)
-
-    if (subheadingMatch) {
-      addSubheading(subheadingMatch[1])
-      continue
-    }
-
-    const sectionHeadingMatch = line.match(/^#{1,2}\s+(.+)$/)
-
-    if (sectionHeadingMatch) {
-      if (currentStep) {
-        addSubheading(sectionHeadingMatch[1])
-      } else {
-        startSection(sectionHeadingMatch[1])
-      }
-      continue
-    }
-
-    const calloutMatch = line.match(/^>\s*(.+)$/)
-
-    if (calloutMatch) {
-      flushParagraph()
-      closeList()
-      ensureSection().blocks.push({
-        type: 'callout',
-        text: calloutMatch[1].trim()
-      })
-      continue
-    }
-
-    const unorderedItemMatch = line.match(/^[-*]\s+(.+)$/)
-
-    if (unorderedItemMatch) {
-      flushParagraph()
-
-      if (
-        !currentList ||
-        currentList.type !== 'unordered-list' ||
-        activeContainer()?.blocks.at(-1) !== currentList
-      ) {
-        currentList = {
-          type: 'unordered-list',
-          items: []
-        }
-        ensureSection().blocks.push(currentList)
-      }
-
-      currentList.items.push(unorderedItemMatch[1].trim())
-      continue
-    }
-
-    const orderedItemMatch = line.match(/^\d+[.)]\s+(.+)$/)
-
-    if (orderedItemMatch) {
-      flushParagraph()
-
-      if (
-        !currentList ||
-        currentList.type !== 'ordered-list' ||
-        activeContainer()?.blocks.at(-1) !== currentList
-      ) {
-        currentList = {
-          type: 'ordered-list',
-          items: []
-        }
-        ensureSection().blocks.push(currentList)
-      }
-
-      currentList.items.push(orderedItemMatch[1].trim())
-      continue
-    }
-
-    closeList()
-    paragraphLines.push(line)
-  }
-
-  flushParagraph()
-  closeList()
-
-  if (!sections.length) {
-    sections.push({
-      kind: 'section',
-      title: 'Article Content',
-      blocks: [
-        {
-          type: 'paragraph',
-          text: 'No article content is available.'
-        }
-      ]
-    })
-  }
-
-  return sections
-}
-
-function shortenText(text, maximumLength) {
-  const normalized = stripInlineFormatting(text)
-    .replace(/\s+/g, ' ')
-    .trim()
-
-  if (normalized.length <= maximumLength) {
-    return normalized
-  }
-
-  return `${normalized.slice(0, maximumLength).trim()}…`
-}
-
-function createExcerpt(sections, rawContent) {
-  for (const section of sections) {
-    for (const block of section.blocks) {
-      if (
-        block.type === 'paragraph' ||
-        block.type === 'callout'
-      ) {
-        return shortenText(block.text, 180)
-      }
-
-      if (
-        block.type === 'unordered-list' ||
-        block.type === 'ordered-list'
-      ) {
-        const firstItem = block.items[0]
-
-        if (firstItem) {
-          return shortenText(firstItem, 180)
-        }
-      }
-    }
-  }
-
-  return shortenText(
-    String(rawContent ?? '')
-      .replace(/:::step/gi, ' ')
-      .replace(/:::/g, ' ')
-      .replace(/[#>*-]/g, ' ')
-      .replace(/\s+/g, ' ')
-      .trim(),
-    180
-  )
+  return unit.title || 'Article Section'
 }
 
 function createUniqueSectionId(title, index, usedIds) {
@@ -471,130 +277,28 @@ function createUniqueSectionId(title, index, usedIds) {
   return id
 }
 
-function renderTableOfContents(sections) {
+function renderTableOfContents(units) {
   tocLinks.replaceChildren()
   const usedIds = new Set()
 
-  sections.forEach((section, index) => {
-    const plainTitle = stripInlineFormatting(section.title)
-    const id = createUniqueSectionId(
-      plainTitle,
-      index,
-      usedIds
-    )
-
-    section.id = id
+  units.forEach((unit, index) => {
+    const label = getUnitLabel(unit)
+    unit.id = createUniqueSectionId(label, index, usedIds)
 
     const link = document.createElement('a')
-    link.href = `#${id}`
-    link.textContent =
-      section.kind === 'step'
-        ? `Step ${section.stepNumber}: ${plainTitle}`
-        : plainTitle
-
+    link.href = `#${unit.id}`
+    link.textContent = stripInlineFormatting(label)
     tocLinks.appendChild(link)
   })
 }
 
-function renderContentBlock(block) {
-  if (block.type === 'subheading') {
-    const heading = document.createElement('h3')
-    appendInlineFormatting(heading, block.text)
-    return heading
-  }
-
-  if (block.type === 'callout') {
-    const callout = document.createElement('div')
-    callout.className = 'callout'
-    appendInlineFormatting(callout, block.text)
-    return callout
-  }
-
-  if (
-    block.type === 'unordered-list' ||
-    block.type === 'ordered-list'
-  ) {
-    const list =
-      block.type === 'ordered-list'
-        ? document.createElement('ol')
-        : document.createElement('ul')
-
-    for (const itemText of block.items) {
-      const item = document.createElement('li')
-      appendInlineFormatting(item, itemText)
-      list.appendChild(item)
-    }
-
-    return list
-  }
-
-  const paragraph = document.createElement('p')
-  appendInlineFormatting(paragraph, block.text)
-  return paragraph
-}
-
-function renderStepCard(sectionData) {
-  const section = document.createElement('section')
-  section.id = sectionData.id
-  section.className = 'step-card'
-
-  const badge = document.createElement('span')
-  badge.className = 'step-badge'
-  badge.textContent = `Step ${sectionData.stepNumber}`
-  section.appendChild(badge)
-
-  const heading = document.createElement('h2')
-  heading.className = 'step-card-title'
-  appendInlineFormatting(heading, sectionData.title)
-  section.appendChild(heading)
-
-  if (!sectionData.blocks.length) {
-    const emptyParagraph = document.createElement('p')
-    emptyParagraph.textContent =
-      'No additional information was provided.'
-    section.appendChild(emptyParagraph)
-  }
-
-  for (const block of sectionData.blocks) {
-    section.appendChild(renderContentBlock(block))
-  }
-
-  return section
-}
-
-function renderStandardSection(sectionData) {
-  const section = document.createElement('section')
-  section.id = sectionData.id
-  section.className = 'section'
-
-  const heading = document.createElement('h2')
-  appendInlineFormatting(heading, sectionData.title)
-  section.appendChild(heading)
-
-  if (!sectionData.blocks.length) {
-    const emptyParagraph = document.createElement('p')
-    emptyParagraph.textContent =
-      'No additional information was provided.'
-    section.appendChild(emptyParagraph)
-  }
-
-  for (const block of sectionData.blocks) {
-    section.appendChild(renderContentBlock(block))
-  }
-
-  return section
-}
-
-function renderSections(sections) {
+function renderUnits(units) {
   articleBody.replaceChildren()
 
-  for (const sectionData of sections) {
-    const section =
-      sectionData.kind === 'step'
-        ? renderStepCard(sectionData)
-        : renderStandardSection(sectionData)
-
-    articleBody.appendChild(section)
+  for (const unit of units) {
+    const element = renderArticleUnit(unit)
+    element.id = unit.id
+    articleBody.appendChild(element)
   }
 }
 
@@ -620,42 +324,31 @@ function renderArticle(article) {
   const title =
     String(article.title ?? '').trim() ||
     'Untitled Article'
-
-  const description = String(
-    article.description ?? ''
-  ).trim()
-
+  const description = String(article.description ?? '').trim()
   const content = String(article.content ?? '').trim()
   const normalizedTag = String(article.tag ?? '')
     .trim()
     .toLowerCase()
-
   const category =
-    normalizedTag === 'cashouts'
-      ? 'Cashout'
-      : 'Ticket'
-
-  const sections = parseArticleContent(content)
+    normalizedTag === 'cashouts' ? 'Cashout' : 'Ticket'
+  const units = parseArticleContent(content)
   const excerpt = description
     ? stripInlineFormatting(description)
-    : createExcerpt(sections, content)
+    : createExcerpt(units, content)
 
   document.title = `${title} | SocialLoop CS Base`
   titleElement.textContent = title
-  ghostTitleElement.textContent =
-    `${category}\nSupport Article`
-  dateElement.textContent = formatArticleDate(
-    article.created_at
-  )
+  ghostTitleElement.textContent = `${category}\nSupport Article`
+  dateElement.textContent = formatArticleDate(article.created_at)
   authorElement.textContent = article.author_name
     ? `By: ${article.author_name}`
     : 'SocialLoop Customer Support'
   dekElement.textContent =
     excerpt || `${category} knowledge base article`
 
-  installStepCardStyles()
-  renderTableOfContents(sections)
-  renderSections(sections)
+  installRichContentStyles()
+  renderTableOfContents(units)
+  renderUnits(units)
 
   loadingSection.hidden = true
   errorSection.hidden = true
