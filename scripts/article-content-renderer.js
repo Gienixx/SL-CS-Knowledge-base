@@ -55,7 +55,7 @@ export function appendInlineFormatting(container, text) {
   }
 }
 
-function parseTextBlocks(rawLines) {
+function parseTextBlocks(rawLines, allowAllHeadings = false) {
   const blocks = []
   let paragraphLines = []
   let currentList = null
@@ -86,7 +86,10 @@ function parseTextBlocks(rawLines) {
       continue
     }
 
-    const subheadingMatch = line.match(/^###\s+(.+)$/)
+    const headingPattern = allowAllHeadings
+      ? /^#{1,3}\s+(.+)$/
+      : /^###\s+(.+)$/
+    const subheadingMatch = line.match(headingPattern)
 
     if (subheadingMatch) {
       flushParagraph()
@@ -149,7 +152,6 @@ function parseTextBlocks(rawLines) {
   }
 
   flushParagraph()
-  closeList()
   return blocks
 }
 
@@ -166,15 +168,22 @@ function splitTableRow(line) {
     })
 }
 
+function getTextLines(segments) {
+  return segments
+    .filter(segment => segment.type === 'text')
+    .flatMap(segment => segment.lines)
+}
+
 function parseTableUnit(unit) {
-  const rows = unit.rawLines
+  const rows = getTextLines(unit.segments)
     .map(line => line.trim())
     .filter(Boolean)
     .map(splitTableRow)
     .filter(row => row.length >= 2)
 
   return {
-    ...unit,
+    kind: 'table',
+    title: unit.title,
     headers: rows[0] || ['Column 1', 'Column 2'],
     rows: rows.slice(1)
   }
@@ -184,7 +193,7 @@ function parseRuleUnit(unit) {
   const introLines = []
   const items = []
 
-  for (const rawLine of unit.rawLines) {
+  for (const rawLine of getTextLines(unit.segments)) {
     const line = rawLine.trim()
 
     if (!line) {
@@ -204,7 +213,8 @@ function parseRuleUnit(unit) {
   }
 
   return {
-    ...unit,
+    kind: 'rules',
+    title: unit.title || 'Rules',
     intro: introLines.join(' ').replace(/\s+/g, ' ').trim(),
     items
   }
@@ -214,7 +224,7 @@ function parseChecklistUnit(unit) {
   const introLines = []
   const items = []
 
-  for (const rawLine of unit.rawLines) {
+  for (const rawLine of getTextLines(unit.segments)) {
     const line = rawLine.trim()
 
     if (!line) {
@@ -231,17 +241,113 @@ function parseChecklistUnit(unit) {
   }
 
   return {
-    ...unit,
+    kind: 'checklist',
+    title: unit.title || 'Checklist',
     intro: introLines.join(' ').replace(/\s+/g, ' ').trim(),
     items
   }
 }
 
-function finalizeRichUnit(unit) {
-  if (!unit) {
-    return null
+function buildSyntaxTree(content) {
+  const root = {
+    kind: 'root',
+    segments: []
+  }
+  const stack = [root]
+  let stepNumber = 0
+
+  function appendTextLine(node, line) {
+    const lastSegment = node.segments.at(-1)
+
+    if (lastSegment?.type === 'text') {
+      lastSegment.lines.push(line)
+      return
+    }
+
+    node.segments.push({
+      type: 'text',
+      lines: [line]
+    })
   }
 
+  const lines = String(content ?? '')
+    .replace(/\r\n?/g, '\n')
+    .split('\n')
+
+  for (const rawLine of lines) {
+    const line = rawLine.trim()
+    const currentNode = stack.at(-1)
+
+    if (line === ':::') {
+      if (stack.length > 1) {
+        stack.pop()
+      }
+      continue
+    }
+
+    const directiveMatch = line.match(
+      /^:::(step|table|rules|response-template|checklist|callout)(?:\s+(.+))?$/i
+    )
+
+    if (directiveMatch) {
+      const kind = directiveMatch[1].toLowerCase()
+      const title = directiveMatch[2]?.trim() || ''
+
+      if (kind === 'step') {
+        stepNumber += 1
+      }
+
+      const unit = {
+        type: 'unit',
+        kind,
+        title:
+          title ||
+          (kind === 'step'
+            ? `Step ${stepNumber}`
+            : kind === 'rules'
+              ? 'Rules'
+              : kind === 'response-template'
+                ? 'Response Template'
+                : kind === 'checklist'
+                  ? 'Checklist'
+                  : kind === 'callout'
+                    ? 'Important Note'
+                    : ''),
+        stepNumber: kind === 'step' ? stepNumber : undefined,
+        segments: []
+      }
+
+      currentNode.segments.push(unit)
+      stack.push(unit)
+      continue
+    }
+
+    appendTextLine(currentNode, rawLine)
+  }
+
+  return root
+}
+
+function finalizeContainerItems(segments) {
+  const items = []
+
+  for (const segment of segments) {
+    if (segment.type === 'text') {
+      items.push(...parseTextBlocks(segment.lines, true))
+      continue
+    }
+
+    const nestedUnit = finalizeUnit(segment)
+
+    if (nestedUnit) {
+      items.push(nestedUnit)
+    }
+  }
+
+  return items
+}
+
+function finalizeUnit(unit) {
   if (unit.kind === 'table') {
     return parseTableUnit(unit)
   }
@@ -255,118 +361,88 @@ function finalizeRichUnit(unit) {
   }
 
   return {
-    ...unit,
-    blocks: parseTextBlocks(unit.rawLines)
+    kind: unit.kind,
+    title: unit.title,
+    stepNumber: unit.stepNumber,
+    items: finalizeContainerItems(unit.segments)
   }
 }
 
-export function parseArticleContent(content) {
-  const lines = String(content ?? '')
-    .replace(/\r\n?/g, '\n')
-    .split('\n')
-
-  const units = []
+function parseRootText(lines) {
+  const sections = []
   let currentSection = null
-  let sectionLines = []
-  let richUnit = null
-  let stepNumber = 0
+  let currentLines = []
 
   function flushSection() {
     if (!currentSection) {
       return
     }
 
-    currentSection.blocks = parseTextBlocks(sectionLines)
-    units.push(currentSection)
+    currentSection.items = parseTextBlocks(currentLines)
+
+    if (currentSection.explicit || currentSection.items.length) {
+      sections.push(currentSection)
+    }
+
     currentSection = null
-    sectionLines = []
-  }
-
-  function ensureSection() {
-    if (!currentSection) {
-      currentSection = {
-        kind: 'section',
-        title: 'Overview',
-        blocks: []
-      }
-    }
-
-    return currentSection
-  }
-
-  function closeRichUnit() {
-    if (!richUnit) {
-      return
-    }
-
-    units.push(finalizeRichUnit(richUnit))
-    richUnit = null
+    currentLines = []
   }
 
   for (const rawLine of lines) {
     const line = rawLine.trim()
+    const sectionMatch = line.match(/^#{1,2}\s+(.+)$/)
 
-    if (richUnit) {
-      if (line === ':::') {
-        closeRichUnit()
-      } else {
-        richUnit.rawLines.push(rawLine)
-      }
-      continue
-    }
-
-    const directiveMatch = line.match(
-      /^:::(step|table|rules|response-template|checklist)(?:\s+(.+))?$/i
-    )
-
-    if (directiveMatch) {
-      flushSection()
-      const kind = directiveMatch[1].toLowerCase()
-      const title = directiveMatch[2]?.trim() || ''
-
-      if (kind === 'step') {
-        stepNumber += 1
-      }
-
-      richUnit = {
-        kind,
-        title:
-          title ||
-          (kind === 'step'
-            ? `Step ${stepNumber}`
-            : kind === 'rules'
-              ? 'Rules'
-              : kind === 'response-template'
-                ? 'Response Template'
-                : kind === 'checklist'
-                  ? 'Checklist'
-                  : ''),
-        stepNumber: kind === 'step' ? stepNumber : undefined,
-        rawLines: []
-      }
-      continue
-    }
-
-    const sectionHeadingMatch = line.match(/^#{1,2}\s+(.+)$/)
-
-    if (sectionHeadingMatch) {
+    if (sectionMatch) {
       flushSection()
       currentSection = {
         kind: 'section',
-        title: sectionHeadingMatch[1].trim(),
-        blocks: []
+        title: sectionMatch[1].trim(),
+        explicit: true,
+        items: []
       }
       continue
     }
 
-    ensureSection()
-    sectionLines.push(rawLine)
+    if (!currentSection && line) {
+      currentSection = {
+        kind: 'section',
+        title: 'Overview',
+        explicit: false,
+        items: []
+      }
+    }
+
+    if (currentSection) {
+      currentLines.push(rawLine)
+    }
   }
 
-  closeRichUnit()
   flushSection()
+  return sections
+}
 
-  return units.filter(Boolean)
+export function parseArticleContent(content) {
+  if (!String(content ?? '').trim()) {
+    return []
+  }
+
+  const tree = buildSyntaxTree(content)
+  const units = []
+
+  for (const segment of tree.segments) {
+    if (segment.type === 'text') {
+      units.push(...parseRootText(segment.lines))
+      continue
+    }
+
+    const unit = finalizeUnit(segment)
+
+    if (unit) {
+      units.push(unit)
+    }
+  }
+
+  return units
 }
 
 function renderTextBlock(block) {
@@ -407,15 +483,23 @@ function renderTextBlock(block) {
   return paragraph
 }
 
-function appendBlocks(container, blocks) {
-  for (const block of blocks || []) {
-    container.appendChild(renderTextBlock(block))
+function appendContentItems(container, items) {
+  for (const item of items || []) {
+    if (item.kind) {
+      container.appendChild(renderArticleUnit(item, true))
+    } else {
+      container.appendChild(renderTextBlock(item))
+    }
   }
 }
 
-function renderStandardUnit(unit) {
+function renderStandardUnit(unit, nested) {
   const section = document.createElement('section')
   section.className = unit.kind === 'step' ? 'step-card' : 'section'
+
+  if (nested) {
+    section.classList.add('nested-rich-unit')
+  }
 
   if (unit.kind === 'step') {
     const badge = document.createElement('span')
@@ -429,13 +513,15 @@ function renderStandardUnit(unit) {
     unit.kind === 'step' ? 'step-card-title' : 'rich-section-title'
   appendInlineFormatting(heading, unit.title)
   section.appendChild(heading)
-  appendBlocks(section, unit.blocks)
+  appendContentItems(section, unit.items)
   return section
 }
 
-function renderTableUnit(unit) {
+function renderTableUnit(unit, nested) {
   const section = document.createElement('section')
-  section.className = 'section rich-table-section'
+  section.className = nested
+    ? 'rich-table-section nested-rich-unit'
+    : 'section rich-table-section'
 
   if (unit.title) {
     const heading = document.createElement('h2')
@@ -480,9 +566,11 @@ function renderTableUnit(unit) {
   return section
 }
 
-function renderRulesUnit(unit) {
+function renderRulesUnit(unit, nested) {
   const section = document.createElement('section')
-  section.className = 'section rich-rules-section'
+  section.className = nested
+    ? 'rich-rules-section nested-rich-unit'
+    : 'section rich-rules-section'
 
   const heading = document.createElement('h2')
   heading.className = 'rich-section-title'
@@ -518,21 +606,27 @@ function renderRulesUnit(unit) {
   return section
 }
 
-function renderResponseTemplateUnit(unit) {
+function renderResponseTemplateUnit(unit, nested) {
   const section = document.createElement('section')
   section.className = 'response-template-card'
+
+  if (nested) {
+    section.classList.add('nested-rich-unit')
+  }
 
   const heading = document.createElement('h3')
   heading.className = 'response-template-title'
   appendInlineFormatting(heading, unit.title)
   section.appendChild(heading)
-  appendBlocks(section, unit.blocks)
+  appendContentItems(section, unit.items)
   return section
 }
 
-function renderChecklistUnit(unit) {
+function renderChecklistUnit(unit, nested) {
   const section = document.createElement('section')
-  section.className = 'section checklist-section'
+  section.className = nested
+    ? 'checklist-section nested-rich-unit'
+    : 'section checklist-section'
 
   const heading = document.createElement('h2')
   heading.className = 'rich-section-title'
@@ -566,24 +660,44 @@ function renderChecklistUnit(unit) {
   return section
 }
 
-export function renderArticleUnit(unit) {
+function renderCalloutUnit(unit, nested) {
+  const section = document.createElement('section')
+  section.className = 'callout-card'
+
+  if (nested) {
+    section.classList.add('nested-rich-unit')
+  }
+
+  const heading = document.createElement('h3')
+  heading.className = 'callout-card-title'
+  appendInlineFormatting(heading, unit.title)
+  section.appendChild(heading)
+  appendContentItems(section, unit.items)
+  return section
+}
+
+export function renderArticleUnit(unit, nested = false) {
   if (unit.kind === 'table') {
-    return renderTableUnit(unit)
+    return renderTableUnit(unit, nested)
   }
 
   if (unit.kind === 'rules') {
-    return renderRulesUnit(unit)
+    return renderRulesUnit(unit, nested)
   }
 
   if (unit.kind === 'response-template') {
-    return renderResponseTemplateUnit(unit)
+    return renderResponseTemplateUnit(unit, nested)
   }
 
   if (unit.kind === 'checklist') {
-    return renderChecklistUnit(unit)
+    return renderChecklistUnit(unit, nested)
   }
 
-  return renderStandardUnit(unit)
+  if (unit.kind === 'callout') {
+    return renderCalloutUnit(unit, nested)
+  }
+
+  return renderStandardUnit(unit, nested)
 }
 
 function shortenText(text, maximumLength) {
@@ -598,39 +712,58 @@ function shortenText(text, maximumLength) {
   return `${normalized.slice(0, maximumLength).trim()}…`
 }
 
+function findExcerptInItems(items) {
+  for (const item of items || []) {
+    if (item.kind) {
+      const nestedExcerpt = findExcerptInUnit(item)
+
+      if (nestedExcerpt) {
+        return nestedExcerpt
+      }
+      continue
+    }
+
+    if (item.type === 'paragraph' || item.type === 'callout') {
+      return item.text
+    }
+
+    if (
+      item.type === 'unordered-list' ||
+      item.type === 'ordered-list'
+    ) {
+      return item.items[0] || ''
+    }
+  }
+
+  return ''
+}
+
+function findExcerptInUnit(unit) {
+  if (unit.intro) {
+    return unit.intro
+  }
+
+  if (unit.kind === 'table' && unit.rows[0]?.[1]) {
+    return unit.rows[0][1]
+  }
+
+  if (unit.kind === 'rules' && unit.items[0]?.text) {
+    return unit.items[0].text
+  }
+
+  if (unit.kind === 'checklist' && unit.items[0]) {
+    return unit.items[0]
+  }
+
+  return findExcerptInItems(unit.items)
+}
+
 export function createExcerpt(units, rawContent) {
   for (const unit of units) {
-    if (unit.intro) {
-      return shortenText(unit.intro, 180)
-    }
+    const excerpt = findExcerptInUnit(unit)
 
-    if (unit.kind === 'table' && unit.rows[0]?.[1]) {
-      return shortenText(unit.rows[0][1], 180)
-    }
-
-    if (unit.kind === 'rules' && unit.items[0]?.text) {
-      return shortenText(unit.items[0].text, 180)
-    }
-
-    if (unit.kind === 'checklist' && unit.items[0]) {
-      return shortenText(unit.items[0], 180)
-    }
-
-    for (const block of unit.blocks || []) {
-      if (block.type === 'paragraph' || block.type === 'callout') {
-        return shortenText(block.text, 180)
-      }
-
-      if (
-        block.type === 'unordered-list' ||
-        block.type === 'ordered-list'
-      ) {
-        const firstItem = block.items[0]
-
-        if (firstItem) {
-          return shortenText(firstItem, 180)
-        }
-      }
+    if (excerpt) {
+      return shortenText(excerpt, 180)
     }
   }
 
