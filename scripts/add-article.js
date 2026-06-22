@@ -8,7 +8,6 @@ const descriptionCount = document.getElementById('descriptionCount')
 const tagInput = document.getElementById('tag')
 const contentInput = document.getElementById('content')
 const submitButton = form?.querySelector('button[type="submit"]')
-const formatButtons = document.querySelectorAll('[data-format]')
 
 function updateDescriptionCount() {
   if (!descriptionInput || !descriptionCount) {
@@ -118,6 +117,27 @@ function prefixSelectedLines(prefixFactory, placeholder) {
   replaceSelection(`${spacing}${formattedLines.join('\n')}\n\n`)
 }
 
+function insertStepCard() {
+  if (!contentInput) {
+    return
+  }
+
+  const selectedText = getSelectedText().trim()
+  const title = selectedText || 'Step title'
+  const spacing = getLeadingSpacing()
+  const replacement =
+    `${spacing}:::step ${title}\n\n` +
+    'Write the instructions for this step here.\n\n' +
+    'Add another paragraph or supporting detail if needed.\n' +
+    ':::\n\n'
+
+  replaceSelection(
+    replacement,
+    spacing.length + ':::step '.length,
+    title.length
+  )
+}
+
 function insertArticleTemplate() {
   if (!contentInput || !message) {
     return
@@ -127,29 +147,21 @@ function insertArticleTemplate() {
 
 Write the article overview here.
 
-## Main Process
+:::step First step title
 
-Explain the main process or workflow here.
+Explain what the agent should check or complete in this step.
+:::
 
-### Important Details
+:::step Second step title
 
-Add supporting information under this subheading.
+Explain the next action and include any important details.
+:::
 
-* First important point
-* Second important point
-* Third important point
+## Resolution
 
-## Resolution Steps
+Summarize the final outcome or resolution.
 
-1. Complete the first step
-2. Complete the second step
-3. Complete the third step
-
-> Add an important reminder, warning, or note here.
-
-## Summary
-
-Summarize the key information from the article.`
+> Add an important reminder, warning, or note here.`
 
   if (!contentInput.value.trim()) {
     contentInput.value = template
@@ -197,6 +209,9 @@ function applyFormatting(format) {
     case 'callout':
       prefixSelectedLines(() => '> ', 'Important note')
       break
+    case 'step-card':
+      insertStepCard()
+      break
     case 'template':
       insertArticleTemplate()
       break
@@ -205,8 +220,42 @@ function applyFormatting(format) {
   }
 }
 
+function ensureStepCardControl() {
+  const toolbar = document.querySelector('.format-toolbar')
+
+  if (!toolbar || toolbar.querySelector('[data-format="step-card"]')) {
+    return
+  }
+
+  const button = document.createElement('button')
+  button.className = 'format-button'
+  button.type = 'button'
+  button.dataset.format = 'step-card'
+  button.textContent = 'Step Card'
+  button.title = 'Insert an automatically numbered step card'
+  button.setAttribute(
+    'aria-label',
+    'Insert an automatically numbered step card'
+  )
+
+  const templateButton = toolbar.querySelector('[data-format="template"]')
+  toolbar.insertBefore(button, templateButton)
+
+  const help = document.querySelector('.format-help')
+
+  if (help && !help.querySelector('[data-step-card-help]')) {
+    const helpText = document.createElement('span')
+    helpText.dataset.stepCardHelp = 'true'
+    helpText.textContent =
+      ' Step Card creates an automatically numbered process card.'
+    help.appendChild(helpText)
+  }
+}
+
 function initializeEditorControls() {
-  formatButtons.forEach(button => {
+  ensureStepCardControl()
+
+  document.querySelectorAll('[data-format]').forEach(button => {
     button.addEventListener('click', event => {
       event.preventDefault()
       applyFormatting(button.dataset.format)
