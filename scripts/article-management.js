@@ -3,6 +3,9 @@ import {
   parseArticleContent,
   renderArticleUnit
 } from './article-content-renderer-v7.js?v=1'
+import {
+  removeArticleImage
+} from './article-image-upload.js?v=1'
 import './article-nesting-styles.js?v=1'
 import './article-preview-parser-styles.js?v=1'
 
@@ -10,6 +13,8 @@ const articleList = document.getElementById('articleList')
 const articleCount = document.getElementById('articleCount')
 const statusElement = document.getElementById('articleManagementStatus')
 const refreshButton = document.getElementById('refreshArticlesButton')
+const editButton = document.getElementById('editArticleButton')
+const deleteButton = document.getElementById('deleteArticleButton')
 const previewPanel = document.getElementById('articlePreviewPanel')
 const previewCategory = document.getElementById('previewCategory')
 const previewCover = document.getElementById('previewCover')
@@ -21,6 +26,14 @@ const previewDescription = document.getElementById('previewDescription')
 const previewBody = document.getElementById('previewBody')
 const openPublishedArticleLink = document.getElementById(
   'openPublishedArticleLink'
+)
+const deleteDialog = document.getElementById('deleteArticleDialog')
+const deleteArticleName = document.getElementById('deleteArticleName')
+const cancelDeleteButton = document.getElementById(
+  'cancelDeleteArticleButton'
+)
+const confirmDeleteButton = document.getElementById(
+  'confirmDeleteArticleButton'
 )
 
 let articlesCache = []
@@ -102,11 +115,53 @@ function normalizeImageUrl(value) {
   }
 }
 
+function getArticleImagePath(imageUrl) {
+  const normalizedUrl = normalizeImageUrl(imageUrl)
+
+  if (!normalizedUrl) {
+    return ''
+  }
+
+  try {
+    const url = new URL(normalizedUrl)
+    const marker = '/storage/v1/object/public/article-images/'
+    const markerIndex = url.pathname.indexOf(marker)
+
+    if (markerIndex < 0) {
+      return ''
+    }
+
+    return decodeURIComponent(
+      url.pathname.slice(markerIndex + marker.length)
+    )
+  } catch {
+    return ''
+  }
+}
+
 function createTextElement(tagName, className, text) {
   const element = document.createElement(tagName)
   element.className = className
   element.textContent = text
   return element
+}
+
+function getSelectedArticle() {
+  return articlesCache.find(
+    article => String(article.id) === selectedArticleId
+  ) || null
+}
+
+function updateSelectedArticleActions() {
+  const hasSelection = Boolean(getSelectedArticle())
+
+  if (editButton) {
+    editButton.disabled = !hasSelection
+  }
+
+  if (deleteButton) {
+    deleteButton.disabled = !hasSelection
+  }
 }
 
 function showListMessage(message, className = 'article-empty') {
@@ -123,6 +178,7 @@ function showListMessage(message, className = 'article-empty') {
 
 function resetPreview(messageText = 'Select an article from the list to preview it here.') {
   selectedArticleId = ''
+  updateSelectedArticleActions()
 
   if (previewCategory) {
     previewCategory.textContent = 'No article selected'
@@ -186,6 +242,7 @@ function renderPreview(article) {
   }
 
   selectedArticleId = String(article.id)
+  updateSelectedArticleActions()
   previewCategory.textContent = getCategoryLabel(article.tag)
   previewTitle.textContent =
     String(article.title ?? '').trim() || 'Untitled Article'
@@ -515,5 +572,125 @@ async function loadArticles() {
   }
 }
 
+function editSelectedArticle() {
+  const article = getSelectedArticle()
+
+  if (!article) {
+    return
+  }
+
+  window.location.href =
+    `./add-article.html?edit=${encodeURIComponent(article.id)}`
+}
+
+function closeDeleteDialog() {
+  if (deleteDialog?.open) {
+    deleteDialog.close()
+  }
+}
+
+function requestArticleDeletion() {
+  const article = getSelectedArticle()
+
+  if (!article) {
+    return
+  }
+
+  const articleTitle =
+    String(article.title ?? '').trim() || 'Untitled Article'
+
+  if (deleteArticleName) {
+    deleteArticleName.textContent = articleTitle
+  }
+
+  if (typeof deleteDialog?.showModal === 'function') {
+    deleteDialog.showModal()
+    return
+  }
+
+  if (
+    window.confirm(
+      `Are you sure you want to delete “${articleTitle}”? This cannot be undone.`
+    )
+  ) {
+    deleteSelectedArticle()
+  }
+}
+
+async function deleteSelectedArticle() {
+  const article = getSelectedArticle()
+
+  if (!article || !confirmDeleteButton) {
+    return
+  }
+
+  confirmDeleteButton.disabled = true
+
+  if (deleteButton) {
+    deleteButton.disabled = true
+  }
+
+  if (editButton) {
+    editButton.disabled = true
+  }
+
+  if (statusElement) {
+    statusElement.textContent = 'Deleting article...'
+  }
+
+  try {
+    const { error } = await supabase
+      .from('articles')
+      .delete()
+      .eq('id', article.id)
+
+    if (error) {
+      throw error
+    }
+
+    const imagePath = getArticleImagePath(article.image_url)
+
+    if (imagePath) {
+      await removeArticleImage({
+        supabase,
+        imagePath
+      })
+    }
+
+    closeDeleteDialog()
+    selectedArticleId = ''
+    resetPreview('Select another article from the list to preview it here.')
+
+    if (statusElement) {
+      statusElement.textContent = 'Article deleted successfully.'
+    }
+
+    await loadArticles()
+  } catch (error) {
+    console.error('Article deletion error:', error)
+
+    if (statusElement) {
+      statusElement.textContent =
+        `Unable to delete article: ${getErrorMessage(error)}`
+    }
+
+    updateSelectedArticleActions()
+  } finally {
+    confirmDeleteButton.disabled = false
+  }
+}
+
 refreshButton?.addEventListener('click', loadArticles)
+editButton?.addEventListener('click', editSelectedArticle)
+deleteButton?.addEventListener('click', requestArticleDeletion)
+cancelDeleteButton?.addEventListener('click', closeDeleteDialog)
+confirmDeleteButton?.addEventListener('click', deleteSelectedArticle)
+
+deleteDialog?.addEventListener('click', event => {
+  if (event.target === deleteDialog) {
+    closeDeleteDialog()
+  }
+})
+
+updateSelectedArticleActions()
 loadArticles()
