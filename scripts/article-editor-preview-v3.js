@@ -4,7 +4,7 @@ import {
 import {
   parseArticleContent,
   renderArticleUnit
-} from './article-content-renderer-v4.js?v=1'
+} from './article-content-renderer-v5.js?v=1'
 import {
   setupStatementGridControl
 } from './article-statement-grid-control.js?v=1'
