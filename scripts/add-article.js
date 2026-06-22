@@ -1,7 +1,7 @@
 import { supabase } from './supabaseClient.js'
 import {
   setupArticleEditorPreview
-} from './article-editor-preview.js?v=2'
+} from './article-editor-preview-v3.js?v=1'
 
 const form = document.getElementById('articleForm')
 const message = document.getElementById('message')
@@ -13,14 +13,14 @@ const contentInput = document.getElementById('content')
 const submitButton = form?.querySelector('button[type="submit"]')
 
 let authorInput = null
-let renderPreview = () => {}
 
 function updateDescriptionCount() {
   if (!descriptionInput || !descriptionCount) {
     return
   }
 
-  descriptionCount.textContent = `${descriptionInput.value.length} / 300`
+  descriptionCount.textContent =
+    `${descriptionInput.value.length} / 300`
 }
 
 function replaceSelection(
@@ -50,7 +50,9 @@ function replaceSelection(
     newSelectionStart + selectionLength
   )
   contentInput.scrollTop = scrollPosition
-  contentInput.dispatchEvent(new Event('input', { bubbles: true }))
+  contentInput.dispatchEvent(
+    new Event('input', { bubbles: true })
+  )
 }
 
 function getSelectedText() {
@@ -64,9 +66,14 @@ function getSelectedText() {
   )
 }
 
-function wrapSelectedText(openingMarker, closingMarker, placeholder) {
+function wrapSelectedText(
+  openingMarker,
+  closingMarker,
+  placeholder
+) {
   const selectedText = getSelectedText() || placeholder
-  const replacement = `${openingMarker}${selectedText}${closingMarker}`
+  const replacement =
+    `${openingMarker}${selectedText}${closingMarker}`
 
   replaceSelection(
     replacement,
@@ -99,7 +106,8 @@ function getLeadingSpacing() {
 function insertHeading(prefix, placeholder) {
   const selectedText = getSelectedText().trim() || placeholder
   const spacing = getLeadingSpacing()
-  const replacement = `${spacing}${prefix}${selectedText}\n\n`
+  const replacement =
+    `${spacing}${prefix}${selectedText}\n\n`
 
   replaceSelection(
     replacement,
@@ -116,15 +124,22 @@ function prefixSelectedLines(prefixFactory, placeholder) {
   )
   const spacing = getLeadingSpacing()
 
-  replaceSelection(`${spacing}${formattedLines.join('\n')}\n\n`)
+  replaceSelection(
+    `${spacing}${formattedLines.join('\n')}\n\n`
+  )
 }
 
-function insertRichBlock(blockText, titleMarker, titleLength) {
+function insertRichBlock(
+  blockText,
+  selectionOffset,
+  selectionLength
+) {
   const spacing = getLeadingSpacing()
+
   replaceSelection(
     `${spacing}${blockText}\n\n`,
-    spacing.length + titleMarker,
-    titleLength
+    spacing.length + selectionOffset,
+    selectionLength
   )
 }
 
@@ -134,21 +149,38 @@ function insertStepCard() {
   const block =
     `:::step ${title}\n\n` +
     'Write the instructions for this step here.\n\n' +
-    'Add another paragraph or supporting detail if needed.\n' +
+    'Place the cursor before the closing ::: to insert a nested table, rule grid, checklist, or callout.\n' +
     ':::'
 
   insertRichBlock(block, ':::step '.length, title.length)
 }
 
+function insertCalloutCard() {
+  const selectedText = getSelectedText().trim()
+  const title = selectedText || 'Important Note'
+  const block =
+    `:::callout ${title}\n\n` +
+    'Write the callout details here.\n\n' +
+    'Place the cursor before the closing ::: to insert a nested rule grid or another structured block.\n' +
+    ':::'
+
+  insertRichBlock(block, ':::callout '.length, title.length)
+}
+
 function insertDecisionTable() {
+  const firstHeader = 'User Lifetime Revenue'
   const block =
     ':::table\n' +
-    'User Lifetime Revenue | Resolution\n' +
+    `${firstHeader} | Resolution\n` +
     'Below $100 | Reply using the **Not Rewarded** template only. Do not issue credit.\n' +
     'Above $100 | Reply using the **Not Rewarded** template and issue a credit.\n' +
     ':::'
 
-  insertRichBlock(block, ':::table\n'.length, 'User Lifetime Revenue'.length)
+  insertRichBlock(
+    block,
+    ':::table\n'.length,
+    firstHeader.length
+  )
 }
 
 function insertRuleGrid() {
@@ -168,7 +200,8 @@ function insertRuleGrid() {
 
 function insertResponseTemplate() {
   const selectedText = getSelectedText().trim()
-  const title = selectedText || 'Response condition or audience'
+  const title =
+    selectedText || 'Response condition or audience'
   const block =
     `:::response-template ${title}\n` +
     'Hi [User Name],\n\n' +
@@ -176,7 +209,11 @@ function insertResponseTemplate() {
     'Thank you for your understanding.\n' +
     ':::'
 
-  insertRichBlock(block, ':::response-template '.length, title.length)
+  insertRichBlock(
+    block,
+    ':::response-template '.length,
+    title.length
+  )
 }
 
 function insertChecklist() {
@@ -191,7 +228,11 @@ function insertChecklist() {
     '- Fourth checklist item\n' +
     ':::'
 
-  insertRichBlock(block, ':::checklist '.length, title.length)
+  insertRichBlock(
+    block,
+    ':::checklist '.length,
+    title.length
+  )
 }
 
 function insertArticleTemplate() {
@@ -203,10 +244,9 @@ function insertArticleTemplate() {
 
 Write the article overview here.
 
-:::step First step title
+:::step Verify the account details
 
-Explain what the agent should check or complete in this step.
-:::
+Explain what the agent should check in this step.
 
 :::table
 User Lifetime Revenue | Resolution
@@ -214,10 +254,17 @@ Below $100 | Add the required resolution.
 Above $100 | Add the required resolution.
 :::
 
+Add any final instructions for this step.
+:::
+
+:::callout Important credit limits
+
+Review these rules before issuing credit.
+
 :::rules Credit Rules
-When issuing credit, follow these limits:
 1 | Add the first rule.
 2 | Add the second rule.
+:::
 :::
 
 ## Recommended Response Template
@@ -245,7 +292,8 @@ Before resolving the ticket, confirm the following:
       return
     }
 
-    contentInput.value = `${contentInput.value.trim()}\n\n${template}`
+    contentInput.value =
+      `${contentInput.value.trim()}\n\n${template}`
   }
 
   contentInput.focus()
@@ -253,7 +301,9 @@ Before resolving the ticket, confirm the following:
     contentInput.value.length,
     contentInput.value.length
   )
-  contentInput.dispatchEvent(new Event('input', { bubbles: true }))
+  contentInput.dispatchEvent(
+    new Event('input', { bubbles: true })
+  )
   message.textContent = 'Article template inserted.'
 }
 
@@ -275,10 +325,13 @@ function applyFormatting(format) {
       prefixSelectedLines(() => '- ', 'List item')
       break
     case 'numbered':
-      prefixSelectedLines(index => `${index + 1}. `, 'Step description')
+      prefixSelectedLines(
+        index => `${index + 1}. `,
+        'Step description'
+      )
       break
     case 'callout':
-      prefixSelectedLines(() => '> ', 'Important note')
+      insertCalloutCard()
       break
     case 'step-card':
       insertStepCard()
@@ -321,13 +374,35 @@ function ensureRichFormattingControls() {
     return
   }
 
-  const templateButton = toolbar.querySelector('[data-format="template"]')
+  const templateButton = toolbar.querySelector(
+    '[data-format="template"]'
+  )
   const controls = [
-    ['step-card', 'Step Card', 'Insert an automatically numbered step card'],
-    ['decision-table', 'Decision Table', 'Insert a two-column decision table'],
-    ['rule-grid', 'Rule Grid', 'Insert a numbered rule card grid'],
-    ['response-template', 'Response Template', 'Insert a response template card'],
-    ['checklist', 'Checklist', 'Insert a two-column checklist']
+    [
+      'step-card',
+      'Step Card',
+      'Insert an automatically numbered step card'
+    ],
+    [
+      'decision-table',
+      'Decision Table',
+      'Insert a two-column decision table'
+    ],
+    [
+      'rule-grid',
+      'Rule Grid',
+      'Insert a numbered rule card grid'
+    ],
+    [
+      'response-template',
+      'Response Template',
+      'Insert a response template card'
+    ],
+    [
+      'checklist',
+      'Checklist',
+      'Insert a two-column checklist'
+    ]
   ]
 
   for (const [format, label, title] of controls) {
@@ -347,7 +422,7 @@ function ensureRichFormattingControls() {
     const helpText = document.createElement('span')
     helpText.dataset.richBlockHelp = 'true'
     helpText.textContent =
-      ' Use Step Card, Decision Table, Rule Grid, Response Template, and Checklist for structured article layouts.'
+      ' Structured blocks can be nested by placing the cursor before the parent block’s closing ::: marker.'
     help.appendChild(helpText)
   }
 }
@@ -384,7 +459,10 @@ function initializeEditorControls() {
     }
   })
 
-  descriptionInput?.addEventListener('input', updateDescriptionCount)
+  descriptionInput?.addEventListener(
+    'input',
+    updateDescriptionCount
+  )
   updateDescriptionCount()
 }
 
@@ -406,7 +484,6 @@ async function initializeArticleEditor() {
   })
 
   authorInput = previewSetup.authorInput
-  renderPreview = previewSetup.renderPreview
 
   if (
     !form ||
@@ -418,7 +495,9 @@ async function initializeArticleEditor() {
     !tagInput ||
     !contentInput
   ) {
-    console.error('Required article editor elements were not found.')
+    console.error(
+      'Required article editor elements were not found.'
+    )
     return
   }
 
@@ -481,68 +560,11 @@ async function initializeArticleEditor() {
     }
 
     submitButton.disabled = false
-
-    form.addEventListener('submit', async event => {
-      event.preventDefault()
-
-      const title = titleInput.value.trim()
-      const description = descriptionInput.value.trim()
-      const authorName = authorInput.value.trim()
-      const tag = tagInput.value.trim().toLowerCase()
-      const content = contentInput.value.trim()
-      const validTags = ['tickets', 'cashouts']
-
-      if (
-        !title ||
-        !description ||
-        !authorName ||
-        !content ||
-        !validTags.includes(tag)
-      ) {
-        message.textContent =
-          'Please enter a title, description, author, category, and article content.'
-        return
-      }
-
-      if (description.length > 300) {
-        message.textContent =
-          'The article description cannot exceed 300 characters.'
-        return
-      }
-
-      submitButton.disabled = true
-      message.textContent = 'Saving article...'
-
-      try {
-        const { error: insertError } = await supabase
-          .from('articles')
-          .insert({
-            title,
-            description,
-            content,
-            tag,
-            author_name: authorName,
-            published: true
-          })
-
-        if (insertError) {
-          throw insertError
-        }
-
-        form.reset()
-        updateDescriptionCount()
-        renderPreview()
-        message.textContent = 'Article saved successfully.'
-      } catch (error) {
-        console.error('Article insert error:', error)
-        message.textContent =
-          `Unable to save article: ${getErrorMessage(error)}`
-      } finally {
-        submitButton.disabled = false
-      }
-    })
   } catch (error) {
-    console.error('Article editor initialization error:', error)
+    console.error(
+      'Article editor initialization error:',
+      error
+    )
     message.textContent =
       `Unable to open the article editor: ${getErrorMessage(error)}`
     submitButton.disabled = true
