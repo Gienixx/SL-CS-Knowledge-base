@@ -198,14 +198,14 @@ const shouldInsert = window.confirm(
 'The editor already contains text. Add the template below the existing content?'
 )
 
-```
+
 if (!shouldInsert) {
   return
 }
 
 contentInput.value =
   `${contentInput.value.trim()}\n\n${template}`
-```
+
 
 }
 
@@ -236,7 +236,7 @@ wrapSelectedText(
 )
 break
 
-```
+
 case 'italic':
   wrapSelectedText(
     '*',
@@ -288,7 +288,7 @@ default:
   console.warn(
     `Unknown formatting option: ${format}`
   )
-```
+
 
 }
 }
@@ -308,7 +308,7 @@ event => {
 const modifierPressed =
 event.ctrlKey || event.metaKey
 
-```
+
   const pressedKey =
     event.key.toLowerCase()
 
@@ -347,7 +347,7 @@ event.ctrlKey || event.metaKey
     replaceSelection('  ', 2)
   }
 }
-```
+
 
 )
 
@@ -384,9 +384,9 @@ console.error(
 'Required article editor elements were not found.'
 )
 
-```
+
 return
-```
+
 
 }
 
@@ -399,7 +399,7 @@ data: { user },
 error: userError
 } = await supabase.auth.getUser()
 
-```
+
 if (userError) {
   throw userError
 }
@@ -542,7 +542,7 @@ form.addEventListener(
     }
   }
 )
-```
+
 
 } catch (error) {
 console.error(
@@ -550,12 +550,12 @@ console.error(
 error
 )
 
-```
+
 message.textContent =
   `Unable to open the article editor: ${getErrorMessage(error)}`
 
 submitButton.disabled = true
-```
+
 
 }
 }
