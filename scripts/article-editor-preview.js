@@ -585,9 +585,16 @@ export function setupArticleEditorPreview({
   const previewCover = previewPanel?.querySelector('#previewCover')
 
   let previewImageUrl = ''
+  let previewImageFile = null
 
   function updatePreviewImage() {
     if (!previewCover) {
+      return
+    }
+
+    const file = imageInput?.files?.[0] || null
+
+    if (file === previewImageFile) {
       return
     }
 
@@ -596,7 +603,7 @@ export function setupArticleEditorPreview({
       previewImageUrl = ''
     }
 
-    const file = imageInput?.files?.[0]
+    previewImageFile = file
 
     if (!file) {
       previewCover.removeAttribute('src')
