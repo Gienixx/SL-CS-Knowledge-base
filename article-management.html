@@ -21,7 +21,7 @@
   <style>
     .management-page {
       min-height: 100vh;
-      padding: 40px 10%;
+      padding: 40px 5%;
       background:
         radial-gradient(
           circle at 12% 18%,
@@ -42,12 +42,13 @@
     }
 
     .management-shell {
-      width: min(1180px, 100%);
+      width: min(1500px, 100%);
       margin: 0 auto;
     }
 
     .management-topbar,
-    .management-toolbar {
+    .management-toolbar,
+    .preview-toolbar {
       display: flex;
       align-items: center;
       justify-content: space-between;
@@ -98,8 +99,15 @@
       opacity: 0.65;
     }
 
-    .management-card {
-      padding: 26px;
+    .management-workspace {
+      display: grid;
+      grid-template-columns: minmax(0, 720px) minmax(380px, 1fr);
+      gap: 24px;
+      align-items: start;
+    }
+
+    .management-card,
+    .article-preview-panel {
       border: 1px solid var(--sl-border);
       border-radius: 22px;
       background: linear-gradient(
@@ -108,6 +116,11 @@
         rgba(250, 246, 238, 0.98)
       );
       box-shadow: var(--sl-shadow);
+    }
+
+    .management-card {
+      min-width: 0;
+      padding: 26px;
     }
 
     .management-toolbar {
@@ -155,6 +168,17 @@
       border-radius: 16px;
       background: rgba(255, 255, 255, 0.86);
       box-shadow: 0 10px 24px rgba(36, 27, 93, 0.05);
+      transition:
+        transform 0.16s ease,
+        border-color 0.16s ease,
+        box-shadow 0.16s ease;
+    }
+
+    .article-list-item.is-selected {
+      border-color: rgba(255, 194, 26, 0.72);
+      box-shadow:
+        0 0 0 3px rgba(255, 194, 26, 0.10),
+        0 12px 26px rgba(36, 27, 93, 0.07);
     }
 
     .article-list-content {
@@ -177,7 +201,8 @@
       overflow-wrap: anywhere;
     }
 
-    .article-badge {
+    .article-badge,
+    .preview-category {
       display: inline-flex;
       min-height: 24px;
       align-items: center;
@@ -212,7 +237,7 @@
       font-size: 0.8rem;
     }
 
-    .article-open-link {
+    .article-preview-button {
       white-space: nowrap;
     }
 
@@ -232,12 +257,104 @@
       background: rgba(171, 45, 45, 0.04);
     }
 
+    .article-preview-panel {
+      position: sticky;
+      top: 24px;
+      min-width: 0;
+      max-height: calc(100vh - 48px);
+      overflow: auto;
+      padding: 22px;
+    }
+
+    .preview-toolbar {
+      margin-bottom: 18px;
+      padding-bottom: 14px;
+      border-bottom: 1px solid var(--sl-border);
+    }
+
+    .preview-toolbar strong {
+      color: var(--sl-navy);
+      font-size: 0.9rem;
+    }
+
+    .preview-cover {
+      display: block;
+      width: 100%;
+      height: 210px;
+      margin-bottom: 18px;
+      object-fit: cover;
+      border: 1px solid var(--sl-border);
+      border-radius: 14px;
+    }
+
+    .preview-title {
+      margin: 0 0 10px;
+      color: var(--sl-navy);
+      font-size: clamp(1.55rem, 2.2vw, 2.2rem);
+      line-height: 1.15;
+      overflow-wrap: anywhere;
+    }
+
+    .preview-meta {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px 14px;
+      margin-bottom: 14px;
+      color: var(--sl-muted);
+      font-size: 0.78rem;
+    }
+
+    .preview-description {
+      margin: 0 0 20px;
+      color: var(--sl-text);
+      font-size: 0.98rem;
+      font-weight: 650;
+      line-height: 1.55;
+    }
+
+    .preview-body {
+      display: grid;
+      gap: 14px;
+    }
+
+    .preview-empty {
+      margin: 0;
+      padding: 24px 18px;
+      border: 1px dashed rgba(36, 27, 93, 0.18);
+      border-radius: 13px;
+      color: var(--sl-muted);
+      text-align: center;
+      font-size: 0.86rem;
+      line-height: 1.55;
+    }
+
+    .preview-footer {
+      display: flex;
+      justify-content: flex-end;
+      margin-top: 20px;
+      padding-top: 16px;
+      border-top: 1px solid var(--sl-border);
+    }
+
+    @media (max-width: 1180px) {
+      .management-workspace {
+        grid-template-columns: 1fr;
+      }
+
+      .article-preview-panel {
+        position: relative;
+        top: auto;
+        max-height: none;
+      }
+    }
+
     @media (max-width: 760px) {
       .management-page {
         padding: 24px 16px;
       }
 
-      .management-card {
+      .management-card,
+      .article-preview-panel {
         padding: 18px;
       }
 
@@ -245,7 +362,7 @@
         grid-template-columns: 1fr;
       }
 
-      .article-open-link {
+      .article-preview-button {
         width: 100%;
       }
     }
@@ -272,49 +389,104 @@
         </a>
       </header>
 
-      <section class="management-card" aria-labelledby="articleListTitle">
-        <div class="management-toolbar">
-          <div class="management-summary">
-            <strong id="articleListTitle">Created Articles</strong>
-            <span id="articleCount">Loading articles...</span>
+      <div class="management-workspace">
+        <section class="management-card" aria-labelledby="articleListTitle">
+          <div class="management-toolbar">
+            <div class="management-summary">
+              <strong id="articleListTitle">Created Articles</strong>
+              <span id="articleCount">Loading articles...</span>
+            </div>
+
+            <div class="management-actions">
+              <button
+                id="refreshArticlesButton"
+                class="management-button"
+                type="button"
+              >
+                Refresh
+              </button>
+
+              <a
+                class="management-button management-button-primary"
+                href="./add-article.html"
+              >
+                Add Article
+              </a>
+            </div>
           </div>
 
-          <div class="management-actions">
-            <button
-              id="refreshArticlesButton"
-              class="management-button"
-              type="button"
-            >
-              Refresh
-            </button>
+          <p
+            id="articleManagementStatus"
+            class="management-status"
+            aria-live="polite"
+          ></p>
 
-            <a
-              class="management-button management-button-primary"
-              href="./add-article.html"
-            >
-              Add Article
-            </a>
+          <div
+            id="articleList"
+            class="article-list"
+            aria-live="polite"
+          ></div>
+        </section>
+
+        <aside
+          id="articlePreviewPanel"
+          class="article-preview-panel"
+          aria-label="Selected article preview"
+        >
+          <div class="preview-toolbar">
+            <strong>Article Preview</strong>
+            <span id="previewCategory" class="preview-category">
+              No article selected
+            </span>
           </div>
-        </div>
 
-        <p
-          id="articleManagementStatus"
-          class="management-status"
-          aria-live="polite"
-        ></p>
+          <article class="preview-document">
+            <img
+              id="previewCover"
+              class="preview-cover"
+              alt="Article cover preview"
+              hidden
+            >
 
-        <div
-          id="articleList"
-          class="article-list"
-          aria-live="polite"
-        ></div>
-      </section>
+            <h2 id="previewTitle" class="preview-title">
+              Select an Article
+            </h2>
+
+            <div class="preview-meta">
+              <span id="previewAuthor">By: Not specified</span>
+              <span id="previewDate">Date unavailable</span>
+              <span id="previewStatus">No status</span>
+            </div>
+
+            <p id="previewDescription" class="preview-description">
+              Select an article from the list to preview it here.
+            </p>
+
+            <div id="previewBody" class="preview-body">
+              <p class="preview-empty">
+                The selected article content will appear here.
+              </p>
+            </div>
+
+            <div class="preview-footer">
+              <a
+                id="openPublishedArticleLink"
+                class="management-button"
+                href="#"
+                hidden
+              >
+                Open Published Article
+              </a>
+            </div>
+          </article>
+        </aside>
+      </div>
     </div>
   </main>
 
   <script
     type="module"
-    src="./scripts/article-management.js?v=1"
+    src="./scripts/article-management.js?v=2"
   ></script>
 </body>
 </html>
