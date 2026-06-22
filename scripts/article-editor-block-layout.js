@@ -95,15 +95,24 @@ function findContainingBlock(input, predicate) {
 
 function replaceOpeningLine(input, block, openingLine) {
   const replacement = `${openingLine}\n`
-  const selectionOffset = replacement.length - (block.openEnd - block.openStart)
+  const lengthDifference =
+    replacement.length - (block.openEnd - block.openStart)
+  const currentSelectionStart = input.selectionStart
+  const currentSelectionEnd = input.selectionEnd
 
   replaceRange(
     input,
     block.openStart,
     block.openEnd,
     replacement,
-    Math.max(block.contentStart + selectionOffset, block.openStart + replacement.length),
-    Math.max(block.contentStart + selectionOffset, block.openStart + replacement.length)
+    Math.max(
+      block.openStart + replacement.length,
+      currentSelectionStart + lengthDifference
+    ),
+    Math.max(
+      block.openStart + replacement.length,
+      currentSelectionEnd + lengthDifference
+    )
   )
 }
 
