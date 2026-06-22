@@ -7,6 +7,9 @@ import {
 import {
   addArticleLayoutControls
 } from './article-editor-layout-controls.js?v=1'
+import {
+  setupGenericArticleFormats
+} from './article-editor-generic-formats.js?v=1'
 
 function initializeLayoutEnhancements() {
   const contentInput = document.getElementById('content')
@@ -28,6 +31,10 @@ function initializeLayoutEnhancements() {
   const blockLayout = setupArticleBlockLayout(contentInput)
 
   addArticleLayoutControls(toolbar)
+  setupGenericArticleFormats({
+    toolbar,
+    input: contentInput
+  })
 
   const handledFormats = new Set([
     'align-left',
