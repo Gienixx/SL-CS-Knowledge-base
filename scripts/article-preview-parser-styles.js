@@ -1,3 +1,5 @@
+import './article-management-preview-layout.js?v=1'
+
 if (!document.getElementById('articlePreviewParserStyles')) {
   const style = document.createElement('style')
   style.id = 'articlePreviewParserStyles'
