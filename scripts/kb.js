@@ -94,25 +94,71 @@ const ticketArticles = [
 
 let databaseArticlesLoaded = false
 
+function isMissingImageColumnError(error) {
+  const message = String(error?.message || '').toLowerCase()
+
+  return (
+    error?.code === '42703' ||
+    error?.code === 'PGRST204' ||
+    message.includes('image_url')
+  )
+}
+
+async function fetchPublishedArticles() {
+  const fieldsWithImage =
+    'id, title, description, content, tag, author_name, image_url, published, created_at'
+
+  let result = await supabase
+    .from('articles')
+    .select(fieldsWithImage)
+    .eq('published', true)
+    .order('created_at', { ascending: false })
+
+  if (result.error && isMissingImageColumnError(result.error)) {
+    result = await supabase
+      .from('articles')
+      .select(
+        'id, title, description, content, tag, author_name, published, created_at'
+      )
+      .eq('published', true)
+      .order('created_at', { ascending: false })
+  }
+
+  return result
+}
+
+function normalizeImageUrl(value) {
+  const rawValue = String(value ?? '').trim()
+
+  if (!rawValue) {
+    return ''
+  }
+
+  try {
+    const url = new URL(rawValue, document.baseURI)
+
+    if (!['http:', 'https:'].includes(url.protocol)) {
+      return ''
+    }
+
+    return url.href
+  } catch {
+    return ''
+  }
+}
+
 async function loadDatabaseArticles() {
   if (databaseArticlesLoaded) {
     return
   }
 
-  const { data, error } = await supabase
-    .from('articles')
-    .select(
-      'id, title, description, content, tag, author_name, published'
-    )
-    .eq('published', true)
+  const { data, error } = await fetchPublishedArticles()
 
   if (error) {
     throw error
   }
 
-  const databaseRows = Array.isArray(data)
-    ? [...data].reverse()
-    : []
+  const databaseRows = Array.isArray(data) ? data : []
 
   for (const row of databaseRows) {
     const normalizedTag = String(row.tag ?? '')
@@ -134,14 +180,13 @@ async function loadDatabaseArticles() {
       status: row.author_name
         ? `Written by ${row.author_name}`
         : 'Click here to read.',
+      image: normalizeImageUrl(row.image_url),
       url: `./article.html?id=${encodeURIComponent(row.id)}`
     }
 
     if (normalizedTag === 'tickets') {
       ticketArticles.unshift(article)
-    }
-
-    if (normalizedTag === 'cashouts') {
+    } else {
       cashoutArticles.unshift(article)
     }
   }
@@ -151,6 +196,8 @@ async function loadDatabaseArticles() {
 
 function createExcerpt(content, maximumLength = 170) {
   const normalized = String(content ?? '')
+    .replace(/:::[^\n]*/g, ' ')
+    .replace(/[#>*|\-]/g, ' ')
     .replace(/\s+/g, ' ')
     .trim()
 
@@ -165,16 +212,40 @@ function createExcerpt(content, maximumLength = 170) {
   return `${normalized.slice(0, maximumLength).trim()}…`
 }
 
+function createImagePlaceholder() {
+  const placeholder = document.createElement('div')
+  placeholder.className = 'article-image-placeholder'
+  placeholder.textContent = 'Knowledge Base Article'
+  return placeholder
+}
+
+function createArticleImage(article) {
+  if (!article.image) {
+    return createImagePlaceholder()
+  }
+
+  const image = document.createElement('img')
+  image.className = 'article-card-image'
+  image.src = article.image
+  image.alt = `${article.title} article cover`
+  image.loading = 'lazy'
+  image.decoding = 'async'
+
+  image.addEventListener('error', () => {
+    image.replaceWith(createImagePlaceholder())
+  }, { once: true })
+
+  return image
+}
+
 function renderArticleGrid(articles) {
   const grid = document.createElement('div')
   grid.className = 'article-grid'
 
   if (!articles.length) {
     const emptyMessage = document.createElement('p')
-
     emptyMessage.textContent =
       'No published articles are available in this category.'
-
     grid.appendChild(emptyMessage)
     return grid
   }
@@ -189,30 +260,10 @@ function renderArticleGrid(articles) {
 
     if (article.url) {
       wrapper.href = article.url
-      wrapper.style.display = 'block'
-      wrapper.style.color = 'inherit'
-      wrapper.style.textDecoration = 'none'
+      wrapper.className = 'article-card-link'
     }
 
-    if (article.image) {
-      const image = document.createElement('img')
-
-      image.src = article.image
-      image.alt = article.title
-      image.style.width = '100%'
-      image.style.height = '145px'
-      image.style.objectFit = 'cover'
-      image.style.display = 'block'
-
-      wrapper.appendChild(image)
-    } else {
-      const placeholder = document.createElement('div')
-
-      placeholder.className = 'article-image-placeholder'
-      placeholder.textContent = 'Knowledge Base Article'
-
-      wrapper.appendChild(placeholder)
-    }
+    wrapper.appendChild(createArticleImage(article))
 
     const contentContainer = document.createElement('div')
     contentContainer.className = 'article-content'
@@ -227,12 +278,7 @@ function renderArticleGrid(articles) {
     status.className = 'article-meta'
     status.textContent = article.status
 
-    contentContainer.append(
-      title,
-      description,
-      status
-    )
-
+    contentContainer.append(title, description, status)
     wrapper.appendChild(contentContainer)
     card.appendChild(wrapper)
     grid.appendChild(card)
@@ -241,11 +287,7 @@ function renderArticleGrid(articles) {
   return grid
 }
 
-function renderLinks(
-  category,
-  ticketHeader,
-  ticketContent
-) {
+function renderLinks(category, ticketHeader, ticketContent) {
   ticketHeader.textContent = 'Useful Links'
 
   const table = document.createElement('table')
@@ -266,13 +308,11 @@ function renderLinks(
 
   for (const item of categoryLinks) {
     const row = document.createElement('tr')
-
     const nameCell = document.createElement('td')
     nameCell.textContent = item.name
 
     const linkCell = document.createElement('td')
     const link = document.createElement('a')
-
     link.href = item.url
     link.target = '_blank'
     link.rel = 'noopener noreferrer'
@@ -288,20 +328,11 @@ function renderLinks(
 }
 
 async function showTicketsTable(category) {
-  const ticketSection =
-    document.getElementById('ticketSection')
+  const ticketSection = document.getElementById('ticketSection')
+  const ticketHeader = document.getElementById('ticketHeader')
+  const ticketContent = document.getElementById('ticketContent')
 
-  const ticketHeader =
-    document.getElementById('ticketHeader')
-
-  const ticketContent =
-    document.getElementById('ticketContent')
-
-  if (
-    !ticketSection ||
-    !ticketHeader ||
-    !ticketContent
-  ) {
+  if (!ticketSection || !ticketHeader || !ticketContent) {
     console.error('Knowledge base display elements were not found.')
     return
   }
@@ -319,51 +350,32 @@ async function showTicketsTable(category) {
       normalizedCategory === 'CASHOUTS'
     ) {
       ticketHeader.textContent = 'Loading articles...'
-
       await loadDatabaseArticles()
     }
 
     if (normalizedCategory === 'TICKETS') {
       ticketHeader.textContent = 'Ticket Articles'
-
-      ticketContent.appendChild(
-        renderArticleGrid(ticketArticles)
-      )
+      ticketContent.appendChild(renderArticleGrid(ticketArticles))
     } else if (normalizedCategory === 'CASHOUTS') {
       ticketHeader.textContent = 'Cashout Articles'
-
-      ticketContent.appendChild(
-        renderArticleGrid(cashoutArticles)
-      )
+      ticketContent.appendChild(renderArticleGrid(cashoutArticles))
     } else if (normalizedCategory === 'LINKS') {
-      renderLinks(
-        normalizedCategory,
-        ticketHeader,
-        ticketContent
-      )
+      renderLinks(normalizedCategory, ticketHeader, ticketContent)
     } else {
       ticketHeader.textContent = 'Category unavailable'
-
       const message = document.createElement('p')
       message.textContent =
         'The selected knowledge base category does not exist.'
-
       ticketContent.appendChild(message)
     }
   } catch (error) {
-    console.error(
-      'Unable to load knowledge base articles:',
-      error
-    )
-
+    console.error('Unable to load knowledge base articles:', error)
     ticketHeader.textContent = 'Unable to load articles'
 
     const errorMessage = document.createElement('p')
     errorMessage.className = 'load-error'
-
     errorMessage.textContent =
       `Supabase error: ${error.message || 'Unknown error'}`
-
     ticketContent.appendChild(errorMessage)
   }
 
@@ -381,29 +393,21 @@ window.showTicketsTable = showTicketsTable
 window.goToLanding = goToLanding
 
 document.addEventListener('DOMContentLoaded', () => {
-  const searchInput =
-    document.getElementById('searchInput')
-
-  const cards =
-    document.querySelectorAll('.cards .card')
+  const searchInput = document.getElementById('searchInput')
+  const cards = document.querySelectorAll('.cards .card')
 
   if (!searchInput) {
     return
   }
 
   searchInput.addEventListener('input', () => {
-    const query = searchInput.value
-      .toLowerCase()
-      .trim()
+    const query = searchInput.value.toLowerCase().trim()
 
     cards.forEach(card => {
-      const cardText = card.textContent
-        .toLowerCase()
-
-      card.style.display =
-        cardText.includes(query)
-          ? 'block'
-          : 'none'
+      const cardText = card.textContent.toLowerCase()
+      card.style.display = cardText.includes(query)
+        ? 'block'
+        : 'none'
     })
   })
 })
