@@ -75,6 +75,10 @@ document.addEventListener('DOMContentLoaded', async () => {
 
     const addArticleBtn = document.getElementById('addArticleBtn')
 
+    if (addArticleBtn) {
+      addArticleBtn.href = './article-management.html'
+    }
+
     if (
       allowedUser.can_edit_articles === true &&
       addArticleBtn
