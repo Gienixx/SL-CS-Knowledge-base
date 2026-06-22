@@ -1,7 +1,7 @@
 import { supabase } from './supabaseClient.js'
 import {
   setupArticleEditorPreview
-} from './article-editor-preview.js?v=1'
+} from './article-editor-preview.js?v=2'
 
 const form = document.getElementById('articleForm')
 const message = document.getElementById('message')
@@ -65,10 +65,6 @@ function getSelectedText() {
 }
 
 function wrapSelectedText(openingMarker, closingMarker, placeholder) {
-  if (!contentInput) {
-    return
-  }
-
   const selectedText = getSelectedText() || placeholder
   const replacement = `${openingMarker}${selectedText}${closingMarker}`
 
@@ -123,25 +119,79 @@ function prefixSelectedLines(prefixFactory, placeholder) {
   replaceSelection(`${spacing}${formattedLines.join('\n')}\n\n`)
 }
 
-function insertStepCard() {
-  if (!contentInput) {
-    return
-  }
+function insertRichBlock(blockText, titleMarker, titleLength) {
+  const spacing = getLeadingSpacing()
+  replaceSelection(
+    `${spacing}${blockText}\n\n`,
+    spacing.length + titleMarker,
+    titleLength
+  )
+}
 
+function insertStepCard() {
   const selectedText = getSelectedText().trim()
   const title = selectedText || 'Step title'
-  const spacing = getLeadingSpacing()
-  const replacement =
-    `${spacing}:::step ${title}\n\n` +
+  const block =
+    `:::step ${title}\n\n` +
     'Write the instructions for this step here.\n\n' +
     'Add another paragraph or supporting detail if needed.\n' +
-    ':::\n\n'
+    ':::'
 
-  replaceSelection(
-    replacement,
-    spacing.length + ':::step '.length,
-    title.length
-  )
+  insertRichBlock(block, ':::step '.length, title.length)
+}
+
+function insertDecisionTable() {
+  const block =
+    ':::table\n' +
+    'User Lifetime Revenue | Resolution\n' +
+    'Below $100 | Reply using the **Not Rewarded** template only. Do not issue credit.\n' +
+    'Above $100 | Reply using the **Not Rewarded** template and issue a credit.\n' +
+    ':::'
+
+  insertRichBlock(block, ':::table\n'.length, 'User Lifetime Revenue'.length)
+}
+
+function insertRuleGrid() {
+  const selectedText = getSelectedText().trim()
+  const title = selectedText || 'Credit Rules'
+  const block =
+    `:::rules ${title}\n` +
+    'When issuing credit, follow these limits:\n' +
+    "1 | The credit must not exceed the survey's reward amount.\n" +
+    '2 | If no survey name is provided, the maximum credit allowed is **up to $1.00 only**.\n' +
+    "3 | Credit should only be issued when the user's lifetime revenue is above $100.\n" +
+    '4 | Do not issue credit for users below $100 lifetime revenue.\n' +
+    ':::'
+
+  insertRichBlock(block, ':::rules '.length, title.length)
+}
+
+function insertResponseTemplate() {
+  const selectedText = getSelectedText().trim()
+  const title = selectedText || 'Response condition or audience'
+  const block =
+    `:::response-template ${title}\n` +
+    'Hi [User Name],\n\n' +
+    'Thank you for reaching out. Write the recommended response here.\n\n' +
+    'Thank you for your understanding.\n' +
+    ':::'
+
+  insertRichBlock(block, ':::response-template '.length, title.length)
+}
+
+function insertChecklist() {
+  const selectedText = getSelectedText().trim()
+  const title = selectedText || 'Agent Checklist'
+  const block =
+    `:::checklist ${title}\n` +
+    'Before resolving the ticket, confirm the following:\n' +
+    '- First checklist item\n' +
+    '- Second checklist item\n' +
+    '- Third checklist item\n' +
+    '- Fourth checklist item\n' +
+    ':::'
+
+  insertRichBlock(block, ':::checklist '.length, title.length)
 }
 
 function insertArticleTemplate() {
@@ -158,16 +208,31 @@ Write the article overview here.
 Explain what the agent should check or complete in this step.
 :::
 
-:::step Second step title
-
-Explain the next action and include any important details.
+:::table
+User Lifetime Revenue | Resolution
+Below $100 | Add the required resolution.
+Above $100 | Add the required resolution.
 :::
 
-## Resolution
+:::rules Credit Rules
+When issuing credit, follow these limits:
+1 | Add the first rule.
+2 | Add the second rule.
+:::
 
-Summarize the final outcome or resolution.
+## Recommended Response Template
 
-> Add an important reminder, warning, or note here.`
+:::response-template Response condition or audience
+Hi [User Name],
+
+Write the recommended response here.
+:::
+
+:::checklist Agent Checklist
+Before resolving the ticket, confirm the following:
+- First checklist item
+- Second checklist item
+:::`
 
   if (!contentInput.value.trim()) {
     contentInput.value = template
@@ -218,6 +283,18 @@ function applyFormatting(format) {
     case 'step-card':
       insertStepCard()
       break
+    case 'decision-table':
+      insertDecisionTable()
+      break
+    case 'rule-grid':
+      insertRuleGrid()
+      break
+    case 'response-template':
+      insertResponseTemplate()
+      break
+    case 'checklist':
+      insertChecklist()
+      break
     case 'template':
       insertArticleTemplate()
       break
@@ -226,40 +303,57 @@ function applyFormatting(format) {
   }
 }
 
-function ensureStepCardControl() {
-  const toolbar = document.querySelector('.format-toolbar')
-
-  if (!toolbar || toolbar.querySelector('[data-format="step-card"]')) {
-    return
-  }
-
+function createFormatButton(format, label, title) {
   const button = document.createElement('button')
   button.className = 'format-button'
   button.type = 'button'
-  button.dataset.format = 'step-card'
-  button.textContent = 'Step Card'
-  button.title = 'Insert an automatically numbered step card'
-  button.setAttribute(
-    'aria-label',
-    'Insert an automatically numbered step card'
-  )
+  button.dataset.format = format
+  button.textContent = label
+  button.title = title
+  button.setAttribute('aria-label', title)
+  return button
+}
+
+function ensureRichFormattingControls() {
+  const toolbar = document.querySelector('.format-toolbar')
+
+  if (!toolbar) {
+    return
+  }
 
   const templateButton = toolbar.querySelector('[data-format="template"]')
-  toolbar.insertBefore(button, templateButton)
+  const controls = [
+    ['step-card', 'Step Card', 'Insert an automatically numbered step card'],
+    ['decision-table', 'Decision Table', 'Insert a two-column decision table'],
+    ['rule-grid', 'Rule Grid', 'Insert a numbered rule card grid'],
+    ['response-template', 'Response Template', 'Insert a response template card'],
+    ['checklist', 'Checklist', 'Insert a two-column checklist']
+  ]
+
+  for (const [format, label, title] of controls) {
+    if (toolbar.querySelector(`[data-format="${format}"]`)) {
+      continue
+    }
+
+    toolbar.insertBefore(
+      createFormatButton(format, label, title),
+      templateButton
+    )
+  }
 
   const help = document.querySelector('.format-help')
 
-  if (help && !help.querySelector('[data-step-card-help]')) {
+  if (help && !help.querySelector('[data-rich-block-help]')) {
     const helpText = document.createElement('span')
-    helpText.dataset.stepCardHelp = 'true'
+    helpText.dataset.richBlockHelp = 'true'
     helpText.textContent =
-      ' Step Card creates an automatically numbered process card.'
+      ' Use Step Card, Decision Table, Rule Grid, Response Template, and Checklist for structured article layouts.'
     help.appendChild(helpText)
   }
 }
 
 function initializeEditorControls() {
-  ensureStepCardControl()
+  ensureRichFormattingControls()
 
   document.querySelectorAll('[data-format]').forEach(button => {
     button.addEventListener('click', event => {
