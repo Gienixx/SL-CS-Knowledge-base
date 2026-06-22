@@ -1,313 +1,7 @@
-function appendInlineFormatting(container, text) {
-  const value = String(text ?? '')
-  const pattern =
-    /(\*\*\*[^*\n]+?\*\*\*|\*\*[^*\n]+?\*\*|\*[^*\n]+?\*)/g
-
-  let previousIndex = 0
-
-  for (const match of value.matchAll(pattern)) {
-    const matchIndex = match.index ?? 0
-
-    if (matchIndex > previousIndex) {
-      container.appendChild(
-        document.createTextNode(
-          value.slice(previousIndex, matchIndex)
-        )
-      )
-    }
-
-    const formattedText = match[0]
-
-    if (
-      formattedText.startsWith('***') &&
-      formattedText.endsWith('***')
-    ) {
-      const strong = document.createElement('strong')
-      const emphasis = document.createElement('em')
-      emphasis.textContent = formattedText.slice(3, -3)
-      strong.appendChild(emphasis)
-      container.appendChild(strong)
-    } else if (
-      formattedText.startsWith('**') &&
-      formattedText.endsWith('**')
-    ) {
-      const strong = document.createElement('strong')
-      strong.textContent = formattedText.slice(2, -2)
-      container.appendChild(strong)
-    } else {
-      const emphasis = document.createElement('em')
-      emphasis.textContent = formattedText.slice(1, -1)
-      container.appendChild(emphasis)
-    }
-
-    previousIndex = matchIndex + formattedText.length
-  }
-
-  if (previousIndex < value.length) {
-    container.appendChild(
-      document.createTextNode(value.slice(previousIndex))
-    )
-  }
-}
-
-function parseArticleContent(content) {
-  const lines = String(content ?? '')
-    .replace(/\r\n?/g, '\n')
-    .split('\n')
-
-  const sections = []
-  let currentSection = null
-  let currentStep = null
-  let paragraphLines = []
-  let currentList = null
-  let stepNumber = 0
-
-  function activeContainer() {
-    return currentStep || currentSection
-  }
-
-  function ensureContainer() {
-    if (currentStep) {
-      return currentStep
-    }
-
-    if (!currentSection) {
-      currentSection = {
-        kind: 'section',
-        title: 'Overview',
-        blocks: []
-      }
-      sections.push(currentSection)
-    }
-
-    return currentSection
-  }
-
-  function flushParagraph() {
-    const text = paragraphLines
-      .join(' ')
-      .replace(/\s+/g, ' ')
-      .trim()
-
-    if (text) {
-      ensureContainer().blocks.push({
-        type: 'paragraph',
-        text
-      })
-    }
-
-    paragraphLines = []
-  }
-
-  function closeList() {
-    currentList = null
-  }
-
-  function startSection(title) {
-    flushParagraph()
-    closeList()
-    currentStep = null
-    currentSection = {
-      kind: 'section',
-      title: title.trim() || 'Article Section',
-      blocks: []
-    }
-    sections.push(currentSection)
-  }
-
-  function startStep(title) {
-    flushParagraph()
-    closeList()
-    stepNumber += 1
-    currentSection = null
-    currentStep = {
-      kind: 'step',
-      stepNumber,
-      title: title.trim() || `Step ${stepNumber}`,
-      blocks: []
-    }
-    sections.push(currentStep)
-  }
-
-  function addSubheading(text) {
-    flushParagraph()
-    closeList()
-    ensureContainer().blocks.push({
-      type: 'subheading',
-      text: text.trim()
-    })
-  }
-
-  for (const rawLine of lines) {
-    const line = rawLine.trim()
-    const stepStartMatch = line.match(/^:::step(?:\s+(.+))?$/i)
-
-    if (!currentStep && stepStartMatch) {
-      startStep(stepStartMatch[1] || '')
-      continue
-    }
-
-    if (currentStep && line === ':::') {
-      flushParagraph()
-      closeList()
-      currentStep = null
-      currentSection = null
-      continue
-    }
-
-    if (!line) {
-      flushParagraph()
-      closeList()
-      continue
-    }
-
-    const subheadingMatch = line.match(/^###\s+(.+)$/)
-
-    if (subheadingMatch) {
-      addSubheading(subheadingMatch[1])
-      continue
-    }
-
-    const sectionHeadingMatch = line.match(/^#{1,2}\s+(.+)$/)
-
-    if (sectionHeadingMatch) {
-      if (currentStep) {
-        addSubheading(sectionHeadingMatch[1])
-      } else {
-        startSection(sectionHeadingMatch[1])
-      }
-      continue
-    }
-
-    const calloutMatch = line.match(/^>\s*(.+)$/)
-
-    if (calloutMatch) {
-      flushParagraph()
-      closeList()
-      ensureContainer().blocks.push({
-        type: 'callout',
-        text: calloutMatch[1].trim()
-      })
-      continue
-    }
-
-    const unorderedItemMatch = line.match(/^[-*]\s+(.+)$/)
-
-    if (unorderedItemMatch) {
-      flushParagraph()
-
-      if (
-        !currentList ||
-        currentList.type !== 'unordered-list' ||
-        activeContainer()?.blocks.at(-1) !== currentList
-      ) {
-        currentList = {
-          type: 'unordered-list',
-          items: []
-        }
-        ensureContainer().blocks.push(currentList)
-      }
-
-      currentList.items.push(unorderedItemMatch[1].trim())
-      continue
-    }
-
-    const orderedItemMatch = line.match(/^\d+[.)]\s+(.+)$/)
-
-    if (orderedItemMatch) {
-      flushParagraph()
-
-      if (
-        !currentList ||
-        currentList.type !== 'ordered-list' ||
-        activeContainer()?.blocks.at(-1) !== currentList
-      ) {
-        currentList = {
-          type: 'ordered-list',
-          items: []
-        }
-        ensureContainer().blocks.push(currentList)
-      }
-
-      currentList.items.push(orderedItemMatch[1].trim())
-      continue
-    }
-
-    closeList()
-    paragraphLines.push(line)
-  }
-
-  flushParagraph()
-  closeList()
-  return sections
-}
-
-function renderBlock(block) {
-  if (block.type === 'subheading') {
-    const heading = document.createElement('h4')
-    heading.className = 'preview-subheading'
-    appendInlineFormatting(heading, block.text)
-    return heading
-  }
-
-  if (block.type === 'callout') {
-    const callout = document.createElement('div')
-    callout.className = 'preview-callout'
-    appendInlineFormatting(callout, block.text)
-    return callout
-  }
-
-  if (
-    block.type === 'unordered-list' ||
-    block.type === 'ordered-list'
-  ) {
-    const list =
-      block.type === 'ordered-list'
-        ? document.createElement('ol')
-        : document.createElement('ul')
-
-    for (const itemText of block.items) {
-      const item = document.createElement('li')
-      appendInlineFormatting(item, itemText)
-      list.appendChild(item)
-    }
-
-    return list
-  }
-
-  const paragraph = document.createElement('p')
-  appendInlineFormatting(paragraph, block.text)
-  return paragraph
-}
-
-function renderSection(sectionData) {
-  const section = document.createElement('section')
-  section.className =
-    sectionData.kind === 'step'
-      ? 'preview-step-card'
-      : 'preview-section-card'
-
-  if (sectionData.kind === 'step') {
-    const badge = document.createElement('span')
-    badge.className = 'preview-step-badge'
-    badge.textContent = `Step ${sectionData.stepNumber}`
-    section.appendChild(badge)
-  }
-
-  const heading = document.createElement('h3')
-  heading.className =
-    sectionData.kind === 'step'
-      ? 'preview-step-title'
-      : 'preview-section-title'
-  appendInlineFormatting(heading, sectionData.title)
-  section.appendChild(heading)
-
-  for (const block of sectionData.blocks) {
-    section.appendChild(renderBlock(block))
-  }
-
-  return section
-}
+import {
+  parseArticleContent,
+  renderArticleUnit
+} from './article-content-renderer.js?v=1'
 
 function installPreviewStyles() {
   if (document.getElementById('articleEditorPreviewStyles')) {
@@ -379,10 +73,6 @@ function installPreviewStyles() {
       letter-spacing: 0.07em;
     }
 
-    .preview-document {
-      min-width: 0;
-    }
-
     .preview-title {
       margin: 0 0 10px;
       color: var(--sl-navy);
@@ -413,8 +103,10 @@ function installPreviewStyles() {
       gap: 14px;
     }
 
-    .preview-section-card,
-    .preview-step-card {
+    .article-preview-panel .section,
+    .article-preview-panel .step-card,
+    .article-preview-panel .response-template-card {
+      margin: 0;
       padding: 18px;
       border: 1px solid rgba(36, 27, 93, 0.1);
       border-radius: 14px;
@@ -425,22 +117,29 @@ function installPreviewStyles() {
           rgba(250, 246, 238, 0.96)
         );
       box-shadow: 0 10px 24px rgba(36, 27, 93, 0.05);
+      overflow: hidden;
     }
 
-    .preview-section-title,
-    .preview-step-title,
-    .preview-subheading {
+    .article-preview-panel .section::before,
+    .article-preview-panel .section::after {
+      display: none;
+    }
+
+    .article-preview-panel .rich-section-title,
+    .article-preview-panel .step-card-title,
+    .article-preview-panel .response-template-title,
+    .article-preview-panel .rich-subheading {
       color: var(--sl-navy);
     }
 
-    .preview-section-title,
-    .preview-step-title {
+    .article-preview-panel .rich-section-title,
+    .article-preview-panel .step-card-title {
       margin: 0 0 10px;
       font-size: 1rem;
       line-height: 1.35;
     }
 
-    .preview-step-badge {
+    .article-preview-panel .step-badge {
       display: inline-flex;
       align-items: center;
       min-height: 24px;
@@ -456,50 +155,36 @@ function installPreviewStyles() {
       text-transform: uppercase;
     }
 
-    .preview-subheading {
+    .article-preview-panel p,
+    .article-preview-panel li,
+    .article-preview-panel td {
+      color: var(--sl-muted);
+      font-size: 0.86rem;
+      line-height: 1.62;
+    }
+
+    .article-preview-panel p {
+      margin: 0 0 11px;
+    }
+
+    .article-preview-panel strong {
+      color: var(--sl-text);
+      font-weight: 800;
+    }
+
+    .article-preview-panel ul,
+    .article-preview-panel ol {
+      margin: 10px 0 12px;
+      padding-left: 1.2rem;
+    }
+
+    .article-preview-panel .rich-subheading {
       margin: 14px 0 7px;
       font-size: 0.9rem;
       line-height: 1.4;
     }
 
-    .preview-section-card p,
-    .preview-step-card p,
-    .preview-section-card li,
-    .preview-step-card li {
-      color: var(--sl-muted);
-      font-size: 0.88rem;
-      line-height: 1.65;
-    }
-
-    .preview-section-card p,
-    .preview-step-card p {
-      margin: 0 0 11px;
-    }
-
-    .preview-section-card p:last-child,
-    .preview-step-card p:last-child,
-    .preview-section-card ul:last-child,
-    .preview-step-card ul:last-child,
-    .preview-section-card ol:last-child,
-    .preview-step-card ol:last-child {
-      margin-bottom: 0;
-    }
-
-    .preview-section-card strong,
-    .preview-step-card strong {
-      color: var(--sl-text);
-      font-weight: 800;
-    }
-
-    .preview-section-card ul,
-    .preview-step-card ul,
-    .preview-section-card ol,
-    .preview-step-card ol {
-      margin: 10px 0 12px;
-      padding-left: 1.2rem;
-    }
-
-    .preview-callout {
+    .article-preview-panel .rich-callout {
       margin: 12px 0;
       padding: 13px 14px;
       border: 1px solid rgba(255, 194, 26, 0.28);
@@ -508,6 +193,101 @@ function installPreviewStyles() {
       background: rgba(255, 194, 26, 0.08);
       font-size: 0.86rem;
       line-height: 1.55;
+    }
+
+    .article-preview-panel .rich-table-wrapper {
+      overflow-x: auto;
+      border: 1px solid rgba(36, 27, 93, 0.12);
+      border-radius: 12px;
+    }
+
+    .article-preview-panel .rich-table {
+      width: 100%;
+      border-collapse: collapse;
+      min-width: 460px;
+    }
+
+    .article-preview-panel .rich-table th,
+    .article-preview-panel .rich-table td {
+      padding: 12px 14px;
+      text-align: left;
+      vertical-align: top;
+      border-bottom: 1px solid rgba(36, 27, 93, 0.09);
+    }
+
+    .article-preview-panel .rich-table th {
+      color: var(--sl-navy);
+      background: rgba(255, 194, 26, 0.1);
+      font-size: 0.7rem;
+      letter-spacing: 0.06em;
+      text-transform: uppercase;
+    }
+
+    .article-preview-panel .rich-table tbody tr:last-child td {
+      border-bottom: none;
+    }
+
+    .article-preview-panel .rule-grid {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 10px;
+    }
+
+    .article-preview-panel .rule-card {
+      padding: 13px;
+      border: 1px solid rgba(36, 27, 93, 0.1);
+      border-radius: 11px;
+      background: rgba(255, 255, 255, 0.82);
+    }
+
+    .article-preview-panel .rule-number {
+      display: inline-flex;
+      min-width: 20px;
+      min-height: 20px;
+      align-items: center;
+      justify-content: center;
+      margin-bottom: 8px;
+      border-radius: 6px;
+      color: var(--sl-navy);
+      background: rgba(255, 194, 26, 0.13);
+      font-size: 0.7rem;
+      font-weight: 800;
+    }
+
+    .article-preview-panel .rule-card p {
+      margin: 0;
+    }
+
+    .article-preview-panel .response-template-card {
+      border-left: 2px solid var(--sl-navy);
+      border-top-left-radius: 12px;
+      border-bottom-left-radius: 12px;
+    }
+
+    .article-preview-panel .response-template-title {
+      margin: 0 0 12px;
+      font-size: 0.9rem;
+      line-height: 1.4;
+    }
+
+    .article-preview-panel .checklist-grid {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 10px 16px;
+      padding: 0;
+      list-style: none;
+    }
+
+    .article-preview-panel .checklist-grid li {
+      display: grid;
+      grid-template-columns: 18px 1fr;
+      gap: 8px;
+      margin: 0;
+    }
+
+    .article-preview-panel .checklist-mark {
+      color: var(--sl-navy);
+      font-weight: 900;
     }
 
     .preview-empty {
@@ -530,6 +310,13 @@ function installPreviewStyles() {
         position: relative;
         top: auto;
         max-height: none;
+      }
+    }
+
+    @media (max-width: 620px) {
+      .article-preview-panel .rule-grid,
+      .article-preview-panel .checklist-grid {
+        grid-template-columns: 1fr;
       }
     }
   `
@@ -652,16 +439,13 @@ export function setupArticleEditorPreview({
     ? createPreviewPanel(articleCard)
     : null
 
-  const previewTitle =
-    previewPanel?.querySelector('#previewTitle')
-  const previewAuthor =
-    previewPanel?.querySelector('#previewAuthor')
+  const previewTitle = previewPanel?.querySelector('#previewTitle')
+  const previewAuthor = previewPanel?.querySelector('#previewAuthor')
   const previewDescription =
     previewPanel?.querySelector('#previewDescription')
   const previewCategory =
     previewPanel?.querySelector('#previewCategory')
-  const previewBody =
-    previewPanel?.querySelector('#previewBody')
+  const previewBody = previewPanel?.querySelector('#previewBody')
 
   function renderPreview() {
     if (
@@ -676,7 +460,6 @@ export function setupArticleEditorPreview({
 
     previewTitle.textContent =
       titleInput?.value.trim() || 'Untitled Article'
-
     previewAuthor.textContent =
       `By: ${authorInput?.value.trim() || 'Not specified'}`
 
@@ -693,9 +476,9 @@ export function setupArticleEditorPreview({
       'Your article description will appear here.'
 
     previewBody.replaceChildren()
-    const sections = parseArticleContent(contentInput?.value || '')
+    const units = parseArticleContent(contentInput?.value || '')
 
-    if (!sections.length) {
+    if (!units.length) {
       const empty = document.createElement('p')
       empty.className = 'preview-empty'
       empty.textContent =
@@ -704,8 +487,8 @@ export function setupArticleEditorPreview({
       return
     }
 
-    for (const sectionData of sections) {
-      previewBody.appendChild(renderSection(sectionData))
+    for (const unit of units) {
+      previewBody.appendChild(renderArticleUnit(unit))
     }
   }
 
