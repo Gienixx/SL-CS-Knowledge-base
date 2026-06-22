@@ -1,7 +1,14 @@
+import { supabase } from './supabaseClient.js'
 import {
   parseArticleContent,
   renderArticleUnit
 } from './article-content-renderer.js?v=1'
+import {
+  getSelectedArticleImage,
+  removeArticleImage,
+  setupArticleImageField,
+  uploadArticleImage
+} from './article-image-upload.js?v=1'
 
 function installPreviewStyles() {
   if (document.getElementById('articleEditorPreviewStyles')) {
@@ -34,12 +41,11 @@ function installPreviewStyles() {
       padding: 22px;
       border: 1px solid var(--sl-border);
       border-radius: 22px;
-      background:
-        linear-gradient(
-          180deg,
-          rgba(255, 255, 255, 0.97),
-          rgba(250, 246, 238, 0.98)
-        );
+      background: linear-gradient(
+        180deg,
+        rgba(255, 255, 255, 0.97),
+        rgba(250, 246, 238, 0.98)
+      );
       box-shadow: var(--sl-shadow);
     }
 
@@ -71,6 +77,16 @@ function installPreviewStyles() {
       font-weight: 800;
       text-transform: uppercase;
       letter-spacing: 0.07em;
+    }
+
+    .preview-cover {
+      display: block;
+      width: 100%;
+      height: 190px;
+      margin-bottom: 18px;
+      object-fit: cover;
+      border-radius: 14px;
+      border: 1px solid var(--sl-border);
     }
 
     .preview-title {
@@ -110,12 +126,11 @@ function installPreviewStyles() {
       padding: 18px;
       border: 1px solid rgba(36, 27, 93, 0.1);
       border-radius: 14px;
-      background:
-        linear-gradient(
-          180deg,
-          rgba(255, 255, 255, 0.98),
-          rgba(250, 246, 238, 0.96)
-        );
+      background: linear-gradient(
+        180deg,
+        rgba(255, 255, 255, 0.98),
+        rgba(250, 246, 238, 0.96)
+      );
       box-shadow: 0 10px 24px rgba(36, 27, 93, 0.05);
       overflow: hidden;
     }
@@ -181,7 +196,6 @@ function installPreviewStyles() {
     .article-preview-panel .rich-subheading {
       margin: 14px 0 7px;
       font-size: 0.9rem;
-      line-height: 1.4;
     }
 
     .article-preview-panel .rich-callout {
@@ -191,8 +205,6 @@ function installPreviewStyles() {
       border-radius: 11px;
       color: var(--sl-text);
       background: rgba(255, 194, 26, 0.08);
-      font-size: 0.86rem;
-      line-height: 1.55;
     }
 
     .article-preview-panel .rich-table-wrapper {
@@ -203,8 +215,8 @@ function installPreviewStyles() {
 
     .article-preview-panel .rich-table {
       width: 100%;
-      border-collapse: collapse;
       min-width: 460px;
+      border-collapse: collapse;
     }
 
     .article-preview-panel .rich-table th,
@@ -223,11 +235,8 @@ function installPreviewStyles() {
       text-transform: uppercase;
     }
 
-    .article-preview-panel .rich-table tbody tr:last-child td {
-      border-bottom: none;
-    }
-
-    .article-preview-panel .rule-grid {
+    .article-preview-panel .rule-grid,
+    .article-preview-panel .checklist-grid {
       display: grid;
       grid-template-columns: repeat(2, minmax(0, 1fr));
       gap: 10px;
@@ -260,20 +269,14 @@ function installPreviewStyles() {
 
     .article-preview-panel .response-template-card {
       border-left: 2px solid var(--sl-navy);
-      border-top-left-radius: 12px;
-      border-bottom-left-radius: 12px;
     }
 
     .article-preview-panel .response-template-title {
       margin: 0 0 12px;
       font-size: 0.9rem;
-      line-height: 1.4;
     }
 
     .article-preview-panel .checklist-grid {
-      display: grid;
-      grid-template-columns: repeat(2, minmax(0, 1fr));
-      gap: 10px 16px;
       padding: 0;
       list-style: none;
     }
@@ -374,54 +377,180 @@ function createPreviewPanel(articleCard) {
   const panel = document.createElement('aside')
   panel.className = 'article-preview-panel'
   panel.setAttribute('aria-label', 'Live article preview')
+  panel.innerHTML = `
+    <div class="preview-toolbar">
+      <strong>Live Preview</strong>
+      <span id="previewCategory" class="preview-category">No category</span>
+    </div>
+    <article class="preview-document">
+      <img id="previewCover" class="preview-cover" alt="Article cover preview" hidden>
+      <h2 id="previewTitle" class="preview-title">Untitled Article</h2>
+      <div class="preview-meta">
+        <span id="previewAuthor">By: Not specified</span>
+        <span>Draft preview</span>
+      </div>
+      <p id="previewDescription" class="preview-description">
+        Your article description will appear here.
+      </p>
+      <div id="previewBody" class="preview-body"></div>
+    </article>
+  `
 
-  const toolbar = document.createElement('div')
-  toolbar.className = 'preview-toolbar'
-
-  const toolbarTitle = document.createElement('strong')
-  toolbarTitle.textContent = 'Live Preview'
-
-  const category = document.createElement('span')
-  category.id = 'previewCategory'
-  category.className = 'preview-category'
-  category.textContent = 'No category'
-
-  toolbar.append(toolbarTitle, category)
-
-  const documentElement = document.createElement('article')
-  documentElement.className = 'preview-document'
-
-  const title = document.createElement('h2')
-  title.id = 'previewTitle'
-  title.className = 'preview-title'
-  title.textContent = 'Untitled Article'
-
-  const meta = document.createElement('div')
-  meta.className = 'preview-meta'
-
-  const author = document.createElement('span')
-  author.id = 'previewAuthor'
-  author.textContent = 'By: Not specified'
-
-  const status = document.createElement('span')
-  status.textContent = 'Draft preview'
-
-  meta.append(author, status)
-
-  const description = document.createElement('p')
-  description.id = 'previewDescription'
-  description.className = 'preview-description'
-  description.textContent =
-    'Your article description will appear here.'
-
-  const body = document.createElement('div')
-  body.id = 'previewBody'
-  body.className = 'preview-body'
-
-  documentElement.append(title, meta, description, body)
-  panel.append(toolbar, documentElement)
   workspace.appendChild(panel)
   return panel
+}
+
+function setupEnhancedSave({
+  form,
+  titleInput,
+  descriptionInput,
+  authorInput,
+  tagInput,
+  contentInput,
+  imageInput,
+  resetImageField,
+  renderPreview
+}) {
+  if (!form || form.dataset.enhancedArticleSave === 'true') {
+    return
+  }
+
+  form.dataset.enhancedArticleSave = 'true'
+
+  form.addEventListener(
+    'submit',
+    async event => {
+      event.preventDefault()
+      event.stopImmediatePropagation()
+
+      const message = document.getElementById('message')
+      const submitButton = form.querySelector('button[type="submit"]')
+      const descriptionCount =
+        document.getElementById('descriptionCount')
+
+      if (!form.reportValidity()) {
+        return
+      }
+
+      const title = titleInput?.value.trim() || ''
+      const description = descriptionInput?.value.trim() || ''
+      const authorName = authorInput?.value.trim() || ''
+      const tag = tagInput?.value.trim().toLowerCase() || ''
+      const content = contentInput?.value.trim() || ''
+      const validTags = ['tickets', 'cashouts']
+
+      if (
+        !title ||
+        !description ||
+        !authorName ||
+        !content ||
+        !validTags.includes(tag)
+      ) {
+        if (message) {
+          message.textContent =
+            'Please enter a title, description, author, category, and article content.'
+        }
+        return
+      }
+
+      let uploadedImagePath = null
+
+      try {
+        if (submitButton) {
+          submitButton.disabled = true
+        }
+
+        const {
+          data: { user },
+          error: userError
+        } = await supabase.auth.getUser()
+
+        if (userError) {
+          throw userError
+        }
+
+        if (!user) {
+          window.location.replace('./login.html')
+          return
+        }
+
+        const imageFile = getSelectedArticleImage(imageInput)
+        let imageUrl = null
+
+        if (imageFile) {
+          if (message) {
+            message.textContent = 'Uploading article image...'
+          }
+
+          const uploadResult = await uploadArticleImage({
+            supabase,
+            file: imageFile,
+            userId: user.id
+          })
+
+          imageUrl = uploadResult.imageUrl
+          uploadedImagePath = uploadResult.imagePath
+        }
+
+        if (message) {
+          message.textContent = 'Saving article...'
+        }
+
+        const articlePayload = {
+          title,
+          description,
+          content,
+          tag,
+          author_name: authorName,
+          published: true
+        }
+
+        if (imageUrl) {
+          articlePayload.image_url = imageUrl
+        }
+
+        const { error: insertError } = await supabase
+          .from('articles')
+          .insert(articlePayload)
+
+        if (insertError) {
+          throw insertError
+        }
+
+        form.reset()
+        resetImageField()
+
+        if (descriptionCount) {
+          descriptionCount.textContent = '0 / 300'
+        }
+
+        renderPreview()
+
+        if (message) {
+          message.textContent = 'Article saved successfully.'
+        }
+      } catch (error) {
+        if (uploadedImagePath) {
+          await removeArticleImage({
+            supabase,
+            imagePath: uploadedImagePath
+          })
+        }
+
+        console.error('Article save error:', error)
+
+        if (message) {
+          message.textContent =
+            `Unable to save article: ${error.message || 'Unexpected error'}`
+        }
+      } finally {
+        if (submitButton) {
+          submitButton.disabled = false
+        }
+      }
+    },
+    true
+  )
 }
 
 export function setupArticleEditorPreview({
@@ -435,6 +564,13 @@ export function setupArticleEditorPreview({
 
   const articleCard = form?.closest('.article-card')
   const authorInput = createAuthorField(form, tagInput)
+  const {
+    imageInput,
+    resetImageField
+  } = setupArticleImageField({
+    form,
+    descriptionInput
+  })
   const previewPanel = articleCard
     ? createPreviewPanel(articleCard)
     : null
@@ -446,6 +582,32 @@ export function setupArticleEditorPreview({
   const previewCategory =
     previewPanel?.querySelector('#previewCategory')
   const previewBody = previewPanel?.querySelector('#previewBody')
+  const previewCover = previewPanel?.querySelector('#previewCover')
+
+  let previewImageUrl = ''
+
+  function updatePreviewImage() {
+    if (!previewCover) {
+      return
+    }
+
+    if (previewImageUrl) {
+      URL.revokeObjectURL(previewImageUrl)
+      previewImageUrl = ''
+    }
+
+    const file = imageInput?.files?.[0]
+
+    if (!file) {
+      previewCover.removeAttribute('src')
+      previewCover.hidden = true
+      return
+    }
+
+    previewImageUrl = URL.createObjectURL(file)
+    previewCover.src = previewImageUrl
+    previewCover.hidden = false
+  }
 
   function renderPreview() {
     if (
@@ -475,6 +637,7 @@ export function setupArticleEditorPreview({
       descriptionInput?.value.trim() ||
       'Your article description will appear here.'
 
+    updatePreviewImage()
     previewBody.replaceChildren()
     const units = parseArticleContent(contentInput?.value || '')
 
@@ -497,11 +660,24 @@ export function setupArticleEditorPreview({
     descriptionInput,
     authorInput,
     tagInput,
-    contentInput
+    contentInput,
+    imageInput
   ]) {
     input?.addEventListener('input', renderPreview)
     input?.addEventListener('change', renderPreview)
   }
+
+  setupEnhancedSave({
+    form,
+    titleInput,
+    descriptionInput,
+    authorInput,
+    tagInput,
+    contentInput,
+    imageInput,
+    resetImageField,
+    renderPreview
+  })
 
   renderPreview()
 
