@@ -1,4 +1,5 @@
 import './edit-article.js?v=1'
+import './edit-article-image-preview.js?v=1'
 import {
   setupArticleEditorHistory
 } from './article-editor-history.js?v=1'
