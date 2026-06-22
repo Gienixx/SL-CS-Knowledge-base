@@ -4,12 +4,17 @@ import {
 import {
   parseArticleContent,
   renderArticleUnit
-} from './article-content-renderer-v3.js?v=1'
+} from './article-content-renderer-v4.js?v=1'
+import {
+  setupStatementGridControl
+} from './article-statement-grid-control.js?v=1'
 import './article-nesting-styles.js?v=1'
 
 export function setupArticleEditorPreview(options) {
   const basePreview = setupBasePreview(options)
   const previewBody = document.getElementById('previewBody')
+
+  setupStatementGridControl(options.contentInput)
 
   function renderNestedPreview() {
     if (!previewBody) {
