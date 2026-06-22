@@ -10,7 +10,31 @@ import './article-preview-parser-styles.js?v=1'
 import './article-editor-toolbar-overrides.js?v=1'
 import './article-editor-layout-enhancer.js?v=1'
 
+function updateEditorPageLabels() {
+  document.title = 'Add Article | SocialLoop CS Base'
+
+  const heading = document.querySelector('.article-title h1')
+  const description = document.querySelector('.article-title p')
+  const backLink = document.querySelector('.article-topbar .article-link')
+
+  if (heading) {
+    heading.textContent = 'Add Article'
+  }
+
+  if (description) {
+    description.textContent =
+      'Create a formatted knowledge base article for the SocialLoop CS Base.'
+  }
+
+  if (backLink) {
+    backLink.href = './article-management.html'
+    backLink.textContent = '← Back to Article Management'
+  }
+}
+
 export function setupArticleEditorPreview(options) {
+  updateEditorPageLabels()
+
   const basePreview = setupBasePreview(options)
   const previewBody = document.getElementById('previewBody')
 
