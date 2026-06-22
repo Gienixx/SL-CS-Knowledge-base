@@ -1,4 +1,7 @@
 import { supabase } from './supabaseClient.js'
+import {
+  setupArticleEditorPreview
+} from './article-editor-preview.js?v=1'
 
 const form = document.getElementById('articleForm')
 const message = document.getElementById('message')
@@ -8,6 +11,9 @@ const descriptionCount = document.getElementById('descriptionCount')
 const tagInput = document.getElementById('tag')
 const contentInput = document.getElementById('content')
 const submitButton = form?.querySelector('button[type="submit"]')
+
+let authorInput = null
+let renderPreview = () => {}
 
 function updateDescriptionCount() {
   if (!descriptionInput || !descriptionCount) {
@@ -297,12 +303,24 @@ function getErrorMessage(error) {
 }
 
 async function initializeArticleEditor() {
+  const previewSetup = setupArticleEditorPreview({
+    form,
+    titleInput,
+    descriptionInput,
+    tagInput,
+    contentInput
+  })
+
+  authorInput = previewSetup.authorInput
+  renderPreview = previewSetup.renderPreview
+
   if (
     !form ||
     !message ||
     !submitButton ||
     !titleInput ||
     !descriptionInput ||
+    !authorInput ||
     !tagInput ||
     !contentInput
   ) {
@@ -354,11 +372,19 @@ async function initializeArticleEditor() {
       return
     }
 
-    const authorName =
+    const defaultAuthorName =
       allowedUser.name?.trim() ||
       user.user_metadata?.full_name?.trim() ||
       user.user_metadata?.name?.trim() ||
       email
+
+    if (!authorInput.value.trim()) {
+      authorInput.value = defaultAuthorName
+      authorInput.defaultValue = defaultAuthorName
+      authorInput.dispatchEvent(
+        new Event('input', { bubbles: true })
+      )
+    }
 
     submitButton.disabled = false
 
@@ -367,6 +393,7 @@ async function initializeArticleEditor() {
 
       const title = titleInput.value.trim()
       const description = descriptionInput.value.trim()
+      const authorName = authorInput.value.trim()
       const tag = tagInput.value.trim().toLowerCase()
       const content = contentInput.value.trim()
       const validTags = ['tickets', 'cashouts']
@@ -374,11 +401,12 @@ async function initializeArticleEditor() {
       if (
         !title ||
         !description ||
+        !authorName ||
         !content ||
         !validTags.includes(tag)
       ) {
         message.textContent =
-          'Please enter a title, description, category, and article content.'
+          'Please enter a title, description, author, category, and article content.'
         return
       }
 
@@ -409,6 +437,7 @@ async function initializeArticleEditor() {
 
         form.reset()
         updateDescriptionCount()
+        renderPreview()
         message.textContent = 'Article saved successfully.'
       } catch (error) {
         console.error('Article insert error:', error)
