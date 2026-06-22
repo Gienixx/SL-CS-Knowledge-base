@@ -105,12 +105,11 @@ function isMissingImageColumnError(error) {
 }
 
 async function fetchPublishedArticles() {
-  const fieldsWithImage =
-    'id, title, description, content, tag, author_name, image_url, published, created_at'
-
   let result = await supabase
     .from('articles')
-    .select(fieldsWithImage)
+    .select(
+      'id, title, description, content, tag, author_name, image_url, published, created_at'
+    )
     .eq('published', true)
     .order('created_at', { ascending: false })
 
@@ -230,10 +229,18 @@ function createArticleImage(article) {
   image.alt = `${article.title} article cover`
   image.loading = 'lazy'
   image.decoding = 'async'
+  image.style.width = '100%'
+  image.style.height = '145px'
+  image.style.objectFit = 'cover'
+  image.style.display = 'block'
 
-  image.addEventListener('error', () => {
-    image.replaceWith(createImagePlaceholder())
-  }, { once: true })
+  image.addEventListener(
+    'error',
+    () => {
+      image.replaceWith(createImagePlaceholder())
+    },
+    { once: true }
+  )
 
   return image
 }
@@ -261,6 +268,9 @@ function renderArticleGrid(articles) {
     if (article.url) {
       wrapper.href = article.url
       wrapper.className = 'article-card-link'
+      wrapper.style.display = 'block'
+      wrapper.style.color = 'inherit'
+      wrapper.style.textDecoration = 'none'
     }
 
     wrapper.appendChild(createArticleImage(article))
