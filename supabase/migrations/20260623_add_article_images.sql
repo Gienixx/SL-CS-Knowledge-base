@@ -29,6 +29,31 @@ set
   file_size_limit = excluded.file_size_limit,
   allowed_mime_types = excluded.allowed_mime_types;
 
+create or replace function public.current_user_can_edit_articles()
+returns boolean
+language sql
+stable
+security definer
+set search_path = public
+as $$
+  select exists (
+    select 1
+    from public.login
+    where lower(email) = lower(
+      coalesce(auth.jwt() ->> 'email', '')
+    )
+    and can_edit_articles is true
+  );
+$$;
+
+revoke all
+on function public.current_user_can_edit_articles()
+from public;
+
+grant execute
+on function public.current_user_can_edit_articles()
+to authenticated;
+
 drop policy if exists
   "Public can view article images"
 on storage.objects;
@@ -51,14 +76,7 @@ for insert
 to authenticated
 with check (
   bucket_id = 'article-images'
-  and exists (
-    select 1
-    from public.login
-    where lower(email) = lower(
-      coalesce(auth.jwt() ->> 'email', '')
-    )
-    and can_edit_articles is true
-  )
+  and public.current_user_can_edit_articles()
 );
 
 drop policy if exists
@@ -72,12 +90,5 @@ for delete
 to authenticated
 using (
   bucket_id = 'article-images'
-  and exists (
-    select 1
-    from public.login
-    where lower(email) = lower(
-      coalesce(auth.jwt() ->> 'email', '')
-    )
-    and can_edit_articles is true
-  )
+  and public.current_user_can_edit_articles()
 );
