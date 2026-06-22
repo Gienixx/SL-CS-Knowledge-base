@@ -17,82 +17,10 @@ const links = {
   ]
 }
 
-const cashoutArticles = [
-  {
-    title: 'Cashout Review Checklist',
-    description:
-      'A quick guide for checking payout requests before they are approved.',
-    status: 'Click here to read.',
-    url: 'https://example.com/cashout-review-checklist'
-  },
-  {
-    title: 'Fraud Pattern Indicators',
-    description:
-      'Common red flags that help you spot suspicious cashout activity earlier.',
-    status: 'Click here to read.',
-    url: 'https://example.com/fraud-pattern-indicators'
-  },
-  {
-    title: 'Escalation Rules for Cashouts',
-    description:
-      'When to pause a payout and send it to a lead or fraud reviewer.',
-    status: 'Ready for article'
-  },
-  {
-    title: 'Payment Validation Notes',
-    description:
-      'Reference points for confirming payment details and avoiding processing errors.',
-    status: 'Ready for article'
-  }
-]
-
-const ticketArticles = [
-  {
-    title: 'Navigating and Reviewing Tickets in Zendesk',
-    description:
-      'Guide on how to locate and understand how Zendesk works.',
-    status: 'Click here to read.',
-    image: './assets/article1.png',
-    url: './articles/article1.html'
-  },
-  {
-    title: '4 Brilliant Tips for Dealing with Angry Customers',
-    description:
-      'Angry customers are one of the hardest parts of support work. ' +
-      'Small things, like using a customer’s name, can shift the whole tone.',
-    status: 'Click here to read.',
-    image: './assets/article2.png',
-    url: './articles/article2.html'
-  },
-  {
-    title: 'Not Rewarded',
-    description:
-      'How to identify, review, and resolve tickets from users who report ' +
-      'they were not rewarded after completing a survey.',
-    status: 'Click here to read.',
-    url: './articles/article3.html'
-  },
-  {
-    title: 'Escalation Process',
-    description:
-      'Placeholder for when and how support tickets should be escalated.',
-    status: 'Ready for article'
-  },
-  {
-    title: 'Slack Communication',
-    description:
-      'Placeholder for internal Slack channels, updates, and support coordination.',
-    status: 'Ready for article'
-  },
-  {
-    title: 'Quality Checklist',
-    description:
-      'Placeholder for final checks before marking a ticket solved.',
-    status: 'Ready for article'
-  }
-]
-
-let databaseArticlesLoaded = false
+let publishedArticles = []
+let articlesLoaded = false
+let activeCategory = 'ALL'
+let searchRequestId = 0
 
 function isMissingImageColumnError(error) {
   const message = String(error?.message || '').toLowerCase()
@@ -146,51 +74,14 @@ function normalizeImageUrl(value) {
   }
 }
 
-async function loadDatabaseArticles() {
-  if (databaseArticlesLoaded) {
-    return
+function normalizeCategory(value) {
+  const category = String(value ?? '').trim().toLowerCase()
+
+  if (category === 'tickets' || category === 'cashouts') {
+    return category
   }
 
-  const { data, error } = await fetchPublishedArticles()
-
-  if (error) {
-    throw error
-  }
-
-  const databaseRows = Array.isArray(data) ? data : []
-
-  for (const row of databaseRows) {
-    const normalizedTag = String(row.tag ?? '')
-      .trim()
-      .toLowerCase()
-
-    if (
-      normalizedTag !== 'tickets' &&
-      normalizedTag !== 'cashouts'
-    ) {
-      continue
-    }
-
-    const article = {
-      title: row.title || 'Untitled Article',
-      description:
-        String(row.description ?? '').trim() ||
-        createExcerpt(row.content),
-      status: row.author_name
-        ? `Written by ${row.author_name}`
-        : 'Click here to read.',
-      image: normalizeImageUrl(row.image_url),
-      url: `./article.html?id=${encodeURIComponent(row.id)}`
-    }
-
-    if (normalizedTag === 'tickets') {
-      ticketArticles.unshift(article)
-    } else {
-      cashoutArticles.unshift(article)
-    }
-  }
-
-  databaseArticlesLoaded = true
+  return ''
 }
 
 function createExcerpt(content, maximumLength = 170) {
@@ -209,6 +100,86 @@ function createExcerpt(content, maximumLength = 170) {
   }
 
   return `${normalized.slice(0, maximumLength).trim()}…`
+}
+
+function formatArticleDate(value) {
+  if (!value) {
+    return ''
+  }
+
+  const date = new Date(value)
+
+  if (Number.isNaN(date.getTime())) {
+    return ''
+  }
+
+  return new Intl.DateTimeFormat('en-US', {
+    year: 'numeric',
+    month: 'short',
+    day: 'numeric'
+  }).format(date)
+}
+
+function mapDatabaseArticle(row) {
+  const category = normalizeCategory(row.tag)
+
+  if (!category) {
+    return null
+  }
+
+  const title = String(row.title ?? '').trim() || 'Untitled Article'
+  const description =
+    String(row.description ?? '').trim() ||
+    createExcerpt(row.content)
+  const author = String(row.author_name ?? '').trim()
+  const publishedDate = formatArticleDate(row.created_at)
+  const metaParts = []
+
+  if (author) {
+    metaParts.push(`Written by ${author}`)
+  }
+
+  if (publishedDate) {
+    metaParts.push(publishedDate)
+  }
+
+  return {
+    id: row.id,
+    title,
+    description,
+    content: String(row.content ?? ''),
+    category,
+    status: metaParts.join(' · ') || 'Published article',
+    image: normalizeImageUrl(row.image_url),
+    url: `./article.html?id=${encodeURIComponent(row.id)}`,
+    searchText: [
+      title,
+      description,
+      row.content,
+      author,
+      category
+    ]
+      .join(' ')
+      .toLowerCase()
+  }
+}
+
+async function loadPublishedArticles({ force = false } = {}) {
+  if (articlesLoaded && !force) {
+    return publishedArticles
+  }
+
+  const { data, error } = await fetchPublishedArticles()
+
+  if (error) {
+    throw error
+  }
+
+  publishedArticles = (Array.isArray(data) ? data : [])
+    .map(mapDatabaseArticle)
+    .filter(Boolean)
+  articlesLoaded = true
+  return publishedArticles
 }
 
 function createImagePlaceholder() {
@@ -251,8 +222,9 @@ function renderArticleGrid(articles) {
 
   if (!articles.length) {
     const emptyMessage = document.createElement('p')
+    emptyMessage.className = 'article-empty-message'
     emptyMessage.textContent =
-      'No published articles are available in this category.'
+      'No published articles created through the article form are available here yet.'
     grid.appendChild(emptyMessage)
     return grid
   }
@@ -260,23 +232,25 @@ function renderArticleGrid(articles) {
   for (const article of articles) {
     const card = document.createElement('article')
     card.className = 'article-card'
+    card.dataset.articleId = String(article.id)
+    card.dataset.category = article.category
 
-    const wrapper = article.url
-      ? document.createElement('a')
-      : document.createElement('div')
-
-    if (article.url) {
-      wrapper.href = article.url
-      wrapper.className = 'article-card-link'
-      wrapper.style.display = 'block'
-      wrapper.style.color = 'inherit'
-      wrapper.style.textDecoration = 'none'
-    }
+    const wrapper = document.createElement('a')
+    wrapper.href = article.url
+    wrapper.className = 'article-card-link'
+    wrapper.style.display = 'block'
+    wrapper.style.color = 'inherit'
+    wrapper.style.textDecoration = 'none'
 
     wrapper.appendChild(createArticleImage(article))
 
     const contentContainer = document.createElement('div')
     contentContainer.className = 'article-content'
+
+    const category = document.createElement('span')
+    category.className = 'article-category-label'
+    category.textContent =
+      article.category === 'cashouts' ? 'Cashouts' : 'Tickets'
 
     const title = document.createElement('h3')
     title.textContent = article.title
@@ -288,7 +262,7 @@ function renderArticleGrid(articles) {
     status.className = 'article-meta'
     status.textContent = article.status
 
-    contentContainer.append(title, description, status)
+    contentContainer.append(category, title, description, status)
     wrapper.appendChild(contentContainer)
     card.appendChild(wrapper)
     grid.appendChild(card)
@@ -297,8 +271,8 @@ function renderArticleGrid(articles) {
   return grid
 }
 
-function renderLinks(category, ticketHeader, ticketContent) {
-  ticketHeader.textContent = 'Useful Links'
+function renderLinks(category, header, content) {
+  header.textContent = 'Useful Links'
 
   const table = document.createElement('table')
   const tableHead = document.createElement('thead')
@@ -320,24 +294,55 @@ function renderLinks(category, ticketHeader, ticketContent) {
     const row = document.createElement('tr')
     const nameCell = document.createElement('td')
     nameCell.textContent = item.name
-
     const linkCell = document.createElement('td')
     const link = document.createElement('a')
     link.href = item.url
     link.target = '_blank'
     link.rel = 'noopener noreferrer'
     link.textContent = 'Open Link'
-
     linkCell.appendChild(link)
     row.append(nameCell, linkCell)
     tableBody.appendChild(row)
   }
 
   table.append(tableHead, tableBody)
-  ticketContent.appendChild(table)
+  content.appendChild(table)
 }
 
-async function showTicketsTable(category) {
+function getDisplayArticles(category, query = '') {
+  const normalizedQuery = String(query).trim().toLowerCase()
+
+  return publishedArticles.filter(article => {
+    const categoryMatches =
+      category === 'ALL' ||
+      article.category === category.toLowerCase()
+    const searchMatches =
+      !normalizedQuery || article.searchText.includes(normalizedQuery)
+
+    return categoryMatches && searchMatches
+  })
+}
+
+function getCategoryHeading(category, query = '') {
+  if (query) {
+    return `Search Results for “${query}”`
+  }
+
+  if (category === 'TICKETS') {
+    return 'Ticket Articles'
+  }
+
+  if (category === 'CASHOUTS') {
+    return 'Cashout Articles'
+  }
+
+  return 'All Published Articles'
+}
+
+async function showTicketsTable(
+  category,
+  { scroll = true, query = '' } = {}
+) {
   const ticketSection = document.getElementById('ticketSection')
   const ticketHeader = document.getElementById('ticketHeader')
   const ticketContent = document.getElementById('ticketContent')
@@ -351,33 +356,46 @@ async function showTicketsTable(category) {
     .trim()
     .toUpperCase()
 
+  activeCategory = normalizedCategory
   ticketSection.style.display = 'block'
   ticketContent.replaceChildren()
 
-  try {
-    if (
-      normalizedCategory === 'TICKETS' ||
-      normalizedCategory === 'CASHOUTS'
-    ) {
-      ticketHeader.textContent = 'Loading articles...'
-      await loadDatabaseArticles()
+  if (normalizedCategory === 'LINKS') {
+    renderLinks(normalizedCategory, ticketHeader, ticketContent)
+
+    if (scroll) {
+      ticketSection.scrollIntoView({
+        behavior: 'smooth',
+        block: 'start'
+      })
     }
 
-    if (normalizedCategory === 'TICKETS') {
-      ticketHeader.textContent = 'Ticket Articles'
-      ticketContent.appendChild(renderArticleGrid(ticketArticles))
-    } else if (normalizedCategory === 'CASHOUTS') {
-      ticketHeader.textContent = 'Cashout Articles'
-      ticketContent.appendChild(renderArticleGrid(cashoutArticles))
-    } else if (normalizedCategory === 'LINKS') {
-      renderLinks(normalizedCategory, ticketHeader, ticketContent)
-    } else {
-      ticketHeader.textContent = 'Category unavailable'
-      const message = document.createElement('p')
-      message.textContent =
-        'The selected knowledge base category does not exist.'
-      ticketContent.appendChild(message)
-    }
+    return
+  }
+
+  if (
+    normalizedCategory !== 'ALL' &&
+    normalizedCategory !== 'TICKETS' &&
+    normalizedCategory !== 'CASHOUTS'
+  ) {
+    ticketHeader.textContent = 'Category unavailable'
+    const message = document.createElement('p')
+    message.textContent =
+      'The selected knowledge base category does not exist.'
+    ticketContent.appendChild(message)
+    return
+  }
+
+  ticketHeader.textContent = 'Loading published articles...'
+
+  try {
+    await loadPublishedArticles()
+    const articles = getDisplayArticles(normalizedCategory, query)
+    ticketHeader.textContent = getCategoryHeading(
+      normalizedCategory,
+      query
+    )
+    ticketContent.appendChild(renderArticleGrid(articles))
   } catch (error) {
     console.error('Unable to load knowledge base articles:', error)
     ticketHeader.textContent = 'Unable to load articles'
@@ -389,14 +407,44 @@ async function showTicketsTable(category) {
     ticketContent.appendChild(errorMessage)
   }
 
-  ticketSection.scrollIntoView({
-    behavior: 'smooth',
-    block: 'start'
-  })
+  if (scroll) {
+    ticketSection.scrollIntoView({
+      behavior: 'smooth',
+      block: 'start'
+    })
+  }
 }
 
 function goToLanding() {
   window.location.href = './index-modular.html'
+}
+
+async function handleArticleSearch(query) {
+  const requestId = ++searchRequestId
+  const normalizedQuery = String(query).trim()
+
+  if (!normalizedQuery) {
+    await showTicketsTable(
+      activeCategory === 'LINKS' ? 'ALL' : activeCategory,
+      { scroll: false }
+    )
+    return
+  }
+
+  try {
+    await loadPublishedArticles()
+
+    if (requestId !== searchRequestId) {
+      return
+    }
+
+    await showTicketsTable('ALL', {
+      scroll: false,
+      query: normalizedQuery
+    })
+  } catch (error) {
+    console.error('Unable to search knowledge base articles:', error)
+  }
 }
 
 window.showTicketsTable = showTicketsTable
@@ -404,20 +452,14 @@ window.goToLanding = goToLanding
 
 document.addEventListener('DOMContentLoaded', () => {
   const searchInput = document.getElementById('searchInput')
-  const cards = document.querySelectorAll('.cards .card')
+  let searchTimer = 0
 
-  if (!searchInput) {
-    return
-  }
-
-  searchInput.addEventListener('input', () => {
-    const query = searchInput.value.toLowerCase().trim()
-
-    cards.forEach(card => {
-      const cardText = card.textContent.toLowerCase()
-      card.style.display = cardText.includes(query)
-        ? 'block'
-        : 'none'
-    })
+  searchInput?.addEventListener('input', () => {
+    window.clearTimeout(searchTimer)
+    searchTimer = window.setTimeout(() => {
+      handleArticleSearch(searchInput.value)
+    }, 180)
   })
+
+  showTicketsTable('ALL', { scroll: false })
 })
