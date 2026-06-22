@@ -87,6 +87,16 @@
       font-weight: 700;
       text-decoration: none;
       cursor: pointer;
+      transition:
+        opacity 0.16s ease,
+        transform 0.16s ease,
+        background 0.16s ease,
+        color 0.16s ease;
+    }
+
+    .management-button:hover:not(:disabled),
+    .management-link:hover {
+      transform: translateY(-1px);
     }
 
     .management-button-primary {
@@ -94,9 +104,17 @@
       background: var(--sl-navy);
     }
 
+    .management-button-danger {
+      color: #fff;
+      border-color: rgba(174, 48, 48, 0.72);
+      background: #a83232;
+    }
+
     .management-button:disabled {
-      cursor: wait;
-      opacity: 0.65;
+      cursor: not-allowed;
+      opacity: 0.38;
+      transform: none;
+      filter: grayscale(0.35);
     }
 
     .management-workspace {
@@ -336,6 +354,53 @@
       border-top: 1px solid var(--sl-border);
     }
 
+    .delete-dialog {
+      width: min(460px, calc(100% - 32px));
+      padding: 0;
+      border: 1px solid rgba(36, 27, 93, 0.12);
+      border-radius: 20px;
+      color: var(--sl-text);
+      background: #fffdfa;
+      box-shadow: 0 28px 70px rgba(36, 27, 93, 0.24);
+    }
+
+    .delete-dialog::backdrop {
+      background: rgba(22, 16, 58, 0.52);
+      backdrop-filter: blur(3px);
+    }
+
+    .delete-dialog-content {
+      padding: 26px;
+    }
+
+    .delete-dialog h2 {
+      margin: 0 0 10px;
+      color: var(--sl-navy);
+      font-size: 1.35rem;
+    }
+
+    .delete-dialog p {
+      margin: 0;
+      color: var(--sl-muted);
+      line-height: 1.65;
+    }
+
+    .delete-article-name {
+      display: block;
+      margin-top: 10px;
+      color: var(--sl-text);
+      font-weight: 800;
+      overflow-wrap: anywhere;
+    }
+
+    .delete-dialog-actions {
+      display: flex;
+      justify-content: flex-end;
+      gap: 10px;
+      margin-top: 24px;
+      flex-wrap: wrap;
+    }
+
     @media (max-width: 1180px) {
       .management-workspace {
         grid-template-columns: 1fr;
@@ -404,6 +469,24 @@
                 type="button"
               >
                 Refresh
+              </button>
+
+              <button
+                id="editArticleButton"
+                class="management-button"
+                type="button"
+                disabled
+              >
+                Edit Article
+              </button>
+
+              <button
+                id="deleteArticleButton"
+                class="management-button management-button-danger"
+                type="button"
+                disabled
+              >
+                Delete Article
               </button>
 
               <a
@@ -484,9 +567,38 @@
     </div>
   </main>
 
+  <dialog id="deleteArticleDialog" class="delete-dialog">
+    <div class="delete-dialog-content">
+      <h2>Delete this article?</h2>
+      <p>
+        This action permanently deletes the selected article and cannot be
+        undone.
+        <span id="deleteArticleName" class="delete-article-name"></span>
+      </p>
+
+      <div class="delete-dialog-actions">
+        <button
+          id="cancelDeleteArticleButton"
+          class="management-button"
+          type="button"
+        >
+          Cancel
+        </button>
+
+        <button
+          id="confirmDeleteArticleButton"
+          class="management-button management-button-danger"
+          type="button"
+        >
+          Delete Article
+        </button>
+      </div>
+    </div>
+  </dialog>
+
   <script
     type="module"
-    src="./scripts/article-management.js?v=2"
+    src="./scripts/article-management.js?v=3"
   ></script>
 </body>
 </html>
