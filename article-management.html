@@ -1,0 +1,320 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta
+    name="viewport"
+    content="width=device-width, initial-scale=1.0"
+  >
+  <title>Article Management | SocialLoop CS Base</title>
+
+  <link
+    rel="stylesheet"
+    href="./styles.css?v=modal-details-3"
+  >
+
+  <link
+    rel="stylesheet"
+    href="./button-theme.css?v=1"
+  >
+
+  <style>
+    .management-page {
+      min-height: 100vh;
+      padding: 40px 10%;
+      background:
+        radial-gradient(
+          circle at 12% 18%,
+          rgba(255, 194, 26, 0.20),
+          transparent 22rem
+        ),
+        radial-gradient(
+          circle at 86% 12%,
+          rgba(36, 27, 93, 0.10),
+          transparent 24rem
+        ),
+        linear-gradient(
+          180deg,
+          var(--sl-cream) 0%,
+          #fffdfa 48%,
+          var(--sl-cream-soft) 100%
+        );
+    }
+
+    .management-shell {
+      width: min(1180px, 100%);
+      margin: 0 auto;
+    }
+
+    .management-topbar,
+    .management-toolbar {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 16px;
+      flex-wrap: wrap;
+    }
+
+    .management-topbar {
+      margin-bottom: 24px;
+    }
+
+    .management-title h1 {
+      margin: 0 0 8px;
+      color: var(--sl-navy);
+      font-size: clamp(2rem, 4vw, 3rem);
+    }
+
+    .management-title p {
+      margin: 0;
+      color: var(--sl-muted);
+      line-height: 1.6;
+    }
+
+    .management-link,
+    .management-button {
+      display: inline-flex;
+      min-height: 42px;
+      align-items: center;
+      justify-content: center;
+      padding: 0 18px;
+      border: 1px solid rgba(255, 194, 26, 0.55);
+      border-radius: 999px;
+      color: var(--sl-navy);
+      background: rgba(255, 255, 255, 0.9);
+      font: inherit;
+      font-weight: 700;
+      text-decoration: none;
+      cursor: pointer;
+    }
+
+    .management-button-primary {
+      color: #fff;
+      background: var(--sl-navy);
+    }
+
+    .management-button:disabled {
+      cursor: wait;
+      opacity: 0.65;
+    }
+
+    .management-card {
+      padding: 26px;
+      border: 1px solid var(--sl-border);
+      border-radius: 22px;
+      background: linear-gradient(
+        180deg,
+        rgba(255, 255, 255, 0.96),
+        rgba(250, 246, 238, 0.98)
+      );
+      box-shadow: var(--sl-shadow);
+    }
+
+    .management-toolbar {
+      margin-bottom: 20px;
+      padding-bottom: 18px;
+      border-bottom: 1px solid var(--sl-border);
+    }
+
+    .management-summary {
+      display: grid;
+      gap: 4px;
+    }
+
+    .management-summary strong {
+      color: var(--sl-navy);
+      font-size: 1.05rem;
+    }
+
+    .management-summary span,
+    .management-status {
+      color: var(--sl-muted);
+      font-size: 0.88rem;
+      line-height: 1.5;
+    }
+
+    .management-actions {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      flex-wrap: wrap;
+    }
+
+    .article-list {
+      display: grid;
+      gap: 14px;
+    }
+
+    .article-list-item {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) auto;
+      gap: 20px;
+      align-items: center;
+      padding: 20px;
+      border: 1px solid rgba(36, 27, 93, 0.09);
+      border-radius: 16px;
+      background: rgba(255, 255, 255, 0.86);
+      box-shadow: 0 10px 24px rgba(36, 27, 93, 0.05);
+    }
+
+    .article-list-content {
+      min-width: 0;
+    }
+
+    .article-list-heading {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      flex-wrap: wrap;
+      margin-bottom: 7px;
+    }
+
+    .article-list-heading h2 {
+      margin: 0;
+      color: var(--sl-navy);
+      font-size: 1.08rem;
+      line-height: 1.35;
+      overflow-wrap: anywhere;
+    }
+
+    .article-badge {
+      display: inline-flex;
+      min-height: 24px;
+      align-items: center;
+      padding: 3px 9px;
+      border: 1px solid rgba(255, 194, 26, 0.38);
+      border-radius: 999px;
+      color: var(--sl-navy);
+      background: rgba(255, 194, 26, 0.10);
+      font-size: 0.68rem;
+      font-weight: 800;
+      letter-spacing: 0.06em;
+      text-transform: uppercase;
+    }
+
+    .article-badge-draft {
+      border-color: rgba(111, 103, 143, 0.26);
+      background: rgba(111, 103, 143, 0.08);
+    }
+
+    .article-description {
+      margin: 0 0 12px;
+      color: var(--sl-text);
+      line-height: 1.6;
+      overflow-wrap: anywhere;
+    }
+
+    .article-meta {
+      display: flex;
+      gap: 8px 16px;
+      flex-wrap: wrap;
+      color: var(--sl-muted);
+      font-size: 0.8rem;
+    }
+
+    .article-open-link {
+      white-space: nowrap;
+    }
+
+    .article-empty,
+    .article-error {
+      padding: 32px 22px;
+      border: 1px dashed rgba(36, 27, 93, 0.18);
+      border-radius: 15px;
+      color: var(--sl-muted);
+      text-align: center;
+      line-height: 1.6;
+    }
+
+    .article-error {
+      border-color: rgba(171, 45, 45, 0.2);
+      color: #8b3030;
+      background: rgba(171, 45, 45, 0.04);
+    }
+
+    @media (max-width: 760px) {
+      .management-page {
+        padding: 24px 16px;
+      }
+
+      .management-card {
+        padding: 18px;
+      }
+
+      .article-list-item {
+        grid-template-columns: 1fr;
+      }
+
+      .article-open-link {
+        width: 100%;
+      }
+    }
+  </style>
+</head>
+
+<body>
+  <main class="management-page">
+    <div class="management-shell">
+      <header class="management-topbar">
+        <div class="management-title">
+          <h1>Article Management</h1>
+          <p>
+            Review articles created through the article editor or add a new
+            knowledge base article.
+          </p>
+        </div>
+
+        <a
+          class="management-link"
+          href="./dashboard.html"
+        >
+          ← Back to Dashboard
+        </a>
+      </header>
+
+      <section class="management-card" aria-labelledby="articleListTitle">
+        <div class="management-toolbar">
+          <div class="management-summary">
+            <strong id="articleListTitle">Created Articles</strong>
+            <span id="articleCount">Loading articles...</span>
+          </div>
+
+          <div class="management-actions">
+            <button
+              id="refreshArticlesButton"
+              class="management-button"
+              type="button"
+            >
+              Refresh
+            </button>
+
+            <a
+              class="management-button management-button-primary"
+              href="./add-article.html"
+            >
+              Add Article
+            </a>
+          </div>
+        </div>
+
+        <p
+          id="articleManagementStatus"
+          class="management-status"
+          aria-live="polite"
+        ></p>
+
+        <div
+          id="articleList"
+          class="article-list"
+          aria-live="polite"
+        ></div>
+      </section>
+    </div>
+  </main>
+
+  <script
+    type="module"
+    src="./scripts/article-management.js?v=1"
+  ></script>
+</body>
+</html>
