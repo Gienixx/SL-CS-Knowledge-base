@@ -10,6 +10,30 @@ async function logout() {
 
 window.logout = logout
 
+function ensureInviteUserButton(userManagementBtn) {
+  if (
+    !userManagementBtn ||
+    document.getElementById('inviteUserBtn')
+  ) {
+    return
+  }
+
+  const inviteUserBtn =
+    document.createElement('a')
+
+  inviteUserBtn.id = 'inviteUserBtn'
+  inviteUserBtn.href = './invite-user.html'
+  inviteUserBtn.className =
+    userManagementBtn.className
+  inviteUserBtn.textContent = 'Invite User'
+  inviteUserBtn.style.display = 'inline-flex'
+
+  userManagementBtn.insertAdjacentElement(
+    'beforebegin',
+    inviteUserBtn
+  )
+}
+
 document.addEventListener('DOMContentLoaded', async () => {
   try {
     const {
@@ -46,7 +70,8 @@ document.addEventListener('DOMContentLoaded', async () => {
       }
     }
 
-    const email = currentUser.email?.trim().toLowerCase()
+    const email =
+      currentUser.email?.trim().toLowerCase()
 
     if (!email) {
       await supabase.auth.signOut()
@@ -56,7 +81,9 @@ document.addEventListener('DOMContentLoaded', async () => {
 
     const { data: rows, error } = await supabase
       .from('login')
-      .select('email, is_admin, can_edit_articles')
+      .select(
+        'email, is_admin, can_edit_articles'
+      )
 
     if (error) {
       console.error('LOGIN ERROR:', error)
@@ -65,7 +92,9 @@ document.addEventListener('DOMContentLoaded', async () => {
     }
 
     const allowedUser = rows?.find(
-      row => row.email?.trim().toLowerCase() === email
+      row =>
+        row.email?.trim().toLowerCase() ===
+        email
     )
 
     if (!allowedUser) {
@@ -73,10 +102,12 @@ document.addEventListener('DOMContentLoaded', async () => {
       return
     }
 
-    const addArticleBtn = document.getElementById('addArticleBtn')
+    const addArticleBtn =
+      document.getElementById('addArticleBtn')
 
     if (addArticleBtn) {
-      addArticleBtn.href = './article-management.html'
+      addArticleBtn.href =
+        './article-management.html'
     }
 
     if (
@@ -87,14 +118,22 @@ document.addEventListener('DOMContentLoaded', async () => {
     }
 
     const changePasswordBtn =
-      document.getElementById('changePasswordBtn')
+      document.getElementById(
+        'changePasswordBtn'
+      )
 
     const userManagementBtn =
-      document.getElementById('userManagementBtn')
+      document.getElementById(
+        'userManagementBtn'
+      )
 
     if (allowedUser.is_admin === true) {
       if (userManagementBtn) {
-        userManagementBtn.style.display = 'inline-flex'
+        userManagementBtn.style.display =
+          'inline-flex'
+        ensureInviteUserButton(
+          userManagementBtn
+        )
       }
 
       if (changePasswordBtn) {
@@ -102,7 +141,8 @@ document.addEventListener('DOMContentLoaded', async () => {
       }
     } else {
       if (changePasswordBtn) {
-        changePasswordBtn.style.display = 'inline-flex'
+        changePasswordBtn.style.display =
+          'inline-flex'
       }
 
       if (userManagementBtn) {
