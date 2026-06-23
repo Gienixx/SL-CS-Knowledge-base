@@ -1,0 +1,276 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta
+    name="viewport"
+    content="width=device-width, initial-scale=1.0"
+  >
+  <title>Invite User | SocialLoop CS Base</title>
+
+  <link
+    rel="stylesheet"
+    href="./button-theme.css?v=1"
+  >
+
+  <style>
+    :root {
+      --sl-navy: #241b5d;
+      --sl-cream: #fbf8f1;
+      --sl-cream-soft: #f4eee1;
+      --sl-gold: #ffc21a;
+      --sl-text: #2b2459;
+      --sl-muted: #6f678f;
+      --sl-border: rgba(36, 27, 93, 0.10);
+      --sl-shadow: 0 28px 80px rgba(36, 27, 93, 0.14);
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    body {
+      min-height: 100vh;
+      margin: 0;
+      display: grid;
+      place-items: center;
+      padding: 24px;
+      font-family: "Poppins", Arial, sans-serif;
+      color: var(--sl-text);
+      background:
+        radial-gradient(
+          circle at 12% 18%,
+          rgba(255, 194, 26, 0.24),
+          transparent 22rem
+        ),
+        radial-gradient(
+          circle at 86% 12%,
+          rgba(36, 27, 93, 0.12),
+          transparent 24rem
+        ),
+        linear-gradient(
+          180deg,
+          var(--sl-cream),
+          var(--sl-cream-soft)
+        );
+    }
+
+    .invite-card {
+      width: min(100%, 580px);
+      padding: 32px;
+      border: 1px solid var(--sl-border);
+      border-radius: 22px;
+      background: linear-gradient(
+        180deg,
+        rgba(255, 255, 255, 0.98),
+        rgba(250, 246, 238, 0.98)
+      );
+      box-shadow: var(--sl-shadow);
+    }
+
+    .back-link {
+      display: inline-flex;
+      margin-bottom: 20px;
+      color: var(--sl-navy);
+      text-decoration: none;
+      font-weight: 700;
+    }
+
+    h1 {
+      margin: 0 0 10px;
+      color: var(--sl-navy);
+      font-size: clamp(2rem, 5vw, 2.7rem);
+    }
+
+    .description {
+      margin: 0 0 24px;
+      color: var(--sl-muted);
+      line-height: 1.65;
+    }
+
+    form {
+      display: grid;
+      gap: 16px;
+    }
+
+    label {
+      display: grid;
+      gap: 8px;
+      color: var(--sl-text);
+      font-weight: 700;
+    }
+
+    input:not([type="checkbox"]) {
+      width: 100%;
+      padding: 14px 16px;
+      border: 1px solid var(--sl-border);
+      border-radius: 14px;
+      background: rgba(255, 255, 255, 0.96);
+      color: var(--sl-text);
+      font: inherit;
+      outline: none;
+    }
+
+    input:not([type="checkbox"]):focus {
+      border-color: rgba(255, 194, 26, 0.72);
+      box-shadow: 0 0 0 4px rgba(255, 194, 26, 0.14);
+    }
+
+    .permissions {
+      display: grid;
+      gap: 12px;
+      padding: 4px 0;
+    }
+
+    .checkbox {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      font-weight: 600;
+      cursor: pointer;
+    }
+
+    .checkbox input {
+      width: 18px;
+      height: 18px;
+      accent-color: var(--sl-navy);
+    }
+
+    button {
+      min-height: 46px;
+      padding: 0 18px;
+      border: 1px solid rgba(255, 194, 26, 0.55);
+      border-radius: 999px;
+      background: var(--sl-navy);
+      color: #fff;
+      font: inherit;
+      font-weight: 800;
+      cursor: pointer;
+    }
+
+    button:disabled {
+      opacity: 0.6;
+      cursor: not-allowed;
+    }
+
+    .message {
+      min-height: 1.4em;
+      margin: 16px 0 0;
+      color: var(--sl-muted);
+      font-weight: 600;
+      line-height: 1.5;
+    }
+
+    .message.error {
+      color: #9f2525;
+    }
+
+    .message.success {
+      color: #176b3a;
+    }
+
+    .note {
+      margin: 0;
+      padding: 14px 16px;
+      border: 1px solid rgba(255, 194, 26, 0.42);
+      border-radius: 14px;
+      background: rgba(255, 194, 26, 0.12);
+      color: var(--sl-navy);
+      line-height: 1.5;
+    }
+
+    @media (max-width: 560px) {
+      body {
+        padding: 16px;
+      }
+
+      .invite-card {
+        padding: 24px 20px;
+      }
+    }
+  </style>
+</head>
+
+<body>
+  <main class="invite-card">
+    <a
+      class="back-link"
+      href="./dashboard.html"
+    >
+      ← Back to Dashboard
+    </a>
+
+    <h1>Invite User</h1>
+
+    <p class="description">
+      Add an approved user and send an email link so they can create their own password.
+    </p>
+
+    <form id="inviteUserForm">
+      <label for="name">
+        User name
+        <input
+          type="text"
+          id="name"
+          name="name"
+          autocomplete="name"
+          required
+        >
+      </label>
+
+      <label for="email">
+        User email
+        <input
+          type="email"
+          id="email"
+          name="email"
+          autocomplete="email"
+          required
+        >
+      </label>
+
+      <div class="permissions">
+        <label class="checkbox">
+          <input
+            type="checkbox"
+            id="isAdmin"
+            name="isAdmin"
+          >
+          <span>Administrator account</span>
+        </label>
+
+        <label class="checkbox">
+          <input
+            type="checkbox"
+            id="canEditArticles"
+            name="canEditArticles"
+          >
+          <span>Editor access</span>
+        </label>
+      </div>
+
+      <p class="note">
+        The generated temporary credential is never shown. The user must use the email link to choose their own password.
+      </p>
+
+      <button
+        id="sendInviteButton"
+        type="submit"
+      >
+        Send Invite
+      </button>
+    </form>
+
+    <p
+      id="message"
+      class="message"
+      aria-live="polite"
+    ></p>
+  </main>
+
+  <script
+    type="module"
+    src="./scripts/invite-user.js?v=1"
+  ></script>
+</body>
+</html>
