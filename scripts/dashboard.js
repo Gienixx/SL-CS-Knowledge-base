@@ -10,6 +10,28 @@ async function logout() {
 
 window.logout = logout
 
+function ensureInviteUserButton(userManagementBtn) {
+  if (
+    !userManagementBtn ||
+    document.getElementById('inviteUserBtn')
+  ) {
+    return
+  }
+
+  const inviteUserBtn = document.createElement('a')
+
+  inviteUserBtn.id = 'inviteUserBtn'
+  inviteUserBtn.href = './invite-user.html'
+  inviteUserBtn.className = userManagementBtn.className
+  inviteUserBtn.textContent = 'Invite User'
+  inviteUserBtn.style.display = 'inline-flex'
+
+  userManagementBtn.insertAdjacentElement(
+    'beforebegin',
+    inviteUserBtn
+  )
+}
+
 document.addEventListener('DOMContentLoaded', async () => {
   try {
     const {
@@ -95,6 +117,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     if (allowedUser.is_admin === true) {
       if (userManagementBtn) {
         userManagementBtn.style.display = 'inline-flex'
+        ensureInviteUserButton(userManagementBtn)
       }
 
       if (changePasswordBtn) {
