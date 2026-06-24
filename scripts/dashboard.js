@@ -5,6 +5,9 @@ import {
 import {
   initializePhaseOneDashboard
 } from './dashboard-metrics.js?v=1'
+import {
+  initializeDistributionDashboard
+} from './dashboard-distributions.js?v=1'
 
 async function logout() {
   await supabase.auth.signOut()
@@ -137,6 +140,14 @@ document.addEventListener('DOMContentLoaded', async () => {
     }
 
     await initializePhaseOneDashboard()
+    await initializeDistributionDashboard()
+
+    const board = document.querySelector('.dashboard-board')
+
+    if (board) {
+      board.classList.remove('dashboard-loading-board')
+      board.setAttribute('aria-busy', 'false')
+    }
 
     console.log('ACCESS GRANTED:', email)
   } catch (error) {
