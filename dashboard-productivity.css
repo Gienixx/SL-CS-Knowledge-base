@@ -1,0 +1,241 @@
+.productivity-overview {
+  grid-column: 1 / -1;
+}
+
+.productivity-heading {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 16px;
+  margin-bottom: 14px;
+}
+
+.productivity-heading h2 {
+  margin: 0;
+  font-size: 1rem;
+}
+
+.productivity-heading p {
+  margin: 5px 0 0;
+  color: var(--muted);
+  font-size: 0.74rem;
+}
+
+.productivity-date-badge {
+  background: var(--gold-soft);
+  color: #8b5d12;
+}
+
+.productivity-summary-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 12px;
+  margin-bottom: 12px;
+}
+
+.productivity-summary-card {
+  display: grid;
+  gap: 5px;
+  padding: 14px 16px;
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  background: var(--surface);
+}
+
+.productivity-summary-card span {
+  color: var(--muted);
+  font-size: 0.68rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.productivity-summary-card strong {
+  color: var(--text);
+  font-size: 1.35rem;
+}
+
+.productivity-chart-card {
+  min-height: 420px;
+}
+
+.productivity-chart-heading {
+  margin-bottom: 14px;
+}
+
+.productivity-chart {
+  display: grid;
+  gap: 10px;
+}
+
+.productivity-row {
+  display: grid;
+  grid-template-columns: 30px minmax(130px, 0.7fr) minmax(260px, 2fr) minmax(140px, 0.8fr);
+  align-items: center;
+  gap: 14px;
+  min-width: 0;
+  padding: 12px 14px;
+  border: 1px solid #ebeaf0;
+  border-radius: 11px;
+  background: #fbfbfc;
+}
+
+.productivity-row:nth-child(1) {
+  border-color: #efd49f;
+  background: #fffaf0;
+}
+
+.productivity-rank {
+  width: 26px;
+  height: 26px;
+  display: grid;
+  place-items: center;
+  border-radius: 50%;
+  background: var(--navy-soft);
+  color: var(--navy);
+  font-size: 0.7rem;
+  font-weight: 800;
+}
+
+.productivity-row:nth-child(1) .productivity-rank {
+  background: var(--gold-soft);
+  color: #8b5d12;
+}
+
+.productivity-agent-identity {
+  min-width: 0;
+  display: grid;
+  gap: 3px;
+}
+
+.productivity-agent-name {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  color: var(--text);
+  font-size: 0.78rem;
+  white-space: nowrap;
+}
+
+.productivity-agent-share {
+  color: var(--muted);
+  font-size: 0.62rem;
+}
+
+.productivity-bar-area {
+  min-width: 0;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 10px;
+}
+
+.productivity-bar-track {
+  height: 12px;
+  overflow: hidden;
+  border-radius: 999px;
+  background: #e9e8ee;
+}
+
+.productivity-bar {
+  display: block;
+  height: 100%;
+  border-radius: inherit;
+  background: linear-gradient(90deg, var(--navy), #766fcb);
+}
+
+.productivity-row:nth-child(1) .productivity-bar {
+  background: linear-gradient(90deg, var(--gold), #f6c768);
+}
+
+.productivity-solved-value {
+  color: var(--text);
+  font-size: 0.72rem;
+  white-space: nowrap;
+}
+
+.productivity-row-metrics {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(58px, 1fr));
+  gap: 8px;
+}
+
+.productivity-row-metric {
+  display: grid;
+  justify-items: end;
+  gap: 2px;
+}
+
+.productivity-row-metric span {
+  color: var(--muted);
+  font-size: 0.58rem;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.productivity-row-metric strong {
+  color: var(--text);
+  font-size: 0.72rem;
+}
+
+.productivity-state {
+  min-height: 300px;
+  display: grid;
+  place-items: center;
+  padding: 24px;
+  color: var(--muted);
+  text-align: center;
+  font-size: 0.78rem;
+}
+
+.productivity-state-error {
+  color: #a33b3b;
+}
+
+@media (max-width: 980px) {
+  .productivity-row {
+    grid-template-columns: 30px minmax(120px, 0.8fr) minmax(220px, 1.8fr);
+  }
+
+  .productivity-row-metrics {
+    grid-column: 2 / -1;
+    grid-template-columns: repeat(2, minmax(0, 120px));
+    justify-content: end;
+  }
+}
+
+@media (max-width: 760px) {
+  .productivity-heading {
+    flex-direction: column;
+  }
+
+  .productivity-summary-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .productivity-row {
+    grid-template-columns: 30px minmax(0, 1fr);
+  }
+
+  .productivity-bar-area,
+  .productivity-row-metrics {
+    grid-column: 2;
+  }
+
+  .productivity-row-metrics {
+    justify-content: stretch;
+  }
+
+  .productivity-row-metric {
+    justify-items: start;
+  }
+}
+
+@media (max-width: 480px) {
+  .productivity-bar-area {
+    grid-template-columns: 1fr;
+  }
+
+  .productivity-solved-value {
+    justify-self: start;
+  }
+}
