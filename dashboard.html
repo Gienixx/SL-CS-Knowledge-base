@@ -4,30 +4,25 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Dashboard | SocialLoop CS Base</title>
-  
-  <link
-    rel="stylesheet"
-    href="./button-theme.css?v=1"
-  >
-  
+
+  <link rel="stylesheet" href="./button-theme.css?v=1" />
+
   <style>
     :root {
-      --bg-top: #fbf8f1;
-      --bg-mid: #f4eee1;
-      --bg-deep: #efe7d7;
-      --panel: #ffffff;
-      --panel-soft: #f9f5ed;
-      --panel-tint: #f4eee1;
-      --line: rgba(36, 27, 93, 0.08);
-      --line-strong: rgba(255, 194, 26, 0.55);
-      --text: #2b2459;
-      --muted: #6f678f;
-      --cyan: #241b5d;
-      --green: #6f678f;
-      --rose: #bda96d;
-      --amber: #ffc21a;
-      --shadow: 0 22px 50px rgba(36, 27, 93, 0.12);
-      --radius: 18px;
+      --page-bg: #f7f7f9;
+      --surface: #ffffff;
+      --surface-soft: #f4f4f6;
+      --border: #e4e4e9;
+      --text: #211f2d;
+      --muted: #777482;
+      --navy: #382f90;
+      --navy-soft: #eceafa;
+      --gold: #f5ad3d;
+      --gold-soft: #fff3dd;
+      --lavender: #b8b3e5;
+      --tab: #858589;
+      --shadow: 0 16px 40px rgba(29, 26, 52, 0.08);
+      --radius: 16px;
     }
 
     * {
@@ -40,61 +35,49 @@
       min-height: 100%;
       font-family: "Poppins", Arial, sans-serif;
       color: var(--text);
+      background: var(--page-bg);
     }
 
     body {
-      background:
-        radial-gradient(circle at 10% 80%, rgba(255, 194, 26, 0.24), transparent 24rem),
-        radial-gradient(circle at 76% 12%, rgba(36, 27, 93, 0.12), transparent 22rem),
-        linear-gradient(110deg, var(--bg-top), var(--bg-mid) 58%, var(--bg-deep));
-      overflow-x: hidden;
+      padding: 24px;
     }
 
-    body::before {
-      content: "";
-      position: fixed;
-      inset: 0;
-      pointer-events: none;
-      opacity: 0.16;
-      background-image:
-        linear-gradient(rgba(36, 27, 93, 0.05) 1px, transparent 1px),
-        linear-gradient(90deg, rgba(36, 27, 93, 0.05) 1px, transparent 1px);
-      background-size: 72px 72px, 72px 72px;
-      mask-image: linear-gradient(to bottom, rgba(0, 0, 0, 1), rgba(0, 0, 0, 0.24));
+    a {
+      color: inherit;
     }
 
-    .page {
-      position: relative;
-      width: min(1380px, calc(100% - 40px));
+    .page-shell {
+      width: min(1440px, 100%);
       margin: 0 auto;
-      padding: 28px 0 40px;
     }
 
     .topbar {
       display: flex;
-      align-items: center;
+      align-items: flex-start;
       justify-content: space-between;
-      gap: 18px;
-      margin-bottom: 22px;
+      gap: 24px;
+      margin-bottom: 18px;
     }
 
-    .brand-block h1 {
+    .title-block h1 {
       margin: 0;
-      font-size: clamp(1.8rem, 3vw, 2.5rem);
-      line-height: 1;
-      color: var(--cyan);
+      font-size: clamp(1.75rem, 3vw, 2.65rem);
+      line-height: 1.1;
+      letter-spacing: -0.04em;
     }
 
-    .brand-block p {
+    .title-block p {
       margin: 8px 0 0;
       color: var(--muted);
-      font-size: 0.98rem;
+      font-size: 0.92rem;
     }
 
-   .top-actions {
+    .top-actions {
       display: flex;
       flex-wrap: wrap;
+      justify-content: flex-end;
       gap: 8px;
+      max-width: 720px;
     }
 
     .action-link {
@@ -102,305 +85,336 @@
       align-items: center;
       justify-content: center;
       min-height: 34px;
-      padding: 0 10px;
-      font-size: 0.82rem;
+      padding: 0 11px;
+      border: 1px solid var(--border);
       border-radius: 999px;
+      background: var(--surface);
+      color: var(--text);
+      text-decoration: none;
+      font-size: 0.78rem;
+      font-weight: 600;
       white-space: nowrap;
+      box-shadow: 0 5px 14px rgba(29, 26, 52, 0.05);
+      transition: transform 160ms ease, border-color 160ms ease, box-shadow 160ms ease;
     }
 
     .action-link:hover {
       transform: translateY(-1px);
-      background: rgba(255, 194, 26, 0.12);
-      color: var(--cyan);
+      border-color: rgba(56, 47, 144, 0.34);
+      box-shadow: 0 8px 18px rgba(29, 26, 52, 0.09);
     }
 
-    .dashboard-grid {
+    .dashboard-board {
       display: grid;
-      grid-template-columns: 1.7fr repeat(5, minmax(170px, 1fr));
+      grid-template-columns: minmax(0, 1.22fr) minmax(420px, 0.88fr);
       gap: 14px;
       align-items: stretch;
     }
 
-    .panel,
-    .agent-card {
-      background: linear-gradient(180deg, rgba(255, 255, 255, 0.96), rgba(250, 246, 238, 0.98));
-      border: 1px solid var(--line);
-      border-radius: var(--radius);
-      box-shadow: var(--shadow);
-      overflow: hidden;
-      min-height: 100%;
-    }
-
-    .panel-header,
-    .agent-header {
-      padding: 12px 14px;
-      background: linear-gradient(180deg, rgba(255,255,255,0.94), rgba(244,238,225,0.96));
-      border-bottom: 1px solid var(--line);
-      font-size: 0.9rem;
-      font-weight: 700;
-      color: var(--text);
-    }
-
-    .overview {
+    .dashboard-section {
+      min-width: 0;
       display: grid;
-      grid-template-rows: auto auto 1fr;
+      grid-template-columns: 50px minmax(0, 1fr);
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      overflow: hidden;
+      box-shadow: var(--shadow);
     }
 
-    .today-block {
-      padding: 16px 18px 10px;
+    .section-tab {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      background: var(--tab);
+      color: #ffffff;
+      font-weight: 700;
+      font-size: 0.86rem;
+      letter-spacing: 0.02em;
+      writing-mode: vertical-rl;
+      transform: rotate(180deg);
+      text-align: center;
+      padding: 14px 0;
     }
 
-    .eyebrow {
-      display: inline-block;
-      margin-bottom: 10px;
+    .section-content {
+      min-width: 0;
+      padding: 14px;
+      background: var(--surface-soft);
+    }
+
+    .wide-content {
+      display: grid;
+      grid-template-columns: 184px minmax(0, 1fr);
+      gap: 12px;
+    }
+
+    .metric-stack {
+      display: grid;
+      grid-template-rows: repeat(2, minmax(150px, 1fr));
+      gap: 12px;
+    }
+
+    .metric-card,
+    .chart-card,
+    .table-card {
+      border: 1px solid var(--border);
+      background: var(--surface);
+      border-radius: 12px;
+      min-width: 0;
+    }
+
+    .metric-card {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      padding: 18px 12px;
+      text-align: center;
+    }
+
+    .metric-card h2 {
+      margin: 0;
+      font-size: 0.82rem;
+      line-height: 1.35;
+      font-weight: 700;
+    }
+
+    .metric-value {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 9px;
+      margin-top: 16px;
+      color: var(--navy);
+      font-size: 2rem;
+      line-height: 1;
+      font-weight: 800;
+    }
+
+    .metric-card.accent .metric-value {
+      color: var(--gold);
+    }
+
+    .metric-icon {
+      width: 28px;
+      height: 28px;
+      display: inline-grid;
+      place-items: center;
+      border-radius: 50%;
+      background: var(--navy-soft);
+      color: var(--navy);
+      font-size: 0.88rem;
+      font-weight: 800;
+    }
+
+    .metric-card.accent .metric-icon {
+      background: var(--gold-soft);
+      color: var(--gold);
+    }
+
+    .chart-card,
+    .table-card {
+      padding: 14px 16px 12px;
+    }
+
+    .card-heading {
+      display: flex;
+      align-items: flex-start;
+      justify-content: space-between;
+      gap: 12px;
+      margin-bottom: 8px;
+    }
+
+    .card-heading h2 {
+      margin: 0;
+      font-size: 0.92rem;
+      line-height: 1.35;
+    }
+
+    .placeholder-badge {
+      flex: 0 0 auto;
+      padding: 4px 7px;
+      border-radius: 999px;
+      background: var(--surface-soft);
       color: var(--muted);
-      font-size: 0.84rem;
-      letter-spacing: 0.06em;
+      font-size: 0.65rem;
+      font-weight: 700;
+      letter-spacing: 0.04em;
       text-transform: uppercase;
     }
 
-    .metric-row {
-      display: flex;
-      align-items: baseline;
-      gap: 10px;
-      margin-bottom: 10px;
-    }
-
-    .metric-row strong {
-      font-size: clamp(2.3rem, 4vw, 3.3rem);
-      line-height: 0.95;
-      color: var(--text);
-    }
-
-    .metric-row span {
-      color: var(--muted);
-      font-size: 0.94rem;
-    }
-
-    .unassigned {
-      margin: 10px 18px 14px;
-      padding: 12px 14px;
-      border-radius: 14px;
-      background: linear-gradient(135deg, rgba(255, 194, 26, 0.18), rgba(255, 255, 255, 0.86));
-      border: 1px solid rgba(255, 194, 26, 0.24);
-      display: flex;
-      align-items: baseline;
-      gap: 10px;
-    }
-
-    .unassigned strong {
-      font-size: 2.4rem;
-      line-height: 1;
-    }
-
-    .unassigned span {
-      color: var(--muted);
-    }
-
-    .summary-body {
-      padding: 0 18px 18px;
-      display: grid;
-      gap: 18px;
-    }
-
-    .list-card,
-    .chart-card {
-      padding: 16px;
-      border-radius: 16px;
-      background: rgba(255, 255, 255, 0.9);
-      border: 1px solid var(--line);
-    }
-
-    .section-title {
-      margin: 0 0 12px;
-      color: var(--text);
-      font-size: 0.95rem;
-      font-weight: 700;
-    }
-
-    .mini-list {
-      display: grid;
-      gap: 8px;
-    }
-
-    .mini-row {
-      display: flex;
-      justify-content: space-between;
-      gap: 10px;
-      color: var(--muted);
-      font-size: 0.9rem;
-      padding-bottom: 8px;
-      border-bottom: 1px solid var(--line);
-    }
-
-    .mini-row:last-child {
-      padding-bottom: 0;
-      border-bottom: 0;
-    }
-
-    .mini-row strong {
-      color: var(--text);
-      font-weight: 600;
-    }
-
-    .chart-card svg {
+    .chart-svg {
       width: 100%;
-      height: 170px;
+      height: 254px;
       display: block;
+      overflow: visible;
+    }
+
+    .chart-grid line {
+      stroke: #e8e7ed;
+      stroke-width: 1;
+    }
+
+    .axis-label,
+    .chart-label {
+      fill: var(--muted);
+      font-size: 10px;
+      font-family: "Poppins", Arial, sans-serif;
     }
 
     .legend {
       display: flex;
       flex-wrap: wrap;
-      gap: 12px;
-      margin-bottom: 10px;
+      justify-content: center;
+      gap: 14px;
+      margin-top: 4px;
       color: var(--muted);
-      font-size: 0.8rem;
+      font-size: 0.7rem;
     }
 
     .legend span {
       display: inline-flex;
       align-items: center;
-      gap: 6px;
+      gap: 5px;
     }
 
     .legend i {
-      width: 10px;
-      height: 10px;
-      border-radius: 50%;
+      width: 8px;
+      height: 8px;
       display: inline-block;
+      border-radius: 2px;
     }
 
-    .agent-card {
-      display: grid;
-      grid-template-rows: auto 92px 1fr;
+    .top-agents .section-content {
+      display: flex;
     }
 
-    .agent-photo {
+    .top-agents .table-card {
       width: 100%;
-      height: 92px;
-      object-fit: cover;
-      display: block;
-      background: linear-gradient(135deg, rgba(255,255,255,0.8), rgba(244,238,225,0.9));
     }
 
-    .agent-body {
-      padding: 14px;
-      display: grid;
-      gap: 16px;
+    .agent-table-wrap {
+      width: 100%;
+      overflow-x: auto;
+      border: 1px solid #efd49f;
+      border-radius: 8px;
     }
 
-    .agent-role {
-      color: var(--amber);
-      font-size: 0.82rem;
-      text-transform: uppercase;
-      letter-spacing: 0.08em;
-      margin-top: -6px;
+    .agent-table {
+      width: 100%;
+      min-width: 520px;
+      border-collapse: collapse;
+      font-size: 0.72rem;
     }
 
-    .big-stat strong {
-      display: block;
-      font-size: 2.5rem;
-      line-height: 0.95;
-      color: var(--text);
+    .agent-table th,
+    .agent-table td {
+      padding: 10px 8px;
+      border-right: 1px solid var(--border);
+      border-bottom: 1px solid var(--border);
+      text-align: center;
+      vertical-align: middle;
     }
 
-    .big-stat span {
-      display: block;
-      margin-top: 4px;
-      color: var(--muted);
-      font-size: 0.86rem;
-      line-height: 1.4;
+    .agent-table th:last-child,
+    .agent-table td:last-child {
+      border-right: 0;
     }
 
-    .agent-foot {
-      margin-top: auto;
-      padding-top: 14px;
-      border-top: 1px solid var(--line);
-      display: grid;
-      gap: 12px;
+    .agent-table tbody tr:last-child td {
+      border-bottom: 0;
     }
 
-    .pill-stat {
-      padding: 12px 12px 10px;
-      border-radius: 14px;
-      background: rgba(255, 255, 255, 0.82);
-      border: 1px solid var(--line);
+    .agent-table th {
+      background: var(--navy);
+      color: #ffffff;
+      font-size: 0.67rem;
+      line-height: 1.25;
+      font-weight: 700;
     }
 
-    .pill-stat.alert {
-      background: linear-gradient(135deg, rgba(255, 194, 26, 0.16), rgba(255, 255, 255, 0.84));
-      border-color: rgba(255, 194, 26, 0.22);
+    .agent-table td:first-child,
+    .agent-table th:first-child {
+      text-align: left;
+      padding-left: 12px;
     }
 
-    .pill-stat strong {
-      display: block;
-      font-size: 2rem;
-      line-height: 0.95;
-      margin-bottom: 4px;
-    }
-
-    .pill-stat span {
-      color: var(--muted);
-      font-size: 0.82rem;
-      line-height: 1.35;
+    .agent-table tbody tr:nth-child(even) {
+      background: #fbfbfc;
     }
 
     .footer-note {
-      margin-top: 16px;
+      margin: 12px 2px 0;
       color: var(--muted);
       text-align: right;
-      font-size: 0.84rem;
+      font-size: 0.75rem;
     }
 
-    @media (max-width: 1260px) {
-      .dashboard-grid {
-        grid-template-columns: repeat(3, minmax(220px, 1fr));
-      }
-
-      .overview {
-        grid-column: 1 / -1;
+    @media (max-width: 1120px) {
+      .dashboard-board {
+        grid-template-columns: 1fr;
       }
     }
 
-    @media (max-width: 860px) {
-      .page {
-        width: min(100% - 24px, 1380px);
-        padding-top: 18px;
+    @media (max-width: 760px) {
+      body {
+        padding: 14px;
       }
 
       .topbar {
         flex-direction: column;
-        align-items: flex-start;
       }
 
-      .dashboard-grid {
+      .top-actions {
+        justify-content: flex-start;
+      }
+
+      .dashboard-section {
         grid-template-columns: 1fr;
       }
 
-      .agent-card {
-        grid-template-rows: auto 140px 1fr;
-      }
-
-      .agent-photo {
-        height: 140px;
-      }
-
-      .logout-btn {
-        position: static;
+      .section-tab {
+        min-height: 42px;
+        writing-mode: horizontal-tb;
         transform: none;
+        padding: 9px 14px;
+      }
+
+      .wide-content {
+        grid-template-columns: 1fr;
+      }
+
+      .metric-stack {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        grid-template-rows: none;
+      }
+
+      .metric-card {
+        min-height: 150px;
+      }
+    }
+
+    @media (max-width: 520px) {
+      .metric-stack {
+        grid-template-columns: 1fr;
+      }
+
+      .chart-svg {
+        height: 220px;
       }
     }
   </style>
 </head>
 <body>
-  <main class="page">
-    <div class="topbar">
-      <div class="brand-block">
-        <h1>Support Dashboard</h1>
-        <p>Live-style team snapshot using the current SocialLoop support roster and the landing-page palette.</p>
+  <main class="page-shell">
+    <header class="topbar">
+      <div class="title-block">
+        <h1>Customer Service &amp; Support Team Dashboard</h1>
+        <p>Static dashboard layout preview. Live metrics and chart data will be connected later.</p>
       </div>
-      <div class="top-actions">
+
+      <nav class="top-actions" aria-label="Dashboard navigation">
         <a class="action-link" href="index-modular.html">Back to Home</a>
         <a class="action-link" href="KB.html">Knowledge Base</a>
         <a class="action-link" href="org-chart.html">Organizational Chart</a>
@@ -408,184 +422,279 @@
         <a id="addArticleBtn" class="action-link" href="add-article.html" style="display:none;">Article Management</a>
         <a id="userManagementBtn" class="action-link" href="admin.html" style="display:none;">User Management</a>
         <a class="action-link" href="#" onclick="logout(); return false;">Logout</a>
-      </div>
-    </div>
+      </nav>
+    </header>
 
-    <section class="dashboard-grid" aria-label="Support dashboard overview">
-      <article class="panel overview">
-        <div class="panel-header">Today</div>
+    <section class="dashboard-board" aria-label="Customer service dashboard preview">
+      <article class="dashboard-section resolutions">
+        <div class="section-tab">Resolutions</div>
+        <div class="section-content wide-content">
+          <div class="metric-stack">
+            <section class="metric-card">
+              <h2>First Call Resolution</h2>
+              <div class="metric-value">
+                <span class="metric-icon" aria-hidden="true">✓</span>
+                <span id="firstCallResolutionValue">--</span>
+              </div>
+            </section>
 
-        <div class="today-block">
-          <span class="eyebrow">Today</span>
-          <div class="metric-row">
-            <strong>--</strong>
-            <span>First Response Time</span>
-          </div>
-        </div>
-
-        <div class="unassigned">
-          <strong>--</strong>
-          <span>Unassigned</span>
-        </div>
-
-        <div class="summary-body">
-          <div class="list-card">
-            <h2 class="section-title">FRT by agent</h2>
-            <div class="mini-list">
-              <div class="mini-row"><span>Arez</span><strong>--</strong></div>
-              <div class="mini-row"><span>Amora</span><strong>--</strong></div>
-              <div class="mini-row"><span>Ford</span><strong>--</strong></div>
-              <div class="mini-row"><span>Gen</span><strong>--</strong></div>
-            </div>
+            <section class="metric-card accent">
+              <h2>Unresolved Calls</h2>
+              <div class="metric-value">
+                <span class="metric-icon" aria-hidden="true">!</span>
+                <span id="unresolvedCallsValue">--</span>
+              </div>
+            </section>
           </div>
 
-          <div class="chart-card">
-            <h2 class="section-title">Closed conversations this week</h2>
-            <div class="legend">
-              <span><i style="background:#241b5d"></i>Arez</span>
-              <span><i style="background:#6f678f"></i>Amora</span>
-              <span><i style="background:#241b5d"></i>Ford</span>
-              <span><i style="background:#ffc21a"></i>Gen</span>
+          <section class="chart-card">
+            <div class="card-heading">
+              <h2>Percentage of Calls</h2>
+              <span class="placeholder-badge">Preview</span>
             </div>
-            <svg viewBox="0 0 340 170" aria-label="Weekly performance chart">
-              <g opacity="0.18" stroke="#241b5d">
-                <line x1="24" y1="18" x2="24" y2="146"></line>
-                <line x1="24" y1="146" x2="320" y2="146"></line>
-                <line x1="24" y1="114" x2="320" y2="114"></line>
-                <line x1="24" y1="82" x2="320" y2="82"></line>
-                <line x1="24" y1="50" x2="320" y2="50"></line>
+
+            <svg id="resolutionChart" class="chart-svg" viewBox="0 0 560 285" role="img" aria-label="Placeholder line chart for call resolution percentages">
+              <g class="chart-grid">
+                <line x1="54" y1="24" x2="540" y2="24" />
+                <line x1="54" y1="86" x2="540" y2="86" />
+                <line x1="54" y1="148" x2="540" y2="148" />
+                <line x1="54" y1="210" x2="540" y2="210" />
+                <line x1="54" y1="210" x2="54" y2="24" />
               </g>
-              <polyline fill="none" stroke="#6f678f" stroke-width="4" points="30,92 86,90 142,86 198,68 254,74 310,110"></polyline>
-              <polyline fill="none" stroke="#241b5d" stroke-width="4" points="30,66 86,82 142,84 198,56 254,90 310,92"></polyline>
-              <polyline fill="none" stroke="#bda96d" stroke-width="4" points="30,60 86,60 142,100 198,96 254,58 310,56"></polyline>
-              <polyline fill="none" stroke="#ffc21a" stroke-width="4" points="30,76 86,104 142,106 198,78 254,104 310,76"></polyline>
-              <g fill="#6f678f" font-size="11" font-family="Poppins, Arial, sans-serif">
-                <text x="8" y="148">--</text>
-                <text x="2" y="116">--</text>
-                <text x="2" y="84">--</text>
-                <text x="2" y="52">--</text>
-                <text x="28" y="164">1 Mar</text>
-                <text x="128" y="164">3 Mar</text>
-                <text x="228" y="164">5 Mar</text>
+
+              <g class="axis-label" text-anchor="end">
+                <text x="45" y="28">60%</text>
+                <text x="45" y="90">40%</text>
+                <text x="45" y="152">20%</text>
+                <text x="45" y="214">0%</text>
+              </g>
+
+              <polyline fill="none" stroke="#382f90" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" points="66,60 110,74 154,91 198,80 242,51 286,73 330,89 374,77 418,86 462,71 506,82" />
+              <polyline fill="none" stroke="#b8b3e5" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" points="66,178 110,168 154,176 198,162 242,171 286,155 330,165 374,157 418,171 462,160 506,168" />
+              <polyline fill="none" stroke="#f5ad3d" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" points="66,145 110,139 154,132 198,138 242,148 286,155 330,142 374,136 418,92 462,104 506,139" />
+
+              <g class="chart-label" text-anchor="middle">
+                <text x="66" y="232">Jan</text>
+                <text x="110" y="232">Feb</text>
+                <text x="154" y="232">Mar</text>
+                <text x="198" y="232">Apr</text>
+                <text x="242" y="232">May</text>
+                <text x="286" y="232">Jun</text>
+                <text x="330" y="232">Jul</text>
+                <text x="374" y="232">Aug</text>
+                <text x="418" y="232">Sep</text>
+                <text x="462" y="232">Oct</text>
+                <text x="506" y="232">Nov</text>
               </g>
             </svg>
-          </div>
+
+            <div class="legend" aria-hidden="true">
+              <span><i style="background:#382f90"></i>First call</span>
+              <span><i style="background:#f5ad3d"></i>Second call</span>
+              <span><i style="background:#b8b3e5"></i>Unresolved</span>
+            </div>
+          </section>
         </div>
       </article>
 
-      <article class="agent-card">
-        <div class="agent-header">Arez</div>
-        <img class="agent-photo" src="assets/Arez.png" alt="Arez" />
-        <div class="agent-body">
-          <div class="agent-role">Cashout Team</div>
-          <div class="big-stat">
-            <strong>--</strong>
-            <span>Open conversations</span>
-          </div>
-          <div class="agent-foot">
-            <div class="pill-stat">
-              <strong>--</strong>
-              <span>Closed this week</span>
+      <article class="dashboard-section monthly-tickets">
+        <div class="section-tab">Monthly Tickets</div>
+        <div class="section-content">
+          <section class="chart-card">
+            <div class="card-heading">
+              <h2>Tickets by Channel</h2>
+              <span class="placeholder-badge">Preview</span>
             </div>
-            <div class="pill-stat">
-              <strong>--</strong>
-              <span>Time to close</span>
+
+            <svg id="monthlyTicketsChart" class="chart-svg" viewBox="0 0 560 285" role="img" aria-label="Placeholder stacked bar chart for monthly support tickets">
+              <g class="chart-grid">
+                <line x1="54" y1="24" x2="540" y2="24" />
+                <line x1="54" y1="86" x2="540" y2="86" />
+                <line x1="54" y1="148" x2="540" y2="148" />
+                <line x1="54" y1="210" x2="540" y2="210" />
+                <line x1="54" y1="210" x2="54" y2="24" />
+              </g>
+
+              <g class="axis-label" text-anchor="end">
+                <text x="45" y="28">6K</text>
+                <text x="45" y="90">4K</text>
+                <text x="45" y="152">2K</text>
+                <text x="45" y="214">0</text>
+              </g>
+
+              <g>
+                <rect x="72" y="136" width="24" height="74" rx="2" fill="#382f90" />
+                <rect x="72" y="105" width="24" height="31" rx="2" fill="#f5ad3d" />
+                <rect x="72" y="91" width="24" height="14" rx="2" fill="#d9d6f4" />
+
+                <rect x="112" y="111" width="24" height="99" rx="2" fill="#382f90" />
+                <rect x="112" y="78" width="24" height="33" rx="2" fill="#f5ad3d" />
+                <rect x="112" y="57" width="24" height="21" rx="2" fill="#d9d6f4" />
+
+                <rect x="152" y="104" width="24" height="106" rx="2" fill="#382f90" />
+                <rect x="152" y="70" width="24" height="34" rx="2" fill="#f5ad3d" />
+                <rect x="152" y="48" width="24" height="22" rx="2" fill="#d9d6f4" />
+
+                <rect x="192" y="116" width="24" height="94" rx="2" fill="#382f90" />
+                <rect x="192" y="79" width="24" height="37" rx="2" fill="#f5ad3d" />
+                <rect x="192" y="58" width="24" height="21" rx="2" fill="#d9d6f4" />
+
+                <rect x="232" y="100" width="24" height="110" rx="2" fill="#382f90" />
+                <rect x="232" y="66" width="24" height="34" rx="2" fill="#f5ad3d" />
+                <rect x="232" y="49" width="24" height="17" rx="2" fill="#d9d6f4" />
+
+                <rect x="272" y="112" width="24" height="98" rx="2" fill="#382f90" />
+                <rect x="272" y="73" width="24" height="39" rx="2" fill="#f5ad3d" />
+                <rect x="272" y="40" width="24" height="33" rx="2" fill="#d9d6f4" />
+
+                <rect x="312" y="94" width="24" height="116" rx="2" fill="#382f90" />
+                <rect x="312" y="59" width="24" height="35" rx="2" fill="#f5ad3d" />
+                <rect x="312" y="35" width="24" height="24" rx="2" fill="#d9d6f4" />
+
+                <rect x="352" y="88" width="24" height="122" rx="2" fill="#382f90" />
+                <rect x="352" y="50" width="24" height="38" rx="2" fill="#f5ad3d" />
+                <rect x="352" y="26" width="24" height="24" rx="2" fill="#d9d6f4" />
+
+                <rect x="392" y="91" width="24" height="119" rx="2" fill="#382f90" />
+                <rect x="392" y="53" width="24" height="38" rx="2" fill="#f5ad3d" />
+                <rect x="392" y="29" width="24" height="24" rx="2" fill="#d9d6f4" />
+
+                <rect x="432" y="103" width="24" height="107" rx="2" fill="#382f90" />
+                <rect x="432" y="64" width="24" height="39" rx="2" fill="#f5ad3d" />
+                <rect x="432" y="41" width="24" height="23" rx="2" fill="#d9d6f4" />
+
+                <rect x="472" y="108" width="24" height="102" rx="2" fill="#382f90" />
+                <rect x="472" y="70" width="24" height="38" rx="2" fill="#f5ad3d" />
+                <rect x="472" y="49" width="24" height="21" rx="2" fill="#d9d6f4" />
+              </g>
+
+              <g class="chart-label" text-anchor="middle">
+                <text x="84" y="230">Jan</text>
+                <text x="124" y="230">Feb</text>
+                <text x="164" y="230">Mar</text>
+                <text x="204" y="230">Apr</text>
+                <text x="244" y="230">May</text>
+                <text x="284" y="230">Jun</text>
+                <text x="324" y="230">Jul</text>
+                <text x="364" y="230">Aug</text>
+                <text x="404" y="230">Sep</text>
+                <text x="444" y="230">Oct</text>
+                <text x="484" y="230">Nov</text>
+              </g>
+            </svg>
+
+            <div class="legend" aria-hidden="true">
+              <span><i style="background:#382f90"></i>Calls</span>
+              <span><i style="background:#f5ad3d"></i>Email</span>
+              <span><i style="background:#d9d6f4"></i>Chat</span>
             </div>
-          </div>
+          </section>
         </div>
       </article>
 
-      <article class="agent-card">
-        <div class="agent-header">Amora</div>
-        <img class="agent-photo" src="assets/amora.png" alt="Amora" />
-        <div class="agent-body">
-          <div class="agent-role">Support Team</div>
-          <div class="big-stat">
-            <strong>--</strong>
-            <span>Open conversations</span>
+      <article class="dashboard-section response-time">
+        <div class="section-tab">Response Time</div>
+        <div class="section-content wide-content">
+          <div class="metric-stack">
+            <section class="metric-card">
+              <h2>Avg. Call Response Time</h2>
+              <div class="metric-value">
+                <span class="metric-icon" aria-hidden="true">◷</span>
+                <span id="avgResponseTimeValue">--</span>
+              </div>
+            </section>
+
+            <section class="metric-card accent">
+              <h2>Best Day to Call</h2>
+              <div class="metric-value">
+                <span class="metric-icon" aria-hidden="true">▣</span>
+                <span id="bestDayToCallValue" style="font-size:1.45rem;">--</span>
+              </div>
+            </section>
           </div>
-          <div class="agent-foot">
-            <div class="pill-stat">
-              <strong>--</strong>
-              <span>Closed this week</span>
+
+          <section class="chart-card">
+            <div class="card-heading">
+              <h2>Call Response Time by Weekday</h2>
+              <span class="placeholder-badge">Preview</span>
             </div>
-            <div class="pill-stat">
-              <strong>--</strong>
-              <span>Time to close</span>
-            </div>
-          </div>
+
+            <svg id="weekdayResponseChart" class="chart-svg" viewBox="0 0 560 285" role="img" aria-label="Placeholder bar chart for response time by weekday">
+              <g class="chart-grid">
+                <line x1="54" y1="24" x2="540" y2="24" />
+                <line x1="54" y1="86" x2="540" y2="86" />
+                <line x1="54" y1="148" x2="540" y2="148" />
+                <line x1="54" y1="210" x2="540" y2="210" />
+                <line x1="54" y1="210" x2="54" y2="24" />
+              </g>
+
+              <g class="axis-label" text-anchor="end">
+                <text x="45" y="28">75s</text>
+                <text x="45" y="90">50s</text>
+                <text x="45" y="152">25s</text>
+                <text x="45" y="214">0s</text>
+              </g>
+
+              <g fill="#382f90">
+                <rect x="80" y="136" width="40" height="74" rx="3" />
+                <rect x="145" y="151" width="40" height="59" rx="3" />
+                <rect x="210" y="130" width="40" height="80" rx="3" />
+                <rect x="275" y="143" width="40" height="67" rx="3" />
+                <rect x="340" y="113" width="40" height="97" rx="3" />
+                <rect x="405" y="54" width="40" height="156" rx="3" />
+                <rect x="470" y="72" width="40" height="138" rx="3" />
+              </g>
+
+              <g class="chart-label" text-anchor="middle">
+                <text x="100" y="230">Mon</text>
+                <text x="165" y="230">Tue</text>
+                <text x="230" y="230">Wed</text>
+                <text x="295" y="230">Thu</text>
+                <text x="360" y="230">Fri</text>
+                <text x="425" y="230">Sat</text>
+                <text x="490" y="230">Sun</text>
+              </g>
+            </svg>
+          </section>
         </div>
       </article>
 
-      <article class="agent-card">
-        <div class="agent-header">Ford</div>
-        <img class="agent-photo" src="assets/Ford.png" alt="Ford" />
-        <div class="agent-body">
-          <div class="agent-role">Support Team</div>
-          <div class="big-stat">
-            <strong>--</strong>
-            <span>Open conversations</span>
-          </div>
-          <div class="agent-foot">
-            <div class="pill-stat">
-              <strong>--</strong>
-              <span>Closed this week</span>
+      <article class="dashboard-section top-agents">
+        <div class="section-tab">Top Agents</div>
+        <div class="section-content">
+          <section class="table-card">
+            <div class="card-heading">
+              <h2>Top 5 Agents</h2>
+              <span class="placeholder-badge">Pending data</span>
             </div>
-            <div class="pill-stat">
-              <strong>--</strong>
-              <span>Time to close</span>
-            </div>
-          </div>
-        </div>
-      </article>
 
-      <article class="agent-card">
-        <div class="agent-header">Gen</div>
-        <img class="agent-photo" src="assets/Gen.png" alt="Gen" />
-        <div class="agent-body">
-          <div class="agent-role">Support Team</div>
-          <div class="big-stat">
-            <strong>--</strong>
-            <span>Open conversations</span>
-          </div>
-          <div class="agent-foot">
-            <div class="pill-stat">
-              <strong>--</strong>
-              <span>Closed this week</span>
+            <div class="agent-table-wrap">
+              <table class="agent-table">
+                <thead>
+                  <tr>
+                    <th scope="col">Agent</th>
+                    <th scope="col">First Call<br />Resolution</th>
+                    <th scope="col">Avg. Response<br />Time</th>
+                    <th scope="col">Positive<br />Feedback</th>
+                  </tr>
+                </thead>
+                <tbody id="topAgentsTableBody">
+                  <tr><td>Arez</td><td>--</td><td>--</td><td>--</td></tr>
+                  <tr><td>Amora</td><td>--</td><td>--</td><td>--</td></tr>
+                  <tr><td>Ford</td><td>--</td><td>--</td><td>--</td></tr>
+                  <tr><td>Gen</td><td>--</td><td>--</td><td>--</td></tr>
+                  <tr><td>Jean</td><td>--</td><td>--</td><td>--</td></tr>
+                </tbody>
+              </table>
             </div>
-            <div class="pill-stat alert">
-              <strong>--</strong>
-              <span>Time to close</span>
-            </div>
-          </div>
-        </div>
-      </article>
-
-      <article class="agent-card">
-        <div class="agent-header">Jean</div>
-        <img class="agent-photo" src="assets/Jean.png" alt="Jean" />
-        <div class="agent-body">
-          <div class="agent-role">Support Team</div>
-          <div class="big-stat">
-            <strong>--</strong>
-            <span>Open conversations</span>
-          </div>
-          <div class="agent-foot">
-            <div class="pill-stat">
-              <strong>--</strong>
-              <span>Closed this week</span>
-            </div>
-            <div class="pill-stat">
-              <strong>--</strong>
-              <span>Time to close</span>
-            </div>
-          </div>
+          </section>
         </div>
       </article>
     </section>
 
-    <p class="footer-note">Static dashboard mockup for the current team setup.</p>
+    <p class="footer-note">Dashboard values are placeholders until the live data source is connected.</p>
   </main>
+
   <script type="module" src="./scripts/dashboard.js?v=2"></script>
 </body>
 </html>
