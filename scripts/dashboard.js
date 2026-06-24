@@ -2,6 +2,9 @@ import { supabase } from './supabaseClient.js?v=8'
 import {
   requiresFirstLoginPasswordChange
 } from './first-login-policy.js?v=4'
+import {
+  initializePhaseOneDashboard
+} from './dashboard-metrics.js?v=1'
 
 async function logout() {
   await supabase.auth.signOut()
@@ -132,6 +135,8 @@ document.addEventListener('DOMContentLoaded', async () => {
         userManagementBtn.style.display = 'none'
       }
     }
+
+    await initializePhaseOneDashboard()
 
     console.log('ACCESS GRANTED:', email)
   } catch (error) {
