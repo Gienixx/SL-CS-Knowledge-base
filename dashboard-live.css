@@ -1,9 +1,37 @@
 .dashboard-board.phase-one-dashboard {
-  grid-template-columns: 1fr;
+  grid-template-columns: minmax(0, 1.28fr) minmax(410px, 0.72fr);
+  align-items: stretch;
 }
 
 .phase-one-dashboard .dashboard-section {
-  grid-column: 1 / -1;
+  grid-column: auto;
+}
+
+.phase-one-summary {
+  grid-column: 1 / -1 !important;
+  order: 1;
+}
+
+.ticket-volume {
+  grid-column: 1;
+  order: 2;
+  height: 100%;
+}
+
+.productivity-overview {
+  grid-column: 2;
+  order: 3;
+  height: 100%;
+}
+
+.distribution-overview {
+  grid-column: 1 / -1 !important;
+  order: 4;
+}
+
+.ticket-volume .section-content,
+.productivity-overview .section-content {
+  height: 100%;
 }
 
 .dashboard-status-bar {
@@ -85,7 +113,8 @@
 }
 
 .live-chart-card {
-  min-height: 390px;
+  height: 100%;
+  min-height: 470px;
 }
 
 .live-chart-card .card-heading {
@@ -99,11 +128,11 @@
 
 .ticket-chart-wrap {
   position: relative;
-  min-height: 310px;
+  min-height: 360px;
 }
 
 .ticket-chart-wrap .chart-svg {
-  height: 310px;
+  height: 360px;
 }
 
 .ticket-chart-axis {
@@ -179,8 +208,31 @@
 }
 
 @media (max-width: 1180px) {
+  .dashboard-board.phase-one-dashboard {
+    grid-template-columns: 1fr;
+  }
+
+  .ticket-volume,
+  .productivity-overview,
+  .distribution-overview,
+  .phase-one-summary {
+    grid-column: 1 / -1 !important;
+  }
+
   .kpi-grid {
     grid-template-columns: repeat(3, minmax(160px, 1fr));
+  }
+
+  .live-chart-card {
+    min-height: 390px;
+  }
+
+  .ticket-chart-wrap {
+    min-height: 310px;
+  }
+
+  .ticket-chart-wrap .chart-svg {
+    height: 310px;
   }
 }
 
