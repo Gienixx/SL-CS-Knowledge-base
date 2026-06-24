@@ -1,0 +1,366 @@
+/* Desktop density and full-width dashboard refinements */
+
+@media (min-width: 1181px) {
+  body {
+    padding: clamp(10px, 1vw, 18px);
+  }
+
+  .page-shell {
+    width: 100%;
+    max-width: none;
+    margin: 0;
+  }
+
+  .topbar {
+    align-items: center;
+    gap: 16px;
+    margin-bottom: 12px;
+  }
+
+  .title-block h1 {
+    font-size: clamp(1.55rem, 2vw, 2.15rem);
+  }
+
+  .title-block p {
+    margin-top: 5px;
+    font-size: 0.82rem;
+  }
+
+  .top-actions {
+    gap: 6px;
+  }
+
+  .action-link {
+    min-height: 31px;
+    padding-inline: 10px;
+    font-size: 0.72rem;
+  }
+
+  .dashboard-board,
+  .dashboard-board.phase-one-dashboard {
+    gap: 10px;
+  }
+
+  .dashboard-board.phase-one-dashboard {
+    grid-template-columns: minmax(480px, 0.88fr) minmax(620px, 1.12fr);
+  }
+
+  .dashboard-section {
+    grid-template-columns: 42px minmax(0, 1fr);
+    border-radius: 14px;
+  }
+
+  .section-tab {
+    padding: 10px 0;
+    font-size: 0.75rem;
+  }
+
+  .section-content {
+    padding: 10px;
+  }
+
+  .dashboard-status-bar {
+    gap: 10px;
+    margin-bottom: 8px;
+    padding: 8px 10px;
+  }
+
+  .dashboard-status-label {
+    font-size: 0.64rem;
+  }
+
+  .dashboard-status-date {
+    font-size: 0.84rem;
+  }
+
+  .dashboard-status-pill {
+    min-height: 24px;
+    padding-inline: 8px;
+    font-size: 0.63rem;
+  }
+
+  .kpi-grid {
+    gap: 8px;
+  }
+
+  .kpi-grid .metric-card {
+    min-height: 108px;
+    padding: 10px 8px;
+  }
+
+  .kpi-grid .metric-card h2 {
+    font-size: 0.74rem;
+  }
+
+  .kpi-grid .metric-value {
+    gap: 7px;
+    margin-top: 8px;
+    font-size: 1.72rem;
+  }
+
+  .metric-icon {
+    width: 24px;
+    height: 24px;
+    font-size: 0.76rem;
+  }
+
+  .metric-caption {
+    min-height: 0;
+    margin-top: 6px;
+    font-size: 0.6rem;
+  }
+
+  .chart-card,
+  .table-card {
+    padding: 10px 12px 8px;
+  }
+
+  .card-heading {
+    margin-bottom: 5px;
+  }
+
+  .card-heading h2 {
+    font-size: 0.84rem;
+  }
+
+  .ticket-volume .live-chart-card {
+    min-height: 334px;
+  }
+
+  .ticket-volume .ticket-chart-wrap {
+    min-height: 244px;
+  }
+
+  .ticket-volume .ticket-chart-wrap .chart-svg {
+    height: 244px;
+  }
+
+  .legend {
+    gap: 12px;
+    margin-top: 0;
+    font-size: 0.64rem;
+  }
+
+  .productivity-overview .section-content {
+    padding: 8px;
+  }
+
+  .productivity-heading {
+    margin-bottom: 6px;
+  }
+
+  .productivity-heading p {
+    margin-top: 2px;
+  }
+
+  .productivity-summary-grid {
+    margin-bottom: 6px;
+  }
+
+  .productivity-chart-card {
+    padding: 7px;
+  }
+
+  .productivity-chart-heading {
+    margin-bottom: 5px;
+  }
+
+  .productivity-chart {
+    gap: 3px;
+  }
+
+  .productivity-row {
+    padding-block: 4px;
+  }
+
+  .ticket-driver-overview {
+    grid-column: 1 / -1 !important;
+    order: 4;
+  }
+
+  .ticket-driver-overview .section-content {
+    display: grid;
+    grid-template-columns: minmax(230px, 0.34fr) minmax(0, 1fr);
+    grid-template-areas:
+      "driver-heading driver-heading"
+      "driver-summary driver-chart";
+    align-items: stretch;
+    gap: 8px 10px;
+  }
+
+  .driver-heading {
+    grid-area: driver-heading;
+    margin-bottom: 0;
+  }
+
+  .driver-heading p {
+    margin-top: 2px;
+    font-size: 0.66rem;
+  }
+
+  .driver-summary-grid {
+    grid-area: driver-summary;
+    grid-template-columns: 1fr;
+    align-content: stretch;
+    gap: 6px;
+    margin-bottom: 0;
+  }
+
+  .driver-summary-card {
+    align-content: center;
+    min-height: 0;
+    padding: 8px 10px;
+  }
+
+  .driver-summary-card span {
+    font-size: 0.56rem;
+  }
+
+  .driver-summary-card strong {
+    font-size: 0.96rem;
+  }
+
+  .driver-chart-card {
+    grid-area: driver-chart;
+    padding: 8px 10px;
+  }
+
+  .driver-chart-card .card-heading {
+    margin-bottom: 5px;
+  }
+
+  .driver-chart {
+    min-height: 246px;
+  }
+
+  .driver-pie-layout {
+    grid-template-columns: minmax(160px, 210px) minmax(0, 1fr);
+    gap: 18px;
+    min-height: 246px;
+  }
+
+  .driver-pie-figure {
+    gap: 5px;
+  }
+
+  .driver-pie {
+    width: min(100%, 200px);
+  }
+
+  .driver-pie-caption strong {
+    font-size: 1rem;
+  }
+
+  .driver-pie-caption span {
+    font-size: 0.58rem;
+  }
+
+  .driver-legend {
+    gap: 3px;
+  }
+
+  .driver-legend-row {
+    gap: 10px;
+    padding: 5px 0;
+  }
+
+  .driver-legend-label,
+  .driver-legend-values strong {
+    font-size: 0.67rem;
+  }
+
+  .driver-legend-concerns {
+    font-size: 0.52rem;
+  }
+
+  .driver-legend-values span {
+    font-size: 0.58rem;
+  }
+
+  .distribution-overview {
+    grid-column: 1 / -1 !important;
+    order: 5;
+  }
+
+  .distribution-heading {
+    margin-bottom: 8px;
+  }
+
+  .distribution-heading p {
+    margin-top: 2px;
+    font-size: 0.66rem;
+  }
+
+  .distribution-grid {
+    gap: 8px;
+  }
+
+  .distribution-card {
+    min-height: 0;
+    padding: 9px 10px 8px;
+  }
+
+  .distribution-card .card-heading {
+    margin-bottom: 5px;
+  }
+
+  .distribution-chart {
+    min-height: 214px;
+  }
+
+  .distribution-pie-layout {
+    grid-template-columns: minmax(120px, 165px) minmax(0, 1fr);
+    gap: 12px;
+    min-height: 214px;
+  }
+
+  .distribution-pie-figure {
+    gap: 5px;
+  }
+
+  .distribution-pie {
+    width: min(100%, 158px);
+  }
+
+  .distribution-pie-total strong {
+    font-size: 0.94rem;
+  }
+
+  .distribution-pie-total span {
+    font-size: 0.56rem;
+  }
+
+  .distribution-pie-legend {
+    gap: 4px;
+  }
+
+  .distribution-legend-row {
+    gap: 8px;
+    padding-bottom: 5px;
+  }
+
+  .distribution-legend-label,
+  .distribution-legend-values strong {
+    font-size: 0.64rem;
+  }
+
+  .distribution-legend-values span {
+    font-size: 0.56rem;
+  }
+
+  .footer-note,
+  .phase-one-footer {
+    margin-top: 7px;
+    font-size: 0.68rem;
+  }
+}
+
+@media (min-width: 1600px) {
+  .dashboard-board.phase-one-dashboard {
+    grid-template-columns: minmax(560px, 0.9fr) minmax(720px, 1.1fr);
+  }
+
+  .ticket-driver-overview .section-content {
+    grid-template-columns: minmax(260px, 0.28fr) minmax(0, 1fr);
+  }
+}
