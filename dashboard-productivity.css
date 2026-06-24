@@ -1,82 +1,109 @@
 .productivity-overview {
-  grid-column: 1 / -1;
+  min-width: 0;
+}
+
+.productivity-overview .section-content {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  padding: 10px;
 }
 
 .productivity-heading {
   display: flex;
   align-items: flex-start;
   justify-content: space-between;
-  gap: 16px;
-  margin-bottom: 14px;
+  gap: 10px;
+  margin-bottom: 8px;
 }
 
 .productivity-heading h2 {
   margin: 0;
-  font-size: 1rem;
+  font-size: 0.9rem;
 }
 
 .productivity-heading p {
-  margin: 5px 0 0;
+  margin: 3px 0 0;
   color: var(--muted);
-  font-size: 0.74rem;
+  font-size: 0.62rem;
+  line-height: 1.35;
 }
 
 .productivity-date-badge {
+  padding: 3px 6px;
   background: var(--gold-soft);
   color: #8b5d12;
+  font-size: 0.58rem;
 }
 
 .productivity-summary-grid {
   display: grid;
   grid-template-columns: repeat(3, minmax(0, 1fr));
-  gap: 12px;
-  margin-bottom: 12px;
+  gap: 6px;
+  margin-bottom: 8px;
 }
 
 .productivity-summary-card {
   display: grid;
-  gap: 5px;
-  padding: 14px 16px;
+  gap: 2px;
+  min-width: 0;
+  padding: 7px 8px;
   border: 1px solid var(--border);
-  border-radius: 12px;
+  border-radius: 8px;
   background: var(--surface);
 }
 
 .productivity-summary-card span {
+  overflow: hidden;
   color: var(--muted);
-  font-size: 0.68rem;
+  font-size: 0.52rem;
   font-weight: 600;
+  text-overflow: ellipsis;
   text-transform: uppercase;
-  letter-spacing: 0.04em;
+  letter-spacing: 0.03em;
+  white-space: nowrap;
 }
 
 .productivity-summary-card strong {
   color: var(--text);
-  font-size: 1.35rem;
+  font-size: 0.94rem;
 }
 
 .productivity-chart-card {
-  min-height: 420px;
+  flex: 1;
+  min-height: 0;
+  padding: 9px;
 }
 
 .productivity-chart-heading {
-  margin-bottom: 14px;
+  margin-bottom: 7px;
+}
+
+.productivity-chart-heading h2 {
+  font-size: 0.78rem;
+}
+
+.productivity-chart-heading .metric-caption {
+  min-height: 0;
+  margin-top: 3px;
+  font-size: 0.56rem;
 }
 
 .productivity-chart {
   display: grid;
-  gap: 10px;
+  align-content: start;
+  gap: 4px;
 }
 
 .productivity-row {
   display: grid;
-  grid-template-columns: 30px minmax(130px, 0.7fr) minmax(260px, 2fr) minmax(140px, 0.8fr);
+  grid-template-columns: 20px minmax(64px, 0.7fr) minmax(92px, 1.25fr) 74px;
   align-items: center;
-  gap: 14px;
+  gap: 6px;
   min-width: 0;
-  padding: 12px 14px;
+  padding: 5px 6px;
   border: 1px solid #ebeaf0;
-  border-radius: 11px;
+  border-radius: 7px;
   background: #fbfbfc;
 }
 
@@ -86,14 +113,14 @@
 }
 
 .productivity-rank {
-  width: 26px;
-  height: 26px;
+  width: 19px;
+  height: 19px;
   display: grid;
   place-items: center;
   border-radius: 50%;
   background: var(--navy-soft);
   color: var(--navy);
-  font-size: 0.7rem;
+  font-size: 0.54rem;
   font-weight: 800;
 }
 
@@ -105,20 +132,23 @@
 .productivity-agent-identity {
   min-width: 0;
   display: grid;
-  gap: 3px;
+  gap: 1px;
 }
 
 .productivity-agent-name {
   overflow: hidden;
-  text-overflow: ellipsis;
   color: var(--text);
-  font-size: 0.78rem;
+  font-size: 0.65rem;
+  text-overflow: ellipsis;
   white-space: nowrap;
 }
 
 .productivity-agent-share {
+  overflow: hidden;
   color: var(--muted);
-  font-size: 0.62rem;
+  font-size: 0.49rem;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .productivity-bar-area {
@@ -126,11 +156,11 @@
   display: grid;
   grid-template-columns: minmax(0, 1fr) auto;
   align-items: center;
-  gap: 10px;
+  gap: 5px;
 }
 
 .productivity-bar-track {
-  height: 12px;
+  height: 7px;
   overflow: hidden;
   border-radius: 999px;
   background: #e9e8ee;
@@ -149,57 +179,114 @@
 
 .productivity-solved-value {
   color: var(--text);
-  font-size: 0.72rem;
+  font-size: 0.56rem;
   white-space: nowrap;
 }
 
 .productivity-row-metrics {
   display: grid;
-  grid-template-columns: repeat(2, minmax(58px, 1fr));
-  gap: 8px;
+  grid-template-columns: repeat(2, minmax(30px, 1fr));
+  gap: 4px;
 }
 
 .productivity-row-metric {
   display: grid;
   justify-items: end;
-  gap: 2px;
+  gap: 1px;
 }
 
 .productivity-row-metric span {
   color: var(--muted);
-  font-size: 0.58rem;
+  font-size: 0.42rem;
   text-transform: uppercase;
-  letter-spacing: 0.04em;
+  letter-spacing: 0.03em;
 }
 
 .productivity-row-metric strong {
   color: var(--text);
-  font-size: 0.72rem;
+  font-size: 0.56rem;
 }
 
 .productivity-state {
-  min-height: 300px;
+  min-height: 260px;
   display: grid;
   place-items: center;
-  padding: 24px;
+  padding: 18px;
   color: var(--muted);
   text-align: center;
-  font-size: 0.78rem;
+  font-size: 0.7rem;
 }
 
 .productivity-state-error {
   color: #a33b3b;
 }
 
-@media (max-width: 980px) {
-  .productivity-row {
-    grid-template-columns: 30px minmax(120px, 0.8fr) minmax(220px, 1.8fr);
+@media (max-width: 1180px) {
+  .productivity-overview .section-content {
+    padding: 14px;
   }
 
-  .productivity-row-metrics {
-    grid-column: 2 / -1;
-    grid-template-columns: repeat(2, minmax(0, 120px));
-    justify-content: end;
+  .productivity-heading {
+    margin-bottom: 12px;
+  }
+
+  .productivity-heading h2 {
+    font-size: 1rem;
+  }
+
+  .productivity-heading p {
+    font-size: 0.72rem;
+  }
+
+  .productivity-summary-grid {
+    gap: 10px;
+    margin-bottom: 12px;
+  }
+
+  .productivity-summary-card {
+    padding: 11px 12px;
+  }
+
+  .productivity-summary-card span {
+    font-size: 0.62rem;
+  }
+
+  .productivity-summary-card strong {
+    font-size: 1.15rem;
+  }
+
+  .productivity-chart-card {
+    padding: 12px;
+  }
+
+  .productivity-chart {
+    gap: 7px;
+  }
+
+  .productivity-row {
+    grid-template-columns: 24px minmax(110px, 0.75fr) minmax(200px, 1.6fr) 120px;
+    gap: 10px;
+    padding: 8px 10px;
+  }
+
+  .productivity-rank {
+    width: 23px;
+    height: 23px;
+    font-size: 0.62rem;
+  }
+
+  .productivity-agent-name {
+    font-size: 0.72rem;
+  }
+
+  .productivity-agent-share,
+  .productivity-solved-value,
+  .productivity-row-metric strong {
+    font-size: 0.6rem;
+  }
+
+  .productivity-row-metric span {
+    font-size: 0.48rem;
   }
 }
 
@@ -209,11 +296,11 @@
   }
 
   .productivity-summary-grid {
-    grid-template-columns: 1fr;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
   }
 
   .productivity-row {
-    grid-template-columns: 30px minmax(0, 1fr);
+    grid-template-columns: 24px minmax(0, 1fr);
   }
 
   .productivity-bar-area,
@@ -230,7 +317,11 @@
   }
 }
 
-@media (max-width: 480px) {
+@media (max-width: 520px) {
+  .productivity-summary-grid {
+    grid-template-columns: 1fr;
+  }
+
   .productivity-bar-area {
     grid-template-columns: 1fr;
   }
