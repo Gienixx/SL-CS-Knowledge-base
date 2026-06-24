@@ -8,6 +8,9 @@ import {
 import {
   initializeDistributionDashboard
 } from './dashboard-distributions.js?v=2'
+import {
+  initializeProductivityDashboard
+} from './dashboard-productivity.js?v=1'
 
 async function logout() {
   await supabase.auth.signOut()
@@ -141,6 +144,7 @@ document.addEventListener('DOMContentLoaded', async () => {
 
     await initializePhaseOneDashboard()
     await initializeDistributionDashboard()
+    await initializeProductivityDashboard()
 
     const board = document.querySelector('.dashboard-board')
 
