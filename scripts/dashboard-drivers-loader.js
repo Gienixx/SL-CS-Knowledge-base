@@ -1,7 +1,7 @@
 import { supabase } from './supabaseClient.js?v=8'
 import {
-  initializeDriverDashboard
-} from './dashboard-drivers.js?v=1'
+  initializeDriverPieDashboard
+} from './dashboard-driver-pie.js?v=1'
 
 function waitForDashboardBase(timeoutMilliseconds = 15000) {
   return new Promise((resolve, reject) => {
@@ -51,7 +51,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     }
 
     await waitForDashboardBase()
-    await initializeDriverDashboard()
+    await initializeDriverPieDashboard()
   } catch (error) {
     console.error('Ticket driver dashboard error:', error)
   }
