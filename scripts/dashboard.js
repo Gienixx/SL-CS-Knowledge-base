@@ -7,7 +7,7 @@ import {
 } from './dashboard-metrics.js?v=1'
 import {
   initializeDistributionDashboard
-} from './dashboard-distributions.js?v=1'
+} from './dashboard-distributions.js?v=2'
 
 async function logout() {
   await supabase.auth.signOut()
