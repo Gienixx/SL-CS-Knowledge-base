@@ -1,5 +1,7 @@
 import { supabase } from './supabaseClient.js?v=8'
 
+const SVG_NAMESPACE = 'http://www.w3.org/2000/svg'
+
 const DISTRIBUTION_ORDER = Object.freeze({
   app: Object.freeze(['eureka', 'survey_pop', 'survey_spin']),
   platform: Object.freeze(['ios', 'android', 'web']),
@@ -13,6 +15,16 @@ const DISTRIBUTION_ORDER = Object.freeze({
     'unknown'
   ])
 })
+
+const PIE_COLORS = Object.freeze([
+  '#382f90',
+  '#f5ad3d',
+  '#7a72c9',
+  '#6a6377',
+  '#b8b3e5',
+  '#d9796f',
+  '#5e9f8c'
+])
 
 const DISTRIBUTION_SECTIONS = Object.freeze([
   Object.freeze({
@@ -43,7 +55,7 @@ function ensureDistributionStyles() {
   const stylesheet = document.createElement('link')
   stylesheet.id = 'dashboardDistributionStyles'
   stylesheet.rel = 'stylesheet'
-  stylesheet.href = './dashboard-distributions.css?v=1'
+  stylesheet.href = './dashboard-distributions.css?v=2'
   document.head.appendChild(stylesheet)
 }
 
@@ -158,43 +170,149 @@ function getOrderedRows(type, rows) {
   })
 }
 
-function createDistributionRow(row, total) {
+function createSvgElement(tagName, attributes = {}) {
+  const element = document.createElementNS(SVG_NAMESPACE, tagName)
+
+  Object.entries(attributes).forEach(([name, value]) => {
+    element.setAttribute(name, String(value))
+  })
+
+  return element
+}
+
+function polarToCartesian(centerX, centerY, radius, angleDegrees) {
+  const angleRadians = (angleDegrees * Math.PI) / 180
+
+  return {
+    x: centerX + radius * Math.cos(angleRadians),
+    y: centerY + radius * Math.sin(angleRadians)
+  }
+}
+
+function buildPieSectorPath(
+  centerX,
+  centerY,
+  radius,
+  startAngle,
+  endAngle
+) {
+  const sweep = endAngle - startAngle
+
+  if (sweep >= 359.999) {
+    return [
+      `M ${centerX} ${centerY - radius}`,
+      `A ${radius} ${radius} 0 1 1 ${centerX} ${centerY + radius}`,
+      `A ${radius} ${radius} 0 1 1 ${centerX} ${centerY - radius}`,
+      'Z'
+    ].join(' ')
+  }
+
+  const start = polarToCartesian(
+    centerX,
+    centerY,
+    radius,
+    startAngle
+  )
+  const end = polarToCartesian(
+    centerX,
+    centerY,
+    radius,
+    endAngle
+  )
+  const largeArcFlag = sweep > 180 ? 1 : 0
+
+  return [
+    `M ${centerX} ${centerY}`,
+    `L ${start.x.toFixed(3)} ${start.y.toFixed(3)}`,
+    `A ${radius} ${radius} 0 ${largeArcFlag} 1 ` +
+      `${end.x.toFixed(3)} ${end.y.toFixed(3)}`,
+    'Z'
+  ].join(' ')
+}
+
+function createPieChart(rows, total, type) {
+  const figure = document.createElement('div')
+  figure.className = 'distribution-pie-figure'
+
+  const svg = createSvgElement('svg', {
+    class: 'distribution-pie',
+    viewBox: '0 0 220 220',
+    role: 'img',
+    'aria-label': `${type} ticket distribution pie chart`
+  })
+
+  let currentAngle = -90
+
+  rows.forEach((row, index) => {
+    const ticketCount = Number(row.ticket_count) || 0
+    const percentage = total > 0 ? ticketCount / total : 0
+
+    if (percentage <= 0) return
+
+    const endAngle = currentAngle + percentage * 360
+    const path = createSvgElement('path', {
+      d: buildPieSectorPath(
+        110,
+        110,
+        100,
+        currentAngle,
+        endAngle
+      ),
+      fill: PIE_COLORS[index % PIE_COLORS.length],
+      class: 'distribution-pie-slice',
+      tabindex: '0'
+    })
+    const title = createSvgElement('title')
+
+    title.textContent =
+      `${row.dimension_label}: ${formatCount(ticketCount)} tickets ` +
+      `(${formatPercentage(percentage)})`
+    path.appendChild(title)
+    svg.appendChild(path)
+    currentAngle = endAngle
+  })
+
+  const totalLabel = document.createElement('div')
+  totalLabel.className = 'distribution-pie-total'
+  totalLabel.innerHTML = `
+    <strong>${formatCount(total)}</strong>
+    <span>mapped tickets</span>
+  `
+
+  figure.append(svg, totalLabel)
+  return figure
+}
+
+function createLegendRow(row, total, index) {
   const ticketCount = Number(row.ticket_count) || 0
   const percentage = total > 0 ? ticketCount / total : 0
   const item = document.createElement('div')
-  item.className = 'distribution-row'
+  item.className = 'distribution-legend-row'
 
-  const header = document.createElement('div')
-  header.className = 'distribution-row-header'
+  const identity = document.createElement('div')
+  identity.className = 'distribution-legend-identity'
+
+  const marker = document.createElement('span')
+  marker.className = 'distribution-legend-marker'
+  marker.style.backgroundColor = PIE_COLORS[index % PIE_COLORS.length]
 
   const label = document.createElement('span')
-  label.className = 'distribution-label'
+  label.className = 'distribution-legend-label'
   label.textContent = row.dimension_label || row.dimension_key
 
+  identity.append(marker, label)
+
+  const values = document.createElement('div')
+  values.className = 'distribution-legend-values'
+
   const count = document.createElement('strong')
-  count.className = 'distribution-count'
   count.textContent = formatCount(ticketCount)
 
-  header.append(label, count)
+  const percent = document.createElement('span')
+  percent.textContent = formatPercentage(percentage)
 
-  const track = document.createElement('div')
-  track.className = 'distribution-track'
-  track.setAttribute('aria-hidden', 'true')
-
-  const bar = document.createElement('span')
-  bar.className = 'distribution-bar'
-  bar.style.width = `${Math.max(0, Math.min(100, percentage * 100))}%`
-  track.appendChild(bar)
-
-  const metadata = document.createElement('div')
-  metadata.className = 'distribution-meta'
-  metadata.textContent =
-    `${formatPercentage(percentage)} of ${formatCount(total)} mapped tickets`
-
-  item.title =
-    `${row.dimension_label}: ${formatCount(ticketCount)} tickets ` +
-    `(${formatPercentage(percentage)})`
-  item.append(header, track, metadata)
+  values.append(count, percent)
+  item.append(identity, values)
 
   return item
 }
@@ -225,9 +343,28 @@ function renderDistribution(type, rows) {
     0
   )
 
-  orderedRows.forEach(row => {
-    container.appendChild(createDistributionRow(row, total))
+  if (total <= 0) {
+    const emptyState = document.createElement('div')
+    emptyState.className = 'distribution-state'
+    emptyState.textContent = 'The latest distribution contains only zero values.'
+    container.appendChild(emptyState)
+    return
+  }
+
+  const layout = document.createElement('div')
+  layout.className = 'distribution-pie-layout'
+  const legend = document.createElement('div')
+  legend.className = 'distribution-pie-legend'
+
+  orderedRows.forEach((row, index) => {
+    legend.appendChild(createLegendRow(row, total, index))
   })
+
+  layout.append(
+    createPieChart(orderedRows, total, type),
+    legend
+  )
+  container.appendChild(layout)
 }
 
 function renderDistributionError(message) {
