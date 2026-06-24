@@ -1,5 +1,5 @@
 .dashboard-board.phase-one-dashboard {
-  grid-template-columns: minmax(0, 1.28fr) minmax(410px, 0.72fr);
+  grid-template-columns: minmax(360px, 0.82fr) minmax(560px, 1.18fr);
   align-items: stretch;
 }
 
@@ -21,6 +21,7 @@
 .productivity-overview {
   grid-column: 2;
   order: 3;
+  min-width: 0;
   height: 100%;
 }
 
@@ -126,6 +127,10 @@
   color: var(--navy);
 }
 
+.ticket-volume .live-chart-card {
+  min-height: 400px;
+}
+
 .ticket-chart-wrap {
   position: relative;
   min-height: 360px;
@@ -133,6 +138,14 @@
 
 .ticket-chart-wrap .chart-svg {
   height: 360px;
+}
+
+.ticket-volume .ticket-chart-wrap {
+  min-height: 290px;
+}
+
+.ticket-volume .ticket-chart-wrap .chart-svg {
+  height: 290px;
 }
 
 .ticket-chart-axis {
@@ -194,6 +207,20 @@
   display: none;
 }
 
+.productivity-overview .table-card,
+.productivity-overview .agent-table-wrap {
+  width: 100%;
+}
+
+.productivity-overview .agent-table-wrap {
+  overflow-x: auto;
+}
+
+.productivity-overview .agent-table {
+  width: 100%;
+  min-width: 720px;
+}
+
 .phase-one-footer {
   display: flex;
   justify-content: flex-end;
@@ -223,15 +250,18 @@
     grid-template-columns: repeat(3, minmax(160px, 1fr));
   }
 
-  .live-chart-card {
+  .live-chart-card,
+  .ticket-volume .live-chart-card {
     min-height: 390px;
   }
 
-  .ticket-chart-wrap {
+  .ticket-chart-wrap,
+  .ticket-volume .ticket-chart-wrap {
     min-height: 310px;
   }
 
-  .ticket-chart-wrap .chart-svg {
+  .ticket-chart-wrap .chart-svg,
+  .ticket-volume .ticket-chart-wrap .chart-svg {
     height: 310px;
   }
 }
@@ -245,6 +275,10 @@
   .kpi-grid {
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
+
+  .productivity-overview .agent-table {
+    min-width: 640px;
+  }
 }
 
 @media (max-width: 520px) {
@@ -253,7 +287,9 @@
   }
 
   .ticket-chart-wrap,
-  .ticket-chart-wrap .chart-svg {
+  .ticket-chart-wrap .chart-svg,
+  .ticket-volume .ticket-chart-wrap,
+  .ticket-volume .ticket-chart-wrap .chart-svg {
     min-height: 260px;
     height: 260px;
   }
