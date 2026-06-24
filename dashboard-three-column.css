@@ -1,0 +1,197 @@
+/* Three-panel second row for wide desktop dashboards */
+
+@media (min-width: 1280px) {
+  .dashboard-board.phase-one-dashboard {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    align-items: stretch;
+  }
+
+  .phase-one-summary {
+    grid-column: 1 / -1 !important;
+    order: 1;
+  }
+
+  .ticket-volume {
+    grid-column: 1 !important;
+    order: 2;
+    height: 100%;
+  }
+
+  .productivity-overview {
+    grid-column: 2 !important;
+    order: 3;
+    height: 100%;
+  }
+
+  .ticket-driver-overview {
+    grid-column: 3 !important;
+    order: 4;
+    height: 100%;
+  }
+
+  .distribution-overview {
+    grid-column: 1 / -1 !important;
+    order: 5;
+  }
+
+  .ticket-volume .section-content,
+  .productivity-overview .section-content,
+  .ticket-driver-overview .section-content {
+    height: 100%;
+  }
+
+  .ticket-driver-overview .section-content {
+    display: flex;
+    flex-direction: column;
+    gap: 7px;
+    padding: 8px;
+  }
+
+  .ticket-driver-overview .driver-heading {
+    flex: 0 0 auto;
+    gap: 8px;
+    margin-bottom: 0;
+  }
+
+  .ticket-driver-overview .driver-heading h2 {
+    font-size: 0.88rem;
+  }
+
+  .ticket-driver-overview .driver-heading p {
+    margin-top: 2px;
+    font-size: 0.58rem;
+    line-height: 1.3;
+  }
+
+  .ticket-driver-overview .driver-date-badge {
+    padding: 3px 5px;
+    font-size: 0.52rem;
+  }
+
+  .ticket-driver-overview .driver-summary-grid {
+    flex: 0 0 auto;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 5px;
+    margin-bottom: 0;
+  }
+
+  .ticket-driver-overview .driver-summary-card {
+    align-content: center;
+    min-width: 0;
+    min-height: 48px;
+    padding: 6px 7px;
+  }
+
+  .ticket-driver-overview .driver-summary-card span {
+    overflow: hidden;
+    font-size: 0.48rem;
+    line-height: 1.15;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  .ticket-driver-overview .driver-summary-card strong {
+    font-size: 0.8rem;
+  }
+
+  .ticket-driver-overview .driver-chart-card {
+    flex: 1 1 auto;
+    min-height: 0;
+    padding: 7px 8px;
+  }
+
+  .ticket-driver-overview .driver-chart-card .card-heading {
+    margin-bottom: 3px;
+  }
+
+  .ticket-driver-overview .driver-chart-card .card-heading h2 {
+    font-size: 0.72rem;
+  }
+
+  .ticket-driver-overview .driver-chart-card .metric-caption {
+    margin-top: 2px;
+    font-size: 0.5rem;
+  }
+
+  .ticket-driver-overview .driver-chart {
+    min-height: 238px;
+  }
+
+  .ticket-driver-overview .driver-pie-layout {
+    grid-template-columns: minmax(108px, 0.72fr) minmax(0, 1.28fr);
+    gap: 9px;
+    min-height: 238px;
+  }
+
+  .ticket-driver-overview .driver-pie-figure {
+    gap: 4px;
+  }
+
+  .ticket-driver-overview .driver-pie {
+    width: min(100%, 140px);
+  }
+
+  .ticket-driver-overview .driver-pie-caption strong {
+    font-size: 0.88rem;
+  }
+
+  .ticket-driver-overview .driver-pie-caption span {
+    font-size: 0.5rem;
+  }
+
+  .ticket-driver-overview .driver-legend {
+    gap: 1px;
+  }
+
+  .ticket-driver-overview .driver-legend-row {
+    gap: 6px;
+    padding: 3px 0;
+  }
+
+  .ticket-driver-overview .driver-legend-identity {
+    grid-template-columns: 7px minmax(0, 1fr);
+    column-gap: 6px;
+  }
+
+  .ticket-driver-overview .driver-legend-marker {
+    width: 7px;
+    height: 7px;
+  }
+
+  .ticket-driver-overview .driver-legend-label,
+  .ticket-driver-overview .driver-legend-values strong {
+    font-size: 0.56rem;
+  }
+
+  .ticket-driver-overview .driver-legend-concerns {
+    font-size: 0.43rem;
+  }
+
+  .ticket-driver-overview .driver-legend-values {
+    grid-template-columns: minmax(25px, auto) minmax(34px, auto);
+    gap: 5px;
+  }
+
+  .ticket-driver-overview .driver-legend-values span {
+    font-size: 0.48rem;
+  }
+}
+
+@media (min-width: 1280px) and (max-width: 1480px) {
+  .dashboard-board.phase-one-dashboard {
+    grid-template-columns: minmax(0, 0.95fr) minmax(0, 1.1fr) minmax(0, 0.95fr);
+  }
+
+  .ticket-driver-overview .driver-pie-layout {
+    grid-template-columns: minmax(96px, 0.65fr) minmax(0, 1.35fr);
+    gap: 7px;
+  }
+
+  .ticket-driver-overview .driver-pie {
+    width: min(100%, 122px);
+  }
+
+  .ticket-driver-overview .driver-legend-concerns {
+    display: none;
+  }
+}
