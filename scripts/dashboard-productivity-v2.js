@@ -221,7 +221,7 @@ function createAgentRow(row, index, maximumSolved, teamSolved) {
         ? '—'
         : formatCount(openTickets)
     ),
-    createMetric('AHT (min:sec)', formattedAht)
+    createMetric('AHT', formattedAht)
   )
 
   item.append(rank, identity, chart, metrics)
