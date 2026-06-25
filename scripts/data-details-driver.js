@@ -1,6 +1,7 @@
 import { supabase } from './supabaseClient.js?v=8'
 import {
   aggregateByDate,
+  applyDateRange,
   buildEmptyModel,
   fetchAllRows,
   findPeak,
@@ -8,17 +9,18 @@ import {
   formatDate,
   formatPercentage,
   getLatestDate,
+  resolveDateRange,
   sumRows,
   titleFromKey
-} from './data-details-utils.js?v=1'
+} from './data-details-utils.js?v=2'
 
-export async function loadDriverDetail(groupKey) {
-  const latestDate = await getLatestDate(
+export async function loadDriverDetail(groupKey, rangeRequest) {
+  const latestAvailableDate = await getLatestDate(
     'ticket_driver_metrics',
     [['driver_group_key', groupKey]]
   )
 
-  if (!latestDate) {
+  if (!latestAvailableDate) {
     return buildEmptyModel(
       'Ticket Driver Group',
       titleFromKey(groupKey),
@@ -26,7 +28,31 @@ export async function loadDriverDetail(groupKey) {
     )
   }
 
-  const [latestGroupRows, latestAllRows, historyRows] = await Promise.all([
+  const dateRange = resolveDateRange(latestAvailableDate, rangeRequest)
+  const historyRows = await fetchAllRows(() => applyDateRange(
+    supabase
+      .from('ticket_driver_metrics')
+      .select(
+        'report_date, driver_group_key, driver_group_label, driver_key, driver_label, ticket_count'
+      )
+      .eq('driver_group_key', groupKey)
+      .order('report_date', { ascending: true })
+      .order('driver_key', { ascending: true }),
+    dateRange
+  ))
+
+  if (historyRows.length === 0) {
+    return buildEmptyModel(
+      'Ticket Driver Group',
+      titleFromKey(groupKey),
+      `No ticket-driver records were found for ${dateRange.label}.`,
+      dateRange
+    )
+  }
+
+  const dailyTrend = aggregateByDate(historyRows, 'ticket_count')
+  const latestDate = dailyTrend[dailyTrend.length - 1].date
+  const [latestGroupRows, latestAllRows] = await Promise.all([
     fetchAllRows(() => supabase
       .from('ticket_driver_metrics')
       .select(
@@ -39,14 +65,6 @@ export async function loadDriverDetail(groupKey) {
       .from('ticket_driver_metrics')
       .select('report_date, driver_key, ticket_count')
       .eq('report_date', latestDate)
-      .order('driver_key', { ascending: true })),
-    fetchAllRows(() => supabase
-      .from('ticket_driver_metrics')
-      .select(
-        'report_date, driver_group_key, driver_group_label, driver_key, driver_label, ticket_count'
-      )
-      .eq('driver_group_key', groupKey)
-      .order('report_date', { ascending: true })
       .order('driver_key', { ascending: true }))
   ])
 
@@ -55,7 +73,6 @@ export async function loadDriverDetail(groupKey) {
     titleFromKey(groupKey)
   const latestGroupTotal = sumRows(latestGroupRows, 'ticket_count')
   const latestAllTotal = sumRows(latestAllRows, 'ticket_count')
-  const dailyTrend = aggregateByDate(historyRows, 'ticket_count')
   const peak = findPeak(dailyTrend, 'value')
   const latestConcerns = [...latestGroupRows].sort((first, second) =>
     (Number(second.ticket_count) || 0) -
@@ -93,34 +110,35 @@ export async function loadDriverDetail(groupKey) {
     title: groupLabel,
     subtitle: 'Concern-level volume and historical activity for this ticket-driver group.',
     latestDate,
+    dateRange,
     summaryCards: [
       {
         label: 'Group total',
         value: formatCount(latestGroupTotal),
-        help: `Tickets on ${formatDate(latestDate)}`
+        help: `Latest result in range: ${formatDate(latestDate)}`
       },
       {
         label: 'Share of all drivers',
         value: formatPercentage(
           latestAllTotal > 0 ? latestGroupTotal / latestAllTotal : 0
         ),
-        help: `${formatCount(latestAllTotal)} mapped driver tickets in total`
+        help: `${formatCount(latestAllTotal)} mapped driver tickets on ${formatDate(latestDate)}`
       },
       {
         label: 'Highest-volume concern',
         value: leadingConcern?.driver_label || 'No volume',
         help: leadingConcern
-          ? `${formatCount(leadingConcern.ticket_count)} tickets on the latest date`
+          ? `${formatCount(leadingConcern.ticket_count)} tickets on ${formatDate(latestDate)}`
           : 'All latest concern values are zero'
       },
       {
         label: 'Highest-volume date',
         value: peak ? formatDate(peak.date) : '—',
-        help: peak ? `${formatCount(peak.value)} tickets` : 'No historical volume'
+        help: peak ? `${formatCount(peak.value)} tickets` : 'No volume in range'
       }
     ],
     trendTitle: `${groupLabel} daily trend`,
-    trendSubtitle: 'Daily ticket count for all concerns in this driver group.',
+    trendSubtitle: `Daily ticket count for ${dateRange.label}.`,
     trendRows: dailyTrend.map(row => ({
       date: row.date,
       tickets: row.value
@@ -128,7 +146,7 @@ export async function loadDriverDetail(groupKey) {
     trendSeries: [{ key: 'tickets', label: 'Tickets', tone: 'primary' }],
     secondary: {
       title: 'Individual concerns',
-      subtitle: `Latest concern breakdown for ${formatDate(latestDate)}.`,
+      subtitle: `Latest concern breakdown in range: ${formatDate(latestDate)}.`,
       rows: latestConcerns.map(row => {
         const ticketCount = Number(row.ticket_count) || 0
         return {
@@ -141,7 +159,7 @@ export async function loadDriverDetail(groupKey) {
       })
     },
     tableTitle: 'Driver detail history',
-    tableSubtitle: 'Concern-level records with each concern’s share of its daily group total.',
+    tableSubtitle: `Concern-level records for ${dateRange.label}.`,
     tableColumns: [
       { label: 'Date' },
       { label: 'Concern' },
