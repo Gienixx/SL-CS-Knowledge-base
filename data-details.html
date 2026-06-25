@@ -6,7 +6,7 @@
   <title>Data Details | SocialLoop CS Base</title>
 
   <link rel="stylesheet" href="./dashboard.css?v=2" />
-  <link rel="stylesheet" href="./data-details.css?v=2" />
+  <link rel="stylesheet" href="./data-details.css?v=3" />
 </head>
 <body>
   <main class="page-shell data-details-shell">
@@ -32,6 +32,45 @@
       </div>
 
       <div id="detailContent" class="detail-content" hidden>
+        <section class="detail-card detail-filter-card" aria-labelledby="dateFilterTitle">
+          <div class="detail-filter-heading">
+            <div>
+              <h2 id="dateFilterTitle">Date range</h2>
+              <p>Relative ranges end on the latest synchronized date for this selection.</p>
+            </div>
+            <span id="detailRangeSummary" class="detail-range-summary">Loading range</span>
+          </div>
+
+          <form id="detailDateFilter" class="detail-filter-form" novalidate>
+            <label class="detail-filter-field">
+              <span>Range</span>
+              <select id="detailRangeSelect" name="range">
+                <option value="latest">Latest date</option>
+                <option value="7d">Last 7 days</option>
+                <option value="30d">Last 30 days</option>
+                <option value="mtd">Month to date</option>
+                <option value="custom">Custom date range</option>
+              </select>
+            </label>
+
+            <div id="customRangeFields" class="detail-custom-range" hidden>
+              <label class="detail-filter-field">
+                <span>Start date</span>
+                <input id="detailStartDate" name="start" type="date" />
+              </label>
+              <label class="detail-filter-field">
+                <span>End date</span>
+                <input id="detailEndDate" name="end" type="date" />
+              </label>
+            </div>
+
+            <button id="applyDateFilter" class="detail-filter-button" type="submit">
+              Apply filter
+            </button>
+          </form>
+          <p id="detailFilterValidation" class="detail-filter-validation" role="alert"></p>
+        </section>
+
         <section
           id="detailSummary"
           class="detail-summary-grid"
@@ -79,6 +118,6 @@
     <p class="footer-note">Dashboard details use synchronized Supabase data.</p>
   </main>
 
-  <script type="module" src="./scripts/data-details.js?v=2"></script>
+  <script type="module" src="./scripts/data-details.js?v=3"></script>
 </body>
 </html>
