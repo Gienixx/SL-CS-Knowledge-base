@@ -1,4 +1,4 @@
-import { renderTrendChart } from './data-details-chart.js?v=2'
+import { renderTrendChart } from './data-details-chart.js?v=3'
 import {
   formatCount,
   formatDate,
