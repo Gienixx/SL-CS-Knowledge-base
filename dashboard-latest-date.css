@@ -1,42 +1,90 @@
-.latest-day-data-date {
-  width: max-content;
-  max-width: 100%;
-  display: inline-grid;
-  grid-template-columns: auto auto;
-  align-items: center;
-  gap: 8px;
-  margin: -4px 0 12px auto;
-  padding: 7px 10px;
-  border: 1px solid rgba(56, 47, 144, 0.14);
-  border-radius: 10px;
-  background: var(--navy-soft);
-  color: var(--navy);
+.phase-one-summary .kpi-grid {
+  grid-template-columns:
+    minmax(118px, 0.62fr)
+    repeat(5, minmax(132px, 1fr));
+  gap: 10px;
 }
 
-.latest-day-data-date-label {
+.phase-one-summary .kpi-grid .metric-card {
+  min-height: 128px;
+  padding: 14px 10px;
+}
+
+.phase-one-summary .kpi-grid .metric-card h2 {
+  font-size: 0.76rem;
+}
+
+.phase-one-summary .kpi-grid .metric-value {
+  gap: 7px;
+  margin-top: 10px;
+  font-size: 1.72rem;
+}
+
+.phase-one-summary .kpi-grid .metric-icon {
+  width: 24px;
+  height: 24px;
+  font-size: 0.78rem;
+}
+
+.phase-one-summary .kpi-grid .metric-caption {
+  min-height: 16px;
+  margin-top: 7px;
+  font-size: 0.63rem;
+}
+
+.latest-day-data-date-card {
+  align-self: center;
+  min-height: 108px !important;
+  padding: 12px 9px !important;
+  border-color: rgba(56, 47, 144, 0.16);
+  background: var(--navy-soft);
+}
+
+.latest-day-data-date-card h2 {
+  max-width: none !important;
   color: var(--muted);
-  font-size: 0.66rem;
-  font-weight: 700;
-  letter-spacing: 0.045em;
+  font-size: 0.68rem !important;
+  letter-spacing: 0.035em;
   text-transform: uppercase;
 }
 
-.latest-day-data-date strong {
-  font-size: 0.76rem;
-  line-height: 1.2;
-  white-space: nowrap;
+.latest-day-data-date-value {
+  display: grid;
+  place-items: center;
+  min-height: 34px;
+  margin-top: 7px;
+  color: var(--navy);
+  text-align: center;
 }
 
-@media (max-width: 760px) {
-  .latest-day-data-date {
-    margin-left: 0;
+.latest-day-data-date-value strong {
+  font-size: 0.94rem;
+  line-height: 1.25;
+}
+
+.latest-day-data-date-card .metric-caption {
+  margin-top: 5px !important;
+  line-height: 1.25;
+}
+
+@media (max-width: 1180px) {
+  .phase-one-summary .kpi-grid {
+    grid-template-columns: repeat(3, minmax(150px, 1fr));
+  }
+
+  .latest-day-data-date-card {
+    min-height: 128px !important;
   }
 }
 
-@media (max-width: 420px) {
-  .latest-day-data-date {
-    width: 100%;
+@media (max-width: 760px) {
+  .phase-one-summary .kpi-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 520px) {
+  .phase-one-summary .kpi-grid {
     grid-template-columns: 1fr;
-    gap: 3px;
   }
 }
