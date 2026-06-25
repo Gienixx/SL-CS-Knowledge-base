@@ -1,0 +1,42 @@
+.latest-day-data-date {
+  width: max-content;
+  max-width: 100%;
+  display: inline-grid;
+  grid-template-columns: auto auto;
+  align-items: center;
+  gap: 8px;
+  margin: -4px 0 12px auto;
+  padding: 7px 10px;
+  border: 1px solid rgba(56, 47, 144, 0.14);
+  border-radius: 10px;
+  background: var(--navy-soft);
+  color: var(--navy);
+}
+
+.latest-day-data-date-label {
+  color: var(--muted);
+  font-size: 0.66rem;
+  font-weight: 700;
+  letter-spacing: 0.045em;
+  text-transform: uppercase;
+}
+
+.latest-day-data-date strong {
+  font-size: 0.76rem;
+  line-height: 1.2;
+  white-space: nowrap;
+}
+
+@media (max-width: 760px) {
+  .latest-day-data-date {
+    margin-left: 0;
+  }
+}
+
+@media (max-width: 420px) {
+  .latest-day-data-date {
+    width: 100%;
+    grid-template-columns: 1fr;
+    gap: 3px;
+  }
+}
