@@ -3,17 +3,16 @@ import {
   formatDate,
   formatShortDate,
   numberOrNull
-} from './data-details-utils.js?v=1'
+} from './data-details-utils.js?v=2'
 
-const DEFAULT_VISIBLE_DAYS = 7
 const GRID_STEPS = 4
+const MINIMUM_CHART_WIDTH = 680
+const WIDTH_PER_DAY = 82
 
 function getVisibleRows(rows) {
-  return [...rows]
-    .sort((first, second) =>
-      String(first.date).localeCompare(String(second.date))
-    )
-    .slice(-DEFAULT_VISIBLE_DAYS)
+  return [...rows].sort((first, second) =>
+    String(first.date).localeCompare(String(second.date))
+  )
 }
 
 function getMaximum(rows, series) {
@@ -110,11 +109,15 @@ export function renderTrendChart(container, titleElement, rows, series) {
   const maximum = getMaximum(visibleRows, series)
   const shell = document.createElement('div')
   shell.className = 'vertical-chart-shell'
+  shell.style.minWidth = `${Math.max(
+    MINIMUM_CHART_WIDTH,
+    visibleRows.length * WIDTH_PER_DAY + 80
+  )}px`
   shell.setAttribute('role', 'img')
   shell.setAttribute(
     'aria-label',
-    `${titleElement.textContent} vertical bar chart showing the latest ` +
-      `${visibleRows.length} reporting days`
+    `${titleElement.textContent} vertical bar chart showing ` +
+      `${visibleRows.length} reporting days in the selected range`
   )
 
   const plot = document.createElement('div')
@@ -147,12 +150,10 @@ export function renderTrendChart(container, titleElement, rows, series) {
 
   const note = document.createElement('p')
   note.className = 'vertical-chart-range-note'
-  note.textContent = visibleRows.length === DEFAULT_VISIBLE_DAYS
-    ? 'Showing the latest 7 reporting days.'
-    : `Showing all ${visibleRows.length} available reporting days.`
+  note.textContent = `Showing all ${visibleRows.length} reporting days in the selected range.`
 
   shell.append(plot, createLegend(series), note)
   container.appendChild(shell)
 }
 
-export { DEFAULT_VISIBLE_DAYS }
+export { MINIMUM_CHART_WIDTH, WIDTH_PER_DAY }
