@@ -9,7 +9,7 @@ import {
   getDetailElements,
   renderModel,
   showError
-} from './data-details-render.js?v=3'
+} from './data-details-render.js?v=4'
 import {
   isIsoDate,
   normalizeKey,
@@ -81,7 +81,10 @@ function initializeDateFilter(elements, request) {
       if (!isIsoDate(start) || !isIsoDate(end)) {
         elements.filterValidation.textContent =
           'Choose both a valid start date and end date.'
-        ;(!isIsoDate(start) ? elements.startDate : elements.endDate).focus()
+        const invalidField = !isIsoDate(start)
+          ? elements.startDate
+          : elements.endDate
+        invalidField.focus()
         return
       }
 
