@@ -3,7 +3,7 @@ import {
   formatCount,
   formatDate,
   formatPercentage
-} from './data-details-utils.js?v=1'
+} from './data-details-utils.js?v=2'
 
 export function getDetailElements() {
   return {
@@ -13,6 +13,14 @@ export function getDetailElements() {
     eyebrow: document.getElementById('detailEyebrow'),
     title: document.getElementById('detailTitle'),
     subtitle: document.getElementById('detailSubtitle'),
+    filterForm: document.getElementById('detailDateFilter'),
+    rangeSelect: document.getElementById('detailRangeSelect'),
+    customRangeFields: document.getElementById('customRangeFields'),
+    startDate: document.getElementById('detailStartDate'),
+    endDate: document.getElementById('detailEndDate'),
+    filterButton: document.getElementById('applyDateFilter'),
+    filterValidation: document.getElementById('detailFilterValidation'),
+    rangeSummary: document.getElementById('detailRangeSummary'),
     summary: document.getElementById('detailSummary'),
     trendTitle: document.getElementById('trendTitle'),
     trendSubtitle: document.getElementById('trendSubtitle'),
@@ -69,7 +77,7 @@ function renderSecondary(elements, secondary) {
   if (!secondary.rows.length) {
     const empty = document.createElement('div')
     empty.className = 'detail-empty'
-    empty.textContent = 'No concern breakdown is available for the latest date.'
+    empty.textContent = 'No concern breakdown is available for the selected range.'
     elements.secondaryContent.appendChild(empty)
     return
   }
@@ -126,7 +134,7 @@ function renderTable(elements, columns, rows) {
     const cell = document.createElement('td')
     cell.colSpan = Math.max(1, columns.length)
     cell.className = 'detail-table-empty'
-    cell.textContent = 'No detailed records are available.'
+    cell.textContent = 'No detailed records are available for the selected range.'
     row.appendChild(cell)
     elements.tableBody.appendChild(row)
     return
@@ -153,8 +161,9 @@ export function renderModel(elements, model) {
   elements.trendTitle.textContent = model.trendTitle
   elements.trendSubtitle.textContent = model.trendSubtitle
   elements.dateBadge.textContent = model.latestDate
-    ? formatDate(model.latestDate)
+    ? `Data through ${formatDate(model.latestDate)}`
     : 'No data'
+  elements.rangeSummary.textContent = model.dateRange?.label || 'No available dates'
   elements.tableTitle.textContent = model.tableTitle
   elements.tableSubtitle.textContent = model.tableSubtitle
   document.title = `${model.title} | SocialLoop CS Base`
