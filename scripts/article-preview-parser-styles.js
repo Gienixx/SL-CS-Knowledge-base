@@ -1,5 +1,15 @@
 import './article-management-preview-layout.js?v=1'
 
+if (
+  window.location.pathname
+    .toLowerCase()
+    .endsWith('/article-management.html')
+) {
+  void import('./article-management-update-status.js?v=1').catch(error => {
+    console.error('Unable to load article update status:', error)
+  })
+}
+
 if (!document.getElementById('articlePreviewParserStyles')) {
   const style = document.createElement('style')
   style.id = 'articlePreviewParserStyles'
