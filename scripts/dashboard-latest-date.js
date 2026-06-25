@@ -4,7 +4,7 @@ function ensureLatestDayDateStyles() {
   const stylesheet = document.createElement('link')
   stylesheet.id = 'dashboardLatestDateStyles'
   stylesheet.rel = 'stylesheet'
-  stylesheet.href = './dashboard-latest-date.css?v=1'
+  stylesheet.href = './dashboard-latest-date.css?v=2'
   document.head.appendChild(stylesheet)
 }
 
@@ -14,32 +14,27 @@ function syncLatestDayDate(source, target) {
 }
 
 function installLatestDayDateSection() {
-  const summaryContent = document.querySelector(
-    '.phase-one-summary .section-content'
-  )
+  const kpiGrid = document.querySelector('.phase-one-summary .kpi-grid')
   const sourceDate = document.getElementById('latestReportDate')
 
-  if (!summaryContent || !sourceDate) return false
+  if (!kpiGrid || !sourceDate) return false
 
   let section = document.getElementById('latestDayDataDateSection')
 
   if (!section) {
-    section = document.createElement('aside')
+    section = document.createElement('section')
     section.id = 'latestDayDataDateSection'
-    section.className = 'latest-day-data-date'
+    section.className = 'metric-card latest-day-data-date-card'
     section.setAttribute('aria-label', 'Current data date')
     section.innerHTML = `
-      <span class="latest-day-data-date-label">Current data date</span>
-      <strong id="latestDayDataDate">Loading...</strong>
+      <h2>Current Data Date</h2>
+      <div class="latest-day-data-date-value">
+        <strong id="latestDayDataDate">Loading...</strong>
+      </div>
+      <p class="metric-caption">Latest synchronized reporting date</p>
     `
 
-    const statusBar = summaryContent.querySelector('.dashboard-status-bar')
-
-    if (statusBar) {
-      statusBar.insertAdjacentElement('afterend', section)
-    } else {
-      summaryContent.prepend(section)
-    }
+    kpiGrid.prepend(section)
   }
 
   const targetDate = document.getElementById('latestDayDataDate')
