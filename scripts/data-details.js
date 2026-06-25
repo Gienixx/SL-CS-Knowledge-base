@@ -9,7 +9,7 @@ import {
   getDetailElements,
   renderModel,
   showError
-} from './data-details-render.js?v=1'
+} from './data-details-render.js?v=2'
 import { normalizeKey } from './data-details-utils.js?v=1'
 
 const VALID_VIEWS = new Set([
