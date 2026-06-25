@@ -9,6 +9,7 @@ import './article-nesting-styles.js?v=1'
 import './article-preview-parser-styles.js?v=1'
 import './article-editor-toolbar-overrides.js?v=1'
 import './article-editor-layout-enhancer.js?v=1'
+import './article-editor-update-status.js?v=1'
 
 function updateEditorPageLabels() {
   document.title = 'Add Article | SocialLoop CS Base'
