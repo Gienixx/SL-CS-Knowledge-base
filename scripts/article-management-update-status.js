@@ -34,6 +34,14 @@ function installStyles() {
   document.head.appendChild(style)
 }
 
+function setStatusText(status, article) {
+  const nextText = formatArticleUpdateStatus(article)
+
+  if (status.textContent !== nextText) {
+    status.textContent = nextText
+  }
+}
+
 function applyListStatuses() {
   document.querySelectorAll('.article-list-item[data-article-id]').forEach(item => {
     const article = metadataById.get(String(item.dataset.articleId))
@@ -56,7 +64,7 @@ function applyListStatuses() {
       meta.appendChild(status)
     }
 
-    status.textContent = formatArticleUpdateStatus(article)
+    setStatusText(status, article)
   })
 }
 
@@ -92,7 +100,7 @@ function applyPreviewStatus() {
     previewMeta.appendChild(status)
   }
 
-  status.textContent = formatArticleUpdateStatus(article)
+  setStatusText(status, article)
 }
 
 function applyStatuses() {
@@ -144,12 +152,10 @@ function initialize() {
     return
   }
 
-  const observer = new MutationObserver(mutations => {
-    const containsUnknownArticle = mutations.some(() =>
-      Array.from(
-        document.querySelectorAll('.article-list-item[data-article-id]')
-      ).some(item => !metadataById.has(String(item.dataset.articleId)))
-    )
+  const observer = new MutationObserver(() => {
+    const containsUnknownArticle = Array.from(
+      document.querySelectorAll('.article-list-item[data-article-id]')
+    ).some(item => !metadataById.has(String(item.dataset.articleId)))
 
     if (containsUnknownArticle) {
       scheduleReload()
