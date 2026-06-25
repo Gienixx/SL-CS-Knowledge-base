@@ -99,18 +99,22 @@ async function initialize() {
   }
 
   try {
-    const [article, manager] = await Promise.all([
-      loadArticleUpdateMetadata({
-        articleId,
-        publishedOnly: true
-      }),
-      getCurrentArticleManager()
-    ])
+    const article = await loadArticleUpdateMetadata({
+      articleId,
+      publishedOnly: true
+    })
 
     renderUpdateStatus(article)
+  } catch (error) {
+    console.error('Unable to load article update status:', error)
+  }
+
+  try {
+    const manager = await getCurrentArticleManager()
     renderManagementLink(manager.canManageArticles)
   } catch (error) {
-    console.error('Unable to initialize article update details:', error)
+    console.error('Unable to load article management access:', error)
+    renderManagementLink(false)
   }
 }
 
