@@ -1,6 +1,14 @@
 import { supabase } from './supabaseClient.js?v=8'
 
 export const PAGE_SIZE = 1000
+export const DEFAULT_DATE_RANGE = '30d'
+export const DATE_RANGE_MODES = new Set([
+  'latest',
+  '7d',
+  '30d',
+  'mtd',
+  'custom'
+])
 
 export function normalizeKey(value) {
   const key = typeof value === 'string'
@@ -8,6 +16,110 @@ export function normalizeKey(value) {
     : ''
 
   return /^[a-z0-9_-]{1,80}$/.test(key) ? key : ''
+}
+
+export function normalizeDateRangeMode(value) {
+  const mode = typeof value === 'string'
+    ? value.trim().toLowerCase()
+    : ''
+
+  return DATE_RANGE_MODES.has(mode) ? mode : DEFAULT_DATE_RANGE
+}
+
+export function isIsoDate(value) {
+  if (typeof value !== 'string' || !/^\d{4}-\d{2}-\d{2}$/.test(value)) {
+    return false
+  }
+
+  const date = new Date(`${value}T00:00:00Z`)
+  return !Number.isNaN(date.getTime()) && date.toISOString().slice(0, 10) === value
+}
+
+function shiftDate(value, days) {
+  const date = new Date(`${value}T00:00:00Z`)
+  date.setUTCDate(date.getUTCDate() + days)
+  return date.toISOString().slice(0, 10)
+}
+
+function firstDayOfMonth(value) {
+  return `${value.slice(0, 7)}-01`
+}
+
+export function parseDateRangeRequest(params) {
+  const requestedMode = params.get('range')
+  const hasCustomDates = params.has('start') || params.has('end')
+  const mode = hasCustomDates && !requestedMode
+    ? 'custom'
+    : normalizeDateRangeMode(requestedMode)
+
+  return {
+    mode,
+    start: params.get('start') || '',
+    end: params.get('end') || ''
+  }
+}
+
+export function resolveDateRange(latestAvailableDate, request) {
+  if (!latestAvailableDate || !isIsoDate(latestAvailableDate)) {
+    return {
+      mode: request?.mode || DEFAULT_DATE_RANGE,
+      start: null,
+      end: null,
+      label: 'No available dates'
+    }
+  }
+
+  const mode = normalizeDateRangeMode(request?.mode)
+
+  if (mode === 'custom') {
+    const start = request?.start || ''
+    const end = request?.end || ''
+
+    if (!isIsoDate(start) || !isIsoDate(end)) {
+      throw new Error('Choose a valid custom start date and end date.')
+    }
+
+    if (start > end) {
+      throw new Error('The custom start date cannot be after the end date.')
+    }
+
+    return {
+      mode,
+      start,
+      end,
+      label: `${formatDate(start)} – ${formatDate(end)}`
+    }
+  }
+
+  if (mode === 'latest') {
+    return {
+      mode,
+      start: latestAvailableDate,
+      end: latestAvailableDate,
+      label: `Latest date: ${formatDate(latestAvailableDate)}`
+    }
+  }
+
+  const start = mode === '7d'
+    ? shiftDate(latestAvailableDate, -6)
+    : mode === 'mtd'
+      ? firstDayOfMonth(latestAvailableDate)
+      : shiftDate(latestAvailableDate, -29)
+
+  return {
+    mode,
+    start,
+    end: latestAvailableDate,
+    label: `${formatDate(start)} – ${formatDate(latestAvailableDate)}`
+  }
+}
+
+export function applyDateRange(query, dateRange) {
+  if (!dateRange?.start || !dateRange?.end) return query
+
+  return query
+    .gte('report_date', dateRange.start)
+    .lte('report_date', dateRange.end)
 }
 
 export function numberOrNull(value) {
@@ -108,12 +220,14 @@ export async function fetchAllRows(queryFactory) {
   return rows
 }
 
-export async function getLatestDate(tableName, filters) {
+export async function getLatestDate(tableName, filters, dateRange = null) {
   let query = supabase.from(tableName).select('report_date')
 
   filters.forEach(([column, value]) => {
     query = query.eq(column, value)
   })
+
+  query = applyDateRange(query, dateRange)
 
   const { data, error } = await query
     .order('report_date', { ascending: false })
@@ -149,16 +263,17 @@ export function findPeak(rows, field) {
   }, null)
 }
 
-export function buildEmptyModel(eyebrow, title, message) {
+export function buildEmptyModel(eyebrow, title, message, dateRange = null) {
   return {
     eyebrow,
     title,
     subtitle: message,
     latestDate: null,
+    dateRange,
     summaryCards: [{
       label: 'Status',
       value: 'No data',
-      help: 'The requested selection has no synchronized records.'
+      help: 'The selected date range has no synchronized records.'
     }],
     trendTitle: 'Daily trend',
     trendSubtitle: message,
