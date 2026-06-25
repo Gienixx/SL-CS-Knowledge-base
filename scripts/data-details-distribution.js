@@ -1,5 +1,6 @@
 import { supabase } from './supabaseClient.js?v=8'
 import {
+  applyDateRange,
   buildEmptyModel,
   fetchAllRows,
   findPeak,
@@ -8,20 +9,22 @@ import {
   formatPercentage,
   getLatestDate,
   numberOrNull,
+  resolveDateRange,
   sumRows,
   titleFromKey
-} from './data-details-utils.js?v=1'
+} from './data-details-utils.js?v=2'
 
-export async function loadDistributionDetail(view, dimensionKey) {
-  const latestDate = await getLatestDate(
+export async function loadDistributionDetail(view, dimensionKey, rangeRequest) {
+  const filters = [
+    ['dimension_type', view],
+    ['dimension_key', dimensionKey]
+  ]
+  const latestAvailableDate = await getLatestDate(
     'daily_distribution_metrics',
-    [
-      ['dimension_type', view],
-      ['dimension_key', dimensionKey]
-    ]
+    filters
   )
 
-  if (!latestDate) {
+  if (!latestAvailableDate) {
     return buildEmptyModel(
       `${titleFromKey(view)} Distribution`,
       titleFromKey(dimensionKey),
@@ -29,31 +32,48 @@ export async function loadDistributionDetail(view, dimensionKey) {
     )
   }
 
-  const [latestDimensionRows, historyRows, dimensionHistoryRows] =
-    await Promise.all([
-      fetchAllRows(() => supabase
-        .from('daily_distribution_metrics')
-        .select(
-          'report_date, dimension_type, dimension_key, dimension_label, ticket_count'
-        )
-        .eq('report_date', latestDate)
-        .eq('dimension_type', view)
-        .order('dimension_key', { ascending: true })),
-      fetchAllRows(() => supabase
-        .from('daily_distribution_metrics')
-        .select(
-          'report_date, dimension_type, dimension_key, dimension_label, ticket_count'
-        )
-        .eq('dimension_type', view)
-        .eq('dimension_key', dimensionKey)
-        .order('report_date', { ascending: true })),
-      fetchAllRows(() => supabase
+  const dateRange = resolveDateRange(latestAvailableDate, rangeRequest)
+  const historyRows = await fetchAllRows(() => applyDateRange(
+    supabase
+      .from('daily_distribution_metrics')
+      .select(
+        'report_date, dimension_type, dimension_key, dimension_label, ticket_count'
+      )
+      .eq('dimension_type', view)
+      .eq('dimension_key', dimensionKey)
+      .order('report_date', { ascending: true }),
+    dateRange
+  ))
+
+  if (historyRows.length === 0) {
+    return buildEmptyModel(
+      `${titleFromKey(view)} Distribution`,
+      titleFromKey(dimensionKey),
+      `No ${view} records were found for ${dateRange.label}.`,
+      dateRange
+    )
+  }
+
+  const latestDate = historyRows[historyRows.length - 1].report_date
+  const [latestDimensionRows, dimensionHistoryRows] = await Promise.all([
+    fetchAllRows(() => supabase
+      .from('daily_distribution_metrics')
+      .select(
+        'report_date, dimension_type, dimension_key, dimension_label, ticket_count'
+      )
+      .eq('report_date', latestDate)
+      .eq('dimension_type', view)
+      .order('dimension_key', { ascending: true })),
+    fetchAllRows(() => applyDateRange(
+      supabase
         .from('daily_distribution_metrics')
         .select('report_date, dimension_type, dimension_key, ticket_count')
         .eq('dimension_type', view)
         .order('report_date', { ascending: true })
-        .order('dimension_key', { ascending: true }))
-    ])
+        .order('dimension_key', { ascending: true }),
+      dateRange
+    ))
+  ])
 
   const latestSelected = latestDimensionRows.find(
     row => row.dimension_key === dimensionKey
@@ -104,11 +124,12 @@ export async function loadDistributionDetail(view, dimensionKey) {
     title: selectedLabel,
     subtitle: `Ticket volume and share within the ${view} distribution over time.`,
     latestDate,
+    dateRange,
     summaryCards: [
       {
         label: 'Ticket total',
         value: formatCount(latestCount),
-        help: `Latest result for ${formatDate(latestDate)}`
+        help: `Latest result in range: ${formatDate(latestDate)}`
       },
       {
         label: `Share of ${view} total`,
@@ -117,26 +138,26 @@ export async function loadDistributionDetail(view, dimensionKey) {
             ? latestCount / latestDimensionTotal
             : 0
         ),
-        help: `${formatCount(latestDimensionTotal)} mapped ${view} tickets`
+        help: `${formatCount(latestDimensionTotal)} mapped ${view} tickets on ${formatDate(latestDate)}`
       },
       {
         label: 'Highest-volume day',
         value: peak ? formatDate(peak.date) : '—',
-        help: peak ? `${formatCount(peak.value)} tickets` : 'No historical volume'
+        help: peak ? `${formatCount(peak.value)} tickets` : 'No volume in range'
       },
       {
         label: 'Days reported',
         value: formatCount(historyRows.length),
-        help: 'Available synchronized reporting dates'
+        help: `Reporting dates within ${dateRange.label}`
       }
     ],
     trendTitle: `${selectedLabel} daily trend`,
-    trendSubtitle: `Daily ticket count for this ${view} selection.`,
+    trendSubtitle: `Daily ticket count for ${dateRange.label}.`,
     trendRows,
     trendSeries: [{ key: 'tickets', label: 'Tickets', tone: 'primary' }],
     secondary: null,
     tableTitle: `${dimensionName} distribution history`,
-    tableSubtitle: `Daily count and share of the complete ${view} distribution.`,
+    tableSubtitle: `Daily count and share for ${dateRange.label}.`,
     tableColumns: [
       { label: 'Date' },
       { label: 'Ticket Count', numeric: true },
