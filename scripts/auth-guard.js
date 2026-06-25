@@ -1,14 +1,39 @@
 import { supabase } from './supabaseClient.js'
 
-async function loadAuthenticatedPageEnhancements() {
-    const currentPath = window.location.pathname.toLowerCase()
+function getCurrentRouteName() {
+    const path = window.location.pathname
+        .toLowerCase()
+        .replace(/\/+$/, '')
+    const lastSegment = path.split('/').pop() || ''
 
-    if (currentPath.endsWith('/kb.html')) {
-        await import('./kb-article-update-status.js?v=1')
+    return lastSegment.replace(/\.html$/, '')
+}
+
+async function loadAuthenticatedPageEnhancements() {
+    const routeName = getCurrentRouteName()
+    const modules = []
+
+    if (routeName === 'kb') {
+        modules.push(
+            import('./kb-article-update-status.js?v=2')
+        )
     }
 
-    if (currentPath.endsWith('/article.html')) {
-        await import('./article-page-update-status.js?v=1')
+    if (routeName === 'article') {
+        modules.push(
+            import('./article-page-update-status.js?v=2')
+        )
+    }
+
+    const results = await Promise.allSettled(modules)
+
+    for (const result of results) {
+        if (result.status === 'rejected') {
+            console.error(
+                'Authenticated page enhancement failed:',
+                result.reason
+            )
+        }
     }
 }
 
