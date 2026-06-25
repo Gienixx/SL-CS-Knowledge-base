@@ -1,5 +1,17 @@
 import { supabase } from './supabaseClient.js'
 
+async function loadAuthenticatedPageEnhancements() {
+    const currentPath = window.location.pathname.toLowerCase()
+
+    if (currentPath.endsWith('/kb.html')) {
+        await import('./kb-article-update-status.js?v=1')
+    }
+
+    if (currentPath.endsWith('/article.html')) {
+        await import('./article-page-update-status.js?v=1')
+    }
+}
+
 async function requireAuthentication() {
     try {
         const {
@@ -24,6 +36,7 @@ async function requireAuthentication() {
             return
         }
 
+        await loadAuthenticatedPageEnhancements()
         console.log('Authenticated user:', session.user.email)
     } catch (error) {
         console.error('Authentication guard failed:', error)
