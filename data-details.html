@@ -1,0 +1,84 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Data Details | SocialLoop CS Base</title>
+
+  <link rel="stylesheet" href="./dashboard.css?v=2" />
+  <link rel="stylesheet" href="./data-details.css?v=1" />
+</head>
+<body>
+  <main class="page-shell data-details-shell">
+    <header class="topbar details-topbar">
+      <div class="title-block details-title-block">
+        <span id="detailEyebrow" class="detail-eyebrow">Dashboard detail</span>
+        <h1 id="detailTitle">Loading data details...</h1>
+        <p id="detailSubtitle">Verifying access and retrieving dashboard history.</p>
+      </div>
+
+      <nav class="top-actions" aria-label="Detail page navigation">
+        <a class="action-link" href="./dashboard.html">Back to Dashboard</a>
+        <a class="action-link" href="./index-modular.html">Back to Home</a>
+        <a id="detailLogoutLink" class="action-link" href="./login.html">Logout</a>
+      </nav>
+    </header>
+
+    <section id="detailPage" class="detail-page" aria-busy="true">
+      <div id="detailStatus" class="detail-status" role="status">
+        <span class="dashboard-spinner" aria-hidden="true"></span>
+        <h2>Loading detail view</h2>
+        <p>Checking your account and loading the requested dashboard data.</p>
+      </div>
+
+      <div id="detailContent" class="detail-content" hidden>
+        <section
+          id="detailSummary"
+          class="detail-summary-grid"
+          aria-label="Detail summary"
+        ></section>
+
+        <section class="detail-card detail-chart-card">
+          <div class="detail-card-heading">
+            <div>
+              <h2 id="trendTitle">Daily trend</h2>
+              <p id="trendSubtitle">Historical ticket activity</p>
+            </div>
+            <span id="detailDateBadge" class="placeholder-badge">Latest data</span>
+          </div>
+          <div id="trendChart" class="trend-chart" aria-live="polite"></div>
+        </section>
+
+        <section id="secondarySection" class="detail-card" hidden>
+          <div class="detail-card-heading">
+            <div>
+              <h2 id="secondaryTitle">Breakdown</h2>
+              <p id="secondarySubtitle">Latest available breakdown</p>
+            </div>
+          </div>
+          <div id="secondaryContent"></div>
+        </section>
+
+        <section class="detail-card detail-table-card">
+          <div class="detail-card-heading">
+            <div>
+              <h2 id="detailTableTitle">Detailed history</h2>
+              <p id="detailTableSubtitle">Newest reporting dates appear first</p>
+            </div>
+          </div>
+          <div class="detail-table-scroll">
+            <table class="detail-table">
+              <thead id="detailTableHead"></thead>
+              <tbody id="detailTableBody"></tbody>
+            </table>
+          </div>
+        </section>
+      </div>
+    </section>
+
+    <p class="footer-note">Dashboard details use synchronized Supabase data.</p>
+  </main>
+
+  <script type="module" src="./scripts/data-details.js?v=1"></script>
+</body>
+</html>
