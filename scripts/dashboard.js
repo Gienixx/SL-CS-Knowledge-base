@@ -10,7 +10,7 @@ import {
 } from './dashboard-distributions.js?v=2'
 import {
   initializeProductivityDashboard
-} from './dashboard-productivity.js?v=1'
+} from './dashboard-productivity-v2.js?v=2'
 
 async function logout() {
   await supabase.auth.signOut()
