@@ -1,5 +1,6 @@
 import { supabase } from './supabaseClient.js?v=8'
 import {
+  applyDateRange,
   buildEmptyModel,
   fetchAllRows,
   findPeak,
@@ -9,17 +10,18 @@ import {
   formatPercentage,
   getLatestDate,
   numberOrNull,
+  resolveDateRange,
   sumRows,
   titleFromKey
-} from './data-details-utils.js?v=1'
+} from './data-details-utils.js?v=2'
 
-export async function loadAgentDetail(agentKey) {
-  const latestDate = await getLatestDate(
+export async function loadAgentDetail(agentKey, rangeRequest) {
+  const latestAvailableDate = await getLatestDate(
     'agent_productivity',
     [['agent_key', agentKey]]
   )
 
-  if (!latestDate) {
+  if (!latestAvailableDate) {
     return buildEmptyModel(
       'Agent Productivity',
       titleFromKey(agentKey),
@@ -27,7 +29,29 @@ export async function loadAgentDetail(agentKey) {
     )
   }
 
-  const [latestTeamRows, historyRows, teamHistoryRows] = await Promise.all([
+  const dateRange = resolveDateRange(latestAvailableDate, rangeRequest)
+  const historyRows = await fetchAllRows(() => applyDateRange(
+    supabase
+      .from('agent_productivity')
+      .select(
+        'report_date, agent_key, agent_name, solved_tickets, open_tickets, aht_value, aht_unit'
+      )
+      .eq('agent_key', agentKey)
+      .order('report_date', { ascending: true }),
+    dateRange
+  ))
+
+  if (historyRows.length === 0) {
+    return buildEmptyModel(
+      'Agent Productivity',
+      titleFromKey(agentKey),
+      `No productivity records were found for ${dateRange.label}.`,
+      dateRange
+    )
+  }
+
+  const latestDate = historyRows[historyRows.length - 1].report_date
+  const [latestTeamRows, teamHistoryRows] = await Promise.all([
     fetchAllRows(() => supabase
       .from('agent_productivity')
       .select(
@@ -35,18 +59,14 @@ export async function loadAgentDetail(agentKey) {
       )
       .eq('report_date', latestDate)
       .order('agent_key', { ascending: true })),
-    fetchAllRows(() => supabase
-      .from('agent_productivity')
-      .select(
-        'report_date, agent_key, agent_name, solved_tickets, open_tickets, aht_value, aht_unit'
-      )
-      .eq('agent_key', agentKey)
-      .order('report_date', { ascending: true })),
-    fetchAllRows(() => supabase
-      .from('agent_productivity')
-      .select('report_date, agent_key, solved_tickets')
-      .order('report_date', { ascending: true })
-      .order('agent_key', { ascending: true }))
+    fetchAllRows(() => applyDateRange(
+      supabase
+        .from('agent_productivity')
+        .select('report_date, agent_key, solved_tickets')
+        .order('report_date', { ascending: true })
+        .order('agent_key', { ascending: true }),
+      dateRange
+    ))
   ])
 
   const latestAgent = latestTeamRows.find(row => row.agent_key === agentKey) ||
@@ -95,16 +115,17 @@ export async function loadAgentDetail(agentKey) {
     title: agentName,
     subtitle: 'Solved output, open workload, AHT, and team contribution over time.',
     latestDate,
+    dateRange,
     summaryCards: [
       {
         label: 'Solved tickets',
         value: formatCount(latestAgent?.solved_tickets),
-        help: `Latest result for ${formatDate(latestDate)}`
+        help: `Latest result in range: ${formatDate(latestDate)}`
       },
       {
         label: 'Open tickets',
         value: formatCount(latestAgent?.open_tickets),
-        help: 'Latest reported open workload'
+        help: 'Latest reported open workload in the selected range'
       },
       {
         label: 'AHT',
@@ -116,16 +137,16 @@ export async function loadAgentDetail(agentKey) {
         value: formatPercentage(
           teamSolvedLatest > 0 ? latestSolved / teamSolvedLatest : 0
         ),
-        help: `${formatCount(teamSolvedLatest)} tickets solved by the team`
+        help: `${formatCount(teamSolvedLatest)} tickets solved by the team on ${formatDate(latestDate)}`
       },
       {
         label: 'Highest solved day',
         value: peak ? formatDate(peak.date) : '—',
-        help: peak ? `${formatCount(peak.value)} solved tickets` : 'No historical volume'
+        help: peak ? `${formatCount(peak.value)} solved tickets` : 'No volume in range'
       }
     ],
     trendTitle: `${agentName} daily productivity`,
-    trendSubtitle: 'Daily solved tickets and reported open-ticket workload.',
+    trendSubtitle: `Daily solved and open tickets for ${dateRange.label}.`,
     trendRows,
     trendSeries: [
       { key: 'solved', label: 'Solved', tone: 'primary' },
@@ -133,7 +154,7 @@ export async function loadAgentDetail(agentKey) {
     ],
     secondary: null,
     tableTitle: 'Agent productivity history',
-    tableSubtitle: 'Daily productivity records with AHT and share of total team output.',
+    tableSubtitle: `Daily productivity records for ${dateRange.label}.`,
     tableColumns: [
       { label: 'Date' },
       { label: 'Solved', numeric: true },
