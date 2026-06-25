@@ -2,15 +2,19 @@ import { supabase } from './supabaseClient.js?v=8'
 import {
   requiresFirstLoginPasswordChange
 } from './first-login-policy.js?v=4'
-import { loadAgentDetail } from './data-details-agent.js?v=1'
-import { loadDistributionDetail } from './data-details-distribution.js?v=1'
-import { loadDriverDetail } from './data-details-driver.js?v=1'
+import { loadAgentDetail } from './data-details-agent.js?v=2'
+import { loadDistributionDetail } from './data-details-distribution.js?v=2'
+import { loadDriverDetail } from './data-details-driver.js?v=2'
 import {
   getDetailElements,
   renderModel,
   showError
-} from './data-details-render.js?v=2'
-import { normalizeKey } from './data-details-utils.js?v=1'
+} from './data-details-render.js?v=3'
+import {
+  isIsoDate,
+  normalizeKey,
+  parseDateRangeRequest
+} from './data-details-utils.js?v=2'
 
 const VALID_VIEWS = new Set([
   'driver',
@@ -43,7 +47,69 @@ function getDetailRequest() {
     )
   }
 
-  return { view, key }
+  return {
+    view,
+    key,
+    rangeRequest: parseDateRangeRequest(params)
+  }
+}
+
+function initializeDateFilter(elements, request) {
+  const { rangeRequest } = request
+  elements.rangeSelect.value = rangeRequest.mode
+  elements.startDate.value = rangeRequest.start
+  elements.endDate.value = rangeRequest.end
+
+  const toggleCustomFields = () => {
+    const isCustom = elements.rangeSelect.value === 'custom'
+    elements.customRangeFields.hidden = !isCustom
+    elements.startDate.required = isCustom
+    elements.endDate.required = isCustom
+    elements.filterValidation.textContent = ''
+  }
+
+  toggleCustomFields()
+  elements.rangeSelect.addEventListener('change', toggleCustomFields)
+
+  elements.filterForm.addEventListener('submit', event => {
+    event.preventDefault()
+    const mode = elements.rangeSelect.value
+    const start = elements.startDate.value
+    const end = elements.endDate.value
+
+    if (mode === 'custom') {
+      if (!isIsoDate(start) || !isIsoDate(end)) {
+        elements.filterValidation.textContent =
+          'Choose both a valid start date and end date.'
+        ;(!isIsoDate(start) ? elements.startDate : elements.endDate).focus()
+        return
+      }
+
+      if (start > end) {
+        elements.filterValidation.textContent =
+          'The start date cannot be after the end date.'
+        elements.startDate.focus()
+        return
+      }
+    }
+
+    elements.filterValidation.textContent = ''
+    elements.filterButton.disabled = true
+    elements.filterButton.textContent = 'Applying...'
+
+    const url = new URL(window.location.href)
+    url.searchParams.set('range', mode)
+
+    if (mode === 'custom') {
+      url.searchParams.set('start', start)
+      url.searchParams.set('end', end)
+    } else {
+      url.searchParams.delete('start')
+      url.searchParams.delete('end')
+    }
+
+    window.location.assign(url.toString())
+  })
 }
 
 async function requireApprovedUser() {
@@ -113,17 +179,23 @@ async function initialize() {
 
   try {
     const request = getDetailRequest()
+    initializeDateFilter(elements, request)
+
     const user = await requireApprovedUser()
     if (!user) return
 
     let model
 
     if (request.view === 'driver') {
-      model = await loadDriverDetail(request.key)
+      model = await loadDriverDetail(request.key, request.rangeRequest)
     } else if (request.view === 'agent') {
-      model = await loadAgentDetail(request.key)
+      model = await loadAgentDetail(request.key, request.rangeRequest)
     } else {
-      model = await loadDistributionDetail(request.view, request.key)
+      model = await loadDistributionDetail(
+        request.view,
+        request.key,
+        request.rangeRequest
+      )
     }
 
     renderModel(elements, model)
