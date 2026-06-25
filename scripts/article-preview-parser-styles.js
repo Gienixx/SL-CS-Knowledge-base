@@ -1,11 +1,10 @@
 import './article-management-preview-layout.js?v=1'
 
 if (
-  window.location.pathname
-    .toLowerCase()
-    .endsWith('/article-management.html')
+  document.getElementById('articleList') &&
+  document.getElementById('articlePreviewPanel')
 ) {
-  void import('./article-management-update-status.js?v=1').catch(error => {
+  void import('./article-management-update-status.js?v=2').catch(error => {
     console.error('Unable to load article update status:', error)
   })
 }
