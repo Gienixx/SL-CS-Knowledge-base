@@ -19,7 +19,7 @@ function getReturnPage() {
     return returnTo
   }
 
-  return './dashboard.html'
+  return './home.html'
 }
 
 function getDestination(user) {
