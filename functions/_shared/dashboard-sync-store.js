@@ -1,6 +1,9 @@
 import {
   PHASE_ONE_DASHBOARD_MAPPING
 } from '../../config/dashboard-data-mapping.js'
+import {
+  deduplicateMappedRecords
+} from './mapped-record-batches.js'
 
 const RAW_INSERT_BATCH_SIZE = 100
 
@@ -140,10 +143,14 @@ export async function upsertDashboardRecords(
   serviceRoleKey,
   records
 ) {
-  if (records.length === 0) return
-
   const tableName = PHASE_ONE_DASHBOARD_MAPPING.destination.tableName
   const conflictColumn = PHASE_ONE_DASHBOARD_MAPPING.destination.conflictColumn
+  const uniqueRecords = deduplicateMappedRecords(
+    records,
+    [conflictColumn]
+  )
+
+  if (uniqueRecords.length === 0) return
 
   await supabaseRequest(
     supabaseUrl,
@@ -154,7 +161,7 @@ export async function upsertDashboardRecords(
       headers: {
         Prefer: 'resolution=merge-duplicates,return=minimal'
       },
-      body: JSON.stringify(records)
+      body: JSON.stringify(uniqueRecords)
     }
   )
 }
