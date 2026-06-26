@@ -1,0 +1,31 @@
+@media (min-width: 1121px) {
+  .home-grid .announcements-panel {
+    grid-column: 1;
+    grid-row: 1 / span 2;
+    min-height: 100%;
+  }
+
+  .home-grid .calendar-panel {
+    grid-column: 2;
+    grid-row: 1;
+  }
+
+  .home-grid .events-panel {
+    grid-column: 2;
+    grid-row: 2;
+  }
+}
+
+.home-grid .announcements-panel .announcement-table td {
+  padding-top: 16px;
+  padding-bottom: 16px;
+}
+
+@media (max-width: 1120px) {
+  .home-grid .announcements-panel,
+  .home-grid .calendar-panel,
+  .home-grid .events-panel {
+    grid-column: auto;
+    grid-row: auto;
+  }
+}
