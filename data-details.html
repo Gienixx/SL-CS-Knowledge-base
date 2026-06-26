@@ -6,7 +6,7 @@
   <title>Data Details | SocialLoop CS Base</title>
 
   <link rel="stylesheet" href="./dashboard.css?v=2" />
-  <link rel="stylesheet" href="./data-details.css?v=3" />
+  <link rel="stylesheet" href="./data-details.css?v=4" />
 </head>
 <body>
   <main class="page-shell data-details-shell">
@@ -88,6 +88,24 @@
           <div id="trendChart" class="trend-chart" aria-live="polite"></div>
         </section>
 
+        <section
+          id="additionalTrendSection"
+          class="detail-card detail-chart-card"
+          hidden
+        >
+          <div class="detail-card-heading">
+            <div>
+              <h2 id="additionalTrendTitle">Additional trend</h2>
+              <p id="additionalTrendSubtitle">Historical metric activity</p>
+            </div>
+          </div>
+          <div
+            id="additionalTrendChart"
+            class="trend-chart"
+            aria-live="polite"
+          ></div>
+        </section>
+
         <section id="secondarySection" class="detail-card" hidden>
           <div class="detail-card-heading">
             <div>
@@ -118,6 +136,6 @@
     <p class="footer-note">Dashboard details use synchronized Supabase data.</p>
   </main>
 
-  <script type="module" src="./scripts/data-details.js?v=4"></script>
+  <script type="module" src="./scripts/data-details.js?v=5"></script>
 </body>
 </html>
