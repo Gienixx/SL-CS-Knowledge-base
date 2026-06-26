@@ -105,6 +105,46 @@
 }
 
 @media (max-width: 768px) {
+  body {
+    padding: 14px;
+  }
+
+  .dashboard-section {
+    grid-template-columns: 1fr;
+  }
+
+  .section-tab {
+    min-height: 42px;
+    padding: 9px 14px;
+    writing-mode: horizontal-tb;
+    transform: none;
+  }
+
+  .driver-heading,
+  .distribution-heading,
+  .productivity-heading {
+    flex-direction: column;
+  }
+
+  .kpi-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .driver-summary-grid,
+  .distribution-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .distribution-card:last-child {
+    grid-column: auto;
+  }
+
+  .driver-pie-layout,
+  .distribution-pie-layout,
+  .distribution-card:last-child .distribution-pie-layout {
+    grid-template-columns: 1fr;
+  }
+
   .driver-legend-row,
   .distribution-legend-row {
     align-items: start;
@@ -116,7 +156,24 @@
   }
 
   .productivity-row[role="link"] {
+    grid-template-columns: 24px minmax(0, 1fr);
     padding: 10px;
+  }
+
+  .productivity-row[role="link"] .productivity-bar-area,
+  .productivity-row[role="link"] .productivity-row-metrics {
+    grid-column: 2;
+  }
+
+  .productivity-row[role="link"] .productivity-row-metric {
+    justify-items: start;
+  }
+}
+
+@media (max-width: 520px) {
+  .kpi-grid,
+  .productivity-summary-grid {
+    grid-template-columns: 1fr;
   }
 }
 
@@ -144,10 +201,6 @@
 
   .distribution-legend-row {
     display: grid;
-  }
-
-  .productivity-summary-grid {
-    grid-template-columns: 1fr;
   }
 }
 
