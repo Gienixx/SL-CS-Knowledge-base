@@ -123,21 +123,25 @@
       </section>
 
       <section class="home-grid">
-        <article class="home-panel trend-panel">
+        <article class="home-panel trend-panel announcements-panel">
           <div class="section-heading">
             <div>
-              <p class="section-eyebrow">Latest reporting period</p>
-              <h2>New vs. solved tickets</h2>
+              <p class="section-eyebrow">Team announcements and updates</p>
+              <h2>Latest team updates</h2>
             </div>
-            <span id="homeChartPeriod" class="panel-badge">Loading</span>
           </div>
-          <div class="chart-wrap">
-            <svg id="homeTicketChart" viewBox="0 0 800 300" role="img" aria-label="Recent new and solved ticket volume"></svg>
-            <p id="homeChartState" class="chart-state">Loading ticket data...</p>
-          </div>
-          <div class="chart-legend" aria-hidden="true">
-            <span><i class="legend-new"></i>New tickets</span>
-            <span><i class="legend-solved"></i>Solved tickets</span>
+          <div class="announcement-table-wrap">
+            <table class="announcement-table">
+              <thead>
+                <tr>
+                  <th>Announcement</th>
+                  <th>Category</th>
+                  <th>Posted by</th>
+                  <th>Date</th>
+                </tr>
+              </thead>
+              <tbody id="announcementRows"></tbody>
+            </table>
           </div>
         </article>
 
@@ -160,28 +164,6 @@
             <span><i class="event-dot meeting"></i>Meeting</span>
             <span><i class="event-dot training"></i>Training</span>
             <span><i class="event-dot deadline"></i>Deadline</span>
-          </div>
-        </article>
-
-        <article class="home-panel announcements-panel">
-          <div class="section-heading">
-            <div>
-              <p class="section-eyebrow">Team updates</p>
-              <h2>Announcements</h2>
-            </div>
-          </div>
-          <div class="announcement-table-wrap">
-            <table class="announcement-table">
-              <thead>
-                <tr>
-                  <th>Announcement</th>
-                  <th>Category</th>
-                  <th>Posted by</th>
-                  <th>Date</th>
-                </tr>
-              </thead>
-              <tbody id="announcementRows"></tbody>
-            </table>
           </div>
         </article>
 
