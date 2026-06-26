@@ -3,7 +3,8 @@
   "private": true,
   "scripts": {
     "test:sync-integrity": "node --experimental-default-type=module --test tests/dashboard-sync-integrity.test.mjs",
-    "test:phase2-acceptance": "node --test tests/phase2-acceptance.test.mjs && npm run test:sync-integrity"
+    "test:phase2-acceptance": "node --test tests/phase2-acceptance.test.mjs && npm run test:sync-integrity",
+    "test:phase3-step1": "node --experimental-default-type=module --test tests/phase3-step1-data-sources.test.mjs"
   },
   "dependencies": {
     "@supabase/supabase-js": "^2.53.0"
