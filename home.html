@@ -8,6 +8,7 @@
   <link rel="stylesheet" href="./button-theme.css?v=1" />
   <link rel="stylesheet" href="./home.css?v=1" />
   <link rel="stylesheet" href="./home-layout-overrides.css?v=1" />
+  <link rel="stylesheet" href="./home-sidebar-collapse.css?v=1" />
 </head>
 <body>
   <div class="home-layout">
@@ -21,31 +22,31 @@
       </a>
 
       <nav class="sidebar-nav" aria-label="Team navigation">
-        <a class="sidebar-link active" href="./home.html" aria-current="page">
+        <a class="sidebar-link active" href="./home.html" aria-current="page" title="Home">
           <span class="sidebar-icon" aria-hidden="true">⌂</span>
           <span>Home</span>
         </a>
-        <a class="sidebar-link" href="./dashboard.html">
+        <a class="sidebar-link" href="./dashboard.html" title="Analytics">
           <span class="sidebar-icon" aria-hidden="true">▦</span>
           <span>Analytics</span>
         </a>
-        <a class="sidebar-link" href="./KB.html">
+        <a class="sidebar-link" href="./KB.html" title="Knowledge Base">
           <span class="sidebar-icon" aria-hidden="true">▤</span>
           <span>Knowledge Base</span>
         </a>
-        <a class="sidebar-link" href="./org-chart.html">
+        <a class="sidebar-link" href="./org-chart.html" title="Organizational Chart">
           <span class="sidebar-icon" aria-hidden="true">⌘</span>
           <span>Organizational Chart</span>
         </a>
-        <a id="homeArticleManagementBtn" class="sidebar-link" href="./article-management.html" hidden>
+        <a id="homeArticleManagementBtn" class="sidebar-link" href="./article-management.html" title="Article Management" hidden>
           <span class="sidebar-icon" aria-hidden="true">✎</span>
           <span>Article Management</span>
         </a>
-        <a id="homeUserManagementBtn" class="sidebar-link" href="./user-management.html" hidden>
+        <a id="homeUserManagementBtn" class="sidebar-link" href="./user-management.html" title="User Management" hidden>
           <span class="sidebar-icon" aria-hidden="true">⚙</span>
           <span>User Management</span>
         </a>
-        <a id="homeChangePasswordBtn" class="sidebar-link" href="./change-password.html" hidden>
+        <a id="homeChangePasswordBtn" class="sidebar-link" href="./change-password.html" title="Change Password" hidden>
           <span class="sidebar-icon" aria-hidden="true">●</span>
           <span>Change Password</span>
         </a>
@@ -59,7 +60,7 @@
             <small id="homeUserRole">Team member</small>
           </span>
         </div>
-        <button id="homeLogoutBtn" class="sidebar-logout" type="button">Log out</button>
+        <button id="homeLogoutBtn" class="sidebar-logout" type="button" title="Log out">Log out</button>
       </div>
     </aside>
 
@@ -68,6 +69,7 @@
     <main class="home-main">
       <header class="home-header">
         <div class="home-heading-wrap">
+          <button id="sidebarCollapseToggle" class="sidebar-collapse-toggle" type="button" aria-label="Minimize sidebar" aria-expanded="true">☰</button>
           <button id="sidebarToggle" class="sidebar-toggle" type="button" aria-label="Open navigation" aria-expanded="false">☰</button>
           <div>
             <p id="homeCurrentDate" class="home-date">Loading date...</p>
@@ -182,5 +184,6 @@
   </div>
 
   <script type="module" src="./scripts/home.js?v=1"></script>
+  <script type="module" src="./scripts/home-sidebar-collapse.js?v=1"></script>
 </body>
 </html>
