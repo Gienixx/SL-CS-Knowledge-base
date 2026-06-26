@@ -1,4 +1,4 @@
-import { renderTrendChart } from './data-details-chart.js?v=3'
+import { renderTrendChart } from './data-details-chart.js?v=4'
 import {
   formatCount,
   formatDate,
@@ -26,6 +26,10 @@ export function getDetailElements() {
     trendSubtitle: document.getElementById('trendSubtitle'),
     dateBadge: document.getElementById('detailDateBadge'),
     trendChart: document.getElementById('trendChart'),
+    additionalTrendSection: document.getElementById('additionalTrendSection'),
+    additionalTrendTitle: document.getElementById('additionalTrendTitle'),
+    additionalTrendSubtitle: document.getElementById('additionalTrendSubtitle'),
+    additionalTrendChart: document.getElementById('additionalTrendChart'),
     secondarySection: document.getElementById('secondarySection'),
     secondaryTitle: document.getElementById('secondaryTitle'),
     secondarySubtitle: document.getElementById('secondarySubtitle'),
@@ -60,6 +64,24 @@ function renderSummary(elements, cards) {
     section.append(label, value, help)
     elements.summary.appendChild(section)
   })
+}
+
+function renderAdditionalTrend(elements, additionalTrend) {
+  if (!additionalTrend) {
+    elements.additionalTrendSection.hidden = true
+    elements.additionalTrendChart.replaceChildren()
+    return
+  }
+
+  elements.additionalTrendSection.hidden = false
+  elements.additionalTrendTitle.textContent = additionalTrend.title
+  elements.additionalTrendSubtitle.textContent = additionalTrend.subtitle
+  renderTrendChart(
+    elements.additionalTrendChart,
+    elements.additionalTrendTitle,
+    additionalTrend.rows,
+    additionalTrend.series
+  )
 }
 
 function renderSecondary(elements, secondary) {
@@ -175,6 +197,7 @@ export function renderModel(elements, model) {
     model.trendRows,
     model.trendSeries
   )
+  renderAdditionalTrend(elements, model.additionalTrend)
   renderSecondary(elements, model.secondary)
   renderTable(elements, model.tableColumns, model.tableRows)
 
