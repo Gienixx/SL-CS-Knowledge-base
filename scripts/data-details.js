@@ -9,7 +9,7 @@ import {
   getDetailElements,
   renderModel,
   showError
-} from './data-details-render.js?v=5'
+} from './data-details-render.js?v=6'
 import {
   isIsoDate,
   normalizeKey,
