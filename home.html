@@ -1,0 +1,203 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Home | SocialLoop CS Base</title>
+
+  <link rel="stylesheet" href="./button-theme.css?v=1" />
+  <link rel="stylesheet" href="./home.css?v=1" />
+</head>
+<body>
+  <div class="home-layout">
+    <aside id="homeSidebar" class="home-sidebar" aria-label="Primary navigation">
+      <a class="sidebar-brand" href="./home.html" aria-label="SocialLoop CS home">
+        <span class="sidebar-brand-mark" aria-hidden="true"><i></i><i></i><i></i></span>
+        <span>
+          <strong>SocialLoop</strong>
+          <small>CS Workspace</small>
+        </span>
+      </a>
+
+      <nav class="sidebar-nav" aria-label="Team navigation">
+        <a class="sidebar-link active" href="./home.html" aria-current="page">
+          <span class="sidebar-icon" aria-hidden="true">⌂</span>
+          <span>Home</span>
+        </a>
+        <a class="sidebar-link" href="./dashboard.html">
+          <span class="sidebar-icon" aria-hidden="true">▦</span>
+          <span>Analytics</span>
+        </a>
+        <a class="sidebar-link" href="./KB.html">
+          <span class="sidebar-icon" aria-hidden="true">▤</span>
+          <span>Knowledge Base</span>
+        </a>
+        <a class="sidebar-link" href="./org-chart.html">
+          <span class="sidebar-icon" aria-hidden="true">⌘</span>
+          <span>Organizational Chart</span>
+        </a>
+        <a id="homeArticleManagementBtn" class="sidebar-link" href="./article-management.html" hidden>
+          <span class="sidebar-icon" aria-hidden="true">✎</span>
+          <span>Article Management</span>
+        </a>
+        <a id="homeUserManagementBtn" class="sidebar-link" href="./user-management.html" hidden>
+          <span class="sidebar-icon" aria-hidden="true">⚙</span>
+          <span>User Management</span>
+        </a>
+        <a id="homeChangePasswordBtn" class="sidebar-link" href="./change-password.html" hidden>
+          <span class="sidebar-icon" aria-hidden="true">●</span>
+          <span>Change Password</span>
+        </a>
+      </nav>
+
+      <div class="sidebar-footer">
+        <div class="sidebar-user">
+          <span id="homeUserAvatar" class="user-avatar" aria-hidden="true">CS</span>
+          <span class="sidebar-user-copy">
+            <strong id="homeUserName">Support Team</strong>
+            <small id="homeUserRole">Team member</small>
+          </span>
+        </div>
+        <button id="homeLogoutBtn" class="sidebar-logout" type="button">Log out</button>
+      </div>
+    </aside>
+
+    <button id="sidebarBackdrop" class="sidebar-backdrop" type="button" aria-label="Close navigation"></button>
+
+    <main class="home-main">
+      <header class="home-header">
+        <div class="home-heading-wrap">
+          <button id="sidebarToggle" class="sidebar-toggle" type="button" aria-label="Open navigation" aria-expanded="false">☰</button>
+          <div>
+            <p id="homeCurrentDate" class="home-date">Loading date...</p>
+            <h1>Welcome back, <span id="homeFirstName">Team</span></h1>
+            <p class="home-subtitle">Your CS and Support Team overview for the latest reporting day.</p>
+          </div>
+        </div>
+        <a class="analytics-cta" href="./dashboard.html">Open full analytics</a>
+      </header>
+
+      <section class="latest-summary" aria-labelledby="latestSummaryTitle">
+        <div class="section-heading summary-heading">
+          <div>
+            <p class="section-eyebrow">Latest day</p>
+            <h2 id="latestSummaryTitle">Support snapshot</h2>
+          </div>
+          <span id="homeLatestDate" class="data-status">Loading data...</span>
+        </div>
+
+        <div class="metric-grid">
+          <article class="metric-card">
+            <span class="metric-symbol purple" aria-hidden="true">+</span>
+            <div>
+              <p>New tickets</p>
+              <strong id="homeNewTickets">—</strong>
+              <small>Received on the latest reporting date</small>
+            </div>
+          </article>
+          <article class="metric-card">
+            <span class="metric-symbol gold" aria-hidden="true">✓</span>
+            <div>
+              <p>Solved tickets</p>
+              <strong id="homeSolvedTickets">—</strong>
+              <small>Closed on the latest reporting date</small>
+            </div>
+          </article>
+          <article class="metric-card">
+            <span class="metric-symbol red" aria-hidden="true">!</span>
+            <div>
+              <p>Unsolved tickets</p>
+              <strong id="homeUnsolvedTickets">—</strong>
+              <small>Current open-ticket backlog</small>
+            </div>
+          </article>
+          <article class="metric-card">
+            <span class="metric-symbol green" aria-hidden="true">1</span>
+            <div>
+              <p>One-touch resolution</p>
+              <strong id="homeOneTouch">—</strong>
+              <small>Resolved in one interaction</small>
+            </div>
+          </article>
+        </div>
+      </section>
+
+      <section class="home-grid">
+        <article class="home-panel trend-panel">
+          <div class="section-heading">
+            <div>
+              <p class="section-eyebrow">Latest reporting period</p>
+              <h2>New vs. solved tickets</h2>
+            </div>
+            <span id="homeChartPeriod" class="panel-badge">Loading</span>
+          </div>
+          <div class="chart-wrap">
+            <svg id="homeTicketChart" viewBox="0 0 800 300" role="img" aria-label="Recent new and solved ticket volume"></svg>
+            <p id="homeChartState" class="chart-state">Loading ticket data...</p>
+          </div>
+          <div class="chart-legend" aria-hidden="true">
+            <span><i class="legend-new"></i>New tickets</span>
+            <span><i class="legend-solved"></i>Solved tickets</span>
+          </div>
+        </article>
+
+        <article class="home-panel calendar-panel">
+          <div class="section-heading">
+            <div>
+              <p class="section-eyebrow">Team calendar</p>
+              <h2 id="calendarMonthLabel">Calendar</h2>
+            </div>
+            <div class="calendar-controls">
+              <button id="calendarPrevious" type="button" aria-label="Previous month">‹</button>
+              <button id="calendarNext" type="button" aria-label="Next month">›</button>
+            </div>
+          </div>
+          <div class="calendar-weekdays" aria-hidden="true">
+            <span>Sun</span><span>Mon</span><span>Tue</span><span>Wed</span><span>Thu</span><span>Fri</span><span>Sat</span>
+          </div>
+          <div id="calendarGrid" class="calendar-grid"></div>
+          <div class="calendar-legend">
+            <span><i class="event-dot meeting"></i>Meeting</span>
+            <span><i class="event-dot training"></i>Training</span>
+            <span><i class="event-dot deadline"></i>Deadline</span>
+          </div>
+        </article>
+
+        <article class="home-panel announcements-panel">
+          <div class="section-heading">
+            <div>
+              <p class="section-eyebrow">Team updates</p>
+              <h2>Announcements</h2>
+            </div>
+          </div>
+          <div class="announcement-table-wrap">
+            <table class="announcement-table">
+              <thead>
+                <tr>
+                  <th>Announcement</th>
+                  <th>Category</th>
+                  <th>Posted by</th>
+                  <th>Date</th>
+                </tr>
+              </thead>
+              <tbody id="announcementRows"></tbody>
+            </table>
+          </div>
+        </article>
+
+        <article class="home-panel events-panel">
+          <div class="section-heading">
+            <div>
+              <p class="section-eyebrow">Schedule</p>
+              <h2>Upcoming events</h2>
+            </div>
+          </div>
+          <div id="upcomingEventList" class="event-list"></div>
+        </article>
+      </section>
+    </main>
+  </div>
+
+  <script type="module" src="./scripts/home.js?v=1"></script>
+</body>
+</html>
