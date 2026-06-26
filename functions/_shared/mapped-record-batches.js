@@ -18,6 +18,24 @@ function validateConflictColumns(columns) {
   }
 }
 
+function inferConflictColumns(record) {
+  if (!record || typeof record !== 'object') return null
+
+  if ('dimension_type' in record && 'dimension_key' in record) {
+    return ['report_date', 'dimension_type', 'dimension_key']
+  }
+
+  if ('agent_key' in record) {
+    return ['report_date', 'agent_key']
+  }
+
+  if ('driver_key' in record) {
+    return ['report_date', 'driver_key']
+  }
+
+  return null
+}
+
 export function deduplicateMappedRecords(records, conflictColumns) {
   if (!Array.isArray(records) || records.length === 0) {
     return []
@@ -57,10 +75,14 @@ export function getMappedRecordBatches(records, batchSize = DEFAULT_BATCH_SIZE) 
     return []
   }
 
+  const conflictColumns = inferConflictColumns(records[0])
+  const sourceRecords = conflictColumns
+    ? deduplicateMappedRecords(records, conflictColumns)
+    : records
   const batches = []
 
-  for (let start = 0; start < records.length; start += batchSize) {
-    batches.push(records.slice(start, start + batchSize))
+  for (let start = 0; start < sourceRecords.length; start += batchSize) {
+    batches.push(sourceRecords.slice(start, start + batchSize))
   }
 
   return batches
