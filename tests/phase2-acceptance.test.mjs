@@ -196,7 +196,7 @@ test('responsive and accessibility assets cover required acceptance widths', () 
     "element.setAttribute('role', 'link')",
     "element.setAttribute('tabindex', '0')",
     "event.key !== 'Enter'",
-    "event.key !== ' '動",
+    "event.key !== ' '",
     "setAttribute('aria-busy'",
     "setAttribute('aria-label'"
   ], 'scripts/dashboard-accessibility.js')
