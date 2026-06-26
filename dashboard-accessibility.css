@@ -58,10 +58,11 @@
   background: var(--navy-soft);
 }
 
-.driver-pie-slice[role="link"]:focus-visible,
-.distribution-pie-slice[role="link"]:focus-visible {
-  outline: 4px solid var(--gold);
-  outline-offset: 3px;
+.driver-pie-slice.dashboard-detail-link[role="link"]:focus-visible,
+.distribution-pie-slice.dashboard-detail-link[role="link"]:focus-visible {
+  outline: 4px solid var(--gold) !important;
+  outline-offset: 3px !important;
+  filter: none !important;
   opacity: 1;
 }
 
