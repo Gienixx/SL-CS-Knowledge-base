@@ -2,14 +2,14 @@ import { supabase } from './supabaseClient.js?v=8'
 import {
   requiresFirstLoginPasswordChange
 } from './first-login-policy.js?v=4'
-import { loadAgentDetail } from './data-details-agent.js?v=2'
+import { loadAgentDetail } from './data-details-agent.js?v=3'
 import { loadDistributionDetail } from './data-details-distribution.js?v=2'
 import { loadDriverDetail } from './data-details-driver.js?v=2'
 import {
   getDetailElements,
   renderModel,
   showError
-} from './data-details-render.js?v=4'
+} from './data-details-render.js?v=5'
 import {
   isIsoDate,
   normalizeKey,
