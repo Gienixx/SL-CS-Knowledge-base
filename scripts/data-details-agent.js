@@ -92,6 +92,13 @@ export async function loadAgentDetail(agentKey, rangeRequest) {
     solved: numberOrNull(row.solved_tickets),
     open: numberOrNull(row.open_tickets)
   }))
+  const ahtTrendRows = historyRows.map(row => ({
+    date: row.report_date,
+    aht: numberOrNull(row.aht_value)
+  }))
+  const hasAhtHistory = ahtTrendRows.some(row =>
+    row.aht !== null && row.aht >= 0
+  )
   const peak = findPeak(trendRows, 'solved')
   const tableRows = [...historyRows]
     .sort((first, second) =>
@@ -149,9 +156,20 @@ export async function loadAgentDetail(agentKey, rangeRequest) {
     trendSubtitle: `Daily solved and open tickets for ${dateRange.label}.`,
     trendRows,
     trendSeries: [
-      { key: 'solved', label: 'Solved', tone: 'primary' },
-      { key: 'open', label: 'Open', tone: 'secondary' }
+      { key: 'solved', label: 'Solved', tone: 'primary', format: 'count' },
+      { key: 'open', label: 'Open', tone: 'secondary', format: 'count' }
     ],
+    additionalTrend: hasAhtHistory
+      ? {
+          title: `${agentName} AHT trend`,
+          subtitle:
+            `Daily average handle time for ${dateRange.label}, shown in minutes:seconds.`,
+          rows: ahtTrendRows,
+          series: [
+            { key: 'aht', label: 'AHT', tone: 'tertiary', format: 'aht' }
+          ]
+        }
+      : null,
     secondary: null,
     tableTitle: 'Agent productivity history',
     tableSubtitle: `Daily productivity records for ${dateRange.label}.`,
