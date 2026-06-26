@@ -5,10 +5,25 @@ function text(element) {
   return element?.textContent?.trim() || ''
 }
 
+function setAttributeIfChanged(element, name, value) {
+  if (!element) return
+  const nextValue = String(value)
+  if (element.getAttribute(name) === nextValue) return
+  element.setAttribute(name, nextValue)
+}
+
 function setHidden(element, hidden) {
   if (!element) return
-  element.hidden = hidden
-  element.setAttribute('aria-hidden', hidden ? 'true' : 'false')
+
+  if (element.hidden !== hidden) {
+    element.hidden = hidden
+  }
+
+  setAttributeIfChanged(
+    element,
+    'aria-hidden',
+    hidden ? 'true' : 'false'
+  )
 }
 
 function updateLoadingVisibility() {
@@ -42,7 +57,8 @@ function updateLoadingVisibility() {
 
   if (driverChart) {
     const stateText = text(driverChart.querySelector('.driver-state'))
-    driverChart.setAttribute(
+    setAttributeIfChanged(
+      driverChart,
       'aria-busy',
       LOADING_TEXT.test(stateText) ? 'true' : 'false'
     )
@@ -71,7 +87,8 @@ function updateLoadingVisibility() {
     const stateText = text(
       productivityChart.querySelector('.productivity-state')
     )
-    productivityChart.setAttribute(
+    setAttributeIfChanged(
+      productivityChart,
       'aria-busy',
       LOADING_TEXT.test(stateText) ? 'true' : 'false'
     )
@@ -79,7 +96,8 @@ function updateLoadingVisibility() {
 
   document.querySelectorAll('.distribution-chart').forEach(chart => {
     const stateText = text(chart.querySelector('.distribution-state'))
-    chart.setAttribute(
+    setAttributeIfChanged(
+      chart,
       'aria-busy',
       LOADING_TEXT.test(stateText) ? 'true' : 'false'
     )
@@ -89,12 +107,12 @@ function updateLoadingVisibility() {
 function improveLinkedElement(element, label) {
   if (!element || element.getAttribute('role') !== 'link') return
 
-  if (label && element.getAttribute('aria-label') !== label) {
-    element.setAttribute('aria-label', label)
+  if (label) {
+    setAttributeIfChanged(element, 'aria-label', label)
   }
 
   if (element instanceof SVGElement) {
-    element.setAttribute('focusable', 'true')
+    setAttributeIfChanged(element, 'focusable', 'true')
   }
 }
 
@@ -119,8 +137,9 @@ function enhanceDriverChart() {
   const hasLinks = slices.some(slice => slice.getAttribute('role') === 'link')
 
   if (svg && hasLinks) {
-    svg.setAttribute('role', 'group')
-    svg.setAttribute(
+    setAttributeIfChanged(svg, 'role', 'group')
+    setAttributeIfChanged(
+      svg,
       'aria-label',
       `Interactive ticket driver distribution. ${descriptions.join('. ')}`
     )
@@ -153,8 +172,9 @@ function enhanceDistributionChart(type) {
   const hasLinks = slices.some(slice => slice.getAttribute('role') === 'link')
 
   if (svg && hasLinks) {
-    svg.setAttribute('role', 'group')
-    svg.setAttribute(
+    setAttributeIfChanged(svg, 'role', 'group')
+    setAttributeIfChanged(
+      svg,
       'aria-label',
       `Interactive ${type} ticket distribution. ${descriptions.join('. ')}`
     )
@@ -166,7 +186,11 @@ function enhanceProductivityRows() {
     .forEach(row => {
       const current = row.getAttribute('aria-label') || ''
       if (!/open agent details/i.test(current)) {
-        row.setAttribute('aria-label', `${current}. Open agent details.`)
+        setAttributeIfChanged(
+          row,
+          'aria-label',
+          `${current}. Open agent details.`
+        )
       }
     })
 }
@@ -184,7 +208,8 @@ function improveTicketChartLabel() {
     details.push(`through ${latestDate}`)
   }
 
-  chart.setAttribute(
+  setAttributeIfChanged(
+    chart,
     'aria-label',
     `New and solved ticket volume${details.length ? ` for ${details.join(' ')}` : ''}.`
   )
@@ -200,7 +225,19 @@ function runAuditEnhancements() {
   improveTicketChartLabel()
 }
 
-const observer = new MutationObserver(runAuditEnhancements)
+let auditScheduled = false
+
+function scheduleAuditEnhancements() {
+  if (auditScheduled) return
+  auditScheduled = true
+
+  window.requestAnimationFrame(() => {
+    auditScheduled = false
+    runAuditEnhancements()
+  })
+}
+
+const observer = new MutationObserver(scheduleAuditEnhancements)
 observer.observe(document.documentElement, {
   childList: true,
   characterData: true,
@@ -209,5 +246,5 @@ observer.observe(document.documentElement, {
   attributeFilter: ['class', 'role', 'data-status']
 })
 
-runAuditEnhancements()
-document.addEventListener('DOMContentLoaded', runAuditEnhancements)
+scheduleAuditEnhancements()
+document.addEventListener('DOMContentLoaded', scheduleAuditEnhancements)
