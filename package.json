@@ -1,6 +1,9 @@
 {
   "name": "socialloop-cs-base",
   "private": true,
+  "scripts": {
+    "test:sync-integrity": "node --experimental-default-type=module --test tests/dashboard-sync-integrity.test.mjs"
+  },
   "dependencies": {
     "@supabase/supabase-js": "^2.53.0"
   }
