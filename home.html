@@ -8,18 +8,18 @@
   <link rel="stylesheet" href="./button-theme.css?v=1" />
   <link rel="stylesheet" href="./home.css?v=1" />
   <link rel="stylesheet" href="./home-layout-overrides.css?v=1" />
-  <link rel="stylesheet" href="./home-sidebar-collapse.css?v=1" />
+  <link rel="stylesheet" href="./home-sidebar-collapse.css?v=2" />
 </head>
 <body>
   <div class="home-layout">
     <aside id="homeSidebar" class="home-sidebar" aria-label="Primary navigation">
-      <a class="sidebar-brand" href="./home.html" aria-label="SocialLoop CS home">
-        <span class="sidebar-brand-mark" aria-hidden="true"><i></i><i></i><i></i></span>
-        <span>
+      <button id="sidebarCollapseToggle" class="sidebar-brand sidebar-collapse-toggle" type="button" aria-label="Minimize sidebar" aria-expanded="true">
+        <span class="sidebar-hamburger" aria-hidden="true"><i></i><i></i><i></i></span>
+        <span class="sidebar-brand-copy">
           <strong>SocialLoop</strong>
           <small>CS Workspace</small>
         </span>
-      </a>
+      </button>
 
       <nav class="sidebar-nav" aria-label="Team navigation">
         <a class="sidebar-link active" href="./home.html" aria-current="page" title="Home">
@@ -69,7 +69,6 @@
     <main class="home-main">
       <header class="home-header">
         <div class="home-heading-wrap">
-          <button id="sidebarCollapseToggle" class="sidebar-collapse-toggle" type="button" aria-label="Minimize sidebar" aria-expanded="true">☰</button>
           <button id="sidebarToggle" class="sidebar-toggle" type="button" aria-label="Open navigation" aria-expanded="false">☰</button>
           <div>
             <p id="homeCurrentDate" class="home-date">Loading date...</p>
@@ -184,6 +183,6 @@
   </div>
 
   <script type="module" src="./scripts/home.js?v=1"></script>
-  <script type="module" src="./scripts/home-sidebar-collapse.js?v=1"></script>
+  <script type="module" src="./scripts/home-sidebar-collapse.js?v=2"></script>
 </body>
 </html>
