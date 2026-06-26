@@ -36,6 +36,9 @@ export function getDetailElements() {
     secondaryContent: document.getElementById('secondaryContent'),
     tableTitle: document.getElementById('detailTableTitle'),
     tableSubtitle: document.getElementById('detailTableSubtitle'),
+    tableMeta: document.getElementById('detailTableMeta'),
+    tableCaption: document.getElementById('detailTableCaption'),
+    tableScroll: document.getElementById('detailTableScroll'),
     tableHead: document.getElementById('detailTableHead'),
     tableBody: document.getElementById('detailTableBody'),
     logout: document.getElementById('detailLogoutLink')
@@ -141,17 +144,27 @@ function renderTable(elements, columns, rows) {
   elements.tableHead.replaceChildren()
   elements.tableBody.replaceChildren()
 
+  const recordCount = Array.isArray(rows) ? rows.length : 0
+  const recordLabel = `${recordCount} ${recordCount === 1 ? 'record' : 'records'}`
+  elements.tableMeta.textContent = recordCount > 0
+    ? `${recordLabel} • newest first`
+    : '0 records'
+  elements.tableCaption.textContent =
+    `${elements.tableTitle.textContent}. ${elements.tableSubtitle.textContent}. ` +
+    `${recordLabel}, sorted by date from newest to oldest.`
+
   const headerRow = document.createElement('tr')
-  columns.forEach(column => {
+  columns.forEach((column, index) => {
     const cell = document.createElement('th')
     cell.scope = 'col'
     cell.textContent = column.label
     if (column.numeric) cell.classList.add('numeric')
+    if (index === 0) cell.setAttribute('aria-sort', 'descending')
     headerRow.appendChild(cell)
   })
   elements.tableHead.appendChild(headerRow)
 
-  if (!rows.length) {
+  if (!recordCount) {
     const row = document.createElement('tr')
     const cell = document.createElement('td')
     cell.colSpan = Math.max(1, columns.length)
@@ -166,9 +179,21 @@ function renderTable(elements, columns, rows) {
     const row = document.createElement('tr')
 
     values.forEach((value, index) => {
-      const cell = document.createElement('td')
+      const cell = index === 0
+        ? document.createElement('th')
+        : document.createElement('td')
+
       cell.textContent = value
-      if (columns[index]?.numeric) cell.classList.add('numeric')
+      cell.dataset.column = columns[index]?.label || ''
+
+      if (index === 0) {
+        cell.scope = 'row'
+      }
+
+      if (columns[index]?.numeric) {
+        cell.classList.add('numeric')
+      }
+
       row.appendChild(cell)
     })
 
