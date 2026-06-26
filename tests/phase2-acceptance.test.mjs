@@ -193,11 +193,17 @@ test('responsive and accessibility assets cover required acceptance widths', () 
   ], 'dashboard-accessibility.css')
 
   assertContainsAll(accessibilityJs, [
-    "element.setAttribute('role', 'link')",
-    "element.setAttribute('tabindex', '0')",
-    "event.key !== 'Enter'",
-    "event.key !== ' '",
-    "setAttribute('aria-busy'",
-    "setAttribute('aria-label'"
+    'setAttributeIfChanged',
+    "setAttributeIfChanged(svg, 'role', 'group')",
+    'let auditScheduled = false',
+    'window.requestAnimationFrame',
+    'new MutationObserver(scheduleAuditEnhancements)',
+    "attributeFilter: ['class', 'role', 'data-status']"
   ], 'scripts/dashboard-accessibility.js')
+
+  assert.equal(
+    accessibilityJs.includes("svg.setAttribute('role', 'group')"),
+    false,
+    'chart role changes must be guarded to prevent a mutation observer loop'
+  )
 })
