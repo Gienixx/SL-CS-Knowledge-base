@@ -1,0 +1,107 @@
+name: Deploy Zendesk Health Worker
+
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - workers/zendesk-health/**
+      - functions/api/zendesk-test.js
+      - functions/_shared/zendesk-client.js
+      - tests/zendesk-integration.test.mjs
+      - .github/workflows/deploy-zendesk-health-worker.yml
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: deploy-zendesk-health-worker
+  cancel-in-progress: false
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      - name: Validate deployment secrets
+        shell: bash
+        env:
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          PAGES_BASE_URL: ${{ secrets.PAGES_BASE_URL }}
+          ZENDESK_SYNC_SECRET: ${{ secrets.ZENDESK_SYNC_SECRET }}
+        run: |
+          missing=0
+          for name in \
+            CLOUDFLARE_ACCOUNT_ID \
+            CLOUDFLARE_API_TOKEN \
+            PAGES_BASE_URL \
+            ZENDESK_SYNC_SECRET
+          do
+            if [ -z "${!name}" ]; then
+              echo "::error::Missing required GitHub Actions secret: ${name}"
+              missing=1
+            fi
+          done
+          exit "$missing"
+
+      - name: Run Zendesk integration tests
+        run: npm run test:zendesk-integration
+
+      - name: Create ephemeral Worker secrets file
+        shell: bash
+        env:
+          PAGES_BASE_URL: ${{ secrets.PAGES_BASE_URL }}
+          ZENDESK_SYNC_SECRET: ${{ secrets.ZENDESK_SYNC_SECRET }}
+        run: |
+          node <<'NODE'
+          const fs = require('node:fs')
+          const path = require('node:path')
+          const filePath = path.join(
+            process.env.RUNNER_TEMP,
+            'zendesk-health-worker-secrets.json'
+          )
+
+          fs.writeFileSync(
+            filePath,
+            JSON.stringify({
+              PAGES_BASE_URL: process.env.PAGES_BASE_URL,
+              ZENDESK_SYNC_SECRET: process.env.ZENDESK_SYNC_SECRET
+            }),
+            { mode: 0o600 }
+          )
+          NODE
+
+      - name: Deploy scheduled health Worker
+        id: deploy
+        uses: cloudflare/wrangler-action@v3
+        with:
+          apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          wranglerVersion: "4"
+          workingDirectory: workers/zendesk-health
+          command: >-
+            deploy --secrets-file
+            "${{ runner.temp }}/zendesk-health-worker-secrets.json"
+
+      - name: Verify Worker endpoint
+        if: ${{ steps.deploy.outputs.deployment-url != '' }}
+        shell: bash
+        env:
+          DEPLOYMENT_URL: ${{ steps.deploy.outputs.deployment-url }}
+        run: curl --fail --silent --show-error "$DEPLOYMENT_URL"
+
+      - name: Remove ephemeral Worker secrets file
+        if: always()
+        shell: bash
+        run: rm -f "${RUNNER_TEMP}/zendesk-health-worker-secrets.json"
