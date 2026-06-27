@@ -1,6 +1,7 @@
 name = "socialloop-zendesk-health-cron"
 main = "index.js"
 compatibility_date = "2026-06-27"
+workers_dev = true
 
 [triggers]
 crons = ["0 * * * *"]
