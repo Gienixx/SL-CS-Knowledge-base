@@ -12,7 +12,7 @@ import {
   getEasternHour,
   runZendeskHealthCheck,
   shouldRunZendeskHealthCheck
-} from '../workers/zendesk-health-cron.js'
+} from '../workers/zendesk-health/index.js'
 
 const ENV = {
   ZENDESK_SUBDOMAIN: 'socialloop',
