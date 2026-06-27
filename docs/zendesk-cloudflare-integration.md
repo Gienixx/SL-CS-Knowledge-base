@@ -1,6 +1,6 @@
 # Zendesk integration on Cloudflare
 
-This repository now contains a protected Cloudflare Pages Function that verifies:
+This repository contains a protected Cloudflare Pages Function that verifies:
 
 - Zendesk API-token authentication
 - incremental ticket-export access
@@ -10,7 +10,7 @@ This repository now contains a protected Cloudflare Pages Function that verifies
 - satisfaction-rating access for CSAT reporting
 - the existing Supabase service-role connection
 
-The endpoint is deployed automatically with the Pages project at:
+The endpoint is deployed with the Pages project at:
 
 ```text
 POST /api/zendesk-test
@@ -72,50 +72,67 @@ not use legacy satisfaction ratings.
 The endpoint never returns ticket subjects, descriptions, comments, requester data,
 the API token, or the service-role key.
 
-## Scheduled health check Worker
+## Scheduled health-check Worker
 
-The repository includes:
-
-```text
-workers/zendesk-health-cron.js
-wrangler.zendesk-health-cron.toml
-```
-
-Cloudflare Cron Triggers use UTC. The Worker runs hourly but calls the Pages endpoint
-only when the local time in `America/New_York` is 12:00, which keeps the check at noon
-through daylight-saving changes.
-
-Set the Worker-only values. The value of `ZENDESK_SYNC_SECRET` must match the Pages
-secret exactly.
-
-```bash
-npx wrangler secret put PAGES_BASE_URL \
-  --config wrangler.zendesk-health-cron.toml
-
-npx wrangler secret put ZENDESK_SYNC_SECRET \
-  --config wrangler.zendesk-health-cron.toml
-```
-
-For `PAGES_BASE_URL`, enter the production origin without a trailing path, for example:
+The self-contained Worker project is located at:
 
 ```text
-https://support.example.com
+workers/zendesk-health/index.js
+workers/zendesk-health/wrangler.toml
 ```
 
-Deploy the Worker:
+The Worker has an hourly UTC Cron Trigger but calls the Pages endpoint only when the
+local time in `America/New_York` is 12:00. This keeps the health check at noon through
+daylight-saving changes.
 
-```bash
-npx wrangler deploy --config wrangler.zendesk-health-cron.toml
-```
-
-After deployment, confirm that the Worker has this trigger:
+The Wrangler configuration declares these required Worker secrets:
 
 ```text
-0 * * * *
+PAGES_BASE_URL
+ZENDESK_SYNC_SECRET
 ```
 
-Review the Worker logs after noon Eastern. A successful run logs only sanitized
-readiness booleans.
+`PAGES_BASE_URL` is the production Pages origin without a trailing path. The Worker
+`ZENDESK_SYNC_SECRET` must exactly match the Pages secret.
+
+## Automated GitHub deployment
+
+The deployment workflow is:
+
+```text
+.github/workflows/deploy-zendesk-health-worker.yml
+```
+
+Add these four encrypted repository secrets under:
+
+```text
+GitHub repository > Settings > Secrets and variables > Actions
+```
+
+```text
+CLOUDFLARE_ACCOUNT_ID
+CLOUDFLARE_API_TOKEN
+PAGES_BASE_URL
+ZENDESK_SYNC_SECRET
+```
+
+The Cloudflare API token should be scoped to the relevant account and granted the
+Workers edit permission. Never commit any of these values.
+
+The workflow:
+
+1. runs the Zendesk integration tests;
+2. creates an ephemeral secrets file on the GitHub runner;
+3. deploys `socialloop-zendesk-health-cron` with Wrangler;
+4. uploads the two Worker secrets alongside the code;
+5. applies the `0 * * * *` Cron Trigger;
+6. deletes the ephemeral secrets file.
+
+It runs automatically when the Worker, Zendesk server integration, or deployment
+workflow changes on `main`. It can also be started manually from the GitHub Actions
+tab.
+
+Cron Trigger updates can take several minutes to propagate in Cloudflare.
 
 ## Current boundary
 
