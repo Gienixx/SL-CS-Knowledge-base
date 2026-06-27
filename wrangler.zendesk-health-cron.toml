@@ -1,6 +1,0 @@
-name = "socialloop-zendesk-health-cron"
-main = "workers/zendesk-health-cron.js"
-compatibility_date = "2026-06-27"
-
-[triggers]
-crons = ["0 * * * *"]
