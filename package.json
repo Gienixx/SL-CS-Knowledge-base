@@ -6,7 +6,7 @@
     "test:phase2-acceptance": "node --test tests/phase2-acceptance.test.mjs && npm run test:sync-integrity",
     "test:phase3-step1": "node --experimental-default-type=module --test tests/phase3-step1-data-sources.test.mjs",
     "test:phase3-step2": "node --experimental-default-type=module --test tests/phase3-step2-*.test.mjs",
-    "test:zendesk-integration": "node --experimental-default-type=module --test tests/zendesk-integration.test.mjs"
+    "test:zendesk-integration": "node --experimental-default-type=module --test tests/zendesk-*.test.mjs"
   },
   "dependencies": {
     "@supabase/supabase-js": "^2.53.0"
