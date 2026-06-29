@@ -1,23 +1,18 @@
 # Zendesk integration on Cloudflare
 
-This repository contains protected Cloudflare Pages Functions for Zendesk readiness testing and incremental ticket-event synchronization.
+This repository contains protected Cloudflare Pages Functions for Zendesk readiness testing and incremental synchronization.
 
 ## Pages endpoints
 
 ```text
 POST /api/zendesk-test
 POST /api/sync-zendesk
+POST /api/sync-zendesk-events
 ```
 
-Both endpoints require:
+All endpoints use the configured bearer synchronization secret.
 
-```text
-Authorization: Bearer ZENDESK_SYNC_SECRET
-```
-
-## Required Pages variables and secrets
-
-The Pages project must contain:
+## Required Pages settings
 
 ```text
 ZENDESK_SUBDOMAIN
@@ -28,39 +23,51 @@ SUPABASE_URL
 SUPABASE_SERVICE_ROLE_KEY
 ```
 
-Optional Step 2 variables:
+Optional variables:
 
 ```text
 ZENDESK_INITIAL_START_TIME
 ZENDESK_SYNC_PAGE_SIZE
+ZENDESK_EVENT_INITIAL_START_TIME
+ZENDESK_EVENT_PAGE_SIZE
 ```
 
-`ZENDESK_API_TOKEN`, `ZENDESK_SYNC_SECRET`, and `SUPABASE_SERVICE_ROLE_KEY` must be encrypted secrets. These values are read only inside Pages Functions through `context.env`.
-
-## Manual connection test
-
-```bash
-curl -X POST "https://YOUR_PAGES_DOMAIN/api/zendesk-test" \
-  -H "Authorization: Bearer YOUR_ZENDESK_SYNC_SECRET" \
-  -H "Accept: application/json"
-```
-
-A successful result should report `success: true`, `supabaseConnected: true`, and readiness values for ticket events, SLA, and CSAT.
-
-The readiness endpoint never returns ticket subjects, descriptions, comments, requester data, API tokens, or service-role credentials.
-
-## Scheduled health-check Worker
-
-The Worker project is located at:
+Recommended initial values:
 
 ```text
-workers/zendesk-health/index.js
-workers/zendesk-health/wrangler.toml
+ZENDESK_SYNC_PAGE_SIZE=5
+ZENDESK_EVENT_PAGE_SIZE=100
 ```
 
-The Cron Trigger executes hourly in UTC, but the Worker calls the Pages endpoint only when the local time in `America/New_York` is **9:00 AM Eastern**.
+## Resource-safe synchronization model
 
-This was changed from **12:00 noon Eastern to 9:00 AM Eastern**. The IANA timezone automatically applies EST or EDT depending on daylight-saving time.
+The synchronization is intentionally divided into two streams.
+
+### Ticket snapshot stream
+
+```text
+POST /api/sync-zendesk
+```
+
+This endpoint reads one cursor-based ticket page and stores only ticket-created and first-response records. It does not request every audit page for each ticket.
+
+### Ticket change stream
+
+```text
+POST /api/sync-zendesk-events
+```
+
+This endpoint reads one bounded page from Zendesk's incremental ticket-event export. It stores assignment, priority, status, solved, reopened, and closed changes. Existing event identifiers use the audit identifier when Zendesk provides one, preventing duplicates with events imported by an earlier version.
+
+The event stream is time-based. Each successful request saves the response `end_time` as the next `start_time` under the `ticket_events` stream key in `zendesk_sync_state`.
+
+## Why the streams were separated
+
+The previous implementation loaded all available audit pages for every ticket in one Pages Function request. A single high-activity ticket could exceed Cloudflare CPU or memory limits even when the ticket page size was one. The split design keeps each request bounded and avoids per-ticket historical audit traversal.
+
+## Schedule
+
+The health check runs at **9:00 AM Eastern**, changed from **12:00 noon Eastern**. The Worker evaluates `America/New_York`, so the local hour remains 9:00 through EST and EDT changes.
 
 The Worker currently calls:
 
@@ -68,51 +75,7 @@ The Worker currently calls:
 POST /api/zendesk-test
 ```
 
-Keep it on the health endpoint until the Phase 3 Step 2 migration is applied and an initial manual `/api/sync-zendesk` backfill completes successfully.
-
-## Required Worker secrets
-
-```text
-PAGES_BASE_URL
-ZENDESK_SYNC_SECRET
-```
-
-`PAGES_BASE_URL` is the production Pages origin without a trailing path. The Worker `ZENDESK_SYNC_SECRET` must exactly match the Pages secret.
-
-## Automated GitHub deployment
-
-The deployment workflow is:
-
-```text
-.github/workflows/deploy-zendesk-health-worker.yml
-```
-
-Required encrypted GitHub Actions secrets:
-
-```text
-CLOUDFLARE_ACCOUNT_ID
-CLOUDFLARE_API_TOKEN
-PAGES_BASE_URL
-ZENDESK_SYNC_SECRET
-```
-
-The workflow runs the Zendesk tests, deploys `socialloop-zendesk-health-cron`, uploads the Worker secrets, applies the hourly Cron Trigger, verifies the Worker endpoint, and removes the temporary runner secret file.
-
-Cron Trigger updates can take several minutes to propagate in Cloudflare.
-
-## Step 2 synchronization behavior
-
-`POST /api/sync-zendesk` processes one bounded incremental ticket page per request. Ticket audits are loaded with Zendesk cursor pagination using:
-
-```text
-page[size]=100
-page[after]=<cursor>
-include_boundary_indicators=true
-```
-
-Zendesk does not support audit pagination for archived tickets. When pagination metadata is unavailable and a full 100-record page is returned, the endpoint logs a sanitized warning because the archived audit history may be incomplete.
-
-The synchronization cursor advances only after successful event writes. Duplicate event imports are prevented by the unique `source_event_id` key.
+Keep it on the health endpoint until both initial synchronization streams complete and are verified.
 
 ## Tests
 
