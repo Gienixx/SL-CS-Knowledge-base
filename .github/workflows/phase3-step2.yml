@@ -5,8 +5,9 @@ on:
     branches:
       - main
     paths:
-      - functions/api/sync-zendesk.js
+      - functions/api/sync-zendesk*.js
       - functions/_shared/zendesk-event-normalizer.js
+      - functions/_shared/zendesk-incremental-event-normalizer.js
       - functions/_shared/zendesk-sync-store.js
       - supabase/migrations/20260627_phase3_step2_ticket_event_storage.sql
       - supabase/verification/phase3_step2_ticket_event_check.sql
