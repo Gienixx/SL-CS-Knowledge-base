@@ -23,6 +23,7 @@ const STREAM_KEY = 'tickets'
 const DEFAULT_LOOKBACK_DAYS = 7
 const DEFAULT_PAGE_SIZE = 25
 const MAX_PAGE_SIZE = 50
+const MAX_AUDIT_PAGES = 1000
 
 function jsonResponse(data, status = 200, headers = {}) {
   return new Response(JSON.stringify(data), {
@@ -88,14 +89,79 @@ async function fetchTicketPage(
   )
 }
 
-async function fetchTicketAudits(environment, ticketId) {
-  const payload = await fetchZendeskJson(
-    environment,
-    `/api/v2/tickets/${encodeURIComponent(ticketId)}/audits.json`,
-    { per_page: 100 }
-  )
+export async function fetchTicketAudits(
+  environment,
+  ticketId,
+  {
+    fetchJson = fetchZendeskJson,
+    warn = console.warn
+  } = {}
+) {
+  const audits = []
+  let afterCursor = null
+  let pageCount = 0
 
-  return Array.isArray(payload?.audits) ? payload.audits : []
+  while (pageCount < MAX_AUDIT_PAGES) {
+    const query = {
+      'page[size]': 100,
+      include_boundary_indicators: true
+    }
+
+    if (afterCursor) {
+      query['page[after]'] = afterCursor
+    }
+
+    const payload = await fetchJson(
+      environment,
+      `/api/v2/tickets/${encodeURIComponent(ticketId)}/audits.json`,
+      query
+    )
+    const pageAudits = Array.isArray(payload?.audits)
+      ? payload.audits
+      : []
+
+    audits.push(...pageAudits)
+    pageCount += 1
+
+    const meta = payload?.meta
+    const hasCursorMetadata =
+      meta && typeof meta.has_more === 'boolean'
+
+    if (!hasCursorMetadata) {
+      if (pageAudits.length === 100) {
+        warn(
+          'Zendesk audit pagination metadata was unavailable; ' +
+          'the ticket audit history may be truncated.',
+          { ticketId }
+        )
+      }
+
+      break
+    }
+
+    if (!meta.has_more) break
+
+    const nextCursor = typeof meta.after_cursor === 'string'
+      ? meta.after_cursor.trim()
+      : ''
+
+    if (!nextCursor || nextCursor === afterCursor) {
+      throw new Error(
+        'Zendesk audit pagination indicated more records without ' +
+        'a usable next cursor.'
+      )
+    }
+
+    afterCursor = nextCursor
+  }
+
+  if (pageCount >= MAX_AUDIT_PAGES) {
+    throw new Error(
+      `Zendesk audit pagination exceeded ${MAX_AUDIT_PAGES} pages.`
+    )
+  }
+
+  return audits
 }
 
 function latestEventTimestamp(events) {
