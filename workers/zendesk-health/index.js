@@ -24,7 +24,7 @@ export function getEasternHour(date) {
 }
 
 export function shouldRunZendeskHealthCheck(date) {
-  return getEasternHour(date) === 12
+  return getEasternHour(date) === 9
 }
 
 export async function runZendeskHealthCheck(env, fetchImpl = fetch) {
