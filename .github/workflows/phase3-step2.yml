@@ -10,7 +10,7 @@ on:
       - functions/_shared/zendesk-sync-store.js
       - supabase/migrations/20260627_phase3_step2_ticket_event_storage.sql
       - supabase/verification/phase3_step2_ticket_event_check.sql
-      - tests/phase3-step2-ticket-events.test.mjs
+      - tests/phase3-step2-*.test.mjs
       - package.json
       - .github/workflows/phase3-step2.yml
   pull_request:
