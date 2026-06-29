@@ -5,7 +5,6 @@ import {
   secretsMatch
 } from '../_shared/zendesk-client.js'
 import {
-  buildAuditEvents,
   buildTicketEvents,
   deduplicateTicketEvents,
   findMetricSet
@@ -23,7 +22,6 @@ const STREAM_KEY = 'tickets'
 const DEFAULT_LOOKBACK_DAYS = 7
 const DEFAULT_PAGE_SIZE = 25
 const MAX_PAGE_SIZE = 50
-const MAX_AUDIT_PAGES = 1000
 
 function jsonResponse(data, status = 200, headers = {}) {
   return new Response(JSON.stringify(data), {
@@ -60,8 +58,9 @@ function getPageSize(env) {
 }
 
 function getTriggerSource(request) {
-  const value = request.headers.get('X-Sync-Source')
-  return value === 'scheduled' ? 'scheduled' : 'manual'
+  return request.headers.get('X-Sync-Source') === 'scheduled'
+    ? 'scheduled'
+    : 'manual'
 }
 
 async function fetchTicketPage(
@@ -89,82 +88,7 @@ async function fetchTicketPage(
   )
 }
 
-export async function fetchTicketAudits(
-  environment,
-  ticketId,
-  {
-    fetchJson = fetchZendeskJson,
-    warn = console.warn
-  } = {}
-) {
-  const audits = []
-  let afterCursor = null
-  let pageCount = 0
-
-  while (pageCount < MAX_AUDIT_PAGES) {
-    const query = {
-      'page[size]': 100,
-      include_boundary_indicators: true
-    }
-
-    if (afterCursor) {
-      query['page[after]'] = afterCursor
-    }
-
-    const payload = await fetchJson(
-      environment,
-      `/api/v2/tickets/${encodeURIComponent(ticketId)}/audits.json`,
-      query
-    )
-    const pageAudits = Array.isArray(payload?.audits)
-      ? payload.audits
-      : []
-
-    audits.push(...pageAudits)
-    pageCount += 1
-
-    const meta = payload?.meta
-    const hasCursorMetadata =
-      meta && typeof meta.has_more === 'boolean'
-
-    if (!hasCursorMetadata) {
-      if (pageAudits.length === 100) {
-        warn(
-          'Zendesk audit pagination metadata was unavailable; ' +
-          'the ticket audit history may be truncated.',
-          { ticketId }
-        )
-      }
-
-      break
-    }
-
-    if (!meta.has_more) break
-
-    const nextCursor = typeof meta.after_cursor === 'string'
-      ? meta.after_cursor.trim()
-      : ''
-
-    if (!nextCursor || nextCursor === afterCursor) {
-      throw new Error(
-        'Zendesk audit pagination indicated more records without ' +
-        'a usable next cursor.'
-      )
-    }
-
-    afterCursor = nextCursor
-  }
-
-  if (pageCount >= MAX_AUDIT_PAGES) {
-    throw new Error(
-      `Zendesk audit pagination exceeded ${MAX_AUDIT_PAGES} pages.`
-    )
-  }
-
-  return audits
-}
-
-function latestEventTimestamp(events) {
+function latestTimestamp(events) {
   return events.reduce(
     (latest, event) =>
       !latest || event.event_timestamp > latest
@@ -188,7 +112,7 @@ function publicFailure(error) {
     : {
         status: 500,
         code: 'zendesk_sync_failed',
-        message: 'Unable to synchronize Zendesk ticket events.'
+        message: 'Unable to synchronize Zendesk ticket snapshots.'
       }
 }
 
@@ -198,37 +122,27 @@ export async function onRequestPost(context) {
   try {
     environment = getZendeskEnvironment(context.env)
   } catch (error) {
-    return jsonResponse(
-      {
-        success: false,
-        code: 'zendesk_configuration_incomplete',
-        error: error.message
-      },
-      503
-    )
+    return jsonResponse({
+      success: false,
+      code: 'zendesk_configuration_incomplete',
+      error: error.message
+    }, 503)
   }
 
   if (!await secretsMatch(
     getBearerToken(context.request),
     environment.syncSecret
   )) {
-    return jsonResponse(
-      {
-        success: false,
-        code: 'unauthorized',
-        error: 'Unauthorized Zendesk synchronization request.'
-      },
-      401,
-      { 'WWW-Authenticate': 'Bearer' }
-    )
+    return jsonResponse({
+      success: false,
+      code: 'unauthorized',
+      error: 'Unauthorized Zendesk synchronization request.'
+    }, 401, { 'WWW-Authenticate': 'Bearer' })
   }
 
   const lockToken = crypto.randomUUID()
   const startedAt = new Date().toISOString()
-  const initialStartTime = getInitialStartTime(
-    context.env,
-    Date.now()
-  )
+  const initialStartTime = getInitialStartTime(context.env, Date.now())
   let runId = null
   let lockAcquired = false
 
@@ -253,37 +167,20 @@ export async function onRequestPost(context) {
       initialStartTime,
       getPageSize(context.env)
     )
-    const tickets = Array.isArray(page?.tickets)
-      ? page.tickets
-      : []
+    const tickets = Array.isArray(page?.tickets) ? page.tickets : []
     const metricSets = Array.isArray(page?.metric_sets)
       ? page.metric_sets
       : Array.isArray(page?.ticket_metrics)
         ? page.ticket_metrics
         : []
-    const events = []
-
-    for (const ticket of tickets) {
-      events.push(...buildTicketEvents(
+    const events = deduplicateTicketEvents(
+      tickets.flatMap(ticket => buildTicketEvents(
         ticket,
         findMetricSet(metricSets, ticket.id)
       ))
-
-      const audits = await fetchTicketAudits(
-        environment,
-        ticket.id
-      )
-
-      events.push(...buildAuditEvents(ticket, audits))
-    }
-
-    const uniqueEvents = deduplicateTicketEvents(events)
-    const insertedEvents = await insertTicketEvents(
-      environment,
-      uniqueEvents
     )
-    const cursorAfter =
-      page?.after_cursor || state.current_cursor || null
+    const insertedEvents = await insertTicketEvents(environment, events)
+    const cursorAfter = page?.after_cursor || state.current_cursor || null
     const endTime = Number(page?.end_time)
     const nextStartTime = Number.isInteger(endTime) && endTime > 0
       ? endTime
@@ -294,7 +191,7 @@ export async function onRequestPost(context) {
       lockToken,
       cursor: cursorAfter,
       startTime: nextStartTime,
-      lastEventTimestamp: latestEventTimestamp(uniqueEvents)
+      lastEventTimestamp: latestTimestamp(events)
     })
     lockAcquired = false
 
@@ -303,19 +200,20 @@ export async function onRequestPost(context) {
       status: 'success',
       cursor_after: cursorAfter,
       tickets_processed: tickets.length,
-      events_seen: uniqueEvents.length,
+      events_seen: events.length,
       events_imported: insertedEvents,
-      duplicate_events: uniqueEvents.length - insertedEvents,
+      duplicate_events: events.length - insertedEvents,
       warnings_count: 0,
       error_message: null
     })
 
     return jsonResponse({
       success: true,
+      stream: STREAM_KEY,
       ticketsProcessed: tickets.length,
-      eventsSeen: uniqueEvents.length,
+      eventsSeen: events.length,
       eventsImported: insertedEvents,
-      duplicateEvents: uniqueEvents.length - insertedEvents,
+      duplicateEvents: events.length - insertedEvents,
       endOfStream: Boolean(page?.end_of_stream),
       hasMore: !Boolean(page?.end_of_stream)
     })
@@ -328,10 +226,7 @@ export async function onRequestPost(context) {
           lockToken
         )
       } catch (releaseError) {
-        console.error(
-          'Unable to release Zendesk synchronization lock:',
-          releaseError
-        )
+        console.error('Unable to release Zendesk snapshot lock:', releaseError)
       }
     }
 
@@ -345,39 +240,28 @@ export async function onRequestPost(context) {
           ).slice(0, 1000)
         })
       } catch (loggingError) {
-        console.error(
-          'Unable to record the failed Zendesk synchronization:',
-          loggingError
-        )
+        console.error('Unable to record failed snapshot sync:', loggingError)
       }
     }
 
     const failure = publicFailure(error)
-
-    console.error('Zendesk event synchronization failed:', {
+    console.error('Zendesk snapshot synchronization failed:', {
       code: failure.code,
       message: error?.message || failure.message
     })
 
-    return jsonResponse(
-      {
-        success: false,
-        code: failure.code,
-        error: failure.message
-      },
-      failure.status
-    )
+    return jsonResponse({
+      success: false,
+      code: failure.code,
+      error: failure.message
+    }, failure.status)
   }
 }
 
 export function onRequestGet() {
-  return jsonResponse(
-    {
-      success: false,
-      code: 'method_not_allowed',
-      error: 'Use POST for Zendesk synchronization.'
-    },
-    405,
-    { Allow: 'POST' }
-  )
+  return jsonResponse({
+    success: false,
+    code: 'method_not_allowed',
+    error: 'Use POST for Zendesk synchronization.'
+  }, 405, { Allow: 'POST' })
 }
