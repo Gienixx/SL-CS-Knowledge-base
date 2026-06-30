@@ -32,16 +32,16 @@ ZENDESK_EVENT_INITIAL_START_TIME
 ZENDESK_EVENT_PAGE_SIZE
 ```
 
-Recommended initial values:
+Recommended production values after the initial backfill:
 
 ```text
-ZENDESK_SYNC_PAGE_SIZE=5
+ZENDESK_SYNC_PAGE_SIZE=25
 ZENDESK_EVENT_PAGE_SIZE=100
 ```
 
 ## Resource-safe synchronization model
 
-The synchronization is intentionally divided into two streams.
+The synchronization is divided into two streams.
 
 ### Ticket snapshot stream
 
@@ -49,7 +49,7 @@ The synchronization is intentionally divided into two streams.
 POST /api/sync-zendesk
 ```
 
-This endpoint reads one cursor-based ticket page and stores only ticket-created and first-response records. It does not request every audit page for each ticket.
+This endpoint reads one cursor-based ticket page and stores ticket-created and first-response records. It does not request every audit page for each ticket.
 
 ### Ticket change stream
 
@@ -57,25 +57,59 @@ This endpoint reads one cursor-based ticket page and stores only ticket-created 
 POST /api/sync-zendesk-events
 ```
 
-This endpoint reads one bounded page from Zendesk's incremental ticket-event export. It stores assignment, priority, status, solved, reopened, and closed changes. Existing event identifiers use the audit identifier when Zendesk provides one, preventing duplicates with events imported by an earlier version.
+This endpoint reads one bounded page from Zendesk's incremental ticket-event export. It stores assignment, priority, status, solved, reopened, and closed changes.
 
 The event stream is time-based. Each successful request saves the response `end_time` as the next `start_time` under the `ticket_events` stream key in `zendesk_sync_state`.
 
-## Why the streams were separated
+## Scheduled Worker
 
-The previous implementation loaded all available audit pages for every ticket in one Pages Function request. A single high-activity ticket could exceed Cloudflare CPU or memory limits even when the ticket page size was one. The split design keeps each request bounded and avoids per-ticket historical audit traversal.
-
-## Schedule
-
-The health check runs at **9:00 AM Eastern**, changed from **12:00 noon Eastern**. The Worker evaluates `America/New_York`, so the local hour remains 9:00 through EST and EDT changes.
-
-The Worker currently calls:
+The existing Worker deployment remains:
 
 ```text
-POST /api/zendesk-test
+socialloop-zendesk-health-cron
 ```
 
-Keep it on the health endpoint until both initial synchronization streams complete and are verified.
+The name is retained to avoid replacing the existing Cloudflare Worker, but its function is now scheduled production synchronization.
+
+The Worker runs through an hourly UTC Cron Trigger and begins work only when the local time in `America/New_York` is **9:00 AM Eastern**. This was changed from **12:00 noon Eastern**.
+
+At 9:00 AM it calls both streams in round-robin order:
+
+```text
+POST /api/sync-zendesk
+POST /api/sync-zendesk-events
+```
+
+It continues while either endpoint returns `hasMore: true`, waits seven seconds between requests to remain below Zendesk's incremental-export request limit, and stops when both streams reach `endOfStream: true`.
+
+The Worker has safety boundaries:
+
+```text
+maximum requests: 100
+maximum synchronization runtime: 13 minutes
+Cloudflare scheduled invocation wall-time boundary: 15 minutes
+```
+
+If the safety boundary is reached before both streams finish, the Worker logs a partial result. All successful pages have already committed their cursor or `start_time`, so the next scheduled run resumes from the saved state.
+
+## Required Worker secrets
+
+```text
+PAGES_BASE_URL
+ZENDESK_SYNC_SECRET
+```
+
+`PAGES_BASE_URL` must be the final non-redirecting production Pages origin. The Worker secret must match the Pages Function secret.
+
+## Deployment
+
+GitHub Actions deploys the Worker through:
+
+```text
+.github/workflows/deploy-zendesk-health-worker.yml
+```
+
+The workflow validates secrets, runs the Zendesk synchronization tests, deploys the existing Worker, and verifies that the public Worker status endpoint reports the 9:00 AM Eastern schedule.
 
 ## Tests
 
