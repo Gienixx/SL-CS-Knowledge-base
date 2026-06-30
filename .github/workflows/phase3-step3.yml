@@ -1,0 +1,27 @@
+name: Phase 3 Step 3
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  daily-operations:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+      - name: Run Step 3 tests
+        run: npm run test:phase3-step3
+      - name: Run scheduling tests
+        run: npm run test:zendesk-integration
