@@ -17,6 +17,7 @@ import {
 } from '../_shared/zendesk-sync-store.js'
 
 const STREAM_KEY = 'ticket_events'
+const NORMALIZER_VERSION = 'zendesk-child-event-v2'
 
 function respond(data, status = 200) {
   return new Response(JSON.stringify(data), {
@@ -45,6 +46,47 @@ function pageSize(env) {
   return Number.isInteger(configured) && configured > 0
     ? Math.min(configured, 250)
     : 100
+}
+
+function summarizeSourceEvents(sourceEvents) {
+  let childEventsObserved = 0
+  let changeChildrenObserved = 0
+  let supportedChangeChildrenObserved = 0
+
+  for (const parent of sourceEvents) {
+    const children = Array.isArray(parent?.child_events)
+      ? parent.child_events
+      : []
+
+    for (const child of children) {
+      childEventsObserved += 1
+
+      const eventType = String(
+        child?.event_type ?? child?.type ?? ''
+      ).trim().toLowerCase()
+
+      if (eventType !== 'change') continue
+
+      changeChildrenObserved += 1
+
+      if (
+        Object.prototype.hasOwnProperty.call(child, 'status') ||
+        Object.prototype.hasOwnProperty.call(child, 'priority') ||
+        Object.prototype.hasOwnProperty.call(child, 'assignee_id') ||
+        ['status', 'priority', 'assignee_id'].includes(
+          String(child?.field_name || '').trim().toLowerCase()
+        )
+      ) {
+        supportedChangeChildrenObserved += 1
+      }
+    }
+  }
+
+  return {
+    childEventsObserved,
+    changeChildrenObserved,
+    supportedChangeChildrenObserved
+  }
 }
 
 export async function onRequestPost(context) {
@@ -104,6 +146,7 @@ export async function onRequestPost(context) {
     const sourceEvents = Array.isArray(page?.ticket_events)
       ? page.ticket_events
       : []
+    const diagnostics = summarizeSourceEvents(sourceEvents)
     const events = normalizeIncrementalTicketEvents(sourceEvents)
     const imported = await insertTicketEvents(environment, events)
     const endTime = Number(page?.end_time)
@@ -138,7 +181,9 @@ export async function onRequestPost(context) {
     return respond({
       success: true,
       stream: STREAM_KEY,
+      normalizerVersion: NORMALIZER_VERSION,
       sourceEventsProcessed: sourceEvents.length,
+      ...diagnostics,
       eventsSeen: events.length,
       eventsImported: imported,
       duplicateEvents: events.length - imported,
