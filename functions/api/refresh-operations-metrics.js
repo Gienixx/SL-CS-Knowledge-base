@@ -9,6 +9,7 @@ import {
 
 const DEFAULT_TIME_ZONE = 'America/New_York'
 const DEFAULT_ROLLING_DAYS = 30
+const MAX_DIAGNOSTIC_LENGTH = 500
 
 function jsonResponse(data, status = 200, headers = {}) {
   return new Response(JSON.stringify(data), {
@@ -62,6 +63,17 @@ async function readJson(request) {
     return JSON.parse(text)
   } catch {
     throw new Error('Request body must be valid JSON.')
+  }
+}
+
+function diagnosticFor(error) {
+  const raw = String(
+    error?.details || error?.message || 'Unknown refresh error.'
+  )
+
+  return {
+    upstreamStatus: Number(error?.status) || null,
+    details: raw.slice(0, MAX_DIAGNOSTIC_LENGTH)
   }
 }
 
@@ -130,14 +142,18 @@ export async function onRequestPost(context) {
       rowsUpserted: Number(result.rows_upserted) || 0
     })
   } catch (error) {
+    const diagnostic = diagnosticFor(error)
+
     console.error('Daily operations metrics refresh failed:', {
-      message: error?.message || 'Unknown refresh error.'
+      upstreamStatus: diagnostic.upstreamStatus,
+      details: diagnostic.details
     })
 
     return jsonResponse({
       success: false,
       code: 'operations_metrics_refresh_failed',
-      error: 'Unable to refresh daily operations metrics.'
+      error: 'Unable to refresh daily operations metrics.',
+      diagnostic
     }, 500)
   }
 }
