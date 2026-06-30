@@ -1,6 +1,6 @@
 # Phase 3 Step 2 — Ticket-event storage
 
-Phase 3 Step 2 adds normalized Zendesk ticket-event storage and a protected incremental synchronization endpoint.
+Phase 3 Step 2 adds normalized Zendesk ticket-event storage and protected incremental synchronization.
 
 ## Database objects
 
@@ -20,7 +20,7 @@ zendesk_sync_runs
 
 `ticket_events` contains reporting-safe lifecycle data only. Ticket subjects, descriptions, comments, attachments, requester email addresses, and message content are not imported.
 
-Initial event types:
+Supported event types:
 
 ```text
 created
@@ -35,11 +35,11 @@ closed
 
 The schema also reserves `sla_breached` and `csat_rating` for later Phase 3 work.
 
-Every event has an immutable `source_event_id`. A unique constraint and conflict-ignore inserts prevent duplicate events when a page is retried.
+Every event has an immutable `source_event_id`. A unique constraint and conflict-ignore inserts prevent duplicate events when pages overlap or are retried.
 
 ## Cursor and lease state
 
-`zendesk_sync_state` stores the export cursor, initial Unix start time, latest event timestamp, last successful run, and temporary synchronization lease.
+`zendesk_sync_state` stores the ticket cursor, event-stream Unix start time, latest event timestamp, last successful run, and synchronization lease.
 
 Service-role-only database functions provide atomic state changes:
 
@@ -51,59 +51,78 @@ advance_zendesk_sync_state
 
 A concurrent request receives a `409 zendesk_sync_locked` response while a valid lease exists.
 
-## Synchronization endpoint
+## Synchronization endpoints
+
+### Ticket snapshots
 
 ```text
 POST /api/sync-zendesk
 ```
 
-The endpoint uses the same bearer authorization value as the existing Zendesk health endpoint.
+Each request processes one bounded cursor page from Zendesk's incremental ticket export. It stores ticket-created events and first-response records derived from Zendesk ticket metrics.
 
-Each call processes one bounded cursor page. The default ticket page size is 25 and the maximum is 50 because each ticket may require a separate audit request.
+### Ticket lifecycle changes
 
-Processing order:
+```text
+POST /api/sync-zendesk-events
+```
 
-1. Validate Zendesk and Supabase server configuration.
-2. Validate the synchronization authorization header.
-3. Acquire the database lease.
-4. Create a `zendesk_sync_runs` record.
-5. Fetch one incremental ticket page with metric sets.
-6. Retrieve ticket audits.
-7. Normalize lifecycle and first-response events.
-8. Insert only unseen source event IDs.
-9. Advance the cursor only after successful writes.
-10. Complete the run record and release the lease.
+Each request processes one bounded time-based page from Zendesk's incremental ticket-event export. It stores assignment, priority, status, solved, reopened, and closed events.
+
+The corrected event normalizer supports the observed Zendesk child-event payload:
+
+```text
+event_type = Change
+status
+priority
+assignee_id
+previous_value
+```
+
+Both endpoints:
+
+1. Validate server configuration and bearer authorization.
+2. Acquire their independent stream lease.
+3. Create a `zendesk_sync_runs` record.
+4. Retrieve one bounded Zendesk page.
+5. Normalize reporting-safe events.
+6. Insert only unseen `source_event_id` values.
+7. Advance the saved cursor or `start_time` only after successful writes.
+8. Complete the run record and release the lease.
 
 A successful response includes:
 
 ```json
 {
   "success": true,
-  "ticketsProcessed": 25,
-  "eventsSeen": 83,
-  "eventsImported": 83,
-  "duplicateEvents": 0,
+  "stream": "ticket_events",
+  "eventsSeen": 8,
+  "eventsImported": 7,
+  "duplicateEvents": 1,
   "endOfStream": false,
   "hasMore": true
 }
 ```
-
-Call the endpoint again while `hasMore` is true. Every successful request resumes from the committed cursor.
 
 ## Optional Pages variables
 
 ```text
 ZENDESK_INITIAL_START_TIME
 ZENDESK_SYNC_PAGE_SIZE
+ZENDESK_EVENT_INITIAL_START_TIME
+ZENDESK_EVENT_PAGE_SIZE
 ```
 
-`ZENDESK_INITIAL_START_TIME` is a Unix timestamp in seconds and is used only before a cursor exists. When omitted, the first request starts seven days before the request time.
+Recommended production page sizes after the initial backfill:
 
-`ZENDESK_SYNC_PAGE_SIZE` defaults to 25 and is capped at 50.
+```text
+ZENDESK_SYNC_PAGE_SIZE=25
+ZENDESK_EVENT_PAGE_SIZE=100
+```
 
 ## Verification
 
-After applying the migration, run:
+Run:
 
 ```text
 supabase/verification/phase3_step2_ticket_event_check.sql
@@ -119,21 +138,30 @@ row_level_security              PASS
 ticket_cursor_state             PASS
 ```
 
-Then send an authorized POST request to `/api/sync-zendesk`. Repeat until `endOfStream` becomes true for the initial backfill.
+Operational completion additionally requires:
+
+```text
+tickets stream:       last_success_at populated, no active lease
+ticket_events stream: last_success_at populated, no active lease
+ticket_event rows:    assignment/status/priority lifecycle rows present
+```
 
 ## Access model
 
 - Authenticated browser users have read-only access to `ticket_events`.
 - Anonymous users have no access.
 - `zendesk_sync_state` and `zendesk_sync_runs` remain server-only.
-- Only the service-role-backed Pages endpoint can write events or advance the cursor.
+- Only service-role-backed Pages Functions can write events or advance synchronization state.
 
-## Scheduling boundary
+## Scheduled synchronization
 
-Keep the Worker pointed at `/api/zendesk-test` until the migration is applied and one manual `/api/sync-zendesk` request succeeds. The Worker can then be switched to incremental event synchronization.
+The Cloudflare Worker now runs both streams at **9:00 AM Eastern**, changed from **12:00 noon Eastern**.
+
+The Worker alternates between the ticket and ticket-event streams while either has more pages, waits seven seconds between requests, and stops when both report `endOfStream: true`. It also enforces request and runtime limits so successful progress is preserved even when a daily run cannot finish every page.
 
 ## Tests
 
 ```bash
 npm run test:phase3-step2
+npm run test:zendesk-integration
 ```
