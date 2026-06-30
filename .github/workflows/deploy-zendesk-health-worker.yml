@@ -1,4 +1,4 @@
-name: Deploy Zendesk Health Worker
+name: Deploy Zendesk Sync Worker
 
 on:
   push:
@@ -6,9 +6,14 @@ on:
       - main
     paths:
       - workers/zendesk-health/**
-      - functions/api/zendesk-test.js
+      - functions/api/sync-zendesk.js
+      - functions/api/sync-zendesk-events.js
       - functions/_shared/zendesk-client.js
-      - tests/zendesk-integration.test.mjs
+      - functions/_shared/zendesk-event-normalizer.js
+      - functions/_shared/zendesk-incremental-event-normalizer.js
+      - functions/_shared/zendesk-sync-store.js
+      - tests/zendesk-*.test.mjs
+      - package.json
       - .github/workflows/deploy-zendesk-health-worker.yml
   workflow_dispatch:
 
@@ -16,7 +21,7 @@ permissions:
   contents: read
 
 concurrency:
-  group: deploy-zendesk-health-worker
+  group: deploy-zendesk-sync-worker
   cancel-in-progress: false
 
 jobs:
@@ -55,7 +60,7 @@ jobs:
           done
           exit "$missing"
 
-      - name: Run Zendesk integration tests
+      - name: Run Zendesk synchronization tests
         run: npm run test:zendesk-integration
 
       - name: Create ephemeral Worker secrets file
@@ -69,7 +74,7 @@ jobs:
           const path = require('node:path')
           const filePath = path.join(
             process.env.RUNNER_TEMP,
-            'zendesk-health-worker-secrets.json'
+            'zendesk-sync-worker-secrets.json'
           )
 
           fs.writeFileSync(
@@ -82,7 +87,7 @@ jobs:
           )
           NODE
 
-      - name: Deploy scheduled health Worker
+      - name: Deploy scheduled synchronization Worker
         id: deploy
         uses: cloudflare/wrangler-action@v3
         with:
@@ -92,16 +97,19 @@ jobs:
           workingDirectory: workers/zendesk-health
           command: >-
             deploy --secrets-file
-            "${{ runner.temp }}/zendesk-health-worker-secrets.json"
+            "${{ runner.temp }}/zendesk-sync-worker-secrets.json"
 
       - name: Verify Worker endpoint
         if: ${{ steps.deploy.outputs.deployment-url != '' }}
         shell: bash
         env:
           DEPLOYMENT_URL: ${{ steps.deploy.outputs.deployment-url }}
-        run: curl --fail --silent --show-error "$DEPLOYMENT_URL"
+        run: |
+          response="$(curl --fail --silent --show-error "$DEPLOYMENT_URL")"
+          echo "$response"
+          echo "$response" | grep -F "9:00 AM Eastern"
 
       - name: Remove ephemeral Worker secrets file
         if: always()
         shell: bash
-        run: rm -f "${RUNNER_TEMP}/zendesk-health-worker-secrets.json"
+        run: rm -f "${RUNNER_TEMP}/zendesk-sync-worker-secrets.json"
