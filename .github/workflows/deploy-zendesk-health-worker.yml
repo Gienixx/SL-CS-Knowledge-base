@@ -8,11 +8,14 @@ on:
       - workers/zendesk-health/**
       - functions/api/sync-zendesk.js
       - functions/api/sync-zendesk-events.js
+      - functions/api/refresh-operations-metrics.js
       - functions/_shared/zendesk-client.js
       - functions/_shared/zendesk-event-normalizer.js
       - functions/_shared/zendesk-incremental-event-normalizer.js
       - functions/_shared/zendesk-sync-store.js
+      - functions/_shared/operations-metrics-store.js
       - tests/zendesk-*.test.mjs
+      - tests/phase3-step3-*.test.mjs
       - package.json
       - .github/workflows/deploy-zendesk-health-worker.yml
   workflow_dispatch:
@@ -63,6 +66,9 @@ jobs:
       - name: Run Zendesk synchronization tests
         run: npm run test:zendesk-integration
 
+      - name: Run Phase 3 Step 3 tests
+        run: npm run test:phase3-step3
+
       - name: Create ephemeral Worker secrets file
         shell: bash
         env:
@@ -107,6 +113,7 @@ jobs:
         run: |
           response="$(curl --fail --silent --show-error "$DEPLOYMENT_URL")"
           echo "$response"
+          echo "$response" | grep -F "daily operations metrics"
           echo "$response" | grep -F "9:00 AM Eastern"
 
       - name: Remove ephemeral Worker secrets file
