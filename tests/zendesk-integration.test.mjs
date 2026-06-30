@@ -25,7 +25,7 @@ test('hourly cron runs only at 9 AM in America/New_York', () => {
   assert.equal(shouldRunZendeskSync(nineDuringStandardTime), true)
 })
 
-test('scheduled sync paginates both production streams round robin', async () => {
+test('scheduled sync paginates both streams then refreshes daily metrics', async () => {
   const calls = []
   const pagesByPath = {
     '/api/sync-zendesk': [
@@ -71,6 +71,16 @@ test('scheduled sync paginates both production streams round robin', async () =>
         endOfStream: true,
         hasMore: false
       }
+    ],
+    '/api/refresh-operations-metrics': [
+      {
+        success: true,
+        mode: 'rolling',
+        timeZone: 'America/New_York',
+        startDate: '2026-05-31',
+        endDate: '2026-06-30',
+        rowsUpserted: 31
+      }
     ]
   }
 
@@ -102,7 +112,8 @@ test('scheduled sync paginates both production streams round robin', async () =>
       '/api/sync-zendesk',
       '/api/sync-zendesk-events',
       '/api/sync-zendesk',
-      '/api/sync-zendesk-events'
+      '/api/sync-zendesk-events',
+      '/api/refresh-operations-metrics'
     ]
   )
 
@@ -113,11 +124,13 @@ test('scheduled sync paginates both production streams round robin', async () =>
       'Bearer worker-test-secret'
     )
     assert.equal(call.options.headers['X-Sync-Source'], 'scheduled')
-    assert.equal(call.options.body, '{}')
   }
 
+  assert.equal(calls[0].options.body, '{}')
+  assert.equal(calls[4].options.body, JSON.stringify({ full: false }))
   assert.equal(summary.complete, true)
   assert.equal(summary.requests, 4)
+  assert.equal(summary.metricsRefresh.rowsUpserted, 31)
   assert.deepEqual(
     summary.streams.map(stream => ({
       name: stream.name,
@@ -142,21 +155,25 @@ test('scheduled sync paginates both production streams round robin', async () =>
   )
 })
 
-test('scheduled sync reports partial progress when request budget is reached', async () => {
+test('partial sync does not refresh daily metrics', async () => {
+  const calls = []
   const summary = await runZendeskScheduledSync(
     {
       PAGES_BASE_URL: 'https://support.example.com',
       ZENDESK_SYNC_SECRET: 'worker-test-secret'
     },
     {
-      fetchImpl: async () => jsonResponse({
-        success: true,
-        eventsSeen: 1,
-        eventsImported: 1,
-        duplicateEvents: 0,
-        endOfStream: false,
-        hasMore: true
-      }),
+      fetchImpl: async url => {
+        calls.push(new URL(url).pathname)
+        return jsonResponse({
+          success: true,
+          eventsSeen: 1,
+          eventsImported: 1,
+          duplicateEvents: 0,
+          endOfStream: false,
+          hasMore: true
+        })
+      },
       sleepImpl: async () => {},
       nowImpl: () => Date.UTC(2026, 5, 30, 13, 0, 0),
       requestDelayMs: 0,
@@ -166,5 +183,9 @@ test('scheduled sync reports partial progress when request budget is reached', a
 
   assert.equal(summary.complete, false)
   assert.equal(summary.requests, 2)
-  assert.equal(summary.streams.every(stream => stream.pages === 1), true)
+  assert.equal(summary.metricsRefresh, null)
+  assert.equal(
+    calls.includes('/api/refresh-operations-metrics'),
+    false
+  )
 })
