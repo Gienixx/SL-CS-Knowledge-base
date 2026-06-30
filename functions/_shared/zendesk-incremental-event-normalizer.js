@@ -28,7 +28,7 @@ function agentKey(value) {
   return id ? `zendesk:${id}` : null
 }
 
-function eventType(previousStatus, nextStatus) {
+function statusEventType(previousStatus, nextStatus) {
   if (nextStatus === 'closed') return 'closed'
   if (nextStatus === 'solved') return 'solved'
 
@@ -66,6 +66,28 @@ function base(ticketEvent, sourceEventId, eventTimestamp) {
   }
 }
 
+function hasOwn(value, key) {
+  return Boolean(
+    value &&
+    typeof value === 'object' &&
+    Object.prototype.hasOwnProperty.call(value, key)
+  )
+}
+
+function changedField(child) {
+  const explicitField = text(child?.field_name)
+  if (explicitField) return explicitField
+  if (hasOwn(child, 'status')) return 'status'
+  if (hasOwn(child, 'assignee_id')) return 'assignee_id'
+  if (hasOwn(child, 'priority')) return 'priority'
+  return null
+}
+
+function changedValue(child, fieldName) {
+  if (hasOwn(child, 'value')) return child.value
+  return child?.[fieldName]
+}
+
 export function normalizeIncrementalTicketEvent(ticketEvent) {
   const ticketId = positiveId(ticketEvent?.ticket_id)
   const parentId = positiveId(ticketEvent?.id) || ticketId
@@ -82,9 +104,12 @@ export function normalizeIncrementalTicketEvent(ticketEvent) {
   if (!ticketId || !parentTimestamp) return []
 
   return children.flatMap((child, index) => {
-    if (text(child?.type) !== 'change') return []
+    const childEventType = text(child?.event_type ?? child?.type)
+    if (childEventType !== 'change') return []
 
-    const fieldName = text(child?.field_name)
+    const fieldName = changedField(child)
+    if (!fieldName) return []
+
     const childId = positiveId(child?.id) || index + 1
     const auditId = positiveId(child?.audit_id)
     const sourceEventId = auditId
@@ -106,12 +131,12 @@ export function normalizeIncrementalTicketEvent(ticketEvent) {
 
     if (fieldName === 'status') {
       const previousStatus = text(child?.previous_value)
-      const nextStatus = text(child?.value)
+      const nextStatus = text(changedValue(child, fieldName))
       if (!nextStatus) return []
 
       return [{
         ...common,
-        event_type: eventType(previousStatus, nextStatus),
+        event_type: statusEventType(previousStatus, nextStatus),
         agent_key: agentKey(actorId),
         ticket_status: nextStatus,
         metadata: {
@@ -123,7 +148,8 @@ export function normalizeIncrementalTicketEvent(ticketEvent) {
     }
 
     if (fieldName === 'assignee_id') {
-      const assigneeId = positiveId(child?.value)
+      const assigneeId = positiveId(changedValue(child, fieldName))
+      if (!assigneeId) return []
 
       return [{
         ...common,
@@ -138,7 +164,7 @@ export function normalizeIncrementalTicketEvent(ticketEvent) {
     }
 
     if (fieldName === 'priority') {
-      const priority = text(child?.value)
+      const priority = text(changedValue(child, fieldName))
       if (!priority) return []
 
       return [{
