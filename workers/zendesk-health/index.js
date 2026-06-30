@@ -49,7 +49,6 @@ export function shouldRunZendeskSync(date) {
   return getEasternHour(date) === SCHEDULED_HOUR
 }
 
-// Retained for compatibility with earlier tests and integrations.
 export const shouldRunZendeskHealthCheck = shouldRunZendeskSync
 
 async function parseJsonResponse(response) {
@@ -64,6 +63,15 @@ async function parseJsonResponse(response) {
   }
 }
 
+function workerRequestHeaders(syncSecret) {
+  return {
+    Accept: 'application/json',
+    Authorization: `Bearer ${syncSecret}`,
+    'Content-Type': 'application/json',
+    'X-Sync-Source': 'scheduled'
+  }
+}
+
 export async function requestZendeskSyncPage(
   env,
   stream,
@@ -74,12 +82,7 @@ export async function requestZendeskSyncPage(
   const endpoint = new URL(stream.path, pagesBaseUrl)
   const response = await fetchImpl(endpoint.toString(), {
     method: 'POST',
-    headers: {
-      Accept: 'application/json',
-      Authorization: `Bearer ${syncSecret}`,
-      'Content-Type': 'application/json',
-      'X-Sync-Source': 'scheduled'
-    },
+    headers: workerRequestHeaders(syncSecret),
     body: '{}'
   })
   const payload = await parseJsonResponse(response)
@@ -108,6 +111,32 @@ export async function requestZendeskSyncPage(
     locked: false,
     payload
   }
+}
+
+export async function requestOperationsMetricsRefresh(
+  env,
+  fetchImpl = fetch
+) {
+  const pagesBaseUrl = requiredEnvironment(env, 'PAGES_BASE_URL')
+  const syncSecret = requiredEnvironment(env, 'ZENDESK_SYNC_SECRET')
+  const endpoint = new URL('/api/refresh-operations-metrics', pagesBaseUrl)
+  const response = await fetchImpl(endpoint.toString(), {
+    method: 'POST',
+    headers: workerRequestHeaders(syncSecret),
+    body: JSON.stringify({ full: false })
+  })
+  const payload = await parseJsonResponse(response)
+
+  if (!response.ok || payload?.success !== true) {
+    const error = new Error(
+      `Daily operations metrics refresh failed with status ${response.status}.`
+    )
+    error.status = response.status
+    error.code = payload?.code || 'operations_metrics_refresh_failed'
+    throw error
+  }
+
+  return payload
 }
 
 function createStreamState(stream) {
@@ -148,7 +177,6 @@ export async function runZendeskScheduledSync(
     maxRequests = MAX_REQUESTS
   } = {}
 ) {
-  // Validate before starting so a bad deployment fails immediately.
   requiredEnvironment(env, 'PAGES_BASE_URL')
   requiredEnvironment(env, 'ZENDESK_SYNC_SECRET')
 
@@ -219,13 +247,29 @@ export async function runZendeskScheduledSync(
     }
   }
 
+  const streamsComplete = streams.every(stream => stream.complete)
+  let metricsRefresh = null
+
+  if (streamsComplete && nowImpl() < deadlineMs) {
+    metricsRefresh = await requestOperationsMetricsRefresh(env, fetchImpl)
+
+    console.log(JSON.stringify({
+      event: 'daily_operations_metrics_refresh',
+      mode: metricsRefresh.mode,
+      startDate: metricsRefresh.startDate,
+      endDate: metricsRefresh.endDate,
+      rowsUpserted: Number(metricsRefresh.rowsUpserted) || 0
+    }))
+  }
+
   const summary = {
     event: 'zendesk_scheduled_sync',
     scheduledHourEastern: SCHEDULED_HOUR,
     startedAt: new Date(startedAtMs).toISOString(),
     completedAt: new Date(nowImpl()).toISOString(),
     requests,
-    complete: streams.every(stream => stream.complete),
+    complete: streamsComplete,
+    metricsRefresh,
     streams: streams.map(stream => ({
       name: stream.name,
       complete: stream.complete,
@@ -248,8 +292,6 @@ export async function runZendeskScheduledSync(
   return summary
 }
 
-// Retained as a compatibility alias while the Worker project keeps its
-// existing deployment name.
 export const runZendeskHealthCheck = runZendeskScheduledSync
 
 export default {
@@ -263,7 +305,7 @@ export default {
 
   async fetch() {
     return new Response(
-      'Zendesk synchronization cron is active at 9:00 AM Eastern.',
+      'Zendesk synchronization and daily operations metrics cron is active at 9:00 AM Eastern.',
       {
         status: 200,
         headers: {
