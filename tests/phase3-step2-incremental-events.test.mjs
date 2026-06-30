@@ -14,36 +14,36 @@ function read(path) {
   return readFileSync(new URL(path, `file://${ROOT}/`), 'utf8')
 }
 
-test('incremental ticket changes normalize without ticket audit requests', () => {
+test('observed Zendesk child event shape normalizes lifecycle changes', () => {
   const events = normalizeIncrementalTicketEvent({
     id: 900,
     ticket_id: 7001,
     timestamp: '2026-06-30T09:00:00Z',
     updater_id: 88,
+    via: { channel: 'web' },
     child_events: [
       {
         id: 901,
-        audit_id: 800,
-        type: 'Change',
-        field_name: 'status',
+        event_type: 'Change',
         previous_value: 'solved',
-        value: 'open'
+        status: 'open'
       },
       {
         id: 902,
-        audit_id: 800,
-        type: 'Change',
-        field_name: 'assignee_id',
+        event_type: 'Change',
         previous_value: 91,
-        value: 92
+        assignee_id: 92
       },
       {
         id: 903,
-        audit_id: 800,
-        type: 'Change',
-        field_name: 'priority',
+        event_type: 'Change',
         previous_value: 'normal',
-        value: 'urgent'
+        priority: 'urgent'
+      },
+      {
+        id: 904,
+        event_type: 'Comment',
+        comment_present: true
       }
     ]
   })
@@ -52,9 +52,35 @@ test('incremental ticket changes normalize without ticket audit requests', () =>
     events.map(event => event.event_type),
     ['reopened', 'assigned', 'priority_changed']
   )
-  assert.equal(events[0].source_event_id, 'zendesk:audit:800:event:901')
+  assert.equal(
+    events[0].source_event_id,
+    'zendesk:ticket_event:900:event:901'
+  )
+  assert.equal(events[0].ticket_status, 'open')
+  assert.equal(events[0].channel, 'web')
   assert.equal(events[1].agent_key, 'zendesk:92')
   assert.equal(events[2].priority, 'urgent')
+})
+
+test('legacy field_name and value event shape remains supported', () => {
+  const events = normalizeIncrementalTicketEvent({
+    id: 905,
+    ticket_id: 7001,
+    timestamp: '2026-06-30T09:01:00Z',
+    child_events: [
+      {
+        id: 906,
+        type: 'Change',
+        field_name: 'status',
+        previous_value: 'open',
+        value: 'solved'
+      }
+    ]
+  })
+
+  assert.equal(events.length, 1)
+  assert.equal(events[0].event_type, 'solved')
+  assert.equal(events[0].ticket_status, 'solved')
 })
 
 test('incremental event normalization deduplicates source identifiers', () => {
@@ -65,10 +91,9 @@ test('incremental event normalization deduplicates source identifiers', () => {
     child_events: [
       {
         id: 911,
-        type: 'Change',
-        field_name: 'status',
+        event_type: 'Change',
         previous_value: 'open',
-        value: 'solved'
+        status: 'solved'
       }
     ]
   }
