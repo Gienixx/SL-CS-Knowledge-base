@@ -2,20 +2,23 @@
 
 Phase 3 Step 3 derives daily operational KPIs from normalized Zendesk ticket events.
 
-## Database migration
+## Database migrations
 
-Apply:
+Apply these migrations in order:
 
 ```text
 supabase/migrations/20260701_phase3_step3_daily_operations_metrics.sql
+supabase/migrations/20260701_phase3_step3_optimize_daily_operations_refresh.sql
 ```
 
-The migration creates:
+The first migration creates:
 
 ```text
 daily_operations_metrics
 refresh_daily_operations_metrics
 ```
+
+The second migration replaces the initial refresh implementation with a materialized ticket-state interval calculation. It avoids repeated lifecycle lookups for every ticket and reporting day and is required for production-sized datasets.
 
 ## Daily fields
 
@@ -149,6 +152,29 @@ When no explicit dates are supplied, the endpoint refreshes the latest 30 days. 
 
 Dates must use `YYYY-MM-DD`.
 
+## Timeout recovery
+
+If the endpoint returns:
+
+```text
+canceling statement due to statement timeout
+```
+
+confirm the optimization migration has been applied. Applying it is safe after the original migration because it uses `create or replace function` and preserves the table and existing rows.
+
+Test one reporting day first:
+
+```sql
+select *
+from public.refresh_daily_operations_metrics(
+  '2026-06-30',
+  '2026-06-30',
+  'America/New_York'
+);
+```
+
+Then run the full refresh.
+
 ## Scheduled maintenance
 
 After both Zendesk synchronization streams reach the end of their available pages, the 9:00 AM Eastern Cloudflare Worker calls:
@@ -168,7 +194,7 @@ The Worker does not refresh metrics when either Zendesk stream stops before reac
 
 ## Verification
 
-After the migration and initial full refresh, run:
+After both migrations and the initial full refresh, run:
 
 ```text
 supabase/verification/phase3_step3_daily_operations_check.sql
