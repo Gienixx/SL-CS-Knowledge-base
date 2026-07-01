@@ -20,12 +20,21 @@ function firstConfiguredId(environment, keys) {
 }
 
 export function getZendeskTicketDimensionFieldMap(environment = {}) {
-  return Object.fromEntries(
+  const fieldMap = Object.fromEntries(
     Object.entries(FIELD_ENVIRONMENT_KEYS).map(([dimension, keys]) => [
       dimension,
       firstConfiguredId(environment, keys)
     ])
   )
+
+  Object.defineProperty(fieldMap, 'driver', {
+    value: fieldMap.concern,
+    enumerable: false,
+    configurable: false,
+    writable: false
+  })
+
+  return fieldMap
 }
 
 export function configuredTicketDimensionFieldCount(fieldMap = {}) {
