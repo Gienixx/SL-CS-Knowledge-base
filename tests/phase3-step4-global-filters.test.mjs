@@ -74,18 +74,15 @@ test('RPC returns summary, trend, breakdown, agent, and option payloads', () => 
 })
 
 test('browser filtering uses the aggregate RPC instead of reading raw events', () => {
-  const frontend = read('scripts/dashboard-global-filters.js')
+  const frontend = read('scripts/report-details.js')
 
-  assert.equal(
-    frontend.includes(".rpc(\n    'get_dashboard_filtered_data'"),
-    true
-  )
+  assert.equal(frontend.includes("'get_dashboard_filtered_data'"), true)
   assert.equal(frontend.includes(".from('ticket_events')"), false)
   assert.equal(frontend.includes(".from('ticket_dimension_profiles')"), false)
 })
 
-test('internal filter state retains the driver compatibility key', () => {
-  const frontend = read('scripts/dashboard-global-filters.js')
+test('detail filter state retains the driver compatibility key', () => {
+  const frontend = read('scripts/report-details.js')
 
   for (const key of [
     'app',
@@ -99,26 +96,19 @@ test('internal filter state retains the driver compatibility key', () => {
     assert.equal(frontend.includes(`'${key}'`), true, key)
   }
 
-  assert.equal(frontend.includes("params.set('range'"), true)
-  assert.equal(frontend.includes("state.range === 'custom'"), true)
-  assert.equal(frontend.includes('dashboard:filters-changed'), true)
+  assert.equal(frontend.includes("range: config.defaultRange"), true)
+  assert.equal(frontend.includes("nextState.range === 'custom'"), true)
 })
 
-test('dashboard loads the global filter and Concern compatibility modules in order', () => {
+test('filters moved from the overview into the reusable report detail page', () => {
   const dashboard = read('dashboard.html')
-  const filtersPosition = dashboard.indexOf(
-    './scripts/dashboard-global-filters.js?v=1'
-  )
-  const concernPosition = dashboard.indexOf(
-    './scripts/dashboard-concern-compat.js?v=3'
-  )
+  const detail = read('report-details.html')
 
-  assert.equal(
-    dashboard.includes('./dashboard-global-filters.css?v=1'),
-    true
-  )
-  assert.ok(filtersPosition >= 0)
-  assert.ok(concernPosition > filtersPosition)
+  assert.equal(dashboard.includes('dashboard-global-filters.js'), false)
+  assert.equal(dashboard.includes('dashboard-global-filters.css'), false)
+  assert.equal(detail.includes('id="reportFilterForm"'), true)
+  assert.equal(detail.includes('name="driver"'), true)
+  assert.equal(detail.includes('name="agent"'), true)
 })
 
 test('Concern compatibility maps URL state and visible labels', () => {
