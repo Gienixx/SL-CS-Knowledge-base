@@ -1,0 +1,181 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Report Details | SocialLoop CS Base</title>
+
+  <link rel="stylesheet" href="./button-theme.css?v=1" />
+  <link rel="stylesheet" href="./dashboard.css?v=2" />
+  <link rel="stylesheet" href="./data-details.css?v=4" />
+  <link rel="stylesheet" href="./data-details-table.css?v=1" />
+  <link rel="stylesheet" href="./report-details.css?v=1" />
+</head>
+<body>
+  <main class="page-shell report-details-shell">
+    <header class="topbar details-topbar">
+      <div class="title-block details-title-block">
+        <span class="detail-eyebrow">Detailed reporting</span>
+        <h1 id="reportTitle">Loading report...</h1>
+        <p id="reportSubtitle">Preparing the selected dashboard report.</p>
+      </div>
+
+      <nav class="top-actions" aria-label="Report navigation">
+        <a class="action-link" href="./dashboard.html">Back to Dashboard</a>
+        <a class="action-link" href="./home.html">Back to Home</a>
+        <a id="reportLogoutLink" class="action-link" href="./login.html">Logout</a>
+      </nav>
+    </header>
+
+    <section id="reportPage" class="detail-page" aria-busy="true">
+      <div id="reportStatus" class="detail-status" role="status">
+        <span class="dashboard-spinner" aria-hidden="true"></span>
+        <h2>Loading report</h2>
+        <p>Checking access and retrieving the requested reporting data.</p>
+      </div>
+
+      <div id="reportContent" class="detail-content" hidden>
+        <section class="detail-card report-filter-card" aria-labelledby="reportFilterTitle">
+          <div class="report-filter-heading">
+            <div>
+              <span class="detail-eyebrow">Filters</span>
+              <h2 id="reportFilterTitle">Refine this report</h2>
+              <p>Daily unsegmented reporting uses the Google Sheet snapshot. Detailed segmentation switches to Zendesk.</p>
+            </div>
+            <div class="report-source-block">
+              <span id="reportSourceBadge" class="report-source-badge" data-source="loading">Loading source</span>
+              <span id="reportRangeSummary" class="detail-range-summary">Loading range</span>
+            </div>
+          </div>
+
+          <form id="reportFilterForm" class="report-filter-form" novalidate>
+            <label class="report-filter-field">
+              <span>Date range</span>
+              <select id="reportRange" name="range">
+                <option value="latest">Latest available day</option>
+                <option value="7d">Last 7 days</option>
+                <option value="30d">Last 30 days</option>
+                <option value="90d">Last 90 days</option>
+                <option value="mtd">Month to date</option>
+                <option value="custom">Custom date range</option>
+              </select>
+            </label>
+
+            <label class="report-filter-field report-custom-date" data-custom-date hidden>
+              <span>Start date</span>
+              <input id="reportStartDate" name="start" type="date" />
+            </label>
+
+            <label class="report-filter-field report-custom-date" data-custom-date hidden>
+              <span>End date</span>
+              <input id="reportEndDate" name="end" type="date" />
+            </label>
+
+            <label class="report-filter-field" data-dimension-filter="app">
+              <span>App</span>
+              <select id="reportApp" name="app">
+                <option value="">All apps</option>
+              </select>
+            </label>
+
+            <label class="report-filter-field" data-dimension-filter="platform">
+              <span>Platform</span>
+              <select id="reportPlatform" name="platform">
+                <option value="">All platforms</option>
+              </select>
+            </label>
+
+            <label class="report-filter-field" data-dimension-filter="country">
+              <span>Country</span>
+              <select id="reportCountry" name="country">
+                <option value="">All countries</option>
+              </select>
+            </label>
+
+            <label class="report-filter-field" data-dimension-filter="driver">
+              <span>Concern</span>
+              <select id="reportDriver" name="driver">
+                <option value="">All concerns</option>
+              </select>
+            </label>
+
+            <label class="report-filter-field" data-dimension-filter="agent">
+              <span>Agent</span>
+              <select id="reportAgent" name="agent">
+                <option value="">All agents</option>
+              </select>
+            </label>
+
+            <label class="report-filter-field" data-dimension-filter="priority">
+              <span>Priority</span>
+              <select id="reportPriority" name="priority">
+                <option value="">All priorities</option>
+              </select>
+            </label>
+
+            <label class="report-filter-field" data-dimension-filter="channel">
+              <span>Channel</span>
+              <select id="reportChannel" name="channel">
+                <option value="">All channels</option>
+              </select>
+            </label>
+
+            <div class="report-filter-actions">
+              <button id="reportApplyFilters" class="detail-filter-button" type="submit">Apply filters</button>
+              <button id="reportResetFilters" class="report-reset-button" type="button">Reset</button>
+            </div>
+          </form>
+
+          <p id="reportFilterValidation" class="detail-filter-validation" role="alert"></p>
+          <div id="reportActiveFilters" class="report-active-filters" aria-live="polite"></div>
+        </section>
+
+        <section id="reportSummary" class="detail-summary-grid" aria-label="Report summary"></section>
+
+        <section class="detail-card detail-chart-card">
+          <div class="detail-card-heading report-chart-heading">
+            <div>
+              <h2 id="reportChartTitle">Report trend</h2>
+              <p id="reportChartSubtitle">Historical reporting activity</p>
+            </div>
+            <span id="reportDataBadge" class="placeholder-badge">Loading data</span>
+          </div>
+          <div id="reportChart" class="report-chart" aria-live="polite"></div>
+        </section>
+
+        <section id="reportBreakdownSection" class="detail-card" hidden>
+          <div class="detail-card-heading">
+            <div>
+              <h2 id="reportBreakdownTitle">Breakdown</h2>
+              <p id="reportBreakdownSubtitle">Reporting distribution</p>
+            </div>
+          </div>
+          <div id="reportBreakdown" class="report-breakdown"></div>
+        </section>
+
+        <section class="detail-card detail-table-card">
+          <div class="detail-card-heading detail-table-heading">
+            <div>
+              <h2 id="reportTableTitle">Detailed data</h2>
+              <p id="reportTableSubtitle">Records for the selected reporting period</p>
+            </div>
+            <span id="reportTableMeta" class="detail-table-meta" aria-live="polite">Loading records</span>
+          </div>
+          <p class="detail-table-scroll-hint">Scroll horizontally to view all columns.</p>
+          <div class="detail-table-scroll" role="region" tabindex="0" aria-label="Detailed report data table">
+            <table class="detail-table">
+              <caption id="reportTableCaption" class="chart-data-summary"></caption>
+              <thead id="reportTableHead"></thead>
+              <tbody id="reportTableBody"></tbody>
+            </table>
+          </div>
+        </section>
+      </div>
+    </section>
+
+    <p class="footer-note">Overview data is sourced from the synchronized Google Sheet snapshot. Detailed filters use Zendesk ticket events where supported.</p>
+  </main>
+
+  <script type="module" src="./scripts/report-details.js?v=1"></script>
+</body>
+</html>
