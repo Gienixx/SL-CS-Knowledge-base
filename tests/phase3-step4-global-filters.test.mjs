@@ -110,7 +110,7 @@ test('dashboard loads the global filter and Concern compatibility modules in ord
     './scripts/dashboard-global-filters.js?v=1'
   )
   const concernPosition = dashboard.indexOf(
-    './scripts/dashboard-concern-compat.js?v=1'
+    './scripts/dashboard-concern-compat.js?v=2'
   )
 
   assert.equal(
@@ -127,8 +127,8 @@ test('Concern compatibility maps URL state and visible labels', () => {
   assert.equal(source.includes("searchParams.get('concern')"), true)
   assert.equal(source.includes("searchParams.set('driver', concern)"), true)
   assert.equal(source.includes("searchParams.set('concern', driver)"), true)
-  assert.equal(source.includes("caption.textContent = 'Concern'"), true)
-  assert.equal(source.includes("allOption.textContent = 'All concerns'"), true)
+  assert.equal(source.includes("setTextIfChanged(caption, 'Concern')"), true)
+  assert.equal(source.includes("setTextIfChanged(allOption, 'All concerns')"), true)
   assert.equal(source.includes('dashboard:filters-changed'), true)
 })
 
