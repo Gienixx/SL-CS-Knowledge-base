@@ -3,6 +3,7 @@ import {
 } from './auth-header-helper.js'
 
 const EVENT_BATCH_SIZE = 100
+const PROFILE_BATCH_SIZE = 100
 
 async function supabaseRequest(environment, path, options = {}) {
   const response = await fetch(
@@ -176,4 +177,30 @@ export async function insertTicketEvents(environment, events) {
   }
 
   return inserted
+}
+
+export async function upsertTicketDimensionProfiles(
+  environment,
+  profiles
+) {
+  let upserted = 0
+
+  for (let start = 0; start < profiles.length; start += PROFILE_BATCH_SIZE) {
+    const batch = profiles.slice(start, start + PROFILE_BATCH_SIZE)
+    const result = await supabaseRequest(
+      environment,
+      'rpc/upsert_ticket_dimension_profiles',
+      {
+        method: 'POST',
+        body: JSON.stringify({
+          p_profiles: batch
+        })
+      }
+    )
+
+    const value = Array.isArray(result) ? result[0] : result
+    upserted += Number(value) || 0
+  }
+
+  return upserted
 }
