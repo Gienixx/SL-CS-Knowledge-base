@@ -10,6 +10,14 @@ import {
   findMetricSet
 } from '../_shared/zendesk-event-normalizer.js'
 import {
+  buildTicketDimensionProfiles,
+  configuredTicketDimensionFieldCount,
+  getZendeskTicketDimensionFieldMap
+} from '../_shared/zendesk-ticket-dimension-normalizer.js'
+import {
+  upsertTicketDimensionProfiles
+} from '../_shared/zendesk-ticket-dimension-store.js'
+import {
   acquireZendeskSyncLock,
   advanceZendeskSyncState,
   createZendeskSyncRun,
@@ -180,6 +188,18 @@ export async function onRequestPost(context) {
       ))
     )
     const insertedEvents = await insertTicketEvents(environment, events)
+
+    const dimensionFieldMap = getZendeskTicketDimensionFieldMap(context.env)
+    const dimensionFieldsConfigured = configuredTicketDimensionFieldCount(
+      dimensionFieldMap
+    )
+    const dimensionProfiles = dimensionFieldsConfigured > 0
+      ? buildTicketDimensionProfiles(tickets, dimensionFieldMap)
+      : []
+    const dimensionProfilesUpserted = dimensionProfiles.length > 0
+      ? await upsertTicketDimensionProfiles(environment, dimensionProfiles)
+      : 0
+
     const cursorAfter = page?.after_cursor || state.current_cursor || null
     const endTime = Number(page?.end_time)
     const nextStartTime = Number.isInteger(endTime) && endTime > 0
@@ -203,7 +223,9 @@ export async function onRequestPost(context) {
       events_seen: events.length,
       events_imported: insertedEvents,
       duplicate_events: events.length - insertedEvents,
-      warnings_count: 0,
+      warnings_count: dimensionFieldsConfigured > 0
+        ? tickets.length - dimensionProfiles.length
+        : 0,
       error_message: null
     })
 
@@ -214,6 +236,9 @@ export async function onRequestPost(context) {
       eventsSeen: events.length,
       eventsImported: insertedEvents,
       duplicateEvents: events.length - insertedEvents,
+      dimensionFieldsConfigured,
+      dimensionProfilesSeen: dimensionProfiles.length,
+      dimensionProfilesUpserted,
       endOfStream: Boolean(page?.end_of_stream),
       hasMore: !Boolean(page?.end_of_stream)
     })
