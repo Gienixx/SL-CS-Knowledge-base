@@ -15,21 +15,94 @@ const DISTRIBUTION_CONTAINERS = Object.freeze({
   country: 'countryDistributionChart'
 })
 
+const REPORT_TARGETS = Object.freeze([
+  Object.freeze({
+    anchorId: 'newTicketsValue',
+    closest: '.metric-card',
+    report: 'new-tickets',
+    label: 'Open detailed New Tickets report'
+  }),
+  Object.freeze({
+    anchorId: 'solvedTicketsValue',
+    closest: '.metric-card',
+    report: 'solved-tickets',
+    label: 'Open detailed Solved Tickets report'
+  }),
+  Object.freeze({
+    anchorId: 'unsolvedTicketsValue',
+    closest: '.metric-card',
+    report: 'unsolved-tickets',
+    label: 'Open detailed Unsolved Tickets report'
+  }),
+  Object.freeze({
+    anchorId: 'oneTouchResolutionValue',
+    closest: '.metric-card',
+    report: 'one-touch-resolution',
+    label: 'Open detailed One-Touch Resolution report'
+  }),
+  Object.freeze({
+    anchorId: 'reopenedRateValue',
+    closest: '.metric-card',
+    report: 'reopened-rate',
+    label: 'Open detailed Reopened Rate report'
+  }),
+  Object.freeze({
+    anchorId: 'ticketVolumeChart',
+    closest: '.chart-card',
+    report: 'new-vs-solved',
+    label: 'Open detailed New versus Solved report'
+  }),
+  Object.freeze({
+    anchorId: 'productivityChart',
+    closest: '.productivity-chart-card',
+    report: 'agent-productivity',
+    label: 'Open detailed Agent Productivity report'
+  }),
+  Object.freeze({
+    anchorId: 'ticketDriverChart',
+    closest: '.driver-chart-card',
+    report: 'concern',
+    label: 'Open detailed Tickets by Concern report'
+  }),
+  Object.freeze({
+    anchorId: 'appDistributionChart',
+    closest: '.distribution-card',
+    report: 'app',
+    label: 'Open detailed Tickets by App report'
+  }),
+  Object.freeze({
+    anchorId: 'platformDistributionChart',
+    closest: '.distribution-card',
+    report: 'platform',
+    label: 'Open detailed Tickets by Platform report'
+  }),
+  Object.freeze({
+    anchorId: 'countryDistributionChart',
+    closest: '.distribution-card',
+    report: 'country',
+    label: 'Open detailed Tickets by Country report'
+  })
+])
+
 function ensureDrilldownStyles() {
   if (document.getElementById(LINK_STYLE_ID)) return
 
   const style = document.createElement('style')
   style.id = LINK_STYLE_ID
   style.textContent = `
-    .dashboard-detail-link {
+    .dashboard-detail-link,
+    .dashboard-report-link {
       cursor: pointer;
     }
 
-    .dashboard-detail-link:focus-visible {
+    .dashboard-detail-link:focus-visible,
+    .dashboard-report-link:focus-visible {
       outline: 3px solid rgba(56, 47, 144, 0.34);
       outline-offset: 3px;
     }
 
+    .metric-card.dashboard-report-link,
+    .chart-card.dashboard-report-link,
     .productivity-row.dashboard-detail-link,
     .driver-legend-row.dashboard-detail-link,
     .distribution-legend-row.dashboard-detail-link {
@@ -37,6 +110,10 @@ function ensureDrilldownStyles() {
         box-shadow 160ms ease, transform 160ms ease;
     }
 
+    .metric-card.dashboard-report-link:hover,
+    .metric-card.dashboard-report-link:focus-visible,
+    .chart-card.dashboard-report-link:hover,
+    .chart-card.dashboard-report-link:focus-visible,
     .productivity-row.dashboard-detail-link:hover,
     .productivity-row.dashboard-detail-link:focus-visible,
     .driver-legend-row.dashboard-detail-link:hover,
@@ -49,6 +126,17 @@ function ensureDrilldownStyles() {
       transform: translateY(-1px);
     }
 
+    .dashboard-report-link::after {
+      content: 'View details';
+      display: inline-flex;
+      margin-top: 0.55rem;
+      font-size: 0.72rem;
+      font-weight: 700;
+      letter-spacing: 0.04em;
+      text-transform: uppercase;
+      color: #382f90;
+    }
+
     .driver-pie-slice.dashboard-detail-link:focus-visible,
     .distribution-pie-slice.dashboard-detail-link:focus-visible {
       outline: none;
@@ -56,6 +144,8 @@ function ensureDrilldownStyles() {
     }
 
     @media (prefers-reduced-motion: reduce) {
+      .metric-card.dashboard-report-link,
+      .chart-card.dashboard-report-link,
       .productivity-row.dashboard-detail-link,
       .driver-legend-row.dashboard-detail-link,
       .distribution-legend-row.dashboard-detail-link {
@@ -66,34 +156,56 @@ function ensureDrilldownStyles() {
   document.head.appendChild(style)
 }
 
-function buildDetailUrl(view, key) {
-  const parameterName = view === 'driver'
-    ? 'group'
-    : view === 'agent'
-      ? 'agent'
-      : 'value'
-  const params = new URLSearchParams({
-    view,
-    [parameterName]: key
-  })
+function buildReportUrl(report, selectedFilter = null) {
+  const params = new URLSearchParams({ report })
 
-  return `./data-details.html?${params.toString()}`
+  if (selectedFilter?.name && selectedFilter?.value) {
+    params.set(selectedFilter.name, selectedFilter.value)
+  }
+
+  return `./report-details.html?${params.toString()}`
 }
 
-function makeDetailLink(element, view, key, label) {
-  if (!element || !key) return false
+function buildDetailUrl(view, key) {
+  const mapping = {
+    driver: { report: 'concern', filter: 'driver' },
+    agent: { report: 'agent-productivity', filter: 'agent' },
+    app: { report: 'app', filter: 'app' },
+    platform: { report: 'platform', filter: 'platform' },
+    country: { report: 'country', filter: 'country' }
+  }
+  const target = mapping[view]
 
-  const url = buildDetailUrl(view, key)
+  if (!target) return './dashboard.html'
 
+  return buildReportUrl(target.report, {
+    name: target.filter,
+    value: key
+  })
+}
+
+function activateLink(element, url, label, kind) {
+  if (!element || !url) return false
   if (element.dataset.detailHref === url) return true
 
   element.dataset.detailHref = url
-  element.classList.add('dashboard-detail-link')
+  element.dataset.detailLinkKind = kind
+  element.classList.add(
+    kind === 'report' ? 'dashboard-report-link' : 'dashboard-detail-link'
+  )
   element.setAttribute('role', 'link')
   element.setAttribute('tabindex', '0')
   element.setAttribute('aria-label', label)
 
-  const openDetail = () => {
+  const openDetail = event => {
+    if (
+      kind === 'report' &&
+      event?.target?.closest?.('[data-detail-link-kind="item"]')
+    ) {
+      return
+    }
+
+    event?.stopPropagation?.()
     window.location.href = url
   }
 
@@ -101,10 +213,19 @@ function makeDetailLink(element, view, key, label) {
   element.addEventListener('keydown', event => {
     if (event.key !== 'Enter' && event.key !== ' ') return
     event.preventDefault()
-    openDetail()
+    openDetail(event)
   })
 
   return true
+}
+
+function makeDetailLink(element, view, key, label) {
+  if (!element || !key) return false
+  return activateLink(element, buildDetailUrl(view, key), label, 'item')
+}
+
+function makeReportLink(element, report, label) {
+  return activateLink(element, buildReportUrl(report), label, 'report')
 }
 
 async function getLatestRows(tableName, selectColumns) {
@@ -212,6 +333,15 @@ async function loadModels() {
   }
 }
 
+function applyReportLinks() {
+  return REPORT_TARGETS.map(target => {
+    const anchor = document.getElementById(target.anchorId)
+    const element = anchor?.closest(target.closest)
+    if (!element) return false
+    return makeReportLink(element, target.report, target.label)
+  }).every(Boolean)
+}
+
 function applyAgentLinks(rows) {
   const elements = [...document.querySelectorAll('.productivity-row')]
 
@@ -224,7 +354,7 @@ function applyAgentLinks(rows) {
       element,
       'agent',
       row.agent_key,
-      `Open productivity details for ${name}`
+      `Open filtered productivity report for ${name}`
     )
   })
 
@@ -244,7 +374,7 @@ function applyDriverLinks(rows) {
       element,
       'driver',
       row.key,
-      `Open ticket driver details for ${row.label}`
+      `Open filtered concern report for ${row.label}`
     )
   })
 
@@ -256,7 +386,7 @@ function applyDriverLinks(rows) {
       element,
       'driver',
       row.key,
-      `Open ticket driver details for ${row.label}`
+      `Open filtered concern report for ${row.label}`
     )
   })
 
@@ -281,7 +411,7 @@ function applyDistributionLinks(type, rows) {
       element,
       type,
       row.dimension_key,
-      `Open ${type} ticket details for ${label}`
+      `Open filtered ${type} report for ${label}`
     )
   })
 
@@ -294,7 +424,7 @@ function applyDistributionLinks(type, rows) {
       element,
       type,
       row.dimension_key,
-      `Open ${type} ticket details for ${label}`
+      `Open filtered ${type} report for ${label}`
     )
   })
 
@@ -304,6 +434,7 @@ function applyDistributionLinks(type, rows) {
 
 function applyAllLinks(models) {
   return [
+    applyReportLinks(),
     applyAgentLinks(models.agents),
     applyDriverLinks(models.drivers),
     applyDistributionLinks('app', models.distributions.app),
