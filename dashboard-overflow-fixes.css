@@ -1,0 +1,44 @@
+/* Keep long operational lists inside their dashboard cards. */
+#productivityChart,
+#ticketDriverChart {
+  max-height: 360px;
+  overflow-x: hidden;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  scrollbar-gutter: stable;
+  padding-right: 5px;
+  scrollbar-width: thin;
+  scrollbar-color: rgba(56, 47, 144, 0.42) transparent;
+}
+
+#productivityChart::-webkit-scrollbar,
+#ticketDriverChart::-webkit-scrollbar {
+  width: 8px;
+}
+
+#productivityChart::-webkit-scrollbar-thumb,
+#ticketDriverChart::-webkit-scrollbar-thumb {
+  border: 2px solid transparent;
+  border-radius: 999px;
+  background: rgba(56, 47, 144, 0.42);
+  background-clip: padding-box;
+}
+
+#productivityChart::-webkit-scrollbar-track,
+#ticketDriverChart::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+#productivityChart .global-filter-agent-list,
+#ticketDriverChart .global-filter-breakdown-list {
+  min-width: 0;
+}
+
+@media (min-width: 1280px) {
+  #productivityChart,
+  #ticketDriverChart {
+    height: 260px;
+    min-height: 238px;
+    max-height: 260px;
+  }
+}
