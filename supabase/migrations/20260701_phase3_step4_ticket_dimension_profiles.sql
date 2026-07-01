@@ -5,12 +5,13 @@ create table if not exists public.ticket_dimension_profiles (
   app_key text,
   platform_key text,
   country_key text,
-  driver_key text,
+  concern_key text,
+  driver_key text generated always as (concern_key) stored,
   source_updated_at timestamptz,
   source_system text not null default 'zendesk',
   source_record_type text not null default 'ticket',
   source_record_id text not null,
-  profile_version text not null default 'zendesk-custom-fields-v1',
+  profile_version text not null default 'zendesk-custom-fields-v2',
   metadata jsonb not null default '{}'::jsonb
     check (jsonb_typeof(metadata) = 'object'),
   synced_at timestamptz not null default now(),
@@ -29,7 +30,11 @@ create index if not exists ticket_dimension_profiles_country_idx
   on public.ticket_dimension_profiles (country_key)
   where country_key is not null;
 
-create index if not exists ticket_dimension_profiles_driver_idx
+create index if not exists ticket_dimension_profiles_concern_idx
+  on public.ticket_dimension_profiles (concern_key)
+  where concern_key is not null;
+
+create index if not exists ticket_dimension_profiles_driver_compat_idx
   on public.ticket_dimension_profiles (driver_key)
   where driver_key is not null;
 
@@ -58,7 +63,7 @@ begin
       nullif(btrim(profile.app_key), '') as app_key,
       nullif(btrim(profile.platform_key), '') as platform_key,
       nullif(btrim(profile.country_key), '') as country_key,
-      nullif(btrim(profile.driver_key), '') as driver_key,
+      nullif(btrim(profile.concern_key), '') as concern_key,
       profile.source_updated_at,
       coalesce(nullif(btrim(profile.source_system), ''), 'zendesk') as source_system,
       coalesce(nullif(btrim(profile.source_record_type), ''), 'ticket') as source_record_type,
@@ -68,7 +73,7 @@ begin
       ) as source_record_id,
       coalesce(
         nullif(btrim(profile.profile_version), ''),
-        'zendesk-custom-fields-v1'
+        'zendesk-custom-fields-v2'
       ) as profile_version,
       case
         when profile.metadata is null then '{}'::jsonb
@@ -80,7 +85,7 @@ begin
       app_key text,
       platform_key text,
       country_key text,
-      driver_key text,
+      concern_key text,
       source_updated_at timestamptz,
       source_system text,
       source_record_type text,
@@ -97,7 +102,7 @@ begin
       app_key,
       platform_key,
       country_key,
-      driver_key,
+      concern_key,
       source_updated_at,
       source_system,
       source_record_type,
@@ -112,7 +117,7 @@ begin
       app_key,
       platform_key,
       country_key,
-      driver_key,
+      concern_key,
       source_updated_at,
       source_system,
       source_record_type,
@@ -127,7 +132,7 @@ begin
       app_key = excluded.app_key,
       platform_key = excluded.platform_key,
       country_key = excluded.country_key,
-      driver_key = excluded.driver_key,
+      concern_key = excluded.concern_key,
       source_updated_at = excluded.source_updated_at,
       source_system = excluded.source_system,
       source_record_type = excluded.source_record_type,
@@ -174,7 +179,13 @@ on function public.upsert_ticket_dimension_profiles(jsonb)
 to service_role;
 
 comment on table public.ticket_dimension_profiles is
-  'Server-only current Zendesk ticket dimensions used for app, platform, country, and driver reporting.';
+  'Server-only current Zendesk ticket dimensions used for app, platform, country, and concern reporting.';
+
+comment on column public.ticket_dimension_profiles.concern_key is
+  'Normalized Zendesk Concerns ticket-field value.';
+
+comment on column public.ticket_dimension_profiles.driver_key is
+  'Generated compatibility alias for concern_key used by the existing Step 4 dashboard RPC.';
 
 comment on function public.upsert_ticket_dimension_profiles(jsonb) is
   'Upserts current ticket-dimension profiles without rewriting immutable ticket lifecycle events.';
