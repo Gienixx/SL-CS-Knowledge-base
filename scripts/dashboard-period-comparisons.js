@@ -96,10 +96,12 @@ function resolvePreviousRange(state, currentRange) {
 
   if (state?.range === 'custom' && isFullCalendarMonth(currentRange)) {
     const previousStart = addMonths(startDate, -1)
+    const previousEnd = addDays(startDate, -1)
+
     return {
       startDate: previousStart,
-      endDate: addDays(startDate, -1),
-      days: daysInclusive(previousStart, addDays(startDate, -1)),
+      endDate: previousEnd,
+      days: daysInclusive(previousStart, previousEnd),
       timeZone,
       periodKind: 'month'
     }
@@ -203,7 +205,10 @@ function comparisonImpact(metricConfig, direction) {
 }
 
 function numericMetric(summary, key) {
-  const value = Number(summary?.[key])
+  const raw = summary?.[key]
+  if (raw === null || raw === undefined || raw === '') return null
+
+  const value = Number(raw)
   return Number.isFinite(value) ? value : null
 }
 
