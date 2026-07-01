@@ -1,6 +1,6 @@
 # Phase 3 Step 4 — Zendesk ticket dimensions
 
-Phase 3 Step 4 adds a server-only current profile for the Zendesk dimensions that are not reliably present on immutable lifecycle events.
+Phase 3 Step 4 maintains a server-only current profile for Zendesk dimensions that are not reliably present on immutable lifecycle events.
 
 Required dimensions:
 
@@ -8,36 +8,44 @@ Required dimensions:
 app
 platform
 country
+concern
 ```
 
-Optional dimension:
-
-```text
-driver
-```
-
-If the Zendesk account has no Driver field, `driver_key` remains null. No placeholder field is required.
+`concern` maps to the Zendesk **Concerns** ticket field. It replaces the earlier `driver` dimension name.
 
 The profile is maintained from full Zendesk ticket snapshots. Historical `ticket_events` rows are not updated or rewritten.
 
-## Database migration
+## Database migrations
 
-Apply:
+For a fresh database, apply:
 
 ```text
 supabase/migrations/20260701_phase3_step4_ticket_dimension_profiles.sql
 ```
 
-The migration creates:
+For a database where the original Step 4 migration was already applied, additionally apply:
+
+```text
+supabase/migrations/20260701_phase3_step4b_concern_dimension.sql
+```
+
+The upgrade migration:
+
+- renames the stored `driver_key` field to `concern_key`;
+- replaces the profile-upsert function so it accepts `concern_key`;
+- migrates stored field-ID metadata from `driver` to `concern`;
+- creates a generated, read-only `driver_key` compatibility alias;
+- resets the independent dimension-backfill cursor so the Concern values can be reimported.
+
+The compatibility alias prevents the existing Step 4 global dashboard RPC from breaking. New ingestion and verification use `concern_key` as the authoritative field.
+
+## Database objects
+
+The migrations maintain:
 
 ```text
 ticket_dimension_profiles
 upsert_ticket_dimension_profiles(jsonb)
-```
-
-It also creates the independent synchronization state row:
-
-```text
 ticket_dimensions_backfill
 ```
 
@@ -51,7 +59,7 @@ ticket_dimensions_backfill
 - only `service_role` can execute the upsert function;
 - browser code cannot run the historical backfill.
 
-The table represents current ticket dimensions. It is intentionally separate from the append-only `ticket_events` lifecycle history.
+The table represents current ticket dimensions. It remains separate from the append-only `ticket_events` lifecycle history.
 
 ## Required Cloudflare environment variables
 
@@ -61,25 +69,22 @@ Configure these numeric Zendesk custom-field IDs:
 ZENDESK_APP_CUSTOM_FIELD_ID
 ZENDESK_PLATFORM_CUSTOM_FIELD_ID
 ZENDESK_COUNTRY_CUSTOM_FIELD_ID
+ZENDESK_CONCERN_CUSTOM_FIELD_ID
 ```
 
-The shorter aliases below are also accepted, but the `*_CUSTOM_FIELD_ID` names are preferred:
+The shorter aliases below are also accepted:
 
 ```text
 ZENDESK_APP_FIELD_ID
 ZENDESK_PLATFORM_FIELD_ID
 ZENDESK_COUNTRY_FIELD_ID
+ZENDESK_CONCERN_FIELD_ID
 ```
 
-The Driver field is optional. Configure it only when that Zendesk custom field exists:
+Do not use these obsolete variables for the Concerns field:
 
 ```text
 ZENDESK_DRIVER_CUSTOM_FIELD_ID
-```
-
-Optional alias:
-
-```text
 ZENDESK_DRIVER_FIELD_ID
 ```
 
@@ -101,7 +106,7 @@ ZENDESK_DIMENSION_INITIAL_START_TIME
 ZENDESK_DIMENSION_PAGE_SIZE
 ```
 
-`ZENDESK_DIMENSION_INITIAL_START_TIME` is a Unix timestamp in seconds. When it is absent, the endpoint defaults to a 365-day lookback. `ZENDESK_DIMENSION_PAGE_SIZE` defaults to 50 and is capped at 100.
+`ZENDESK_DIMENSION_INITIAL_START_TIME` is a Unix timestamp in seconds. When absent, the endpoint defaults to a 365-day lookback. `ZENDESK_DIMENSION_PAGE_SIZE` defaults to 50 and is capped at 100.
 
 ## Historical backfill endpoint
 
@@ -110,15 +115,11 @@ POST /api/backfill-zendesk-ticket-dimensions
 Authorization: Bearer <ZENDESK_SYNC_SECRET>
 ```
 
-The endpoint:
+The endpoint uses the independent synchronization state:
 
-1. verifies the existing synchronization bearer secret;
-2. requires the App, Platform, and Country custom-field IDs;
-3. accepts Driver as an optional field;
-4. acquires an independent server-side lease;
-5. reads one page from Zendesk incremental ticket snapshots;
-6. normalizes and upserts current dimension profiles;
-7. advances the dedicated cursor only after the database write succeeds.
+```text
+ticket_dimensions_backfill
+```
 
 Call the endpoint repeatedly while the response contains:
 
@@ -137,37 +138,28 @@ Stop when:
 }
 ```
 
-When no Driver field is configured, a successful response includes:
+The Step 4b migration resets this cursor automatically. The next backfill therefore starts from `ZENDESK_DIMENSION_INITIAL_START_TIME`, or from the default 365-day lookback when that variable is absent.
 
-```json
-{
-  "configuredFields": 3,
-  "requiredFieldsConfigured": 3,
-  "driverFieldConfigured": false
-}
-```
-
-The response exposes counts and cursor progress but never returns the synchronization secret or raw ticket contents.
+The endpoint response exposes counts and cursor progress but never returns the synchronization secret or raw ticket contents.
 
 ## Ongoing maintenance
 
-After the migration and the three required field IDs are configured, the existing endpoint:
+The existing endpoint:
 
 ```text
 POST /api/sync-zendesk
 ```
 
-also upserts ticket-dimension profiles from every future Zendesk snapshot page. The response adds:
+continues to upsert ticket-dimension profiles from future Zendesk snapshot pages. The normalizer now emits:
 
 ```text
-dimensionFieldsConfigured
-dimensionProfilesSeen
-dimensionProfilesUpserted
+app_key
+platform_key
+country_key
+concern_key
 ```
 
-With no Driver field, `dimensionFieldsConfigured` should be `3`.
-
-This keeps the profile current without changing the event import contract.
+The generated `driver_key` column mirrors `concern_key` only for compatibility with the currently deployed dashboard RPC.
 
 ## Stale-write protection
 
@@ -175,7 +167,7 @@ The database upsert ignores an older snapshot when the stored profile has a newe
 
 ## Verification
 
-After the migration and first backfill page, run:
+After applying the Step 4b migration and completing at least one backfill page, run:
 
 ```text
 supabase/verification/phase3_step4_ticket_dimension_check.sql
@@ -189,10 +181,17 @@ profile_integrity      PASS
 row_level_security     PASS
 server_only_access     PASS
 backfill_state         PASS
+compatibility_alias    PASS
 dimension_coverage     PASS
 ```
 
-`dimension_coverage` fails when no profiles have been imported yet. It reports the populated counts for App, Platform, Country, and Driver. A Driver count of zero is valid when no Driver custom field exists.
+The coverage details now report:
+
+```text
+profiles; app=...; platform=...; country=...; concern=...
+```
+
+A zero Concern count indicates that the Concern field ID is incorrect or that the selected Zendesk tickets have no Concern value.
 
 ## Tests
 
@@ -203,10 +202,10 @@ npm run test:zendesk-integration
 
 ## Manual production sequence
 
-1. Apply the Step 4 Supabase migration.
-2. Add the App, Platform, and Country Zendesk custom-field IDs to Cloudflare Pages production variables.
-3. Do not add a Driver variable when no Driver field exists.
-4. Redeploy the Pages project so Functions receive the new variables.
+1. Apply `supabase/migrations/20260701_phase3_step4b_concern_dimension.sql` in Supabase.
+2. Add `ZENDESK_CONCERN_CUSTOM_FIELD_ID` to Cloudflare Pages production variables using the numeric ID of the Zendesk **Concerns** ticket field.
+3. Remove the obsolete `ZENDESK_DRIVER_CUSTOM_FIELD_ID` and `ZENDESK_DRIVER_FIELD_ID` variables if either exists.
+4. Redeploy the Cloudflare Pages project.
 5. Call the protected backfill endpoint until `hasMore` is `false`.
 6. Run the Step 4 verification SQL.
-7. Confirm the normal scheduled `/api/sync-zendesk` response reports three configured fields.
+7. Confirm the coverage details show a non-zero `concern` count.
