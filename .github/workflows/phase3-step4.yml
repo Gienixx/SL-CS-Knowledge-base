@@ -1,0 +1,42 @@
+name: Phase 3 Step 4
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'dashboard.html'
+      - 'dashboard-global-filters.css'
+      - 'scripts/dashboard-global-filters.js'
+      - 'functions/api/backfill-zendesk-ticket-profiles.js'
+      - 'functions/api/sync-zendesk.js'
+      - 'functions/_shared/zendesk-ticket-profile.js'
+      - 'functions/_shared/zendesk-sync-store.js'
+      - 'supabase/migrations/20260701_phase3_step4_global_dashboard_filters.sql'
+      - 'supabase/verification/phase3_step4_global_filters_check.sql'
+      - 'tests/phase3-step4-*.test.mjs'
+      - 'package.json'
+      - '.github/workflows/phase3-step4.yml'
+  pull_request:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  global-filters:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+      - name: Run Step 4 tests
+        run: npm run test:phase3-step4
+      - name: Run Step 2 regression tests
+        run: npm run test:phase3-step2
+      - name: Run Step 3 regression tests
+        run: npm run test:phase3-step3
