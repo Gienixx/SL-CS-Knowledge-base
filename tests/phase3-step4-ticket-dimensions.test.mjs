@@ -13,39 +13,53 @@ const root = new URL('../', import.meta.url)
 const read = path => readFile(new URL(path, root), 'utf8')
 
 test('reads preferred Zendesk custom-field environment variables', () => {
-  assert.deepEqual(getZendeskTicketDimensionFieldMap({
+  const mapping = getZendeskTicketDimensionFieldMap({
     ZENDESK_APP_CUSTOM_FIELD_ID: '101',
     ZENDESK_PLATFORM_CUSTOM_FIELD_ID: 102,
     ZENDESK_COUNTRY_CUSTOM_FIELD_ID: '103',
-    ZENDESK_DRIVER_CUSTOM_FIELD_ID: 104
-  }), {
+    ZENDESK_CONCERN_CUSTOM_FIELD_ID: 104
+  })
+
+  assert.deepEqual({ ...mapping }, {
     app: 101,
     platform: 102,
     country: 103,
-    driver: 104
+    concern: 104
   })
+  assert.equal(mapping.driver, 104)
 })
 
-test('accepts shorter custom-field aliases', () => {
-  assert.deepEqual(getZendeskTicketDimensionFieldMap({
+test('accepts shorter concern custom-field aliases', () => {
+  const mapping = getZendeskTicketDimensionFieldMap({
     ZENDESK_APP_FIELD_ID: 201,
     ZENDESK_PLATFORM_FIELD_ID: 202,
     ZENDESK_COUNTRY_FIELD_ID: 203,
-    ZENDESK_DRIVER_FIELD_ID: 204
-  }), {
+    ZENDESK_CONCERN_FIELD_ID: 204
+  })
+
+  assert.deepEqual({ ...mapping }, {
     app: 201,
     platform: 202,
     country: 203,
-    driver: 204
+    concern: 204
   })
 })
 
 test('preferred custom-field names take precedence over aliases', () => {
   const mapping = getZendeskTicketDimensionFieldMap({
-    ZENDESK_APP_CUSTOM_FIELD_ID: 301,
-    ZENDESK_APP_FIELD_ID: 999
+    ZENDESK_CONCERN_CUSTOM_FIELD_ID: 301,
+    ZENDESK_CONCERN_FIELD_ID: 999
   })
-  assert.equal(mapping.app, 301)
+  assert.equal(mapping.concern, 301)
+})
+
+test('legacy driver environment variables are not treated as Concerns', () => {
+  const mapping = getZendeskTicketDimensionFieldMap({
+    ZENDESK_DRIVER_CUSTOM_FIELD_ID: 401
+  })
+
+  assert.equal(mapping.concern, null)
+  assert.equal(mapping.driver, null)
 })
 
 test('invalid custom-field identifiers are ignored', () => {
@@ -53,23 +67,26 @@ test('invalid custom-field identifiers are ignored', () => {
     ZENDESK_APP_CUSTOM_FIELD_ID: 'abc',
     ZENDESK_PLATFORM_CUSTOM_FIELD_ID: 0,
     ZENDESK_COUNTRY_CUSTOM_FIELD_ID: -5,
-    ZENDESK_DRIVER_CUSTOM_FIELD_ID: 401
+    ZENDESK_CONCERN_CUSTOM_FIELD_ID: 401
   })
-  assert.deepEqual(mapping, {
+  assert.deepEqual({ ...mapping }, {
     app: null,
     platform: null,
     country: null,
-    driver: 401
+    concern: 401
   })
 })
 
-test('counts configured ticket dimensions', () => {
-  assert.equal(configuredTicketDimensionFieldCount({
-    app: 1,
-    platform: null,
-    country: 3,
-    driver: 4
-  }), 3)
+test('counts only canonical ticket dimensions', () => {
+  const mapping = getZendeskTicketDimensionFieldMap({
+    ZENDESK_APP_CUSTOM_FIELD_ID: 1,
+    ZENDESK_PLATFORM_CUSTOM_FIELD_ID: 2,
+    ZENDESK_COUNTRY_CUSTOM_FIELD_ID: 3,
+    ZENDESK_CONCERN_CUSTOM_FIELD_ID: 4
+  })
+
+  assert.equal(configuredTicketDimensionFieldCount(mapping), 4)
+  assert.equal(Object.keys(mapping).includes('driver'), false)
 })
 
 test('normalizes Zendesk option values into stable keys', () => {
@@ -82,7 +99,7 @@ test('uses the first populated multi-select value', () => {
   assert.equal(normalizeDimensionKey([]), null)
 })
 
-test('builds all supported dimensions from ticket custom fields', () => {
+test('builds app, platform, country, and concern dimensions', () => {
   const profile = buildTicketDimensionProfile({
     id: 987,
     status: 'Open',
@@ -93,24 +110,25 @@ test('builds all supported dimensions from ticket custom fields', () => {
       { id: 13, value: 'US' },
       { id: 14, value: 'Cash Out' }
     ]
-  }, { app: 11, platform: 12, country: 13, driver: 14 })
+  }, { app: 11, platform: 12, country: 13, concern: 14 })
 
   assert.deepEqual({
     ticket_id: profile.ticket_id,
     app_key: profile.app_key,
     platform_key: profile.platform_key,
     country_key: profile.country_key,
-    driver_key: profile.driver_key
+    concern_key: profile.concern_key
   }, {
     ticket_id: 987,
     app_key: 'eureka',
     platform_key: 'android',
     country_key: 'us',
-    driver_key: 'cash_out'
+    concern_key: 'cash_out'
   })
+  assert.equal(profile.profile_version, 'zendesk-custom-fields-v2')
 })
 
-test('leaves driver null when no driver field exists', () => {
+test('leaves concern null when the ticket field has no value', () => {
   const profile = buildTicketDimensionProfile({
     id: 989,
     updated_at: '2026-06-30T12:30:00Z',
@@ -119,9 +137,9 @@ test('leaves driver null when no driver field exists', () => {
       { id: 12, value: 'iOS' },
       { id: 13, value: 'GB' }
     ]
-  }, { app: 11, platform: 12, country: 13, driver: null })
+  }, { app: 11, platform: 12, country: 13, concern: 14 })
 
-  assert.equal(profile.driver_key, null)
+  assert.equal(profile.concern_key, null)
   assert.equal(profile.app_key, 'eureka')
   assert.equal(profile.platform_key, 'ios')
   assert.equal(profile.country_key, 'gb')
@@ -165,25 +183,12 @@ test('deduplicates ticket profiles and keeps the newest snapshot', () => {
   assert.equal(profiles[0].app_key, 'new_app')
 })
 
-test('backfill endpoint is bearer-protected and uses an independent stream', async () => {
+test('backfill endpoint remains bearer-protected and uses an independent stream', async () => {
   const source = await read('functions/api/backfill-zendesk-ticket-dimensions.js')
   assert.match(source, /secretsMatch\(/)
   assert.match(source, /getBearerToken\(context\.request\)/)
   assert.match(source, /ticket_dimensions_backfill/)
   assert.match(source, /WWW-Authenticate/)
-})
-
-test('backfill requires app, platform, and country while driver remains optional', async () => {
-  const source = await read('functions/api/backfill-zendesk-ticket-dimensions.js')
-  const upsertPosition = source.indexOf('await upsertTicketDimensionProfiles')
-  const advancePosition = source.indexOf('await advanceZendeskSyncState')
-
-  assert.match(source, /REQUIRED_FIELDS = \['app', 'platform', 'country'\]/)
-  assert.match(source, /driverFieldOptional: true/)
-  assert.match(source, /missingRequiredFields/)
-  assert.doesNotMatch(source, /REQUIRED_FIELD_COUNT = 4/)
-  assert.ok(upsertPosition >= 0)
-  assert.ok(advancePosition > upsertPosition)
 })
 
 test('normal Zendesk snapshot sync maintains profiles without modifying event normalization', async () => {
@@ -194,16 +199,35 @@ test('normal Zendesk snapshot sync maintains profiles without modifying event no
   assert.doesNotMatch(source, /update\s+public\.ticket_events/i)
 })
 
-test('migration enforces server-only access, stale-write protection, and event immutability', async () => {
+test('fresh-install migration uses concern and a read-only driver compatibility alias', async () => {
   const migration = await read(
     'supabase/migrations/20260701_phase3_step4_ticket_dimension_profiles.sql'
   )
 
-  assert.match(migration, /create table if not exists public\.ticket_dimension_profiles/i)
+  assert.match(migration, /concern_key text/i)
+  assert.match(
+    migration,
+    /driver_key text generated always as \(concern_key\) stored/i
+  )
+  assert.match(migration, /profile\.concern_key/i)
   assert.match(migration, /enable row level security/i)
   assert.match(migration, /revoke all privileges[\s\S]*from anon, authenticated/i)
   assert.match(migration, /grant execute[\s\S]*to service_role/i)
   assert.match(migration, /excluded\.source_updated_at >= public\.ticket_dimension_profiles\.source_updated_at/i)
+  assert.doesNotMatch(migration, /update\s+public\.ticket_events/i)
+  assert.match(migration.trim(), /^begin;[\s\S]*commit;$/i)
+})
+
+test('deployed-database migration renames the field and resets the backfill cursor', async () => {
+  const migration = await read(
+    'supabase/migrations/20260701_phase3_step4b_concern_dimension.sql'
+  )
+
+  assert.match(migration, /rename column driver_key to concern_key/i)
+  assert.match(migration, /generated always as \(concern_key\) stored/i)
+  assert.match(migration, /profile\.concern_key/i)
+  assert.match(migration, /stream_key = 'ticket_dimensions_backfill'/i)
+  assert.match(migration, /cursor = null/i)
   assert.doesNotMatch(migration, /update\s+public\.ticket_events/i)
   assert.match(migration.trim(), /^begin;[\s\S]*commit;$/i)
 })

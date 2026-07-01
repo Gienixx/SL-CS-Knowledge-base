@@ -2,7 +2,7 @@ const FIELD_ENVIRONMENT_KEYS = Object.freeze({
   app: ['ZENDESK_APP_CUSTOM_FIELD_ID', 'ZENDESK_APP_FIELD_ID'],
   platform: ['ZENDESK_PLATFORM_CUSTOM_FIELD_ID', 'ZENDESK_PLATFORM_FIELD_ID'],
   country: ['ZENDESK_COUNTRY_CUSTOM_FIELD_ID', 'ZENDESK_COUNTRY_FIELD_ID'],
-  driver: ['ZENDESK_DRIVER_CUSTOM_FIELD_ID', 'ZENDESK_DRIVER_FIELD_ID']
+  concern: ['ZENDESK_CONCERN_CUSTOM_FIELD_ID', 'ZENDESK_CONCERN_FIELD_ID']
 })
 
 function positiveId(value) {
@@ -20,12 +20,21 @@ function firstConfiguredId(environment, keys) {
 }
 
 export function getZendeskTicketDimensionFieldMap(environment = {}) {
-  return Object.fromEntries(
+  const fieldMap = Object.fromEntries(
     Object.entries(FIELD_ENVIRONMENT_KEYS).map(([dimension, keys]) => [
       dimension,
       firstConfiguredId(environment, keys)
     ])
   )
+
+  Object.defineProperty(fieldMap, 'driver', {
+    value: fieldMap.concern,
+    enumerable: false,
+    configurable: false,
+    writable: false
+  })
+
+  return fieldMap
 }
 
 export function configuredTicketDimensionFieldCount(fieldMap = {}) {
@@ -75,7 +84,7 @@ export function buildTicketDimensionProfile(ticket, fieldMap = {}) {
   const appFieldId = positiveId(fieldMap?.app)
   const platformFieldId = positiveId(fieldMap?.platform)
   const countryFieldId = positiveId(fieldMap?.country)
-  const driverFieldId = positiveId(fieldMap?.driver)
+  const concernFieldId = positiveId(fieldMap?.concern)
 
   return {
     ticket_id: ticketId,
@@ -86,21 +95,21 @@ export function buildTicketDimensionProfile(ticket, fieldMap = {}) {
     country_key: countryFieldId
       ? normalizeDimensionKey(fields.get(countryFieldId))
       : null,
-    driver_key: driverFieldId
-      ? normalizeDimensionKey(fields.get(driverFieldId))
+    concern_key: concernFieldId
+      ? normalizeDimensionKey(fields.get(concernFieldId))
       : null,
     source_updated_at: normalizedTimestamp(ticket?.updated_at ?? ticket?.created_at),
     source_system: 'zendesk',
     source_record_type: 'ticket',
     source_record_id: String(ticketId),
-    profile_version: 'zendesk-custom-fields-v1',
+    profile_version: 'zendesk-custom-fields-v2',
     metadata: {
       status: normalizeDimensionKey(ticket?.status),
       configured_field_ids: {
         app: appFieldId,
         platform: platformFieldId,
         country: countryFieldId,
-        driver: driverFieldId
+        concern: concernFieldId
       }
     }
   }

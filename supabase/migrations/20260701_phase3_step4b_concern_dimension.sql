@@ -1,34 +1,75 @@
 begin;
 
-create table if not exists public.ticket_dimension_profiles (
-  ticket_id bigint primary key check (ticket_id > 0),
-  app_key text,
-  platform_key text,
-  country_key text,
-  concern_key text,
-  driver_key text generated always as (concern_key) stored,
-  source_updated_at timestamptz,
-  source_system text not null default 'zendesk',
-  source_record_type text not null default 'ticket',
-  source_record_id text not null,
-  profile_version text not null default 'zendesk-custom-fields-v2',
-  metadata jsonb not null default '{}'::jsonb
-    check (jsonb_typeof(metadata) = 'object'),
-  synced_at timestamptz not null default now(),
-  updated_at timestamptz not null default now()
-);
+do $$
+declare
+  concern_exists boolean;
+  driver_exists boolean;
+  driver_generated boolean;
+begin
+  select exists (
+    select 1
+    from information_schema.columns
+    where table_schema = 'public'
+      and table_name = 'ticket_dimension_profiles'
+      and column_name = 'concern_key'
+  ) into concern_exists;
 
-create index if not exists ticket_dimension_profiles_app_idx
-  on public.ticket_dimension_profiles (app_key)
-  where app_key is not null;
+  select exists (
+    select 1
+    from information_schema.columns
+    where table_schema = 'public'
+      and table_name = 'ticket_dimension_profiles'
+      and column_name = 'driver_key'
+  ) into driver_exists;
 
-create index if not exists ticket_dimension_profiles_platform_idx
-  on public.ticket_dimension_profiles (platform_key)
-  where platform_key is not null;
+  select exists (
+    select 1
+    from information_schema.columns
+    where table_schema = 'public'
+      and table_name = 'ticket_dimension_profiles'
+      and column_name = 'driver_key'
+      and is_generated = 'ALWAYS'
+  ) into driver_generated;
 
-create index if not exists ticket_dimension_profiles_country_idx
-  on public.ticket_dimension_profiles (country_key)
-  where country_key is not null;
+  if driver_exists and not concern_exists then
+    alter table public.ticket_dimension_profiles
+      rename column driver_key to concern_key;
+    concern_exists := true;
+    driver_exists := false;
+  elsif driver_exists and concern_exists and not driver_generated then
+    update public.ticket_dimension_profiles
+    set concern_key = coalesce(concern_key, driver_key)
+    where concern_key is null
+      and driver_key is not null;
+
+    alter table public.ticket_dimension_profiles
+      drop column driver_key;
+    driver_exists := false;
+  elsif not concern_exists then
+    alter table public.ticket_dimension_profiles
+      add column concern_key text;
+    concern_exists := true;
+  end if;
+
+  if not driver_exists then
+    alter table public.ticket_dimension_profiles
+      add column driver_key text
+      generated always as (concern_key) stored;
+  end if;
+end;
+$$;
+
+do $$
+begin
+  if to_regclass('public.ticket_dimension_profiles_driver_idx') is not null
+     and to_regclass('public.ticket_dimension_profiles_concern_idx') is null then
+    alter index public.ticket_dimension_profiles_driver_idx
+      rename to ticket_dimension_profiles_concern_idx;
+  elsif to_regclass('public.ticket_dimension_profiles_driver_idx') is not null then
+    drop index public.ticket_dimension_profiles_driver_idx;
+  end if;
+end;
+$$;
 
 create index if not exists ticket_dimension_profiles_concern_idx
   on public.ticket_dimension_profiles (concern_key)
@@ -38,9 +79,23 @@ create index if not exists ticket_dimension_profiles_driver_compat_idx
   on public.ticket_dimension_profiles (driver_key)
   where driver_key is not null;
 
-create index if not exists ticket_dimension_profiles_source_updated_idx
-  on public.ticket_dimension_profiles (source_updated_at desc)
-  where source_updated_at is not null;
+update public.ticket_dimension_profiles
+set
+  metadata = case
+    when metadata #> '{configured_field_ids,driver}' is not null
+         and metadata #> '{configured_field_ids,concern}' is null then
+      jsonb_set(
+        metadata #- '{configured_field_ids,driver}',
+        '{configured_field_ids,concern}',
+        metadata #> '{configured_field_ids,driver}',
+        true
+      )
+    when metadata #> '{configured_field_ids,driver}' is not null then
+      metadata #- '{configured_field_ids,driver}'
+    else metadata
+  end,
+  profile_version = 'zendesk-custom-fields-v2',
+  updated_at = now();
 
 create or replace function public.upsert_ticket_dimension_profiles(
   p_profiles jsonb
@@ -156,20 +211,6 @@ begin
 end;
 $$;
 
-insert into public.zendesk_sync_state (stream_key)
-values ('ticket_dimensions_backfill')
-on conflict (stream_key) do nothing;
-
-alter table public.ticket_dimension_profiles enable row level security;
-
-revoke all privileges
-on table public.ticket_dimension_profiles
-from anon, authenticated;
-
-grant select, insert, update, delete
-on table public.ticket_dimension_profiles
-to service_role;
-
 revoke all
 on function public.upsert_ticket_dimension_profiles(jsonb)
 from public, anon, authenticated;
@@ -177,6 +218,17 @@ from public, anon, authenticated;
 grant execute
 on function public.upsert_ticket_dimension_profiles(jsonb)
 to service_role;
+
+update public.zendesk_sync_state
+set
+  cursor = null,
+  start_time = null,
+  last_event_timestamp = null,
+  last_success_at = null,
+  lease_token = null,
+  lease_expires_at = null,
+  updated_at = now()
+where stream_key = 'ticket_dimensions_backfill';
 
 comment on table public.ticket_dimension_profiles is
   'Server-only current Zendesk ticket dimensions used for app, platform, country, and concern reporting.';
@@ -188,6 +240,6 @@ comment on column public.ticket_dimension_profiles.driver_key is
   'Generated compatibility alias for concern_key used by the existing Step 4 dashboard RPC.';
 
 comment on function public.upsert_ticket_dimension_profiles(jsonb) is
-  'Upserts current ticket-dimension profiles without rewriting immutable ticket lifecycle events.';
+  'Upserts current ticket-dimension profiles using concern_key without rewriting immutable ticket lifecycle events.';
 
 commit;

@@ -84,7 +84,7 @@ test('browser filtering uses the aggregate RPC instead of reading raw events', (
   assert.equal(frontend.includes(".from('ticket_dimension_profiles')"), false)
 })
 
-test('filter state supports every Step 4 URL dimension', () => {
+test('internal filter state retains the driver compatibility key', () => {
   const frontend = read('scripts/dashboard-global-filters.js')
 
   for (const key of [
@@ -104,17 +104,32 @@ test('filter state supports every Step 4 URL dimension', () => {
   assert.equal(frontend.includes('dashboard:filters-changed'), true)
 })
 
-test('dashboard loads the global filter stylesheet and module', () => {
+test('dashboard loads the global filter and Concern compatibility modules in order', () => {
   const dashboard = read('dashboard.html')
+  const filtersPosition = dashboard.indexOf(
+    './scripts/dashboard-global-filters.js?v=1'
+  )
+  const concernPosition = dashboard.indexOf(
+    './scripts/dashboard-concern-compat.js?v=1'
+  )
 
   assert.equal(
     dashboard.includes('./dashboard-global-filters.css?v=1'),
     true
   )
-  assert.equal(
-    dashboard.includes('./scripts/dashboard-global-filters.js?v=1'),
-    true
-  )
+  assert.ok(filtersPosition >= 0)
+  assert.ok(concernPosition > filtersPosition)
+})
+
+test('Concern compatibility maps URL state and visible labels', () => {
+  const source = read('scripts/dashboard-concern-compat.js')
+
+  assert.equal(source.includes("searchParams.get('concern')"), true)
+  assert.equal(source.includes("searchParams.set('driver', concern)"), true)
+  assert.equal(source.includes("searchParams.set('concern', driver)"), true)
+  assert.equal(source.includes("caption.textContent = 'Concern'"), true)
+  assert.equal(source.includes("allOption.textContent = 'All concerns'"), true)
+  assert.equal(source.includes('dashboard:filters-changed'), true)
 })
 
 test('verification checks the existing dimension profile security boundary', () => {
