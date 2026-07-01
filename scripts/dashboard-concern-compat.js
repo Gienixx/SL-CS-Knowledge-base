@@ -1,6 +1,7 @@
 import { supabase } from './supabaseClient.js?v=8'
 
-let agentDirectoryPromise = null
+const agentNameCache = new Map()
+let cachedDirectoryPromise = null
 
 function normalizeIncomingConcernParameter() {
   const url = new URL(window.location.href)
@@ -119,28 +120,82 @@ function formatCount(value) {
     : null
 }
 
-async function loadAgentDirectory() {
-  if (!agentDirectoryPromise) {
-    agentDirectoryPromise = supabase
+function collectAgentKeys(data) {
+  const keys = new Set()
+
+  for (const row of data?.agents || []) {
+    if (/^zendesk:\d+$/.test(String(row?.agent_key || ''))) {
+      keys.add(String(row.agent_key))
+    }
+  }
+
+  for (const row of data?.options?.agent || []) {
+    if (/^zendesk:\d+$/.test(String(row?.key || ''))) {
+      keys.add(String(row.key))
+    }
+  }
+
+  return [...keys]
+}
+
+async function loadCachedAgentDirectory() {
+  if (!cachedDirectoryPromise) {
+    cachedDirectoryPromise = supabase
       .from('zendesk_agent_directory')
       .select('agent_key, agent_name')
       .then(({ data, error }) => {
-        if (error) throw error
-
-        return new Map((Array.isArray(data) ? data : [])
-          .filter(row => row?.agent_key && row?.agent_name)
-          .map(row => [String(row.agent_key), String(row.agent_name)]))
-      })
-      .catch(error => {
-        agentDirectoryPromise = null
-        throw error
+        if (error) return []
+        return Array.isArray(data) ? data : []
       })
   }
 
-  return agentDirectoryPromise
+  const rows = await cachedDirectoryPromise
+  rows.forEach(row => {
+    if (row?.agent_key && row?.agent_name) {
+      agentNameCache.set(String(row.agent_key), String(row.agent_name))
+    }
+  })
 }
 
-function patchAgentFilterOptions(data, names) {
+async function loadLiveAgentNames(agentKeys) {
+  const missingKeys = agentKeys.filter(key => !agentNameCache.has(key))
+  if (missingKeys.length === 0) return
+
+  const {
+    data: { session },
+    error
+  } = await supabase.auth.getSession()
+
+  if (error || !session?.access_token) {
+    throw error || new Error('An authenticated dashboard session is required.')
+  }
+
+  const response = await fetch('/api/zendesk-agent-names', {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      Authorization: `Bearer ${session.access_token}`
+    },
+    body: JSON.stringify({ agentKeys: missingKeys })
+  })
+  const payload = await response.json().catch(() => ({}))
+
+  if (!response.ok) {
+    throw new Error(payload?.error || 'Zendesk agent names could not be loaded.')
+  }
+
+  for (const row of payload?.agents || []) {
+    if (row?.agent_key && row?.agent_name) {
+      agentNameCache.set(String(row.agent_key), String(row.agent_name))
+    }
+  }
+}
+
+function findAgentOption(select, agentKey) {
+  return [...(select?.options || [])].find(option => option.value === agentKey)
+}
+
+function patchAgentFilterOptions(data) {
   const form = document.getElementById('dashboardFilterForm')
   const select = form?.elements?.agent
   const rows = Array.isArray(data?.options?.agent)
@@ -148,13 +203,12 @@ function patchAgentFilterOptions(data, names) {
     : []
 
   for (const row of rows) {
-    const resolvedName = names.get(String(row?.key || ''))
+    const agentKey = String(row?.key || '')
+    const resolvedName = agentNameCache.get(agentKey)
     if (!resolvedName) continue
 
     row.label = resolvedName
-    const option = select?.querySelector(
-      `option[value="${CSS.escape(String(row.key))}"]`
-    )
+    const option = findAgentOption(select, agentKey)
     const ticketCount = formatCount(row.ticket_count)
 
     if (option) {
@@ -165,12 +219,12 @@ function patchAgentFilterOptions(data, names) {
   }
 }
 
-function patchAgentRows(data, names) {
+function patchAgentRows(data) {
   const rows = Array.isArray(data?.agents) ? data.agents : []
   const renderedRows = document.querySelectorAll('.global-filter-agent-row')
 
   rows.forEach((row, index) => {
-    const resolvedName = names.get(String(row?.agent_key || ''))
+    const resolvedName = agentNameCache.get(String(row?.agent_key || ''))
     if (!resolvedName) return
 
     row.agent_name = resolvedName
@@ -180,10 +234,10 @@ function patchAgentRows(data, names) {
   })
 }
 
-function patchActiveAgentFilter(data, names) {
+function patchActiveAgentFilter(data) {
   const state = window.__slDashboardFilters?.getState?.()
   const agentKey = state?.agent
-  const resolvedName = names.get(String(agentKey || ''))
+  const resolvedName = agentNameCache.get(String(agentKey || ''))
 
   if (!resolvedName) return
 
@@ -200,12 +254,15 @@ function patchActiveAgentFilter(data, names) {
 }
 
 async function presentAgentNames(data) {
-  const names = await loadAgentDirectory()
-  if (names.size === 0) return
+  const agentKeys = collectAgentKeys(data)
+  if (agentKeys.length === 0) return
 
-  patchAgentFilterOptions(data, names)
-  patchAgentRows(data, names)
-  patchActiveAgentFilter(data, names)
+  await loadCachedAgentDirectory()
+  await loadLiveAgentNames(agentKeys)
+
+  patchAgentFilterOptions(data)
+  patchAgentRows(data)
+  patchActiveAgentFilter(data)
 }
 
 normalizeIncomingConcernParameter()
