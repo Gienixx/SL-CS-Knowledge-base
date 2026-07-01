@@ -23,7 +23,120 @@ const METRIC_CARDS = Object.freeze({
   }
 })
 
+const METRIC_KEYS = Object.freeze([
+  'tickets_created',
+  'tickets_solved',
+  'backlog_open',
+  'backlog_over_24h',
+  'backlog_over_48h',
+  'first_response_minutes',
+  'resolution_minutes',
+  'reopened_tickets'
+])
+
 let comparisonRequest = 0
+let inFlightSignature = null
+let lastSuccessfulSignature = null
+
+function parseDate(value) {
+  const date = new Date(`${value}T00:00:00Z`)
+  return Number.isNaN(date.getTime()) ? null : date
+}
+
+function dateString(date) {
+  return date.toISOString().slice(0, 10)
+}
+
+function addDays(value, amount) {
+  const date = parseDate(value)
+  if (!date) return null
+  date.setUTCDate(date.getUTCDate() + amount)
+  return dateString(date)
+}
+
+function addMonths(value, amount) {
+  const date = parseDate(value)
+  if (!date) return null
+  date.setUTCDate(1)
+  date.setUTCMonth(date.getUTCMonth() + amount)
+  return dateString(date)
+}
+
+function firstDayOfMonth(value) {
+  return `${String(value).slice(0, 7)}-01`
+}
+
+function lastDayOfMonth(value) {
+  const nextMonth = addMonths(firstDayOfMonth(value), 1)
+  return nextMonth ? addDays(nextMonth, -1) : null
+}
+
+function daysInclusive(startDate, endDate) {
+  const start = parseDate(startDate)
+  const end = parseDate(endDate)
+  if (!start || !end) return 0
+  return Math.floor((end - start) / 86400000) + 1
+}
+
+function isFullCalendarMonth(range) {
+  return Boolean(
+    range?.startDate &&
+    range?.endDate &&
+    range.startDate === firstDayOfMonth(range.startDate) &&
+    range.endDate === lastDayOfMonth(range.startDate)
+  )
+}
+
+function resolvePreviousRange(state, currentRange) {
+  const startDate = currentRange?.startDate
+  const endDate = currentRange?.endDate
+  const timeZone = currentRange?.timeZone || 'America/New_York'
+
+  if (!startDate || !endDate) return null
+
+  if (state?.range === 'custom' && isFullCalendarMonth(currentRange)) {
+    const previousStart = addMonths(startDate, -1)
+    const previousEnd = addDays(startDate, -1)
+
+    return {
+      startDate: previousStart,
+      endDate: previousEnd,
+      days: daysInclusive(previousStart, previousEnd),
+      timeZone,
+      periodKind: 'month'
+    }
+  }
+
+  if (state?.range === 'mtd') {
+    const previousStart = addMonths(firstDayOfMonth(startDate), -1)
+    const previousMonthEnd = addDays(firstDayOfMonth(startDate), -1)
+    const elapsedDays = daysInclusive(startDate, endDate) - 1
+    const matchingEnd = addDays(previousStart, Math.max(0, elapsedDays))
+    const previousEnd = matchingEnd > previousMonthEnd
+      ? previousMonthEnd
+      : matchingEnd
+
+    return {
+      startDate: previousStart,
+      endDate: previousEnd,
+      days: daysInclusive(previousStart, previousEnd),
+      timeZone,
+      periodKind: 'mtd'
+    }
+  }
+
+  const days = daysInclusive(startDate, endDate)
+  const previousEnd = addDays(startDate, -1)
+  const previousStart = addDays(previousEnd, -(days - 1))
+
+  return {
+    startDate: previousStart,
+    endDate: previousEnd,
+    days,
+    timeZone,
+    periodKind: 'previous_period'
+  }
+}
 
 function formatNumber(value) {
   const number = Number(value)
@@ -91,6 +204,78 @@ function comparisonImpact(metricConfig, direction) {
   return favorable ? 'favorable' : 'unfavorable'
 }
 
+function numericMetric(summary, key) {
+  const raw = summary?.[key]
+  if (raw === null || raw === undefined || raw === '') return null
+
+  const value = Number(raw)
+  return Number.isFinite(value) ? value : null
+}
+
+function compareMetric(currentValue, previousValue) {
+  if (currentValue === null || previousValue === null) {
+    return {
+      current: currentValue,
+      previous: previousValue,
+      absoluteChange: null,
+      percentChange: null,
+      direction: 'missing',
+      zeroBaseline: previousValue === 0
+    }
+  }
+
+  const absoluteChange = currentValue - previousValue
+  const percentChange = previousValue === 0
+    ? null
+    : Math.round((absoluteChange / Math.abs(previousValue)) * 1000) / 10
+
+  let direction = 'flat'
+  if (previousValue === 0 && currentValue > 0) direction = 'new'
+  else if (currentValue > previousValue) direction = 'increase'
+  else if (currentValue < previousValue) direction = 'decrease'
+
+  return {
+    current: currentValue,
+    previous: previousValue,
+    absoluteChange,
+    percentChange,
+    direction,
+    zeroBaseline: previousValue === 0
+  }
+}
+
+function buildComparisonPayload(detail, previousData, previousRange) {
+  const currentRange = detail?.data?.range || {}
+  const currentSummary = detail?.data?.summary || {}
+  const previousSummary = previousData?.summary || {}
+  const metrics = Object.fromEntries(
+    METRIC_KEYS.map(key => [
+      key,
+      compareMetric(
+        numericMetric(currentSummary, key),
+        numericMetric(previousSummary, key)
+      )
+    ])
+  )
+
+  return {
+    periodKind: previousRange.periodKind,
+    currentRange: {
+      startDate: currentRange.startDate,
+      endDate: currentRange.endDate,
+      days: daysInclusive(currentRange.startDate, currentRange.endDate),
+      timeZone: currentRange.timeZone || previousRange.timeZone
+    },
+    previousRange: {
+      startDate: previousRange.startDate,
+      endDate: previousRange.endDate,
+      days: previousRange.days,
+      timeZone: previousRange.timeZone
+    },
+    metrics
+  }
+}
+
 function comparisonCopy(metric) {
   if (!metric || metric.direction === 'missing') {
     return {
@@ -142,20 +327,27 @@ function comparisonErrorPresentation(error) {
   ) {
     return {
       label: 'Reload Supabase schema',
-      detail: detail || 'The comparison RPC is missing from the PostgREST schema cache.'
+      detail: detail || 'The filtered dashboard RPC is missing from the PostgREST schema cache.'
     }
   }
 
   if (code === '42501' || normalized.includes('permission denied')) {
     return {
       label: 'Comparison permission denied',
-      detail: detail || 'The authenticated role cannot execute the comparison RPC.'
+      detail: detail || 'The authenticated role cannot execute the filtered dashboard RPC.'
+    }
+  }
+
+  if (code === '57014' || normalized.includes('statement timeout')) {
+    return {
+      label: 'Comparison timed out',
+      detail: detail || 'The prior-period aggregation exceeded the database timeout.'
     }
   }
 
   return {
     label: 'Comparison unavailable',
-    detail: detail || 'The comparison RPC request failed.'
+    detail: detail || 'The prior-period dashboard request failed.'
   }
 }
 
@@ -212,12 +404,10 @@ function renderComparisons(payload) {
   }
 }
 
-function comparisonParameters(state, data) {
-  const range = data?.range || {}
-
+function previousRpcParameters(state, previousRange) {
   return {
-    p_start_date: range.startDate,
-    p_end_date: range.endDate,
+    p_start_date: previousRange.startDate,
+    p_end_date: previousRange.endDate,
     p_app_key: state?.app || null,
     p_platform_key: state?.platform || null,
     p_country_key: state?.country || null,
@@ -225,37 +415,58 @@ function comparisonParameters(state, data) {
     p_agent_key: state?.agent || null,
     p_priority: state?.priority || null,
     p_channel: state?.channel || null,
-    p_time_zone: range.timeZone || 'America/New_York',
-    p_period_kind: state?.range || 'auto'
+    p_time_zone: previousRange.timeZone || 'America/New_York'
   }
 }
 
-async function loadPeriodComparison(detail) {
-  const requestId = ++comparisonRequest
-  const parameters = comparisonParameters(detail?.state, detail?.data)
+function comparisonSignature(detail, previousRange) {
+  return JSON.stringify({
+    state: detail?.state || {},
+    currentRange: detail?.data?.range || {},
+    currentSummary: detail?.data?.summary || {},
+    previousRange
+  })
+}
 
-  if (!parameters.p_start_date || !parameters.p_end_date) {
+async function loadPeriodComparison(detail) {
+  const previousRange = resolvePreviousRange(detail?.state, detail?.data?.range)
+
+  if (!previousRange?.startDate || !previousRange?.endDate) {
     renderUnavailable('Comparison unavailable')
     return null
   }
 
+  const signature = comparisonSignature(detail, previousRange)
+  if (signature === lastSuccessfulSignature || signature === inFlightSignature) {
+    return null
+  }
+
+  const requestId = ++comparisonRequest
+  inFlightSignature = signature
   renderLoading()
 
-  const { data, error } = await supabase.rpc(
-    'get_dashboard_period_comparison',
-    parameters
-  )
+  try {
+    const { data, error } = await supabase.rpc(
+      'get_dashboard_filtered_data',
+      previousRpcParameters(detail?.state, previousRange)
+    )
 
-  if (requestId !== comparisonRequest) return null
-  if (error) throw error
+    if (requestId !== comparisonRequest) return null
+    if (error) throw error
 
-  renderComparisons(data || {})
-  window.dispatchEvent(new CustomEvent(
-    'dashboard:period-comparison',
-    { detail: data || {} }
-  ))
+    const payload = buildComparisonPayload(detail, data || {}, previousRange)
+    renderComparisons(payload)
+    lastSuccessfulSignature = signature
 
-  return data
+    window.dispatchEvent(new CustomEvent(
+      'dashboard:period-comparison',
+      { detail: payload }
+    ))
+
+    return payload
+  } finally {
+    if (inFlightSignature === signature) inFlightSignature = null
+  }
 }
 
 window.addEventListener('dashboard:filtered-data', event => {

@@ -50,8 +50,8 @@ test('period rules cover rolling, MTD, partial, and full-month comparisons', () 
     'v_previous_end := p_start_date - 1',
     'v_previous_month_start + v_elapsed_days',
     'least(',
-    "dashboard_comparison_month_range_invalid",
-    "dashboard_comparison_mtd_range_invalid"
+    'dashboard_comparison_month_range_invalid',
+    'dashboard_comparison_mtd_range_invalid'
   ]) {
     assert.equal(sql.includes(requiredText), true, requiredText)
   }
@@ -68,7 +68,7 @@ test('zero baselines and missing values avoid invalid percentages', () => {
   assert.equal(sql.includes("'zeroBaseline', zero_baseline"), true)
 })
 
-test('browser renders previous values and percentage changes on all KPI cards', () => {
+test('browser reuses current data and requests only the previous period', () => {
   const source = read('scripts/dashboard-period-comparisons.js')
 
   for (const valueId of [
@@ -81,22 +81,34 @@ test('browser renders previous values and percentage changes on all KPI cards', 
     assert.equal(source.includes(valueId), true, valueId)
   }
 
-  assert.equal(
-    source.includes("'get_dashboard_period_comparison'"),
-    true
-  )
+  assert.equal(source.includes("'get_dashboard_filtered_data'"), true)
+  assert.equal(source.includes("'get_dashboard_period_comparison'"), false)
+  assert.equal(source.includes('buildComparisonPayload'), true)
+  assert.equal(source.includes('currentSummary'), true)
+  assert.equal(source.includes('previousSummary'), true)
   assert.equal(source.includes('percentChange'), true)
   assert.equal(source.includes('prev ${formatNumber(metric.previous)}'), true)
+})
+
+test('browser deduplicates repeated comparison events', () => {
+  const source = read('scripts/dashboard-period-comparisons.js')
+
+  assert.equal(source.includes('inFlightSignature'), true)
+  assert.equal(source.includes('lastSuccessfulSignature'), true)
+  assert.equal(
+    source.includes('signature === lastSuccessfulSignature || signature === inFlightSignature'),
+    true
+  )
   assert.equal(source.includes('requestId !== comparisonRequest'), true)
 })
 
-test('dashboard loads Step 5 styles and script after global filters', () => {
+test('dashboard loads loop-safe Step 5 script after global filters', () => {
   const dashboard = read('dashboard.html')
   const filtersPosition = dashboard.indexOf(
     './scripts/dashboard-global-filters.js?v=1'
   )
   const comparisonPosition = dashboard.indexOf(
-    './scripts/dashboard-period-comparisons.js?v=1'
+    './scripts/dashboard-period-comparisons.js?v=2'
   )
 
   assert.equal(

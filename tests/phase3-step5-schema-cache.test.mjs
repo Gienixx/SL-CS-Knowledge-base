@@ -46,20 +46,23 @@ test('Step 5 dependency check requires the exact Step 4 aggregate RPC', () => {
   )
 })
 
-test('Step 5 runtime check reports a missing dependency instead of throwing', () => {
+test('Step 5 verification checks readiness without executing the expensive aggregation', () => {
   const sql = read(
     'supabase/verification/phase3_step5b_period_comparison_runtime_check.sql'
   )
 
-  assert.equal(sql.includes('set local role authenticated'), true)
   assert.equal(sql.includes('to_regprocedure('), true)
+  assert.equal(sql.includes('has_function_privilege'), true)
+  assert.equal(sql.includes("'runtime_comparison_rpc'"), true)
   assert.equal(
-    sql.includes('20260701_phase3_step4_global_filter_rpc.sql'),
+    sql.includes('full data execution intentionally skipped'),
     true
   )
-  assert.equal(sql.includes('execute $sql$'), true)
-  assert.equal(sql.includes("'runtime_comparison_rpc'"), true)
-  assert.equal(sql.includes("'phase3.step5.status'"), true)
+  assert.equal(sql.includes('execute $sql$'), false)
+  assert.equal(
+    sql.includes('select public.get_dashboard_period_comparison('),
+    false
+  )
 })
 
 test('comparison badges expose actionable RPC errors', () => {
@@ -69,6 +72,7 @@ test('comparison badges expose actionable RPC errors', () => {
   assert.equal(source.includes("'PGRST202'"), true)
   assert.equal(source.includes("'Reload Supabase schema'"), true)
   assert.equal(source.includes("'Comparison permission denied'"), true)
+  assert.equal(source.includes("'Comparison timed out'"), true)
   assert.equal(source.includes('element.title = detail'), true)
 })
 
@@ -99,6 +103,10 @@ test('Step 5 documentation includes dependency and schema-cache recovery', () =>
     documentation.includes(
       'phase3_step5b_period_comparison_runtime_check.sql'
     ),
+    true
+  )
+  assert.equal(
+    documentation.includes('does not execute the full dashboard aggregation'),
     true
   )
 })
