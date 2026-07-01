@@ -1,13 +1,22 @@
 # Phase 3 Step 4 — Zendesk ticket dimensions
 
-Phase 3 Step 4 adds a server-only current profile for the four Zendesk dimensions that are not reliably present on immutable lifecycle events:
+Phase 3 Step 4 adds a server-only current profile for the Zendesk dimensions that are not reliably present on immutable lifecycle events.
+
+Required dimensions:
 
 ```text
 app
 platform
 country
+```
+
+Optional dimension:
+
+```text
 driver
 ```
+
+If the Zendesk account has no Driver field, `driver_key` remains null. No placeholder field is required.
 
 The profile is maintained from full Zendesk ticket snapshots. Historical `ticket_events` rows are not updated or rewritten.
 
@@ -46,13 +55,12 @@ The table represents current ticket dimensions. It is intentionally separate fro
 
 ## Required Cloudflare environment variables
 
-Configure the numeric Zendesk custom-field IDs:
+Configure these numeric Zendesk custom-field IDs:
 
 ```text
 ZENDESK_APP_CUSTOM_FIELD_ID
 ZENDESK_PLATFORM_CUSTOM_FIELD_ID
 ZENDESK_COUNTRY_CUSTOM_FIELD_ID
-ZENDESK_DRIVER_CUSTOM_FIELD_ID
 ```
 
 The shorter aliases below are also accepted, but the `*_CUSTOM_FIELD_ID` names are preferred:
@@ -61,6 +69,17 @@ The shorter aliases below are also accepted, but the `*_CUSTOM_FIELD_ID` names a
 ZENDESK_APP_FIELD_ID
 ZENDESK_PLATFORM_FIELD_ID
 ZENDESK_COUNTRY_FIELD_ID
+```
+
+The Driver field is optional. Configure it only when that Zendesk custom field exists:
+
+```text
+ZENDESK_DRIVER_CUSTOM_FIELD_ID
+```
+
+Optional alias:
+
+```text
 ZENDESK_DRIVER_FIELD_ID
 ```
 
@@ -94,11 +113,12 @@ Authorization: Bearer <ZENDESK_SYNC_SECRET>
 The endpoint:
 
 1. verifies the existing synchronization bearer secret;
-2. requires all four custom-field IDs;
-3. acquires an independent server-side lease;
-4. reads one page from Zendesk incremental ticket snapshots;
-5. normalizes and upserts current dimension profiles;
-6. advances the dedicated cursor only after the database write succeeds.
+2. requires the App, Platform, and Country custom-field IDs;
+3. accepts Driver as an optional field;
+4. acquires an independent server-side lease;
+5. reads one page from Zendesk incremental ticket snapshots;
+6. normalizes and upserts current dimension profiles;
+7. advances the dedicated cursor only after the database write succeeds.
 
 Call the endpoint repeatedly while the response contains:
 
@@ -117,11 +137,21 @@ Stop when:
 }
 ```
 
+When no Driver field is configured, a successful response includes:
+
+```json
+{
+  "configuredFields": 3,
+  "requiredFieldsConfigured": 3,
+  "driverFieldConfigured": false
+}
+```
+
 The response exposes counts and cursor progress but never returns the synchronization secret or raw ticket contents.
 
 ## Ongoing maintenance
 
-After the migration is applied and at least one dimension field ID is configured, the existing endpoint:
+After the migration and the three required field IDs are configured, the existing endpoint:
 
 ```text
 POST /api/sync-zendesk
@@ -134,6 +164,8 @@ dimensionFieldsConfigured
 dimensionProfilesSeen
 dimensionProfilesUpserted
 ```
+
+With no Driver field, `dimensionFieldsConfigured` should be `3`.
 
 This keeps the profile current without changing the event import contract.
 
@@ -160,7 +192,7 @@ backfill_state         PASS
 dimension_coverage     PASS
 ```
 
-`dimension_coverage` fails when no profiles have been imported yet. It reports the populated counts for app, platform, country, and driver so incorrect field mappings are visible immediately.
+`dimension_coverage` fails when no profiles have been imported yet. It reports the populated counts for App, Platform, Country, and Driver. A Driver count of zero is valid when no Driver custom field exists.
 
 ## Tests
 
@@ -172,8 +204,9 @@ npm run test:zendesk-integration
 ## Manual production sequence
 
 1. Apply the Step 4 Supabase migration.
-2. Add the four Zendesk custom-field IDs to Cloudflare Pages production variables.
-3. Redeploy the Pages project so Functions receive the new variables.
-4. Call the protected backfill endpoint until `hasMore` is `false`.
-5. Run the Step 4 verification SQL.
-6. Confirm the normal scheduled `/api/sync-zendesk` response reports four configured fields.
+2. Add the App, Platform, and Country Zendesk custom-field IDs to Cloudflare Pages production variables.
+3. Do not add a Driver variable when no Driver field exists.
+4. Redeploy the Pages project so Functions receive the new variables.
+5. Call the protected backfill endpoint until `hasMore` is `false`.
+6. Run the Step 4 verification SQL.
+7. Confirm the normal scheduled `/api/sync-zendesk` response reports three configured fields.
