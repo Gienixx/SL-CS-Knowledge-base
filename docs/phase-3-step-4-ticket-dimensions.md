@@ -115,6 +115,18 @@ POST /api/backfill-zendesk-ticket-dimensions
 Authorization: Bearer <ZENDESK_SYNC_SECRET>
 ```
 
+The endpoint refuses to run unless all four canonical field IDs are configured: App, Platform, Country, and Concern.
+
+A successful response reports:
+
+```json
+{
+  "configuredFields": 4,
+  "requiredFieldsConfigured": 4,
+  "concernFieldConfigured": true
+}
+```
+
 The endpoint uses the independent synchronization state:
 
 ```text
@@ -206,6 +218,6 @@ npm run test:zendesk-integration
 2. Add `ZENDESK_CONCERN_CUSTOM_FIELD_ID` to Cloudflare Pages production variables using the numeric ID of the Zendesk **Concerns** ticket field.
 3. Remove the obsolete `ZENDESK_DRIVER_CUSTOM_FIELD_ID` and `ZENDESK_DRIVER_FIELD_ID` variables if either exists.
 4. Redeploy the Cloudflare Pages project.
-5. Call the protected backfill endpoint until `hasMore` is `false`.
+5. Call the protected backfill endpoint until `hasMore` is `false` and `endOfStream` is `true`.
 6. Run the Step 4 verification SQL.
-7. Confirm the coverage details show a non-zero `concern` count.
+7. Confirm all checks pass and the coverage details show a non-zero `concern` count.

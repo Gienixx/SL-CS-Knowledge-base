@@ -21,7 +21,7 @@ import {
 } from '../_shared/zendesk-sync-store.js'
 
 const STREAM_KEY = 'ticket_dimensions_backfill'
-const REQUIRED_FIELDS = ['app', 'platform', 'country']
+const REQUIRED_FIELDS = ['app', 'platform', 'country', 'concern']
 const DEFAULT_LOOKBACK_DAYS = 365
 const DEFAULT_PAGE_SIZE = 50
 const MAX_PAGE_SIZE = 100
@@ -120,11 +120,10 @@ export async function onRequestPost(context) {
     return respond({
       success: false,
       code: 'zendesk_dimension_fields_incomplete',
-      error: 'Configure the app, platform, and country Zendesk custom-field IDs before running the backfill.',
+      error: 'Configure the app, platform, country, and concern Zendesk custom-field IDs before running the backfill.',
       configuredFields,
       requiredFields: REQUIRED_FIELDS.length,
-      missingRequiredFields,
-      driverFieldOptional: true
+      missingRequiredFields
     }, 503)
   }
 
@@ -202,7 +201,7 @@ export async function onRequestPost(context) {
       stream: STREAM_KEY,
       configuredFields,
       requiredFieldsConfigured: REQUIRED_FIELDS.length,
-      driverFieldConfigured: Boolean(fieldMap.driver),
+      concernFieldConfigured: Boolean(fieldMap.concern),
       ticketsProcessed: tickets.length,
       profilesSeen: profiles.length,
       profilesUpserted,
