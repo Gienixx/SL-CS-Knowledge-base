@@ -8,6 +8,9 @@ import {
   normalizeIncrementalTicketEvents
 } from '../_shared/zendesk-incremental-event-normalizer.js'
 import {
+  syncZendeskAgentDirectory
+} from '../_shared/zendesk-agent-directory.js'
+import {
   acquireZendeskSyncLock,
   advanceZendeskSyncState,
   createZendeskSyncRun,
@@ -149,6 +152,20 @@ export async function onRequestPost(context) {
     const diagnostics = summarizeSourceEvents(sourceEvents)
     const events = normalizeIncrementalTicketEvents(sourceEvents)
     const imported = await insertTicketEvents(environment, events)
+    let agentDirectoryUpdated = 0
+    let agentDirectoryWarning = null
+
+    try {
+      agentDirectoryUpdated = await syncZendeskAgentDirectory(environment)
+    } catch (directoryError) {
+      console.error(
+        'Zendesk agent directory refresh failed:',
+        directoryError
+      )
+      agentDirectoryWarning =
+        'Ticket events were imported, but agent names could not be refreshed.'
+    }
+
     const endTime = Number(page?.end_time)
 
     if (!Number.isInteger(endTime) || endTime <= 0) {
@@ -174,7 +191,7 @@ export async function onRequestPost(context) {
       events_seen: events.length,
       events_imported: imported,
       duplicate_events: events.length - imported,
-      warnings_count: 0,
+      warnings_count: agentDirectoryWarning ? 1 : 0,
       error_message: null
     })
 
@@ -187,6 +204,8 @@ export async function onRequestPost(context) {
       eventsSeen: events.length,
       eventsImported: imported,
       duplicateEvents: events.length - imported,
+      agentDirectoryUpdated,
+      agentDirectoryWarning,
       endOfStream: Boolean(page?.end_of_stream),
       hasMore: !Boolean(page?.end_of_stream),
       nextStartTime: endTime
