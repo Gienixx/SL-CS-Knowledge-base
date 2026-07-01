@@ -110,7 +110,7 @@ test('dashboard loads the global filter and Concern compatibility modules in ord
     './scripts/dashboard-global-filters.js?v=1'
   )
   const concernPosition = dashboard.indexOf(
-    './scripts/dashboard-concern-compat.js?v=2'
+    './scripts/dashboard-concern-compat.js?v=3'
   )
 
   assert.equal(
