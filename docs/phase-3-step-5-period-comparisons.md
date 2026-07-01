@@ -67,9 +67,37 @@ When either period has no numeric value, the card shows `No prior data` rather t
 
 The Step 4 RPC already produces a complete daily date spine for ticket counts. Missing calendar days therefore remain represented as zero-volume dates instead of shortening a rolling period.
 
+## Required Step 4 dependency
+
+Step 5 calls this exact Step 4 aggregate function for both periods:
+
+```text
+public.get_dashboard_filtered_data(date,date,text,text,text,text,text,text,text,text)
+```
+
+Before applying or testing Step 5, apply:
+
+```text
+supabase/migrations/20260701_phase3_step4_global_filter_rpc.sql
+```
+
+Verify the dependency with:
+
+```text
+supabase/verification/phase3_step5_dependency_check.sql
+```
+
+Expected result:
+
+```text
+step4_filtered_dashboard_rpc  PASS
+```
+
+If the dependency is missing, the Step 5 comparison function can exist in PostgreSQL but will fail when executed with error `42883`.
+
 ## Database migrations
 
-Apply:
+After the Step 4 aggregate RPC exists, apply:
 
 ```text
 supabase/migrations/20260702_phase3_step5_period_comparisons.sql
@@ -83,13 +111,13 @@ get_dashboard_period_comparison
 
 The function calls `get_dashboard_filtered_data` once for the current period and once for the previous period. App, platform, country, Concern, agent, priority, and channel filters are identical for both calls.
 
-If the dashboard displays `Comparison unavailable` after the function migration has been applied, also apply:
+If the dashboard displays an RPC availability error after the function migration has been applied, also apply:
 
 ```text
 supabase/migrations/20260702_phase3_step5b_refresh_period_comparison_rpc.sql
 ```
 
-The Step 5b migration reapplies the authenticated execution grant and explicitly tells PostgREST to refresh its schema cache. This resolves cases where PostgreSQL contains the new function but the Supabase browser RPC layer has not registered it yet.
+The Step 5b migration reapplies the authenticated execution grant and explicitly tells PostgREST to refresh its schema cache.
 
 The equivalent immediate SQL repair is:
 
@@ -125,17 +153,19 @@ event, requests the matching comparison payload, rejects stale responses, and up
 Run:
 
 ```text
+supabase/verification/phase3_step5_dependency_check.sql
 supabase/verification/phase3_step5_period_comparisons_check.sql
 ```
 
 Expected checks:
 
 ```text
-authenticated_execute     PASS
-anonymous_denied          PASS
-required_function         PASS
-reuses_filtered_contract  PASS
-zero_baseline_handling    PASS
+step4_filtered_dashboard_rpc PASS
+authenticated_execute       PASS
+anonymous_denied            PASS
+required_function           PASS
+reuses_filtered_contract    PASS
+zero_baseline_handling      PASS
 ```
 
 For an end-to-end database execution probe, run:
@@ -144,7 +174,9 @@ For an end-to-end database execution probe, run:
 supabase/verification/phase3_step5b_period_comparison_runtime_check.sql
 ```
 
-The result should show:
+The runtime probe now reports a clear `FAIL` result with the missing Step 4 migration path instead of terminating with an unhandled `42883` error.
+
+Expected successful result:
 
 ```text
 runtime_comparison_rpc  PASS
@@ -159,12 +191,14 @@ npm run test:phase3-step4
 
 ## Manual production sequence
 
-1. Apply `supabase/migrations/20260702_phase3_step5_period_comparisons.sql` in the Supabase SQL Editor.
-2. Apply `supabase/migrations/20260702_phase3_step5b_refresh_period_comparison_rpc.sql` to refresh the browser-facing RPC schema.
-3. Run `supabase/verification/phase3_step5_period_comparisons_check.sql` and confirm every check is `PASS`.
-4. Run `supabase/verification/phase3_step5b_period_comparison_runtime_check.sql` and confirm `runtime_comparison_rpc` is `PASS`.
-5. Confirm Cloudflare Pages deploys the latest Step 5 commit.
-6. Hard-refresh the dashboard and test Last 7 days, Month to date, and one full calendar month selected through Custom range.
-7. Confirm each KPI card shows a previous value and either a percentage, `New`, `No change`, or `No prior data`.
+1. Apply `supabase/migrations/20260701_phase3_step4_global_filter_rpc.sql`.
+2. Run `supabase/verification/phase3_step5_dependency_check.sql` and confirm `step4_filtered_dashboard_rpc` is `PASS`.
+3. Apply `supabase/migrations/20260702_phase3_step5_period_comparisons.sql` if it has not already been applied.
+4. Apply `supabase/migrations/20260702_phase3_step5b_refresh_period_comparison_rpc.sql`.
+5. Run `supabase/verification/phase3_step5_period_comparisons_check.sql` and confirm every check is `PASS`.
+6. Run `supabase/verification/phase3_step5b_period_comparison_runtime_check.sql` and confirm `runtime_comparison_rpc` is `PASS`.
+7. Confirm Cloudflare Pages deploys the latest Step 5 commit.
+8. Hard-refresh the dashboard and test Last 7 days, Month to date, and one full calendar month selected through Custom range.
+9. Confirm each KPI card shows a previous value and either a percentage, `New`, `No change`, or `No prior data`.
 
 No Zendesk backfill and no new Cloudflare environment variable are required for Step 5.
