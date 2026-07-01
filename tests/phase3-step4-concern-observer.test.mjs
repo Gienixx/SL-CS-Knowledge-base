@@ -35,6 +35,6 @@ test('dashboard cache-busts the loop-safe Concern compatibility module', async (
 
   assert.match(
     dashboard,
-    /scripts\/dashboard-concern-compat\.js\?v=3/
+    /scripts\/dashboard-concern-compat\.js\?v=5/
   )
 })
