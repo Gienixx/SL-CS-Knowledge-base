@@ -42,6 +42,16 @@ test('Step 5b runtime check executes the comparison RPC as authenticated', () =>
   assert.equal(sql.includes("then 'PASS'"), true)
 })
 
+test('comparison badges expose actionable RPC errors', () => {
+  const source = read('scripts/dashboard-period-comparisons.js')
+
+  assert.equal(source.includes('comparisonErrorPresentation'), true)
+  assert.equal(source.includes("'PGRST202'"), true)
+  assert.equal(source.includes("'Reload Supabase schema'"), true)
+  assert.equal(source.includes("'Comparison permission denied'"), true)
+  assert.equal(source.includes('element.title = detail'), true)
+})
+
 test('Step 5 documentation includes schema-cache recovery instructions', () => {
   const documentation = read(
     'docs/phase-3-step-5-period-comparisons.md'
