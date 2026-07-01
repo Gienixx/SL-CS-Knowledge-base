@@ -10,12 +10,16 @@ import {
   findMetricSet
 } from '../_shared/zendesk-event-normalizer.js'
 import {
+  buildTicketDimensionProfiles
+} from '../_shared/zendesk-ticket-profile.js'
+import {
   acquireZendeskSyncLock,
   advanceZendeskSyncState,
   createZendeskSyncRun,
   insertTicketEvents,
   releaseZendeskSyncLock,
-  updateZendeskSyncRun
+  updateZendeskSyncRun,
+  upsertTicketDimensionProfiles
 } from '../_shared/zendesk-sync-store.js'
 
 const STREAM_KEY = 'tickets'
@@ -179,7 +183,14 @@ export async function onRequestPost(context) {
         findMetricSet(metricSets, ticket.id)
       ))
     )
-    const insertedEvents = await insertTicketEvents(environment, events)
+    const profiles = buildTicketDimensionProfiles(
+      tickets,
+      context.env
+    )
+    const [insertedEvents, upsertedProfiles] = await Promise.all([
+      insertTicketEvents(environment, events),
+      upsertTicketDimensionProfiles(environment, profiles)
+    ])
     const cursorAfter = page?.after_cursor || state.current_cursor || null
     const endTime = Number(page?.end_time)
     const nextStartTime = Number.isInteger(endTime) && endTime > 0
@@ -214,6 +225,8 @@ export async function onRequestPost(context) {
       eventsSeen: events.length,
       eventsImported: insertedEvents,
       duplicateEvents: events.length - insertedEvents,
+      profilesProcessed: profiles.length,
+      profilesUpserted: upsertedProfiles,
       endOfStream: Boolean(page?.end_of_stream),
       hasMore: !Boolean(page?.end_of_stream)
     })
