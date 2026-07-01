@@ -129,6 +129,36 @@ function comparisonCopy(metric) {
   }
 }
 
+function comparisonErrorPresentation(error) {
+  const code = String(error?.code || '').toUpperCase()
+  const message = String(error?.message || '')
+  const detail = [code, message].filter(Boolean).join(': ')
+  const normalized = `${code} ${message}`.toLowerCase()
+
+  if (
+    ['PGRST202', 'PGRST204', 'PGRST205'].includes(code) ||
+    normalized.includes('schema cache') ||
+    normalized.includes('could not find the function')
+  ) {
+    return {
+      label: 'Reload Supabase schema',
+      detail: detail || 'The comparison RPC is missing from the PostgREST schema cache.'
+    }
+  }
+
+  if (code === '42501' || normalized.includes('permission denied')) {
+    return {
+      label: 'Comparison permission denied',
+      detail: detail || 'The authenticated role cannot execute the comparison RPC.'
+    }
+  }
+
+  return {
+    label: 'Comparison unavailable',
+    detail: detail || 'The comparison RPC request failed.'
+  }
+}
+
 function renderLoading() {
   for (const config of Object.values(METRIC_CARDS)) {
     const element = ensureComparisonElement(config.valueId)
@@ -141,7 +171,7 @@ function renderLoading() {
   }
 }
 
-function renderUnavailable(message = 'Comparison unavailable') {
+function renderUnavailable(message = 'Comparison unavailable', detail = '') {
   for (const config of Object.values(METRIC_CARDS)) {
     const element = ensureComparisonElement(config.valueId)
     if (!element) continue
@@ -149,7 +179,13 @@ function renderUnavailable(message = 'Comparison unavailable') {
     element.dataset.status = 'error'
     element.dataset.impact = 'neutral'
     element.textContent = message
-    element.removeAttribute('title')
+    if (detail) {
+      element.title = detail
+      element.setAttribute('aria-label', `${message}: ${detail}`)
+    } else {
+      element.removeAttribute('title')
+      element.setAttribute('aria-label', message)
+    }
   }
 }
 
@@ -225,7 +261,8 @@ async function loadPeriodComparison(detail) {
 window.addEventListener('dashboard:filtered-data', event => {
   loadPeriodComparison(event.detail).catch(error => {
     console.error('Unable to load dashboard period comparison:', error)
-    renderUnavailable('Comparison unavailable')
+    const presentation = comparisonErrorPresentation(error)
+    renderUnavailable(presentation.label, presentation.detail)
   })
 })
 

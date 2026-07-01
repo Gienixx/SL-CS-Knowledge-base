@@ -67,7 +67,7 @@ When either period has no numeric value, the card shows `No prior data` rather t
 
 The Step 4 RPC already produces a complete daily date spine for ticket counts. Missing calendar days therefore remain represented as zero-volume dates instead of shortening a rolling period.
 
-## Database migration
+## Database migrations
 
 Apply:
 
@@ -82,6 +82,21 @@ get_dashboard_period_comparison
 ```
 
 The function calls `get_dashboard_filtered_data` once for the current period and once for the previous period. App, platform, country, Concern, agent, priority, and channel filters are identical for both calls.
+
+If the dashboard displays `Comparison unavailable` after the function migration has been applied, also apply:
+
+```text
+supabase/migrations/20260702_phase3_step5b_refresh_period_comparison_rpc.sql
+```
+
+The Step 5b migration reapplies the authenticated execution grant and explicitly tells PostgREST to refresh its schema cache. This resolves cases where PostgreSQL contains the new function but the Supabase browser RPC layer has not registered it yet.
+
+The equivalent immediate SQL repair is:
+
+```sql
+NOTIFY pgrst, 'reload schema';
+SELECT pg_notification_queue_usage();
+```
 
 ## Security
 
@@ -123,6 +138,18 @@ reuses_filtered_contract  PASS
 zero_baseline_handling    PASS
 ```
 
+For an end-to-end database execution probe, run:
+
+```text
+supabase/verification/phase3_step5b_period_comparison_runtime_check.sql
+```
+
+The result should show:
+
+```text
+runtime_comparison_rpc  PASS
+```
+
 Then run:
 
 ```bash
@@ -133,9 +160,11 @@ npm run test:phase3-step4
 ## Manual production sequence
 
 1. Apply `supabase/migrations/20260702_phase3_step5_period_comparisons.sql` in the Supabase SQL Editor.
-2. Run `supabase/verification/phase3_step5_period_comparisons_check.sql` and confirm every check is `PASS`.
-3. Confirm Cloudflare Pages deploys the Step 5 commit.
-4. Open the dashboard and test Last 7 days, Month to date, and one full calendar month selected through Custom range.
-5. Confirm each KPI card shows a previous value and either a percentage, `New`, `No change`, or `No prior data`.
+2. Apply `supabase/migrations/20260702_phase3_step5b_refresh_period_comparison_rpc.sql` to refresh the browser-facing RPC schema.
+3. Run `supabase/verification/phase3_step5_period_comparisons_check.sql` and confirm every check is `PASS`.
+4. Run `supabase/verification/phase3_step5b_period_comparison_runtime_check.sql` and confirm `runtime_comparison_rpc` is `PASS`.
+5. Confirm Cloudflare Pages deploys the latest Step 5 commit.
+6. Hard-refresh the dashboard and test Last 7 days, Month to date, and one full calendar month selected through Custom range.
+7. Confirm each KPI card shows a previous value and either a percentage, `New`, `No change`, or `No prior data`.
 
 No Zendesk backfill and no new Cloudflare environment variable are required for Step 5.
