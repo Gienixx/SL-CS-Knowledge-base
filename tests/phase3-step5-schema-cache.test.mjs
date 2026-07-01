@@ -28,18 +28,38 @@ test('Step 5b refreshes the PostgREST schema cache and reapplies RPC access', ()
   )
 })
 
-test('Step 5b runtime check executes the comparison RPC as authenticated', () => {
+test('Step 5 dependency check requires the exact Step 4 aggregate RPC', () => {
+  const sql = read(
+    'supabase/verification/phase3_step5_dependency_check.sql'
+  )
+
+  assert.equal(
+    sql.includes(
+      'public.get_dashboard_filtered_data(date,date,text,text,text,text,text,text,text,text)'
+    ),
+    true
+  )
+  assert.equal(sql.includes("'step4_filtered_dashboard_rpc'"), true)
+  assert.equal(
+    sql.includes('20260701_phase3_step4_global_filter_rpc.sql'),
+    true
+  )
+})
+
+test('Step 5 runtime check reports a missing dependency instead of throwing', () => {
   const sql = read(
     'supabase/verification/phase3_step5b_period_comparison_runtime_check.sql'
   )
 
   assert.equal(sql.includes('set local role authenticated'), true)
+  assert.equal(sql.includes('to_regprocedure('), true)
   assert.equal(
-    sql.includes('public.get_dashboard_period_comparison('),
+    sql.includes('20260701_phase3_step4_global_filter_rpc.sql'),
     true
   )
+  assert.equal(sql.includes('execute $sql$'), true)
   assert.equal(sql.includes("'runtime_comparison_rpc'"), true)
-  assert.equal(sql.includes("then 'PASS'"), true)
+  assert.equal(sql.includes("'phase3.step5.status'"), true)
 })
 
 test('comparison badges expose actionable RPC errors', () => {
@@ -52,11 +72,19 @@ test('comparison badges expose actionable RPC errors', () => {
   assert.equal(source.includes('element.title = detail'), true)
 })
 
-test('Step 5 documentation includes schema-cache recovery instructions', () => {
+test('Step 5 documentation includes dependency and schema-cache recovery', () => {
   const documentation = read(
     'docs/phase-3-step-5-period-comparisons.md'
   )
 
+  assert.equal(
+    documentation.includes('20260701_phase3_step4_global_filter_rpc.sql'),
+    true
+  )
+  assert.equal(
+    documentation.includes('phase3_step5_dependency_check.sql'),
+    true
+  )
   assert.equal(
     documentation.includes(
       '20260702_phase3_step5b_refresh_period_comparison_rpc.sql'
