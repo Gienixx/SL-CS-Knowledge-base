@@ -9,7 +9,7 @@ Date range
 App
 Platform
 Country
-Driver group
+Concern
 Agent
 Priority
 Channel
@@ -28,42 +28,69 @@ Custom range
 Example:
 
 ```text
-dashboard.html?range=30d&app=eureka&country=us
+dashboard.html?range=30d&app=eureka&country=us&concern=cash_out
 ```
 
 The browser sends the selected filter state to one Supabase RPC. It does not download `ticket_events` or `ticket_dimension_profiles` and filter them locally.
 
 ## Database migrations
 
-Apply the existing ticket-dimension migration first:
+For a fresh deployment, apply:
 
 ```text
 supabase/migrations/20260701_phase3_step4_ticket_dimension_profiles.sql
-```
-
-Then apply:
-
-```text
 supabase/migrations/20260701_phase3_step4_global_filter_rpc.sql
 ```
 
-The second migration creates:
+For a database that already used the original `driver_key` profile column, also apply:
+
+```text
+supabase/migrations/20260701_phase3_step4b_concern_dimension.sql
+```
+
+The ticket-dimension migration maintains:
+
+```text
+ticket_dimension_profiles
+upsert_ticket_dimension_profiles
+```
+
+The global-filter migration creates:
 
 ```text
 get_dashboard_filtered_data
 ```
 
-The function returns filtered KPI totals, daily ticket trends, app/platform/country/driver/priority/channel breakdowns, agent workload, and valid filter options.
+The function returns filtered KPI totals, daily ticket trends, app/platform/country/concern/priority/channel breakdowns, agent workload, and valid filter options.
+
+## Concern compatibility
+
+`concern_key` is the authoritative stored dimension. The upgrade migration creates a generated, read-only `driver_key` alias because the first version of the global-filter RPC used that internal column name.
+
+The browser loads:
+
+```text
+scripts/dashboard-concern-compat.js
+```
+
+This module:
+
+- displays **Concern** instead of **Driver group**;
+- exposes `concern` in dashboard URLs;
+- translates the public Concern URL parameter to the existing internal RPC parameter;
+- leaves the generated database alias read-only.
+
+This compatibility layer prevents an interruption while keeping the user-facing terminology aligned with the Zendesk **Concerns** field.
 
 ## Data sources
 
-App, platform, country, and driver values come from the server-only `ticket_dimension_profiles` table.
+App, platform, country, and concern values come from the server-only `ticket_dimension_profiles` table.
 
 Agent, priority, and channel values are derived from the latest valid values in normalized `ticket_events` as of the selected period end. Ticket events remain immutable.
 
 ## Zendesk custom-field mappings
 
-Add the applicable numeric Zendesk ticket-field IDs to the Cloudflare Pages environment. The current normalizer accepts either naming form:
+Add the applicable numeric Zendesk ticket-field IDs to the Cloudflare Pages environment:
 
 ```text
 ZENDESK_APP_CUSTOM_FIELD_ID
@@ -75,11 +102,18 @@ ZENDESK_PLATFORM_FIELD_ID
 ZENDESK_COUNTRY_CUSTOM_FIELD_ID
 ZENDESK_COUNTRY_FIELD_ID
 
+ZENDESK_CONCERN_CUSTOM_FIELD_ID
+ZENDESK_CONCERN_FIELD_ID
+```
+
+App, platform, country, and concern are the canonical Step 4 dimensions.
+
+Do not use the obsolete Driver variables for the Concerns field:
+
+```text
 ZENDESK_DRIVER_CUSTOM_FIELD_ID
 ZENDESK_DRIVER_FIELD_ID
 ```
-
-App, platform, and country are required by the historical dimension backfill. Driver is optional.
 
 ## Historical dimension backfill
 
@@ -97,7 +131,7 @@ The endpoint uses the independent cursor:
 ticket_dimensions_backfill
 ```
 
-Repeat the request while:
+The Step 4b migration resets this cursor automatically. Repeat the request while:
 
 ```json
 {
@@ -142,12 +176,21 @@ The RPC limits one request to 367 inclusive dates, equivalent to a maximum date 
 
 ## Verification
 
-After applying both migrations and completing the dimension backfill, run:
+After applying the migrations and completing the dimension backfill, run:
 
 ```text
 supabase/verification/phase3_step4_ticket_dimension_check.sql
 supabase/verification/phase3_step4_global_filters_check.sql
 ```
+
+Expected ticket-dimension checks include:
+
+```text
+compatibility_alias    PASS
+dimension_coverage     PASS
+```
+
+The coverage details should report a non-zero `concern` count.
 
 Expected global-filter checks:
 
