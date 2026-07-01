@@ -14,10 +14,7 @@ function read(relativePath) {
 
 function assertContainsAll(source, values, label) {
   values.forEach(value => {
-    assert.ok(
-      source.includes(value),
-      `${label} must contain ${JSON.stringify(value)}`
-    )
+    assert.ok(source.includes(value), `${label} must contain ${JSON.stringify(value)}`)
   })
 }
 
@@ -42,11 +39,11 @@ test('dashboard wires every live Phase 2 section and health module', () => {
   ], 'scripts/dashboard.js')
 })
 
-test('dashboard charts expose keyboard-accessible links for all detail views', () => {
+test('dashboard charts expose keyboard-accessible reusable report links', () => {
   const drilldowns = read('scripts/dashboard-drilldowns.js')
 
   assertContainsAll(drilldowns, [
-    './data-details.html?',
+    './report-details.html?',
     'applyAgentLinks(models.agents)',
     'applyDriverLinks(models.drivers)',
     "applyDistributionLinks('app'",
@@ -59,7 +56,7 @@ test('dashboard charts expose keyboard-accessible links for all detail views', (
   ], 'scripts/dashboard-drilldowns.js')
 })
 
-test('detail page supports every view, historical charts, tables, and date filters', () => {
+test('legacy entity detail page retains historical views and date filters', () => {
   const detailHtml = read('data-details.html')
   const detailJs = read('scripts/data-details.js')
   const detailUtils = read('scripts/data-details-utils.js')
@@ -121,18 +118,12 @@ test('AHT uses decimal minutes and displays minutes and seconds consistently', (
   ], 'scripts/dashboard-productivity-v2.js')
 })
 
-test('database migrations enforce idempotency and read-only browser access', () => {
-  const integrityMigration = read(
-    'supabase/migrations/20260626_dashboard_sync_integrity_guards.sql'
-  )
-  const rlsMigration = read(
-    'supabase/migrations/20260626_dashboard_metrics_read_only_rls.sql'
-  )
-  const verification = read(
-    'supabase/verification/phase2_step10_integrity_check.sql'
-  )
+test('database migrations enforce integrity and read-only browser access', () => {
+  const integrity = read('supabase/migrations/20260626_dashboard_sync_integrity_guards.sql')
+  const rls = read('supabase/migrations/20260626_dashboard_metrics_read_only_rls.sql')
+  const verification = read('supabase/verification/phase2_step10_integrity_check.sql')
 
-  assertContainsAll(integrityMigration, [
+  assertContainsAll(integrity, [
     'daily_ticket_metrics_report_date_uidx',
     'daily_distribution_metrics_key_uidx',
     'agent_productivity_key_uidx',
@@ -141,7 +132,7 @@ test('database migrations enforce idempotency and read-only browser access', () 
     'agent_productivity_values_check'
   ], 'dashboard sync integrity migration')
 
-  assertContainsAll(rlsMigration, [
+  assertContainsAll(rls, [
     'enable row level security',
     'revoke all privileges',
     'grant select',
@@ -158,11 +149,11 @@ test('database migrations enforce idempotency and read-only browser access', () 
   ], 'Step 10 verification query')
 })
 
-test('scheduled synchronization targets one daily version 2 trigger at noon Eastern', () => {
-  const triggerHelper = read('apps-script/dashboard-trigger-migration.gs')
-  const triggerGuide = read('docs/phase-2-step-7-trigger-migration.md')
+test('scheduled synchronization retains the configured daily Eastern trigger', () => {
+  const helper = read('apps-script/dashboard-trigger-migration.gs')
+  const guide = read('docs/phase-2-step-7-trigger-migration.md')
 
-  assertContainsAll(triggerHelper, [
+  assertContainsAll(helper, [
     "currentHandler: 'syncAllDashboardData'",
     "legacyHandler: 'syncDashboardData'",
     "timezone: 'America/New_York'",
@@ -172,7 +163,7 @@ test('scheduled synchronization targets one daily version 2 trigger at noon East
     'testDashboardSyncV2Now'
   ], 'Apps Script trigger helper')
 
-  assertContainsAll(triggerGuide, [
+  assertContainsAll(guide, [
     'currentTriggerCount',
     'legacyTriggerCount',
     'payloadVersion',
@@ -181,10 +172,10 @@ test('scheduled synchronization targets one daily version 2 trigger at noon East
 })
 
 test('responsive and accessibility assets cover required acceptance widths', () => {
-  const accessibilityCss = read('dashboard-accessibility.css')
-  const accessibilityJs = read('scripts/dashboard-accessibility.js')
+  const css = read('dashboard-accessibility.css')
+  const js = read('scripts/dashboard-accessibility.js')
 
-  assertContainsAll(accessibilityCss, [
+  assertContainsAll(css, [
     '@media (max-width: 1024px)',
     '@media (max-width: 768px)',
     '@media (max-width: 390px)',
@@ -192,18 +183,14 @@ test('responsive and accessibility assets cover required acceptance widths', () 
     'overflow-wrap: anywhere'
   ], 'dashboard-accessibility.css')
 
-  assertContainsAll(accessibilityJs, [
+  assertContainsAll(js, [
     'setAttributeIfChanged',
     "setAttributeIfChanged(svg, 'role', 'group')",
     'let auditScheduled = false',
     'window.requestAnimationFrame',
     'new MutationObserver(scheduleAuditEnhancements)',
     "attributeFilter: ['class', 'role', 'data-status']"
-  ], 'scripts/dashboard-accessibility.js')
+  ], 'scripts/dashboard-acccessibility.js')
 
-  assert.equal(
-    accessibilityJs.includes("svg.setAttribute('role', 'group')"),
-    false,
-    'chart role changes must be guarded to prevent a mutation observer loop'
-  )
+  assert.equal(js.includes("svg.setAttribute('role', 'group')"), false)
 })

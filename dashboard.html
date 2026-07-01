@@ -16,8 +16,6 @@
   <link rel="stylesheet" href="./dashboard-footer-status.css?v=1" />
   <link rel="stylesheet" href="./dashboard-data-consistency.css?v=1" />
   <link rel="stylesheet" href="./dashboard-accessibility.css?v=1" />
-  <link rel="stylesheet" href="./dashboard-global-filters.css?v=1" />
-  <link rel="stylesheet" href="./dashboard-period-comparisons.css?v=1" />
   <link rel="stylesheet" href="./dashboard-overflow-fixes.css?v=1" />
 </head>
 <body>
@@ -25,7 +23,7 @@
     <header class="topbar">
       <div class="title-block">
         <h1>Customer Service &amp; Support Team Dashboard</h1>
-        <p>Loading live support metrics...</p>
+        <p>Loading daily support metrics...</p>
       </div>
 
       <nav class="top-actions" aria-label="Dashboard navigation">
@@ -51,22 +49,20 @@
           <div class="dashboard-loading-state" role="status">
             <span class="dashboard-spinner" aria-hidden="true"></span>
             <h2>Loading dashboard</h2>
-            <p>Verifying access and retrieving the latest support metrics.</p>
+            <p>Verifying access and retrieving the latest Google Sheet snapshot.</p>
           </div>
         </div>
       </article>
     </section>
 
-    <p class="footer-note">Loading live data...</p>
+    <p class="footer-note">Loading daily snapshot...</p>
   </main>
 
   <script type="module" src="./scripts/dashboard.js?v=8"></script>
   <script type="module" src="./scripts/dashboard-latest-date.js?v=2"></script>
   <script type="module" src="./scripts/dashboard-drivers-loader.js?v=2"></script>
-  <script type="module" src="./scripts/dashboard-global-filters.js?v=1"></script>
   <script type="module" src="./scripts/dashboard-concern-compat.js?v=5"></script>
-  <script type="module" src="./scripts/dashboard-period-comparisons.js?v=2"></script>
-  <script type="module" src="./scripts/dashboard-drilldowns.js?v=1"></script>
+  <script type="module" src="./scripts/dashboard-drilldowns.js?v=2"></script>
   <script type="module" src="./scripts/dashboard-accessibility.js?v=2"></script>
   <script type="module" src="./scripts/dashboard-data-consistency.js?v=1"></script>
   <script type="module" src="./scripts/dashboard-footer-status.js?v=1"></script>
