@@ -82,7 +82,7 @@ test('uses the first populated multi-select value', () => {
   assert.equal(normalizeDimensionKey([]), null)
 })
 
-test('builds all four dimensions from ticket custom fields', () => {
+test('builds all supported dimensions from ticket custom fields', () => {
   const profile = buildTicketDimensionProfile({
     id: 987,
     status: 'Open',
@@ -108,6 +108,23 @@ test('builds all four dimensions from ticket custom fields', () => {
     country_key: 'us',
     driver_key: 'cash_out'
   })
+})
+
+test('leaves driver null when no driver field exists', () => {
+  const profile = buildTicketDimensionProfile({
+    id: 989,
+    updated_at: '2026-06-30T12:30:00Z',
+    custom_fields: [
+      { id: 11, value: 'Eureka' },
+      { id: 12, value: 'iOS' },
+      { id: 13, value: 'GB' }
+    ]
+  }, { app: 11, platform: 12, country: 13, driver: null })
+
+  assert.equal(profile.driver_key, null)
+  assert.equal(profile.app_key, 'eureka')
+  assert.equal(profile.platform_key, 'ios')
+  assert.equal(profile.country_key, 'gb')
 })
 
 test('records source metadata without embedding raw ticket contents', () => {
@@ -156,13 +173,15 @@ test('backfill endpoint is bearer-protected and uses an independent stream', asy
   assert.match(source, /WWW-Authenticate/)
 })
 
-test('backfill endpoint requires all four field mappings and advances its cursor after writing', async () => {
+test('backfill requires app, platform, and country while driver remains optional', async () => {
   const source = await read('functions/api/backfill-zendesk-ticket-dimensions.js')
   const upsertPosition = source.indexOf('await upsertTicketDimensionProfiles')
   const advancePosition = source.indexOf('await advanceZendeskSyncState')
 
-  assert.match(source, /REQUIRED_FIELD_COUNT = 4/)
-  assert.match(source, /zendesk_dimension_fields_incomplete/)
+  assert.match(source, /REQUIRED_FIELDS = \['app', 'platform', 'country'\]/)
+  assert.match(source, /driverFieldOptional: true/)
+  assert.match(source, /missingRequiredFields/)
+  assert.doesNotMatch(source, /REQUIRED_FIELD_COUNT = 4/)
   assert.ok(upsertPosition >= 0)
   assert.ok(advancePosition > upsertPosition)
 })
