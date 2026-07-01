@@ -44,6 +44,18 @@ function replaceConcernText(root) {
   }
 }
 
+function setTextIfChanged(element, value) {
+  if (element && element.textContent !== value) {
+    element.textContent = value
+  }
+}
+
+function setAttributeIfChanged(element, name, value) {
+  if (element && element.getAttribute(name) !== value) {
+    element.setAttribute(name, value)
+  }
+}
+
 function presentConcernUi() {
   const form = document.getElementById('dashboardFilterForm')
   const internalSelect = form?.elements?.driver
@@ -53,9 +65,9 @@ function presentConcernUi() {
     const caption = label?.querySelector('span')
     const allOption = internalSelect.querySelector('option[value=""]')
 
-    if (caption) caption.textContent = 'Concern'
-    if (allOption) allOption.textContent = 'All concerns'
-    internalSelect.setAttribute('aria-label', 'Concern')
+    setTextIfChanged(caption, 'Concern')
+    setTextIfChanged(allOption, 'All concerns')
+    setAttributeIfChanged(internalSelect, 'aria-label', 'Concern')
   }
 
   replaceConcernText(document.querySelector('.dashboard-global-filters'))
