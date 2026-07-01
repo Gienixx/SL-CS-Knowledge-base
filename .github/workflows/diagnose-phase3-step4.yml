@@ -1,0 +1,39 @@
+name: Diagnose Phase 3 Step 4
+
+on:
+  pull_request:
+    branches: [main]
+
+permissions:
+  contents: read
+  pull-requests: write
+
+jobs:
+  diagnose:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+      - name: Capture Step 4 test output
+        id: tests
+        continue-on-error: true
+        run: npm run test:phase3-step4 > step4-output.txt 2>&1
+      - name: Publish failure details
+        if: steps.tests.outcome == 'failure'
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const fs = require('fs')
+            const output = fs.readFileSync('step4-output.txt', 'utf8')
+            await github.rest.issues.createComment({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              issue_number: context.issue.number,
+              body: `<!-- step4-diagnostic -->\n### Step 4 diagnostic\n\n\`\`\`text\n${output.slice(-50000)}\n\`\`\``
+            })
+      - name: Preserve failing status
+        if: steps.tests.outcome == 'failure'
+        run: exit 1
