@@ -78,32 +78,43 @@ function presentConcernUi() {
   replaceConcernText(concernSection)
 }
 
-function observeConcernUi() {
-  let scheduled = false
-  const schedule = () => {
-    if (scheduled) return
-    scheduled = true
-    window.queueMicrotask(() => {
-      scheduled = false
-      presentConcernUi()
-    })
-  }
+function concernUiTargetsReady() {
+  return Boolean(
+    document.getElementById('dashboardFilterForm') &&
+    document.getElementById('ticketDriverChart')
+  )
+}
 
-  const observer = new MutationObserver(schedule)
-  observer.observe(document.body, {
-    childList: true,
-    subtree: true,
-    characterData: true
+function observeInitialConcernUi(timeout = 20000) {
+  presentConcernUi()
+  if (concernUiTargetsReady()) return
+
+  const observer = new MutationObserver(() => {
+    presentConcernUi()
+    if (!concernUiTargetsReady()) return
+
+    observer.disconnect()
+    window.clearTimeout(timer)
   })
 
-  schedule()
+  observer.observe(document.body, {
+    childList: true,
+    subtree: true
+  })
+
+  const timer = window.setTimeout(() => {
+    observer.disconnect()
+    presentConcernUi()
+  }, timeout)
 }
 
 normalizeIncomingConcernParameter()
+
+window.addEventListener('dashboard:filtered-data', presentConcernUi)
 
 window.addEventListener('dashboard:filters-changed', () => {
   exposeConcernParameter()
   presentConcernUi()
 })
 
-document.addEventListener('DOMContentLoaded', observeConcernUi)
+document.addEventListener('DOMContentLoaded', observeInitialConcernUi)
