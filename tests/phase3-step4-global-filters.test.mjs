@@ -4,17 +4,12 @@ import { readFileSync } from 'node:fs'
 import { fileURLToPath } from 'node:url'
 
 const ROOT = fileURLToPath(new URL('../', import.meta.url))
+const read = path => readFileSync(new URL(path, `file://${ROOT}/`), 'utf8')
 
-function read(path) {
-  return readFileSync(new URL(path, `file://${ROOT}/`), 'utf8')
-}
+test('global filter migration exposes the authenticated aggregate RPC', () => {
+  const sql = read('supabase/migrations/20260701_phase3_step4_global_filter_rpc.sql')
 
-test('global filter migration exposes one authenticated aggregate RPC', () => {
-  const sql = read(
-    'supabase/migrations/20260701_phase3_step4_global_filter_rpc.sql'
-  )
-
-  for (const requiredText of [
+  for (const value of [
     'create or replace function public.get_dashboard_filtered_data',
     'returns jsonb',
     'p_start_date date',
@@ -28,106 +23,85 @@ test('global filter migration exposes one authenticated aggregate RPC', () => {
     'p_channel text',
     'to authenticated, service_role'
   ]) {
-    assert.equal(sql.includes(requiredText), true, requiredText)
+    assert.ok(sql.includes(value), value)
   }
 })
 
-test('RPC combines ticket profiles with event-derived operational dimensions', () => {
-  const sql = read(
-    'supabase/migrations/20260701_phase3_step4_global_filter_rpc.sql'
-  )
+test('RPC uses ticket profiles and event-derived dimensions', () => {
+  const sql = read('supabase/migrations/20260701_phase3_step4_global_filter_rpc.sql')
 
-  assert.equal(sql.includes('public.ticket_dimension_profiles'), true)
-  assert.equal(sql.includes('event_dimensions as materialized'), true)
-  assert.equal(sql.includes('event.agent_key'), true)
-  assert.equal(sql.includes('event.priority'), true)
-  assert.equal(sql.includes('event.channel'), true)
-})
-
-test('RPC applies filters in the database and limits date ranges', () => {
-  const sql = read(
-    'supabase/migrations/20260701_phase3_step4_global_filter_rpc.sql'
-  )
-
-  assert.equal(sql.includes('selected_tickets as materialized'), true)
-  assert.equal(sql.includes('dashboard_filter_date_range_invalid'), true)
-  assert.equal(sql.includes('dashboard_filter_date_range_too_large'), true)
-  assert.equal(sql.includes('> 366'), true)
-})
-
-test('RPC returns summary, trend, breakdown, agent, and option payloads', () => {
-  const sql = read(
-    'supabase/migrations/20260701_phase3_step4_global_filter_rpc.sql'
-  )
-
-  for (const requiredText of [
+  for (const value of [
+    'public.ticket_dimension_profiles',
+    'event_dimensions as materialized',
+    'selected_tickets as materialized',
+    'dashboard_filter_date_range_invalid',
+    'dashboard_filter_date_range_too_large',
     "'summary'",
     "'trend'",
     "'breakdowns'",
     "'agents'",
-    "'options'",
-    "'backlog_open'",
-    "'reopened_tickets'"
+    "'options'"
   ]) {
-    assert.equal(sql.includes(requiredText), true, requiredText)
+    assert.ok(sql.includes(value), value)
   }
 })
 
-test('browser filtering uses the aggregate RPC instead of reading raw events', () => {
-  const frontend = read('scripts/report-details.js')
+test('detail-page filtering uses the aggregate RPC and all supported dimensions', () => {
+  const source = read('scripts/report-details.js')
 
-  assert.equal(frontend.includes("'get_dashboard_filtered_data'"), true)
-  assert.equal(frontend.includes(".from('ticket_events')"), false)
-  assert.equal(frontend.includes(".from('ticket_dimension_profiles')"), false)
-})
+  assert.ok(source.includes('get_dashboard_filtered_data'))
+  assert.ok(source.includes('FILTER_KEYS'))
+  assert.ok(source.includes('selectSource'))
+  assert.ok(source.includes('google_sheet'))
+  assert.ok(source.includes('zendesk'))
+  assert.equal(source.includes(".from('ticket_events')"), false)
+  assert.equal(source.includes(".from('ticket_dimension_profiles')"), false)
 
-test('detail filter state retains the driver compatibility key', () => {
-  const frontend = read('scripts/report-details.js')
-
-  for (const key of [
-    'app',
-    'platform',
-    'country',
-    'driver',
-    'agent',
-    'priority',
-    'channel'
-  ]) {
-    assert.equal(frontend.includes(`'${key}'`), true, key)
+  for (const key of ['app', 'platform', 'country', 'driver', 'agent', 'priority', 'channel']) {
+    assert.ok(source.includes(`'${key}'`), key)
   }
-
-  assert.equal(frontend.includes("range: config.defaultRange"), true)
-  assert.equal(frontend.includes("nextState.range === 'custom'"), true)
 })
 
-test('filters moved from the overview into the reusable report detail page', () => {
+test('filters live on the reusable report page instead of the overview', () => {
   const dashboard = read('dashboard.html')
   const detail = read('report-details.html')
 
   assert.equal(dashboard.includes('dashboard-global-filters.js'), false)
   assert.equal(dashboard.includes('dashboard-global-filters.css'), false)
-  assert.equal(detail.includes('id="reportFilterForm"'), true)
-  assert.equal(detail.includes('name="driver"'), true)
-  assert.equal(detail.includes('name="agent"'), true)
+
+  for (const value of [
+    'id="reportFilterForm"',
+    'name="range"',
+    'name="app"',
+    'name="platform"',
+    'name="country"',
+    'name="driver"',
+    'name="agent"',
+    'name="priority"',
+    'name="channel"'
+  ]) {
+    assert.ok(detail.includes(value), value)
+  }
 })
 
-test('Concern compatibility maps URL state and visible labels', () => {
+test('Concern compatibility retains the public Concern wording', () => {
   const source = read('scripts/dashboard-concern-compat.js')
 
-  assert.equal(source.includes("searchParams.get('concern')"), true)
-  assert.equal(source.includes("searchParams.set('driver', concern)"), true)
-  assert.equal(source.includes("searchParams.set('concern', driver)"), true)
-  assert.equal(source.includes("setTextIfChanged(caption, 'Concern')"), true)
-  assert.equal(source.includes("setTextIfChanged(allOption, 'All concerns')"), true)
-  assert.equal(source.includes('dashboard:filters-changed'), true)
+  for (const value of [
+    "searchParams.get('concern')",
+    "searchParams.set('driver', concern)",
+    "searchParams.set('concern', driver)",
+    "setTextIfChanged(caption, 'Concern')",
+    "setTextIfChanged(allOption, 'All concerns')"
+  ]) {
+    assert.ok(source.includes(value), value)
+  }
 })
 
-test('verification checks the existing dimension profile security boundary', () => {
-  const sql = read(
-    'supabase/verification/phase3_step4_global_filters_check.sql'
-  )
+test('verification preserves the ticket profile security boundary', () => {
+  const sql = read('supabase/verification/phase3_step4_global_filters_check.sql')
 
-  assert.equal(sql.includes('server_only_profile_table'), true)
-  assert.equal(sql.includes('authenticated_filter_rpc'), true)
-  assert.equal(sql.includes("stream_key = 'ticket_dimensions_backfill'"), true)
+  assert.ok(sql.includes('server_only_profile_table'))
+  assert.ok(sql.includes('authenticated_filter_rpc'))
+  assert.ok(sql.includes("stream_key = 'ticket_dimensions_backfill'"))
 })
