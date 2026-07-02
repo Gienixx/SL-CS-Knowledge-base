@@ -10,6 +10,8 @@ on:
       - functions/api/sync-zendesk-events.js
       - functions/api/sync-zendesk-sla.js
       - functions/api/backfill-zendesk-ticket-dimensions.js
+      - functions/api/refresh-operations-metrics.js
+      - functions/api/zendesk-event-shape.js
       - functions/api/zendesk-test.js
       - functions/_shared/zendesk-disabled.js
       - tests/phase3-step8-google-sheet-cutover.test.mjs
