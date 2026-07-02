@@ -27,6 +27,12 @@ with checks as (
   union all
 
   select
+    'sla_readiness_state',
+    to_regclass('public.zendesk_sla_readiness') is not null
+
+  union all
+
+  select
     'sla_response_dashboard_rpc',
     to_regprocedure(
       'public.get_sla_response_dashboard(date,date,text,text,text,text,text,text,text,text)'
@@ -49,11 +55,17 @@ from checks
 order by check_name;
 
 select
-  stream_key,
-  last_success_at,
+  state.stream_key,
+  state.last_success_at,
+  readiness.policy_evidence,
+  readiness.breach_evidence,
+  readiness.last_observed_at,
   case
-    when last_success_at is null then 'NOT ACTIVATED'
+    when state.last_success_at is null then 'NOT ACTIVATED'
+    when readiness.policy_evidence is false then 'AWAITING POLICY EVIDENCE'
     else 'READY'
   end as sla_stream_status
-from public.zendesk_sync_state
-where stream_key = 'ticket_metric_events';
+from public.zendesk_sync_state as state
+cross join public.zendesk_sla_readiness as readiness
+where state.stream_key = 'ticket_metric_events'
+  and readiness.singleton = true;
