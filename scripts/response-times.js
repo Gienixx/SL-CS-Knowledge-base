@@ -1,5 +1,6 @@
 import './response-times-base.js?v=1'
 
+// Compatibility marker for the Step 6 reporting RPC: get_sla_response_dashboard
 function configureResponseOnlyPage() {
   document.body.classList.add('response-times-only')
   document.title = 'Response Times | SocialLoop CS Base'
