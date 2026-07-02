@@ -177,3 +177,25 @@ export async function insertTicketEvents(environment, events) {
 
   return inserted
 }
+
+export async function recordZendeskSlaEvidence(
+  environment,
+  {
+    policyEvidence = false,
+    breachEvidence = false,
+    observedAt = null
+  } = {}
+) {
+  await supabaseRequest(
+    environment,
+    'rpc/record_zendesk_sla_evidence',
+    {
+      method: 'POST',
+      body: JSON.stringify({
+        p_policy_evidence: policyEvidence === true,
+        p_breach_evidence: breachEvidence === true,
+        p_observed_at: observedAt || new Date().toISOString()
+      })
+    }
+  )
+}
