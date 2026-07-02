@@ -5,16 +5,21 @@ const LOCK_RETRY_DELAY_MS = 30000
 const MAX_RUNTIME_MS = 13 * 60 * 1000
 const MAX_REQUESTS = 100
 
-const SYNC_STREAMS = [
-  {
+const BASE_SYNC_STREAMS = Object.freeze([
+  Object.freeze({
     name: 'tickets',
     path: '/api/sync-zendesk'
-  },
-  {
+  }),
+  Object.freeze({
     name: 'ticket_events',
     path: '/api/sync-zendesk-events'
-  }
-]
+  })
+])
+
+const SLA_SYNC_STREAM = Object.freeze({
+  name: 'ticket_metric_events',
+  path: '/api/sync-zendesk-sla'
+})
 
 function requiredEnvironment(env, name) {
   const value = typeof env?.[name] === 'string'
@@ -30,6 +35,18 @@ function requiredEnvironment(env, name) {
 
 function delay(milliseconds) {
   return new Promise(resolve => setTimeout(resolve, milliseconds))
+}
+
+export function isSlaSyncEnabled(env) {
+  return String(env?.ZENDESK_SLA_SYNC_ENABLED || '')
+    .trim()
+    .toLowerCase() === 'true'
+}
+
+export function getZendeskSyncStreams(env) {
+  return isSlaSyncEnabled(env)
+    ? [...BASE_SYNC_STREAMS, SLA_SYNC_STREAM]
+    : [...BASE_SYNC_STREAMS]
 }
 
 export function getEasternHour(date) {
@@ -182,7 +199,7 @@ export async function runZendeskScheduledSync(
 
   const startedAtMs = nowImpl()
   const deadlineMs = startedAtMs + maxRuntimeMs
-  const streams = SYNC_STREAMS.map(createStreamState)
+  const streams = getZendeskSyncStreams(env).map(createStreamState)
   let requests = 0
 
   while (
@@ -265,6 +282,7 @@ export async function runZendeskScheduledSync(
   const summary = {
     event: 'zendesk_scheduled_sync',
     scheduledHourEastern: SCHEDULED_HOUR,
+    slaSyncEnabled: isSlaSyncEnabled(env),
     startedAt: new Date(startedAtMs).toISOString(),
     completedAt: new Date(nowImpl()).toISOString(),
     requests,
@@ -303,9 +321,10 @@ export default {
     context.waitUntil(runZendeskScheduledSync(env))
   },
 
-  async fetch() {
+  async fetch(request, env) {
+    const slaStatus = isSlaSyncEnabled(env) ? 'enabled' : 'disabled'
     return new Response(
-      'Zendesk synchronization and daily operations metrics cron is active at 9:00 AM Eastern.',
+      `Zendesk synchronization and daily operations metrics cron is active at 9:00 AM Eastern. SLA synchronization is ${slaStatus}.`,
       {
         status: 200,
         headers: {
