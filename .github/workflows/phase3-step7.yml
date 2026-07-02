@@ -1,45 +1,33 @@
-name: Phase 3 Step 7 Agent Analytics
+name: Phase 3 Step 7 Archived View Guard
 
 on:
   pull_request:
     paths:
       - 'agent-analytics.html'
-      - 'agent-analytics.css'
-      - 'scripts/agent-analytics.js'
       - 'scripts/report-details-agent-redirect.js'
-      - 'report-details.html'
-      - 'supabase/migrations/2026070202_phase3_step7_agent_identity_map.sql'
-      - 'supabase/migrations/2026070203_phase3_step7_agent_analytics_rpc.sql'
-      - 'supabase/verification/phase3_step7_agent_analytics_check.sql'
-      - 'docs/phase-3-step-7-agent-analytics.md'
-      - 'tests/phase3-step7-agent-analytics.test.mjs'
+      - 'scripts/reporting-source-cutover.js'
+      - 'tests/phase3-step8-google-sheet-cutover.test.mjs'
       - '.github/workflows/phase3-step7.yml'
   push:
     branches: [main]
     paths:
       - 'agent-analytics.html'
-      - 'agent-analytics.css'
-      - 'scripts/agent-analytics.js'
       - 'scripts/report-details-agent-redirect.js'
-      - 'report-details.html'
-      - 'supabase/migrations/2026070202_phase3_step7_agent_identity_map.sql'
-      - 'supabase/migrations/2026070203_phase3_step7_agent_analytics_rpc.sql'
-      - 'supabase/verification/phase3_step7_agent_analytics_check.sql'
-      - 'docs/phase-3-step-7-agent-analytics.md'
-      - 'tests/phase3-step7-agent-analytics.test.mjs'
+      - 'scripts/reporting-source-cutover.js'
+      - 'tests/phase3-step8-google-sheet-cutover.test.mjs'
       - '.github/workflows/phase3-step7.yml'
 
 permissions:
   contents: read
 
 jobs:
-  test:
+  cutover-guard:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
         with:
           node-version: 22
-      - run: node --check scripts/agent-analytics.js
       - run: node --check scripts/report-details-agent-redirect.js
-      - run: node --test tests/phase3-step7-agent-analytics.test.mjs
+      - run: node --check scripts/reporting-source-cutover.js
+      - run: node --test tests/phase3-step8-google-sheet-cutover.test.mjs
