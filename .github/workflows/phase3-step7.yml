@@ -7,6 +7,7 @@ on:
       - 'scripts/report-details-agent-redirect.js'
       - 'scripts/reporting-source-cutover.js'
       - 'tests/phase3-step8-google-sheet-cutover.test.mjs'
+      - 'package.json'
       - '.github/workflows/phase3-step7.yml'
   push:
     branches: [main]
@@ -15,6 +16,7 @@ on:
       - 'scripts/report-details-agent-redirect.js'
       - 'scripts/reporting-source-cutover.js'
       - 'tests/phase3-step8-google-sheet-cutover.test.mjs'
+      - 'package.json'
       - '.github/workflows/phase3-step7.yml'
 
 permissions:
@@ -28,6 +30,6 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: 22
-      - run: node --check scripts/report-details-agent-redirect.js
-      - run: node --check scripts/reporting-source-cutover.js
-      - run: node --test tests/phase3-step8-google-sheet-cutover.test.mjs
+      - run: node --experimental-default-type=module --check scripts/report-details-agent-redirect.js
+      - run: node --experimental-default-type=module --check scripts/reporting-source-cutover.js
+      - run: npm run test:phase3-step8
