@@ -1,30 +1,22 @@
-name: Zendesk Integration
+name: Step 8 Source Guard
 
 on:
   push:
-    branches:
-      - main
+    branches: [main]
   pull_request:
-    branches:
-      - main
+    branches: [main]
   workflow_dispatch:
 
 permissions:
   contents: read
 
 jobs:
-  zendesk-integration:
+  source-guard:
     runs-on: ubuntu-latest
     timeout-minutes: 10
-
     steps:
-      - name: Check out repository
-        uses: actions/checkout@v4
-
-      - name: Set up Node.js
-        uses: actions/setup-node@v4
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
         with:
-          node-version: 20
-
-      - name: Run Zendesk integration tests
-        run: npm run test:zendesk-integration
+          node-version: 22
+      - run: npm run test:phase3-step8
