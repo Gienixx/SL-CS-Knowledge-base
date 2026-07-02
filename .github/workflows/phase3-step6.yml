@@ -1,0 +1,42 @@
+name: Phase 3 Step 6
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'response-times.html'
+      - 'response-times.css'
+      - 'scripts/response-times.js'
+      - 'functions/api/sync-zendesk-sla.js'
+      - 'functions/_shared/zendesk-sla-event-normalizer.js'
+      - 'workers/zendesk-health/index.js'
+      - 'supabase/migrations/20260702_phase3_step6_sla_response_dashboard.sql'
+      - 'supabase/verification/phase3_step6_sla_response_check.sql'
+      - 'tests/phase3-step6-*.test.mjs'
+      - 'package.json'
+  pull_request:
+    paths:
+      - 'response-times.html'
+      - 'response-times.css'
+      - 'scripts/response-times.js'
+      - 'functions/api/sync-zendesk-sla.js'
+      - 'functions/_shared/zendesk-sla-event-normalizer.js'
+      - 'workers/zendesk-health/index.js'
+      - 'supabase/migrations/20260702_phase3_step6_sla_response_dashboard.sql'
+      - 'supabase/verification/phase3_step6_sla_response_check.sql'
+      - 'tests/phase3-step6-*.test.mjs'
+      - 'package.json'
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - run: npm run test:phase3-step6
+      - run: npm run test:phase3-step5
+      - run: npm run test:phase3-step4
