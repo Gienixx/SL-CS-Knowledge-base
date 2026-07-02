@@ -13,6 +13,7 @@ on:
       - functions/api/zendesk-test.js
       - functions/_shared/zendesk-disabled.js
       - tests/phase3-step8-google-sheet-cutover.test.mjs
+      - package.json
       - .github/workflows/deploy-zendesk-health-worker.yml
   workflow_dispatch:
 
@@ -54,7 +55,7 @@ jobs:
           exit "$missing"
 
       - name: Run Google Sheet cutover tests
-        run: node --test tests/phase3-step8-google-sheet-cutover.test.mjs
+        run: npm run test:phase3-step8
 
       - name: Deploy disabled Worker
         id: deploy
