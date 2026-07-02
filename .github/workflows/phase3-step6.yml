@@ -31,16 +31,23 @@ on:
       - 'docs/phase-3-step-6-sla-response-times.md'
       - 'package.json'
 
+permissions:
+  contents: read
+
 jobs:
   test:
     runs-on: ubuntu-latest
+    timeout-minutes: 10
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
+      - name: Check out repository
+        uses: actions/checkout@v4
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
         with:
-          node-version: 22
-          cache: npm
-      - run: npm ci
-      - run: npm run test:phase3-step6
-      - run: npm run test:phase3-step5
-      - run: npm run test:phase3-step4
+          node-version: 20
+      - name: Run Step 6 tests
+        run: npm run test:phase3-step6
+      - name: Run Step 5 regression tests
+        run: npm run test:phase3-step5
+      - name: Run Step 4 regression tests
+        run: npm run test:phase3-step4
