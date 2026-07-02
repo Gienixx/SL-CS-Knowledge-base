@@ -12,14 +12,15 @@ Authoritative sources:
 - resolution time: normalized ticket creation and final lifecycle state;
 - SLA breaches: Zendesk incremental ticket metric events normalized as `sla_breached` events.
 
-SLA values remain unavailable until the SLA metric-event stream has completed at least one successful synchronization. A missing SLA stream is never displayed as zero.
+SLA values remain unavailable until the SLA metric-event stream has completed a successful synchronization and Zendesk has emitted policy evidence (`apply_sla`, `apply_group_sla`, or `breach`). A successful export without policy evidence is never displayed as zero breaches.
 
 ## Database migration
 
-Apply:
+Apply both migrations in filename order:
 
 ```text
 supabase/migrations/20260702_phase3_step6_sla_response_dashboard.sql
+supabase/migrations/20260702_phase3_step6_sla_readiness_gate.sql
 ```
 
 It creates:
@@ -55,7 +56,7 @@ GET /api/v2/incremental/ticket_metric_events.json
 
 Only non-deleted events with `type=breach` are imported. Ticket content and requester information are not stored.
 
-Optional Cloudflare Pages variable:
+Optional Cloudflare Pages variables:
 
 ```text
 ZENDESK_SLA_INITIAL_START_TIME
@@ -96,6 +97,7 @@ Expected SQL checks:
 ```text
 authenticated_execution          PASS
 sla_event_type_reserved          PASS
+sla_readiness_state              PASS
 sla_response_dashboard_rpc       PASS
 ticket_metric_event_stream_state PASS
 ```
@@ -103,11 +105,30 @@ ticket_metric_event_stream_state PASS
 ## Manual production sequence
 
 1. Confirm Zendesk SLA policies are enabled and the API user can read ticket metric events.
-2. Apply `supabase/migrations/20260702_phase3_step6_sla_response_dashboard.sql` in the Supabase SQL Editor.
-3. Run `supabase/verification/phase3_step6_sla_response_check.sql` and confirm all four checks return `PASS`.
+2. Apply both Step 6 migrations in filename order in the Supabase SQL Editor.
+3. Run `supabase/verification/phase3_step6_sla_response_check.sql` and confirm all five checks return `PASS`.
 4. Confirm the latest Cloudflare Pages deployment contains `/api/sync-zendesk-sla` and `response-times.html`.
 5. With `ZENDESK_SLA_SYNC_ENABLED` still disabled, call `/api/sync-zendesk-sla` manually with the existing sync secret until `hasMore` is false and `endOfStream` is true.
-6. Rerun the verification SQL and confirm `ticket_metric_events.last_success_at` is populated and the stream status is `READY`.
+6. Rerun the verification SQL and confirm `ticket_metric_events.last_success_at` is populated, `policy_evidence` is true, and the stream status is `READY`. If policy evidence is still false, reset the SLA stream to an earlier Unix timestamp before rerunning the backfill:
+
+   ```sql
+   update public.zendesk_sync_state
+   set start_time = <EARLIER_UNIX_TIMESTAMP>,
+       last_success_at = null,
+       lease_token = null,
+       lease_expires_at = null,
+       updated_at = now()
+   where stream_key = 'ticket_metric_events';
+
+   update public.zendesk_sla_readiness
+   set policy_evidence = false,
+       breach_evidence = false,
+       last_observed_at = null,
+       updated_at = now()
+   where singleton = true;
+   ```
+
+   Use a timestamp early enough to include at least one `apply_sla`, `apply_group_sla`, or `breach` event. The optional `ZENDESK_SLA_INITIAL_START_TIME` value is only used when the saved stream cursor has not yet been initialized.
 7. Open the SLA & Response Times page and validate a representative date range against Zendesk Explore or a known ticket sample.
 8. Only after validation, set `ZENDESK_SLA_SYNC_ENABLED=true` on the Zendesk health Worker and redeploy the Worker.
 9. Confirm the next scheduled 9:00 AM Eastern run includes the `ticket_metric_events` stream and completes the operations-metrics refresh.
