@@ -1,0 +1,354 @@
+.agent-analytics-shell {
+  max-width: 1540px;
+}
+
+.agent-filter-card,
+.agent-chart-card,
+.agent-ranking-card {
+  overflow: hidden;
+}
+
+.agent-filter-heading {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 1rem;
+  margin-bottom: 1.1rem;
+}
+
+.agent-filter-heading h2,
+.agent-chart-card h2,
+.agent-ranking-card h2 {
+  margin: 0.15rem 0 0.25rem;
+}
+
+.agent-filter-heading p,
+.agent-chart-card p,
+.agent-ranking-card p {
+  margin: 0;
+  color: var(--sl-muted, #6f678f);
+}
+
+.agent-filter-form {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(150px, 1fr));
+  gap: 0.9rem;
+  align-items: end;
+}
+
+.agent-filter-field {
+  display: grid;
+  gap: 0.4rem;
+  min-width: 0;
+}
+
+.agent-filter-field > span {
+  font-size: 0.78rem;
+  font-weight: 700;
+  color: var(--sl-text, #2b2459);
+}
+
+.agent-filter-field select,
+.agent-filter-field input {
+  width: 100%;
+  min-height: 42px;
+  padding: 0.65rem 0.72rem;
+  border: 1px solid rgba(36, 27, 93, 0.18);
+  border-radius: 10px;
+  background: #fff;
+  color: var(--sl-text, #2b2459);
+  font: inherit;
+}
+
+.agent-filter-actions {
+  display: flex;
+  gap: 0.65rem;
+  align-items: center;
+}
+
+.agent-reset-button {
+  min-height: 42px;
+  padding: 0.65rem 1rem;
+  border: 1px solid rgba(36, 27, 93, 0.18);
+  border-radius: 10px;
+  background: #fff;
+  color: var(--sl-text, #2b2459);
+  font: inherit;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.agent-active-filters {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  margin-top: 0.9rem;
+}
+
+.agent-active-filters span {
+  display: inline-flex;
+  padding: 0.35rem 0.65rem;
+  border-radius: 999px;
+  background: rgba(56, 47, 144, 0.09);
+  color: #382f90;
+  font-size: 0.74rem;
+  font-weight: 700;
+}
+
+.agent-readiness {
+  display: grid;
+  gap: 0.25rem;
+  padding: 1rem 1.15rem;
+  border: 1px solid rgba(176, 106, 0, 0.26);
+  border-radius: 14px;
+  background: rgba(255, 194, 26, 0.12);
+  color: #684600;
+}
+
+.agent-readiness[data-ready="true"] {
+  border-color: rgba(21, 128, 61, 0.25);
+  background: rgba(34, 197, 94, 0.09);
+  color: #166534;
+}
+
+.agent-summary-grid {
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+}
+
+.agent-summary-card {
+  min-width: 0;
+}
+
+.agent-summary-card h2 {
+  margin: 0;
+  font-size: 0.76rem;
+  color: var(--sl-muted, #6f678f);
+  text-transform: uppercase;
+  letter-spacing: 0.045em;
+}
+
+.agent-summary-card strong {
+  display: block;
+  margin-top: 0.45rem;
+  font-size: clamp(1.35rem, 2.4vw, 2rem);
+  color: var(--sl-text, #2b2459);
+}
+
+.agent-summary-card p {
+  margin: 0.4rem 0 0;
+  color: var(--sl-muted, #6f678f);
+  font-size: 0.78rem;
+}
+
+.agent-trend-chart {
+  min-height: 360px;
+}
+
+.agent-chart-scroll {
+  overflow-x: auto;
+  padding-bottom: 0.35rem;
+}
+
+.agent-chart-svg {
+  display: block;
+  width: 100%;
+  min-width: 760px;
+  height: auto;
+}
+
+.agent-chart-grid {
+  stroke: rgba(36, 27, 93, 0.1);
+  stroke-width: 1;
+}
+
+.agent-chart-axis {
+  stroke: rgba(36, 27, 93, 0.3);
+  stroke-width: 1.2;
+}
+
+.agent-chart-label {
+  fill: #6f678f;
+  font-size: 12px;
+}
+
+.agent-chart-line-solved,
+.agent-chart-line-open {
+  fill: none;
+  stroke-width: 3;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+.agent-chart-line-solved {
+  stroke: #382f90;
+}
+
+.agent-chart-line-open {
+  stroke: #d68a00;
+}
+
+.agent-chart-point-solved {
+  fill: #382f90;
+}
+
+.agent-chart-point-open {
+  fill: #d68a00;
+}
+
+.agent-chart-legend {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 1rem;
+  margin-top: 0.8rem;
+  color: var(--sl-muted, #6f678f);
+  font-size: 0.8rem;
+  font-weight: 700;
+}
+
+.agent-chart-legend span::before {
+  content: '';
+  display: inline-block;
+  width: 0.75rem;
+  height: 0.75rem;
+  margin-right: 0.38rem;
+  border-radius: 50%;
+  vertical-align: -0.08rem;
+  background: #382f90;
+}
+
+.agent-chart-legend span:last-child::before {
+  background: #d68a00;
+}
+
+.agent-empty-state {
+  display: grid;
+  place-items: center;
+  min-height: 250px;
+  padding: 2rem;
+  text-align: center;
+  color: var(--sl-muted, #6f678f);
+}
+
+.agent-ranking {
+  display: grid;
+  gap: 0.75rem;
+}
+
+.agent-ranking-row {
+  display: grid;
+  grid-template-columns: minmax(130px, 1.2fr) minmax(180px, 3fr) auto;
+  gap: 0.85rem;
+  align-items: center;
+  padding: 0.75rem 0;
+  border-bottom: 1px solid rgba(36, 27, 93, 0.08);
+}
+
+.agent-ranking-row:last-child {
+  border-bottom: 0;
+}
+
+.agent-ranking-name {
+  display: grid;
+  gap: 0.15rem;
+}
+
+.agent-ranking-name small {
+  color: var(--sl-muted, #6f678f);
+}
+
+.agent-ranking-track {
+  height: 0.7rem;
+  overflow: hidden;
+  border-radius: 999px;
+  background: rgba(56, 47, 144, 0.1);
+}
+
+.agent-ranking-bar {
+  display: block;
+  height: 100%;
+  border-radius: inherit;
+  background: linear-gradient(90deg, #382f90, #6c62cb);
+}
+
+.agent-ranking-value {
+  min-width: 68px;
+  text-align: right;
+  color: var(--sl-text, #2b2459);
+}
+
+.agent-analytics-table td:not(:first-child),
+.agent-analytics-table th:not(:first-child) {
+  text-align: right;
+}
+
+.agent-analytics-table td:last-child,
+.agent-analytics-table th:last-child {
+  text-align: left;
+}
+
+.agent-mapping-status {
+  display: inline-flex;
+  padding: 0.26rem 0.52rem;
+  border-radius: 999px;
+  background: rgba(176, 106, 0, 0.12);
+  color: #815600;
+  font-size: 0.72rem;
+  font-weight: 700;
+  white-space: nowrap;
+}
+
+.agent-mapping-status[data-mapped="true"] {
+  background: rgba(21, 128, 61, 0.1);
+  color: #166534;
+}
+
+.agent-metric-note {
+  display: flex;
+  gap: 0.45rem;
+  align-items: flex-start;
+  padding: 0.9rem 1rem;
+  border-radius: 12px;
+  background: rgba(56, 47, 144, 0.06);
+  color: var(--sl-muted, #6f678f);
+  font-size: 0.82rem;
+}
+
+.agent-metric-note strong {
+  color: var(--sl-text, #2b2459);
+  white-space: nowrap;
+}
+
+@media (max-width: 1050px) {
+  .agent-filter-form,
+  .agent-summary-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 700px) {
+  .agent-filter-heading {
+    display: grid;
+  }
+
+  .agent-filter-form,
+  .agent-summary-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .agent-filter-actions {
+    flex-wrap: wrap;
+  }
+
+  .agent-ranking-row {
+    grid-template-columns: 1fr auto;
+  }
+
+  .agent-ranking-track {
+    grid-column: 1 / -1;
+    grid-row: 2;
+  }
+
+  .agent-metric-note {
+    display: grid;
+  }
+}
