@@ -17,6 +17,7 @@ on:
       - 'scripts/reporting-source-cutover.js'
       - 'docs/phase-3-step-8-google-sheet-cutover.md'
       - 'tests/phase3-step8-google-sheet-cutover.test.mjs'
+      - 'package.json'
       - '.github/workflows/phase3-step8.yml'
   push:
     branches: [main]
@@ -35,6 +36,7 @@ on:
       - 'scripts/reporting-source-cutover.js'
       - 'docs/phase-3-step-8-google-sheet-cutover.md'
       - 'tests/phase3-step8-google-sheet-cutover.test.mjs'
+      - 'package.json'
       - '.github/workflows/phase3-step8.yml'
 
 permissions:
@@ -48,8 +50,8 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: 22
-      - run: node --check functions/_shared/zendesk-disabled.js
-      - run: node --check workers/zendesk-health/index.js
-      - run: node --check scripts/report-details-agent-redirect.js
-      - run: node --check scripts/reporting-source-cutover.js
-      - run: node --test tests/phase3-step8-google-sheet-cutover.test.mjs
+      - run: node --experimental-default-type=module --check functions/_shared/zendesk-disabled.js
+      - run: node --experimental-default-type=module --check workers/zendesk-health/index.js
+      - run: node --experimental-default-type=module --check scripts/report-details-agent-redirect.js
+      - run: node --experimental-default-type=module --check scripts/reporting-source-cutover.js
+      - run: npm run test:phase3-step8
