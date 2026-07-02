@@ -9,6 +9,7 @@
     "test:phase3-step3": "node --experimental-default-type=module --test tests/phase3-step3-*.test.mjs",
     "test:phase3-step4": "node --experimental-default-type=module --test tests/phase3-step4-*.test.mjs",
     "test:phase3-step5": "node --experimental-default-type=module --test tests/phase3-step5-*.test.mjs",
+    "test:phase3-step6": "node --experimental-default-type=module --test tests/phase3-step6-*.test.mjs",
     "test:zendesk-integration": "node --experimental-default-type=module --test tests/zendesk-*.test.mjs"
   },
   "dependencies": {
