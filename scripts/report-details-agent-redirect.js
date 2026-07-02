@@ -1,19 +1,48 @@
 (() => {
   const currentUrl = new URL(window.location.href)
-  if (currentUrl.searchParams.get('report') !== 'agent-productivity') return
+  const disabledFilterKeys = [
+    'app',
+    'platform',
+    'country',
+    'driver',
+    'agent',
+    'priority',
+    'channel',
+    'source'
+  ]
+  let changed = false
 
-  const destination = new URL('./agent-analytics.html', currentUrl)
-  destination.search = currentUrl.search
-  destination.hash = currentUrl.hash
-  destination.searchParams.delete('report')
+  disabledFilterKeys.forEach(key => {
+    if (currentUrl.searchParams.has(key)) {
+      currentUrl.searchParams.delete(key)
+      changed = true
+    }
+  })
 
-  if (destination.searchParams.get('range') === 'latest') {
-    destination.searchParams.set('range', '30d')
+  if (changed) {
+    window.history.replaceState({}, '', currentUrl.toString())
   }
 
-  for (const key of ['app', 'platform', 'country', 'driver', 'priority', 'channel']) {
-    destination.searchParams.delete(key)
-  }
+  const style = document.createElement('style')
+  style.textContent = '[data-dimension-filter], #reportSourceBadge { display: none !important; }'
+  document.head.appendChild(style)
 
-  window.location.replace(destination.toString())
+  document.write('<script type="module" src="./scripts/reporting-source-cutover.js?v=1"><\/script>')
+
+  window.addEventListener('DOMContentLoaded', () => {
+    const filterCopy = document.querySelector('.report-filter-heading p')
+    if (filterCopy) {
+      filterCopy.textContent = 'All report values use the synchronized Google Sheet dataset.'
+    }
+
+    const loadingCopy = document.querySelector('#reportStatus p')
+    if (loadingCopy) {
+      loadingCopy.textContent = 'Checking access and retrieving the requested Google Sheet reporting data.'
+    }
+
+    const footer = document.querySelector('.footer-note')
+    if (footer) {
+      footer.textContent = 'All dashboard and report-detail values use the synchronized Google Sheet snapshot.'
+    }
+  })
 })()

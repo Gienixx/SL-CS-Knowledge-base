@@ -1,4 +1,4 @@
-name: Deploy Zendesk Sync Worker
+name: Deploy Disabled Zendesk Worker
 
 on:
   push:
@@ -8,14 +8,13 @@ on:
       - workers/zendesk-health/**
       - functions/api/sync-zendesk.js
       - functions/api/sync-zendesk-events.js
+      - functions/api/sync-zendesk-sla.js
+      - functions/api/backfill-zendesk-ticket-dimensions.js
       - functions/api/refresh-operations-metrics.js
-      - functions/_shared/zendesk-client.js
-      - functions/_shared/zendesk-event-normalizer.js
-      - functions/_shared/zendesk-incremental-event-normalizer.js
-      - functions/_shared/zendesk-sync-store.js
-      - functions/_shared/operations-metrics-store.js
-      - tests/zendesk-*.test.mjs
-      - tests/phase3-step3-*.test.mjs
+      - functions/api/zendesk-event-shape.js
+      - functions/api/zendesk-test.js
+      - functions/_shared/zendesk-disabled.js
+      - tests/phase3-step8-google-sheet-cutover.test.mjs
       - package.json
       - .github/workflows/deploy-zendesk-health-worker.yml
   workflow_dispatch:
@@ -24,13 +23,13 @@ permissions:
   contents: read
 
 concurrency:
-  group: deploy-zendesk-sync-worker
+  group: deploy-disabled-zendesk-worker
   cancel-in-progress: false
 
 jobs:
   deploy:
     runs-on: ubuntu-latest
-    timeout-minutes: 15
+    timeout-minutes: 10
 
     steps:
       - name: Check out repository
@@ -39,22 +38,16 @@ jobs:
       - name: Set up Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: 20
+          node-version: 22
 
-      - name: Validate deployment secrets
+      - name: Validate Cloudflare deployment secrets
         shell: bash
         env:
           CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
           CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
-          PAGES_BASE_URL: ${{ secrets.PAGES_BASE_URL }}
-          ZENDESK_SYNC_SECRET: ${{ secrets.ZENDESK_SYNC_SECRET }}
         run: |
           missing=0
-          for name in \
-            CLOUDFLARE_ACCOUNT_ID \
-            CLOUDFLARE_API_TOKEN \
-            PAGES_BASE_URL \
-            ZENDESK_SYNC_SECRET
+          for name in CLOUDFLARE_ACCOUNT_ID CLOUDFLARE_API_TOKEN
           do
             if [ -z "${!name}" ]; then
               echo "::error::Missing required GitHub Actions secret: ${name}"
@@ -63,37 +56,10 @@ jobs:
           done
           exit "$missing"
 
-      - name: Run Zendesk synchronization tests
-        run: npm run test:zendesk-integration
+      - name: Run Google Sheet cutover tests
+        run: npm run test:phase3-step8
 
-      - name: Run Phase 3 Step 3 tests
-        run: npm run test:phase3-step3
-
-      - name: Create ephemeral Worker secrets file
-        shell: bash
-        env:
-          PAGES_BASE_URL: ${{ secrets.PAGES_BASE_URL }}
-          ZENDESK_SYNC_SECRET: ${{ secrets.ZENDESK_SYNC_SECRET }}
-        run: |
-          node <<'NODE'
-          const fs = require('node:fs')
-          const path = require('node:path')
-          const filePath = path.join(
-            process.env.RUNNER_TEMP,
-            'zendesk-sync-worker-secrets.json'
-          )
-
-          fs.writeFileSync(
-            filePath,
-            JSON.stringify({
-              PAGES_BASE_URL: process.env.PAGES_BASE_URL,
-              ZENDESK_SYNC_SECRET: process.env.ZENDESK_SYNC_SECRET
-            }),
-            { mode: 0o600 }
-          )
-          NODE
-
-      - name: Deploy scheduled synchronization Worker
+      - name: Deploy disabled Worker
         id: deploy
         uses: cloudflare/wrangler-action@v3
         with:
@@ -101,11 +67,9 @@ jobs:
           accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
           wranglerVersion: "4"
           workingDirectory: workers/zendesk-health
-          command: >-
-            deploy --secrets-file
-            "${{ runner.temp }}/zendesk-sync-worker-secrets.json"
+          command: deploy
 
-      - name: Verify Worker endpoint
+      - name: Verify disabled Worker endpoint
         if: ${{ steps.deploy.outputs.deployment-url != '' }}
         shell: bash
         env:
@@ -113,10 +77,6 @@ jobs:
         run: |
           response="$(curl --fail --silent --show-error "$DEPLOYMENT_URL")"
           echo "$response"
-          echo "$response" | grep -F "daily operations metrics"
-          echo "$response" | grep -F "9:00 AM Eastern"
-
-      - name: Remove ephemeral Worker secrets file
-        if: always()
-        shell: bash
-        run: rm -f "${RUNNER_TEMP}/zendesk-sync-worker-secrets.json"
+          echo "$response" | grep -F '"enabled":false'
+          echo "$response" | grep -F '"reportingSource":"google_sheet"'
+          echo "$response" | grep -F 'zendesk_integration_disabled'
