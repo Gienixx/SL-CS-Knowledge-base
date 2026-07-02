@@ -5,6 +5,8 @@ import test from 'node:test'
 import {
   getPhase3Step9ExpectedDictionaryRows,
   PHASE3_STEP9_CONTRACT_KEY,
+  PHASE3_STEP9_LEGACY_PRODUCTIVITY_SHEET_NAME,
+  PHASE3_STEP9_PRODUCTIVITY_SHEET_NAME,
   PHASE3_STEP9_TABS,
   validatePhase3Step9ContractDefinition
 } from '../config/phase3-step9-sheet-contract.js'
@@ -124,6 +126,36 @@ test('Step 9 contract definition is internally consistent', () => {
   assert.deepEqual(validatePhase3Step9ContractDefinition(), [])
 })
 
+test('Step 9 productivity uses a separate tab from the legacy worksheet', () => {
+  assert.equal(
+    PHASE3_STEP9_LEGACY_PRODUCTIVITY_SHEET_NAME,
+    'Ticket Productivity'
+  )
+  assert.equal(
+    PHASE3_STEP9_PRODUCTIVITY_SHEET_NAME,
+    'Ticket Productivity V3'
+  )
+  assert.equal(
+    PHASE3_STEP9_TABS.ticketProductivity.sheetName,
+    PHASE3_STEP9_PRODUCTIVITY_SHEET_NAME
+  )
+  assert.notEqual(
+    PHASE3_STEP9_TABS.ticketProductivity.sheetName,
+    PHASE3_STEP9_LEGACY_PRODUCTIVITY_SHEET_NAME
+  )
+})
+
+test('the legacy productivity worksheet cannot be submitted as Step 9 data', () => {
+  const payload = buildPayload(7)
+  payload.datasets.ticketProductivity.sheetName =
+    PHASE3_STEP9_LEGACY_PRODUCTIVITY_SHEET_NAME
+
+  assert.throws(
+    () => processPhase3Step9Payload(payload, 'run-legacy-tab'),
+    /must use the worksheet name Ticket Productivity V3/
+  )
+})
+
 test('seven reconciled days are production ready', () => {
   const payload = buildPayload(7)
   assert.equal(isPhase3Step9Payload(payload), true)
@@ -188,8 +220,8 @@ test('dimension totals reconcile to handled tickets', () => {
   )
 })
 
-test('Step 9 endpoint, migration, and Apps Script use the versioned contract', async () => {
-  const [endpoint, migration, appsScript] = await Promise.all([
+test('Step 9 endpoint, migration, Apps Script, and docs preserve the legacy tab', async () => {
+  const [endpoint, migration, appsScript, documentation] = await Promise.all([
     readFile(
       new URL('../functions/api/sync-dashboard-v3.js', import.meta.url),
       'utf8'
@@ -207,6 +239,13 @@ test('Step 9 endpoint, migration, and Apps Script use the versioned contract', a
         import.meta.url
       ),
       'utf8'
+    ),
+    readFile(
+      new URL(
+        '../docs/phase-3-step-9-google-sheet-reporting-contract.md',
+        import.meta.url
+      ),
+      'utf8'
     )
   ])
 
@@ -219,5 +258,11 @@ test('Step 9 endpoint, migration, and Apps Script use the versioned contract', a
   assert.match(migration, /create table if not exists public\.sheet_sync_metadata/)
   assert.match(appsScript, /setupPhase3Step9Tabs/)
   assert.match(appsScript, /syncPhase3Step9Dashboard/)
+  assert.match(appsScript, /legacyProductivitySheetName: 'Ticket Productivity'/)
+  assert.match(appsScript, /sheetName: 'Ticket Productivity V3'/)
+  assert.match(appsScript, /left unchanged/)
+  assert.doesNotMatch(appsScript, /Rename or archive that tab/)
+  assert.match(documentation, /No worksheet rename is required/)
+  assert.match(documentation, /Ticket Productivity V3/)
   assert.match(appsScript, /America\/New_York/)
 })
