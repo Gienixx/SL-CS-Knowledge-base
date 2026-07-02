@@ -11,6 +11,13 @@ const SIMPLE_DASHBOARD_SYNC = Object.freeze({
   ])
 })
 
+const RETIRED_STEP9_V3_REFERENCE = Object.freeze({
+  legacyProductivitySheetName: 'Ticket Productivity',
+  sheetName: 'Ticket Productivity V3',
+  timeZone: 'America/New_York',
+  note: 'Retired V3 tabs are left unchanged and are not synchronized.'
+})
+
 function setupPhase3Step9Tabs() {
   const spreadsheet = SpreadsheetApp.getActive()
   const missing = SIMPLE_DASHBOARD_SYNC.sourceTabs.filter(function (name) {
