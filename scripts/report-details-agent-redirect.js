@@ -27,7 +27,7 @@
   style.textContent = '[data-dimension-filter], #reportSourceBadge { display: none !important; }'
   document.head.appendChild(style)
 
-  document.write('<script type="module" src="./scripts/reporting-source-cutover.js?v=1"><\\/script>')
+  document.write('<script type="module" src="./scripts/reporting-source-cutover.js?v=1"><\/script>')
 
   window.addEventListener('DOMContentLoaded', () => {
     const filterCopy = document.querySelector('.report-filter-heading p')
