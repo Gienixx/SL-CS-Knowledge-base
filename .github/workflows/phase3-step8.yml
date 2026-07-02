@@ -1,0 +1,55 @@
+name: Phase 3 Step 8 Google Sheet Cutover
+
+on:
+  pull_request:
+    paths:
+      - 'config/phase3-reporting-source-policy.js'
+      - 'functions/_shared/zendesk-disabled.js'
+      - 'functions/api/sync-zendesk*.js'
+      - 'functions/api/backfill-zendesk-ticket-dimensions.js'
+      - 'functions/api/zendesk-test.js'
+      - 'workers/zendesk-health/**'
+      - 'dashboard.html'
+      - 'report-details.html'
+      - 'response-times.html'
+      - 'agent-analytics.html'
+      - 'scripts/report-details-agent-redirect.js'
+      - 'scripts/reporting-source-cutover.js'
+      - 'docs/phase-3-step-8-google-sheet-cutover.md'
+      - 'tests/phase3-step8-google-sheet-cutover.test.mjs'
+      - '.github/workflows/phase3-step8.yml'
+  push:
+    branches: [main]
+    paths:
+      - 'config/phase3-reporting-source-policy.js'
+      - 'functions/_shared/zendesk-disabled.js'
+      - 'functions/api/sync-zendesk*.js'
+      - 'functions/api/backfill-zendesk-ticket-dimensions.js'
+      - 'functions/api/zendesk-test.js'
+      - 'workers/zendesk-health/**'
+      - 'dashboard.html'
+      - 'report-details.html'
+      - 'response-times.html'
+      - 'agent-analytics.html'
+      - 'scripts/report-details-agent-redirect.js'
+      - 'scripts/reporting-source-cutover.js'
+      - 'docs/phase-3-step-8-google-sheet-cutover.md'
+      - 'tests/phase3-step8-google-sheet-cutover.test.mjs'
+      - '.github/workflows/phase3-step8.yml'
+
+permissions:
+  contents: read
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - run: node --check functions/_shared/zendesk-disabled.js
+      - run: node --check workers/zendesk-health/index.js
+      - run: node --check scripts/report-details-agent-redirect.js
+      - run: node --check scripts/reporting-source-cutover.js
+      - run: node --test tests/phase3-step8-google-sheet-cutover.test.mjs
