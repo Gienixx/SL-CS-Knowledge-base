@@ -9,10 +9,9 @@ import {
 } from '../_shared/zendesk-sla-event-normalizer.js'
 import {
   acquireZendeskSyncLock,
-  advanceZendeskSyncState,
+  advanceZendeskSlaSyncState,
   createZendeskSyncRun,
   insertTicketEvents,
-  recordZendeskSlaEvidence,
   releaseZendeskSyncLock,
   updateZendeskSyncRun
 } from '../_shared/zendesk-sync-store.js'
@@ -59,11 +58,15 @@ export function isSlaMetricPageComplete(page, eventCount) {
 }
 
 function summarizeSlaEvidence(sourceEvents, normalizedEvents) {
-  const policyEvidence = sourceEvents.some(event =>
-    ['apply_sla', 'apply_group_sla', 'breach'].includes(
+  const policyEvidence = sourceEvents.some(event => {
+    const deleted = event?.deleted === true ||
+      event?.deleted === 1 ||
+      event?.deleted === 'true'
+
+    return !deleted && ['apply_sla', 'apply_group_sla', 'breach'].includes(
       String(event?.type || '').trim().toLowerCase()
-    ) && event?.deleted !== true
-  )
+    )
+  })
 
   return {
     policyEvidence,
@@ -160,22 +163,19 @@ export async function onRequestPost(context) {
     const events = normalizeSlaMetricEvents(sourceEvents)
     const imported = await insertTicketEvents(environment, events)
     const evidence = summarizeSlaEvidence(sourceEvents, events)
-    await recordZendeskSlaEvidence(environment, {
-      ...evidence,
-      observedAt: new Date().toISOString()
-    })
     const endTime = Number(page?.end_time)
 
     if (!Number.isInteger(endTime) || endTime <= 0) {
       throw new Error('Zendesk SLA export returned no valid end time.')
     }
 
-    await advanceZendeskSyncState(environment, {
+    const slaReady = await advanceZendeskSlaSyncState(environment, {
       streamKey: STREAM_KEY,
       lockToken,
-      cursor: null,
       startTime: endTime,
-      lastEventTimestamp: latestTimestamp(events)
+      lastEventTimestamp: latestTimestamp(events),
+      ...evidence,
+      observedAt: new Date().toISOString()
     })
     lockAcquired = false
 
@@ -205,6 +205,7 @@ export async function onRequestPost(context) {
       ignoredEvents: sourceEvents.length - events.length,
       policyEvidenceObserved: evidence.policyEvidence,
       breachEvidenceObserved: evidence.breachEvidence,
+      slaReady,
       endOfStream,
       hasMore: !endOfStream,
       nextStartTime: endTime
