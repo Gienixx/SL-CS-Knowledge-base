@@ -1,19 +1,25 @@
 (() => {
   const currentUrl = new URL(window.location.href)
-  if (currentUrl.searchParams.get('report') !== 'agent-productivity') return
+  const disabledFilterKeys = [
+    'app',
+    'platform',
+    'country',
+    'driver',
+    'agent',
+    'priority',
+    'channel',
+    'source'
+  ]
+  let changed = false
 
-  const destination = new URL('./agent-analytics.html', currentUrl)
-  destination.search = currentUrl.search
-  destination.hash = currentUrl.hash
-  destination.searchParams.delete('report')
+  disabledFilterKeys.forEach(key => {
+    if (currentUrl.searchParams.has(key)) {
+      currentUrl.searchParams.delete(key)
+      changed = true
+    }
+  })
 
-  if (destination.searchParams.get('range') === 'latest') {
-    destination.searchParams.set('range', '30d')
+  if (changed) {
+    window.history.replaceState({}, '', currentUrl.toString())
   }
-
-  for (const key of ['app', 'platform', 'country', 'driver', 'priority', 'channel']) {
-    destination.searchParams.delete(key)
-  }
-
-  window.location.replace(destination.toString())
 })()
