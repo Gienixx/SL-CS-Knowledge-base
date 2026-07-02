@@ -19,8 +19,8 @@ SLA values remain unavailable until the SLA metric-event stream has completed a 
 Apply both migrations in filename order:
 
 ```text
-supabase/migrations/20260702_phase3_step6_sla_response_dashboard.sql
-supabase/migrations/20260702_phase3_step6_sla_readiness_gate.sql
+supabase/migrations/2026070201_phase3_step6_sla_response_dashboard.sql
+supabase/migrations/2026070202_phase3_step6_sla_readiness_gate.sql
 ```
 
 It creates:
@@ -56,7 +56,7 @@ GET /api/v2/incremental/ticket_metric_events.json
 
 Only non-deleted events with `type=breach` are imported. Ticket content and requester information are not stored.
 
-Optional Cloudflare Pages variables:
+Optional Cloudflare Pages variable:
 
 ```text
 ZENDESK_SLA_INITIAL_START_TIME

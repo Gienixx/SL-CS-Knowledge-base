@@ -81,8 +81,8 @@ test('keeps SLA scheduled ingestion disabled until explicitly activated', () => 
 
 test('Step 6 migration exposes filtered response and SLA reporting', async () => {
   const [sql, readinessSql] = await Promise.all([
-    read('supabase/migrations/20260702_phase3_step6_sla_response_dashboard.sql'),
-    read('supabase/migrations/20260702_phase3_step6_sla_readiness_gate.sql')
+    read('supabase/migrations/2026070201_phase3_step6_sla_response_dashboard.sql'),
+    read('supabase/migrations/2026070202_phase3_step6_sla_readiness_gate.sql')
   ])
   assert.match(sql, /create or replace function public\.get_sla_response_dashboard/)
   assert.match(sql, /percentile_cont\(0\.9\)/)
