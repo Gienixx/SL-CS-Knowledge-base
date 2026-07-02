@@ -1,6 +1,10 @@
 export const PHASE3_STEP9_CONTRACT_VERSION = 3
 export const PHASE3_STEP9_CONTRACT_KEY =
   'phase3_step9_google_sheet_reporting'
+export const PHASE3_STEP9_LEGACY_PRODUCTIVITY_SHEET_NAME =
+  'Ticket Productivity'
+export const PHASE3_STEP9_PRODUCTIVITY_SHEET_NAME =
+  'Ticket Productivity V3'
 
 const column = (
   name,
@@ -48,7 +52,7 @@ export const PHASE3_STEP9_TABS = Object.freeze({
   }),
   ticketProductivity: Object.freeze({
     datasetKey: 'ticketProductivity',
-    sheetName: 'Ticket Productivity',
+    sheetName: PHASE3_STEP9_PRODUCTIVITY_SHEET_NAME,
     columns: Object.freeze([
       column('report_date', 'date', 'Reporting date in Eastern Time.', 'ISO date YYYY-MM-DD.'),
       column('agent_key', 'key', 'Stable machine-readable agent identifier.', 'Lowercase letters, numbers, underscores, and hyphens only; never reuse for another person.'),
@@ -73,8 +77,8 @@ export const PHASE3_STEP9_TABS = Object.freeze({
     sheetName: 'Agent Dimension Metrics',
     columns: Object.freeze([
       column('report_date', 'date', 'Reporting date in Eastern Time.', 'ISO date YYYY-MM-DD.'),
-      column('agent_key', 'key', 'Stable machine-readable agent identifier.', 'Must match Ticket Productivity.'),
-      column('agent_name', 'text', 'Current display name for the agent.', 'Must match Ticket Productivity for agent_key.'),
+      column('agent_key', 'key', 'Stable machine-readable agent identifier.', 'Must match Ticket Productivity V3.'),
+      column('agent_name', 'text', 'Current display name for the agent.', 'Must match Ticket Productivity V3 for agent_key.'),
       column('dimension_type', 'enum', 'Reporting dimension represented by the row.', 'One of app, platform, country, concern, priority, or channel.'),
       column('dimension_key', 'key', 'Stable machine-readable dimension value.', 'Lowercase key; use unknown when the source value is missing.'),
       column('dimension_label', 'text', 'Display label for the dimension value.', 'Non-empty text.'),
@@ -151,6 +155,15 @@ export function validatePhase3Step9ContractDefinition() {
       columnNames.add(definition.name)
     })
   })
+
+  if (
+    PHASE3_STEP9_TABS.ticketProductivity.sheetName ===
+    PHASE3_STEP9_LEGACY_PRODUCTIVITY_SHEET_NAME
+  ) {
+    errors.push(
+      'The Step 9 productivity tab must not reuse the legacy tab name.'
+    )
+  }
 
   return errors
 }

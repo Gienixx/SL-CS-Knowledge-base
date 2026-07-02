@@ -18,9 +18,11 @@ The new endpoint requires the existing `SHEET_SYNC_SECRET`,
 
 ## Required workbook tabs
 
-### Ticket Productivity
+### Ticket Productivity V3
 
-This is a normalized table with one row per reporting date and agent.
+This is the normalized Step 9 table with one row per reporting date and agent.
+It deliberately uses a different tab name from the existing legacy
+`Ticket Productivity` worksheet.
 
 ```text
 report_date
@@ -43,6 +45,10 @@ worked_hours
 
 `agent_key` is permanent. It must not change when an agent display name
 changes, and it must never be reused for another person.
+
+The legacy `Ticket Productivity` tab may remain in the workbook unchanged.
+Step 9 does not read, rename, clear, or overwrite it. Only
+`Ticket Productivity V3` is sent as the version 3 productivity dataset.
 
 ### Daily Ticket Metrics
 
@@ -71,6 +77,7 @@ one_touch_tickets
 ### Agent Dimension Metrics
 
 This is one row per reporting date, agent, dimension type, and dimension value.
+The `agent_key` and `agent_name` values must match `Ticket Productivity V3`.
 
 ```text
 report_date
@@ -108,7 +115,8 @@ validation_rule
 ```
 
 The tab must document every column in all five Step 9 tabs. The supplied Apps
-Script generates the complete dictionary.
+Script generates the complete dictionary, including the
+`Ticket Productivity V3` tab name.
 
 ### Sync Metadata
 
@@ -133,6 +141,8 @@ The server rejects the entire payload before writing reporting rows when any of
 these checks fail:
 
 - required tabs or columns are missing or reordered;
+- the productivity dataset is labeled `Ticket Productivity` instead of
+  `Ticket Productivity V3`;
 - an `agent_key` is invalid or maps to multiple names in the test window;
 - duplicate report-date or agent keys exist;
 - counts or minute totals are negative;
@@ -174,13 +184,16 @@ apps-script/phase3-step9-reporting-contract.gs
 ```
 
 1. Open the Google Sheet's Apps Script project.
-2. Add the file contents to the project.
+2. Add or replace the file contents in the project.
 3. Confirm the spreadsheet time zone is `America/New_York`.
 4. Run `setupPhase3Step9Tabs()`.
 
-The setup function does not overwrite a mismatched existing tab. The current
-legacy `Ticket Productivity` tab must be renamed or archived before setup can
-create the normalized Step 9 tab.
+No worksheet rename is required. The setup function leaves the existing
+`Ticket Productivity` tab unchanged and creates a separate
+`Ticket Productivity V3` tab with the normalized Step 9 headers.
+
+If `Ticket Productivity V3` already exists with incorrect headers, correct only
+that Step 9 tab before running setup again. The legacy tab remains unaffected.
 
 Add these Script Properties:
 
@@ -196,7 +209,8 @@ syncPhase3Step9Dashboard()
 ```
 
 The script refreshes Sync Metadata, builds payload version 3, and sends all five
-tabs to the protected endpoint.
+Step 9 tabs to the protected endpoint. It does not include the legacy
+`Ticket Productivity` tab.
 
 Do not replace the current production trigger until one manual Step 9 sync
 succeeds.
@@ -225,7 +239,7 @@ supabase/verification/phase3_step9_google_sheet_contract_check.sql
 npm run test:phase3-step9
 ```
 
-The suite tests the schema definition, seven-day readiness, short-window
-behavior, total reconciliation, stable agent keys, dimension reconciliation,
-dictionary completeness, endpoint wiring, migration coverage, and Apps Script
-setup.
+The suite tests the schema definition, legacy-tab isolation, seven-day
+readiness, short-window behavior, total reconciliation, stable agent keys,
+dimension reconciliation, dictionary completeness, endpoint wiring, migration
+coverage, and Apps Script setup.

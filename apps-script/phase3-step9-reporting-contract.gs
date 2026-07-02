@@ -5,6 +5,7 @@ const PHASE3_STEP9 = Object.freeze({
   endpointProperty: 'DASHBOARD_SYNC_URL',
   secretProperty: 'SHEET_SYNC_SECRET',
   producer: 'phase3-step9-apps-script',
+  legacyProductivitySheetName: 'Ticket Productivity',
   tabs: Object.freeze({
     dailyTicketMetrics: Object.freeze({
       sheetName: 'Daily Ticket Metrics',
@@ -26,7 +27,7 @@ const PHASE3_STEP9 = Object.freeze({
       ])
     }),
     ticketProductivity: Object.freeze({
-      sheetName: 'Ticket Productivity',
+      sheetName: 'Ticket Productivity V3',
       columns: Object.freeze([
         ['report_date', 'date', 'Reporting date in Eastern Time.', 'ISO date YYYY-MM-DD.'],
         ['agent_key', 'key', 'Stable machine-readable agent identifier.', 'Lowercase letters, numbers, underscores, and hyphens only.'],
@@ -50,8 +51,8 @@ const PHASE3_STEP9 = Object.freeze({
       sheetName: 'Agent Dimension Metrics',
       columns: Object.freeze([
         ['report_date', 'date', 'Reporting date in Eastern Time.', 'ISO date YYYY-MM-DD.'],
-        ['agent_key', 'key', 'Stable machine-readable agent identifier.', 'Must match Ticket Productivity.'],
-        ['agent_name', 'text', 'Current display name for the agent.', 'Must match Ticket Productivity.'],
+        ['agent_key', 'key', 'Stable machine-readable agent identifier.', 'Must match Ticket Productivity V3.'],
+        ['agent_name', 'text', 'Current display name for the agent.', 'Must match Ticket Productivity V3.'],
         ['dimension_type', 'enum', 'Reporting dimension represented by the row.', 'app, platform, country, concern, priority, or channel.'],
         ['dimension_key', 'key', 'Stable machine-readable dimension value.', 'Use unknown when the value is missing.'],
         ['dimension_label', 'text', 'Display label for the dimension value.', 'Non-empty text.'],
@@ -86,6 +87,10 @@ const PHASE3_STEP9 = Object.freeze({
 
 function setupPhase3Step9Tabs() {
   const spreadsheet = SpreadsheetApp.getActive()
+  const legacySheet = spreadsheet.getSheetByName(
+    PHASE3_STEP9.legacyProductivitySheetName
+  )
+  const legacySheetId = legacySheet ? legacySheet.getSheetId() : null
 
   if (spreadsheet.getSpreadsheetTimeZone() !== PHASE3_STEP9.timeZone) {
     throw new Error(
@@ -100,7 +105,23 @@ function setupPhase3Step9Tabs() {
   populateStep9DataDictionary_(spreadsheet)
   SpreadsheetApp.flush()
 
-  return 'Step 9 tabs are ready. Existing mismatched tabs were not modified.'
+  if (legacySheetId !== null) {
+    const preservedLegacySheet = spreadsheet.getSheetByName(
+      PHASE3_STEP9.legacyProductivitySheetName
+    )
+
+    if (
+      !preservedLegacySheet ||
+      preservedLegacySheet.getSheetId() !== legacySheetId
+    ) {
+      throw new Error(
+        'The legacy Ticket Productivity tab was unexpectedly changed.'
+      )
+    }
+  }
+
+  return 'Step 9 tabs are ready. The legacy "Ticket Productivity" tab was ' +
+    'left unchanged. Use "Ticket Productivity V3" for Step 9 data.'
 }
 
 function ensureContractSheet_(spreadsheet, tab) {
@@ -136,8 +157,8 @@ function ensureContractSheet_(spreadsheet, tab) {
   if (!matches) {
     throw new Error(
       'The existing "' + tab.sheetName + '" tab does not match the Step 9 ' +
-      'contract. Rename or archive that tab, then run setup again. No data ' +
-      'was changed.'
+      'contract. Correct only that Step 9 tab, then run setup again. No ' +
+      'other tab was changed.'
     )
   }
 }
