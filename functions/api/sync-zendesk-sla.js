@@ -12,6 +12,7 @@ import {
   advanceZendeskSyncState,
   createZendeskSyncRun,
   insertTicketEvents,
+  recordZendeskSlaEvidence,
   releaseZendeskSyncLock,
   updateZendeskSyncRun
 } from '../_shared/zendesk-sync-store.js'
@@ -47,6 +48,27 @@ function triggerSource(request) {
   return request.headers.get('X-Sync-Source') === 'scheduled'
     ? 'scheduled'
     : 'manual'
+}
+
+export function isSlaMetricPageComplete(page, eventCount) {
+  if (typeof page?.end_of_stream === 'boolean') {
+    return page.end_of_stream
+  }
+
+  return Number(eventCount) < 100
+}
+
+function summarizeSlaEvidence(sourceEvents, normalizedEvents) {
+  const policyEvidence = sourceEvents.some(event =>
+    ['apply_sla', 'apply_group_sla', 'breach'].includes(
+      String(event?.type || '').trim().toLowerCase()
+    ) && event?.deleted !== true
+  )
+
+  return {
+    policyEvidence,
+    breachEvidence: normalizedEvents.length > 0
+  }
 }
 
 function latestTimestamp(events) {
@@ -137,6 +159,11 @@ export async function onRequestPost(context) {
       : []
     const events = normalizeSlaMetricEvents(sourceEvents)
     const imported = await insertTicketEvents(environment, events)
+    const evidence = summarizeSlaEvidence(sourceEvents, events)
+    await recordZendeskSlaEvidence(environment, {
+      ...evidence,
+      observedAt: new Date().toISOString()
+    })
     const endTime = Number(page?.end_time)
 
     if (!Number.isInteger(endTime) || endTime <= 0) {
@@ -162,9 +189,11 @@ export async function onRequestPost(context) {
       events_seen: events.length,
       events_imported: imported,
       duplicate_events: events.length - imported,
-      warnings_count: sourceEvents.length - events.length,
+      warnings_count: 0,
       error_message: null
     })
+
+    const endOfStream = isSlaMetricPageComplete(page, sourceEvents.length)
 
     return respond({
       success: true,
@@ -174,8 +203,10 @@ export async function onRequestPost(context) {
       eventsImported: imported,
       duplicateEvents: events.length - imported,
       ignoredEvents: sourceEvents.length - events.length,
-      endOfStream: Boolean(page?.end_of_stream),
-      hasMore: !Boolean(page?.end_of_stream),
+      policyEvidenceObserved: evidence.policyEvidence,
+      breachEvidenceObserved: evidence.breachEvidence,
+      endOfStream,
+      hasMore: !endOfStream,
       nextStartTime: endTime
     })
   } catch (error) {
