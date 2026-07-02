@@ -51,9 +51,10 @@ test('Existing Agent Productivity report redirects to Step 7', async () => {
   const html = await read('report-details.html')
   const redirect = await read('scripts/report-details-agent-redirect.js')
 
-  assert.match(html, /report-details-agent-redirect\.js\?v=1/)
+  assert.match(html, /report-details-agent-redirect\.js\?v=2/)
   assert.match(redirect, /agent-productivity/)
-  assert.match(redirect, /agent-analytics\.html/)
+  assert.match(redirect, /new URL\('\.\/agent-analytics\.html', currentUrl\)/)
+  assert.match(redirect, /destination\.search = currentUrl\.search/)
   assert.match(redirect, /searchParams\.delete\('report'\)/)
 })
 
