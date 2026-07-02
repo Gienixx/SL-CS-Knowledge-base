@@ -8,6 +8,7 @@ on:
       - 'functions/api/sync-zendesk-sla.js'
       - 'workers/zendesk-health/index.js'
       - 'tests/phase3-step8-google-sheet-cutover.test.mjs'
+      - 'package.json'
       - '.github/workflows/phase3-step6.yml'
   pull_request:
     paths:
@@ -15,6 +16,7 @@ on:
       - 'functions/api/sync-zendesk-sla.js'
       - 'workers/zendesk-health/index.js'
       - 'tests/phase3-step8-google-sheet-cutover.test.mjs'
+      - 'package.json'
       - '.github/workflows/phase3-step6.yml'
 
 permissions:
@@ -28,4 +30,4 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: 22
-      - run: node --test tests/phase3-step8-google-sheet-cutover.test.mjs
+      - run: npm run test:phase3-step8
