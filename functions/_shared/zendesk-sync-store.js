@@ -178,24 +178,34 @@ export async function insertTicketEvents(environment, events) {
   return inserted
 }
 
-export async function recordZendeskSlaEvidence(
+export async function advanceZendeskSlaSyncState(
   environment,
   {
+    streamKey,
+    lockToken,
+    startTime,
+    lastEventTimestamp,
     policyEvidence = false,
     breachEvidence = false,
     observedAt = null
-  } = {}
+  }
 ) {
-  await supabaseRequest(
+  const result = await supabaseRequest(
     environment,
-    'rpc/record_zendesk_sla_evidence',
+    'rpc/advance_zendesk_sla_sync_state',
     {
       method: 'POST',
       body: JSON.stringify({
+        p_stream_key: streamKey,
+        p_lock_token: lockToken,
+        p_start_time: startTime || null,
+        p_last_event_timestamp: lastEventTimestamp || null,
         p_policy_evidence: policyEvidence === true,
         p_breach_evidence: breachEvidence === true,
         p_observed_at: observedAt || new Date().toISOString()
       })
     }
   )
+
+  return result === true || result?.advance_zendesk_sla_sync_state === true
 }
