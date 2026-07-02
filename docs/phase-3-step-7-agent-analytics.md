@@ -14,11 +14,12 @@ SLA reporting is intentionally excluded. Do not enable the Zendesk SLA stream fo
 
 ## Apply
 
-1. Run `supabase/migrations/2026070202_phase3_step7_agent_analytics.sql` in the Supabase SQL Editor.
-2. Run `supabase/verification/phase3_step7_agent_analytics_check.sql`.
-3. Review `public.agent_identity_map`. Exact unique name matches are mapped automatically.
-4. For any row where `zendesk_agent_key` is null, set it to the correct key from `public.zendesk_agent_directory`.
-5. Open `/agent-analytics.html` and compare several agents against the Ticket Productivity sheet and Zendesk.
+1. Run `supabase/migrations/2026070202_phase3_step7_agent_identity_map.sql` in the Supabase SQL Editor.
+2. Run `supabase/migrations/2026070203_phase3_step7_agent_analytics_rpc.sql`.
+3. Run `supabase/verification/phase3_step7_agent_analytics_check.sql`.
+4. Review `public.agent_identity_map`. Exact unique name matches are mapped automatically.
+5. For any row where `zendesk_agent_key` is null, set it to the correct key from `public.zendesk_agent_directory`.
+6. Open `/agent-analytics.html` and compare several agents against the Ticket Productivity sheet and Zendesk.
 
 ## Metric interpretation
 
