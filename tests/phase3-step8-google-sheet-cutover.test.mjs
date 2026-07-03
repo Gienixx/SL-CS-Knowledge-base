@@ -47,29 +47,36 @@ test('scheduled Worker is a no-op and exposes disabled status', async () => {
   assert.doesNotMatch(worker, /\/api\/sync-zendesk|PAGES_BASE_URL|ZENDESK_SYNC_SECRET/)
 })
 
-test('active navigation and legacy Zendesk-only pages route to Google Sheet reporting', async () => {
+test('active navigation and dedicated reporting pages use synchronized Google Sheet data', async () => {
   const dashboard = await read('dashboard.html')
   const responseTimes = await read('response-times.html')
   const agentAnalytics = await read('agent-analytics.html')
 
-  assert.doesNotMatch(dashboard, /href="\.\/response-times\.html"/)
+  assert.match(dashboard, /href="\.\/response-times\.html"/)
+  assert.match(dashboard, /href="\.\/agent-analytics\.html"/)
   assert.match(dashboard, /Google Sheet/)
-  assert.match(responseTimes, /url=\.\/dashboard\.html/)
-  assert.match(agentAnalytics, /report-details\.html\?report=agent-productivity/)
+
+  assert.doesNotMatch(responseTimes, /http-equiv="refresh"/i)
+  assert.match(responseTimes, /Synchronized Google Sheet/)
+  assert.match(responseTimes, /scripts\/response-times\.js/)
+
+  assert.doesNotMatch(agentAnalytics, /http-equiv="refresh"/i)
+  assert.match(agentAnalytics, /Synchronized Google Sheet/)
+  assert.match(agentAnalytics, /scripts\/agent-analytics\.js/)
 })
 
-test('report details strips Zendesk filters, hides source UI, and blocks Zendesk reporting RPCs', async () => {
-  const bootstrap = await read('scripts/report-details-agent-redirect.js')
-  const policy = await read('scripts/reporting-source-cutover.js')
+test('detailed reporting remains sheet-only after the Step 11 dashboard migration', async () => {
+  const html = await read('report-details.html')
+  const report = await read('scripts/report-details.js')
+  const shared = await read('scripts/sheet-reporting.js')
 
-  for (const key of ['app', 'platform', 'country', 'driver', 'agent', 'priority', 'channel']) {
-    assert.match(bootstrap, new RegExp(`'${key}'`))
-  }
-
-  assert.match(bootstrap, /#reportSourceBadge/)
-  assert.match(bootstrap, /reporting-source-cutover\.js/)
-  assert.match(bootstrap, /Google Sheet dataset/)
-  assert.match(policy, /get_dashboard_filtered_data/)
-  assert.match(policy, /supabase\.rpc =/)
-  assert.match(policy, /field\.hidden = true/)
+  assert.doesNotMatch(html, /report-details-agent-redirect\.js/)
+  assert.match(html, /Synchronized Google Sheet/)
+  assert.match(report, /sheet-reporting\.js/)
+  assert.doesNotMatch(
+    report,
+    /get_dashboard_filtered_data|ticket_events|ticket_dimension_profiles|agent_identity_map|zendesk_agent_directory/i
+  )
+  assert.match(shared, /agent_dimension_metrics/)
+  assert.match(shared, /dashboard_targets/)
 })
