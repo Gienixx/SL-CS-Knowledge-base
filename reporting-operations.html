@@ -1,0 +1,147 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Reporting Operations | SocialLoop CS Base</title>
+  <link rel="stylesheet" href="./button-theme.css?v=1" />
+  <link rel="stylesheet" href="./dashboard.css?v=2" />
+  <link rel="stylesheet" href="./data-details.css?v=4" />
+  <link rel="stylesheet" href="./data-details-table.css?v=1" />
+  <link rel="stylesheet" href="./reporting-operations.css?v=1" />
+</head>
+<body>
+  <main class="page-shell operations-shell">
+    <header class="topbar details-topbar">
+      <div class="title-block details-title-block">
+        <span class="detail-eyebrow">Synchronized Google Sheet</span>
+        <h1>Reporting Operations</h1>
+        <p>Synchronization health, quality monitoring, audit history, operational alerts, and CSV exports.</p>
+      </div>
+      <nav class="top-actions" aria-label="Reporting operations navigation">
+        <a class="action-link" href="./dashboard.html">Back to Dashboard</a>
+        <a class="action-link" href="./agent-analytics.html">Agent Analytics</a>
+        <a class="action-link" href="./response-times.html">Response Times</a>
+        <a class="action-link" href="./home.html">Back to Home</a>
+        <a id="operationsLogoutLink" class="action-link" href="./login.html">Logout</a>
+      </nav>
+    </header>
+
+    <section id="operationsPage" class="detail-page" aria-busy="true">
+      <div id="operationsStatus" class="detail-status" role="status">
+        <span class="dashboard-spinner" aria-hidden="true"></span>
+        <h2>Loading reporting operations</h2>
+        <p>Checking access and retrieving synchronization and quality history.</p>
+      </div>
+
+      <div id="operationsContent" class="detail-content" hidden>
+        <section id="operationsSummary" class="detail-summary-grid operations-summary-grid" aria-label="Reporting operations summary"></section>
+
+        <section class="detail-card operations-alert-card" aria-labelledby="operationsAlertTitle">
+          <div class="detail-card-heading">
+            <div>
+              <span class="detail-eyebrow">Current monitoring</span>
+              <h2 id="operationsAlertTitle">Active alerts</h2>
+              <p>Stored synchronization and quality alerts plus the computed 30-hour freshness check.</p>
+            </div>
+            <span id="operationsAlertMeta" class="detail-table-meta">Loading alerts</span>
+          </div>
+          <div id="operationsAlerts" class="operations-alerts" aria-live="polite"></div>
+        </section>
+
+        <section class="detail-card operations-export-card" aria-labelledby="operationsExportTitle">
+          <div class="detail-card-heading">
+            <div>
+              <span class="detail-eyebrow">CSV export</span>
+              <h2 id="operationsExportTitle">Export synchronized reporting data</h2>
+              <p>Exports are generated in the browser and recorded in the audit history.</p>
+            </div>
+          </div>
+          <form id="operationsExportForm" class="operations-export-form" novalidate>
+            <label class="operations-field">
+              <span>Dataset</span>
+              <select id="operationsExportDataset" name="dataset">
+                <option value="daily_ticket_metrics">Daily ticket metrics</option>
+                <option value="daily_distribution_metrics">Daily distributions</option>
+                <option value="agent_productivity">Agent productivity</option>
+                <option value="ticket_driver_metrics">Ticket drivers</option>
+                <option value="agent_dimension_metrics">Agent dimensions</option>
+                <option value="dashboard_sync_runs">Synchronization history</option>
+                <option value="dashboard_data_quality_results">Data-quality results</option>
+                <option value="dashboard_alert_events">Alert history</option>
+                <option value="dashboard_audit_events">Audit history</option>
+              </select>
+            </label>
+            <label class="operations-field">
+              <span>Start date</span>
+              <input id="operationsExportStart" name="start" type="date" />
+            </label>
+            <label class="operations-field">
+              <span>End date</span>
+              <input id="operationsExportEnd" name="end" type="date" />
+            </label>
+            <div class="operations-export-actions">
+              <button id="operationsExportButton" class="detail-filter-button" type="submit">Export CSV</button>
+            </div>
+          </form>
+          <p id="operationsExportStatus" class="detail-filter-validation" role="status"></p>
+        </section>
+
+        <section class="detail-card detail-table-card">
+          <div class="detail-card-heading detail-table-heading">
+            <div>
+              <span class="detail-eyebrow">Latest run</span>
+              <h2>Data-quality checks</h2>
+              <p>Validation results generated by the latest synchronized Google Sheet import.</p>
+            </div>
+            <span id="operationsQualityMeta" class="detail-table-meta">Loading checks</span>
+          </div>
+          <div class="detail-table-scroll" role="region" tabindex="0" aria-label="Latest data-quality checks">
+            <table class="detail-table">
+              <thead><tr><th scope="col">Check</th><th scope="col">Status</th><th scope="col">Details</th><th scope="col">Checked</th></tr></thead>
+              <tbody id="operationsQualityBody"></tbody>
+            </table>
+          </div>
+        </section>
+
+        <section class="detail-card detail-table-card">
+          <div class="detail-card-heading detail-table-heading">
+            <div>
+              <span class="detail-eyebrow">Synchronization audit</span>
+              <h2>Recent synchronization history</h2>
+              <p>Newest Google Sheet synchronization runs appear first.</p>
+            </div>
+            <span id="operationsSyncMeta" class="detail-table-meta">Loading runs</span>
+          </div>
+          <div class="detail-table-scroll" role="region" tabindex="0" aria-label="Synchronization history">
+            <table class="detail-table">
+              <thead><tr><th scope="col">Started</th><th scope="col">Status</th><th scope="col">Quality</th><th scope="col">Report date</th><th scope="col">Rows</th><th scope="col">Error</th></tr></thead>
+              <tbody id="operationsSyncBody"></tbody>
+            </table>
+          </div>
+        </section>
+
+        <section class="detail-card detail-table-card">
+          <div class="detail-card-heading detail-table-heading">
+            <div>
+              <span class="detail-eyebrow">Operational history</span>
+              <h2>Audit events</h2>
+              <p>Synchronization, quality-check, and CSV-export events.</p>
+            </div>
+            <span id="operationsAuditMeta" class="detail-table-meta">Loading events</span>
+          </div>
+          <div class="detail-table-scroll" role="region" tabindex="0" aria-label="Reporting audit history">
+            <table class="detail-table">
+              <thead><tr><th scope="col">Time</th><th scope="col">Severity</th><th scope="col">Event</th><th scope="col">Details</th><th scope="col">Actor</th></tr></thead>
+              <tbody id="operationsAuditBody"></tbody>
+            </table>
+          </div>
+        </section>
+      </div>
+    </section>
+
+    <p class="footer-note">Reporting Operations monitors and exports synchronized Google Sheet reporting data only.</p>
+  </main>
+  <script type="module" src="./scripts/reporting-operations.js?v=1"></script>
+</body>
+</html>

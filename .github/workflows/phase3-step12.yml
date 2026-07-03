@@ -1,0 +1,61 @@
+name: Phase 3 Step 12 Final Reporting Operations
+
+on:
+  pull_request:
+    paths:
+      - 'dashboard.html'
+      - 'reporting-operations.html'
+      - 'reporting-operations.css'
+      - 'scripts/reporting-operations.js'
+      - 'scripts/csv-export.js'
+      - 'scripts/report-details-agent-redirect.js'
+      - 'scripts/reporting-source-cutover.js'
+      - 'scripts/response-times-base.js'
+      - 'supabase/migrations/2026070402_phase3_step12_reporting_operations.sql'
+      - 'supabase/verification/phase3_step12_final_acceptance_check.sql'
+      - 'docs/phase-3-step-12-final-operations.md'
+      - 'tests/phase3-step12-final-operations.test.mjs'
+      - 'tests/phase3-step7-agent-analytics.test.mjs'
+      - '.github/workflows/phase3-step7.yml'
+      - '.github/workflows/phase3-step8.yml'
+      - 'package.json'
+      - '.github/workflows/phase3-step12.yml'
+  push:
+    branches: [main]
+    paths:
+      - 'dashboard.html'
+      - 'reporting-operations.html'
+      - 'reporting-operations.css'
+      - 'scripts/reporting-operations.js'
+      - 'scripts/csv-export.js'
+      - 'scripts/report-details-agent-redirect.js'
+      - 'scripts/reporting-source-cutover.js'
+      - 'scripts/response-times-base.js'
+      - 'supabase/migrations/2026070402_phase3_step12_reporting_operations.sql'
+      - 'supabase/verification/phase3_step12_final_acceptance_check.sql'
+      - 'docs/phase-3-step-12-final-operations.md'
+      - 'tests/phase3-step12-final-operations.test.mjs'
+      - 'tests/phase3-step7-agent-analytics.test.mjs'
+      - '.github/workflows/phase3-step7.yml'
+      - '.github/workflows/phase3-step8.yml'
+      - 'package.json'
+      - '.github/workflows/phase3-step12.yml'
+
+permissions:
+  contents: read
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - run: npm run test:phase3-step12
+      - run: npm run test:phase3-step11
+      - run: npm run test:phase3-step10
+      - run: npm run test:phase3-step8
+      - run: node --check scripts/reporting-operations.js
+      - run: node --check scripts/csv-export.js

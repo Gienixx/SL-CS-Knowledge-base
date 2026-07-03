@@ -4,8 +4,9 @@ on:
   pull_request:
     paths:
       - 'agent-analytics.html'
-      - 'scripts/report-details-agent-redirect.js'
-      - 'scripts/reporting-source-cutover.js'
+      - 'scripts/agent-analytics.js'
+      - 'scripts/sheet-reporting.js'
+      - 'tests/phase3-step7-agent-analytics.test.mjs'
       - 'tests/phase3-step8-google-sheet-cutover.test.mjs'
       - 'package.json'
       - '.github/workflows/phase3-step7.yml'
@@ -13,8 +14,9 @@ on:
     branches: [main]
     paths:
       - 'agent-analytics.html'
-      - 'scripts/report-details-agent-redirect.js'
-      - 'scripts/reporting-source-cutover.js'
+      - 'scripts/agent-analytics.js'
+      - 'scripts/sheet-reporting.js'
+      - 'tests/phase3-step7-agent-analytics.test.mjs'
       - 'tests/phase3-step8-google-sheet-cutover.test.mjs'
       - 'package.json'
       - '.github/workflows/phase3-step7.yml'
@@ -30,6 +32,6 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: 22
-      - run: node --experimental-default-type=module --check scripts/report-details-agent-redirect.js
-      - run: node --experimental-default-type=module --check scripts/reporting-source-cutover.js
+      - run: node --experimental-default-type=module --check scripts/agent-analytics.js
+      - run: node --experimental-default-type=module --check scripts/sheet-reporting.js
       - run: npm run test:phase3-step8
