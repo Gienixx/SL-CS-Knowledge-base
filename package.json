@@ -14,7 +14,7 @@
     "test:phase3-step9": "node --experimental-default-type=module --test tests/phase3-step9-reporting-contract.test.mjs",
     "test:phase3-step10": "node --experimental-default-type=module --test tests/phase3-step10-sheet-only-reporting.test.mjs",
     "test:phase3-step11": "node --experimental-default-type=module --test tests/phase3-step11-dashboard-migration.test.mjs",
-    "test:phase3-step12": "node --experimental-default-type=module --test tests/phase3-step12-final-operations.test.mjs",
+    "test:phase3-step12": "node --experimental-default-type=module --test tests/phase3-step12-*.test.mjs",
     "test:zendesk-integration": "node --experimental-default-type=module --test tests/zendesk-*.test.mjs"
   },
   "dependencies": {
