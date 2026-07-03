@@ -3,11 +3,76 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <meta http-equiv="refresh" content="0; url=./dashboard.html" />
-  <title>Reporting Source Updated | SocialLoop CS Base</title>
-  <script>window.location.replace('./dashboard.html')</script>
+  <title>Response Times | SocialLoop CS Base</title>
+  <link rel="stylesheet" href="./button-theme.css?v=1" />
+  <link rel="stylesheet" href="./dashboard.css?v=2" />
+  <link rel="stylesheet" href="./data-details.css?v=4" />
+  <link rel="stylesheet" href="./data-details-table.css?v=1" />
+  <link rel="stylesheet" href="./phase3-step11-dashboard.css?v=1" />
+  <link rel="stylesheet" href="./response-times.css?v=2" />
 </head>
 <body>
-  <p>This view is no longer active. <a href="./dashboard.html">Return to the Google Sheet dashboard</a>.</p>
+  <main class="page-shell response-shell">
+    <header class="topbar details-topbar">
+      <div class="title-block details-title-block">
+        <span class="detail-eyebrow">Synchronized Google Sheet</span>
+        <h1>Response Times</h1>
+        <p>First-response and resolution-time reporting from synchronized Daily Volume fields.</p>
+      </div>
+      <nav class="top-actions" aria-label="Response-time navigation">
+        <a class="action-link" href="./dashboard.html">Back to Dashboard</a>
+        <a class="action-link" href="./agent-analytics.html">Agent Analytics</a>
+        <a class="action-link" href="./home.html">Back to Home</a>
+        <a id="responseLogoutLink" class="action-link" href="./login.html">Logout</a>
+      </nav>
+    </header>
+
+    <section id="responsePage" class="detail-page" aria-busy="true">
+      <div id="responseStatus" class="detail-status" role="status">
+        <span class="dashboard-spinner" aria-hidden="true"></span>
+        <h2>Loading response-time reporting</h2>
+        <p>Checking access and retrieving synchronized Google Sheet metrics.</p>
+      </div>
+
+      <div id="responseContent" class="detail-content" hidden>
+        <section class="detail-card response-filter-card" aria-labelledby="responseFilterTitle">
+          <div class="response-filter-heading">
+            <div><span class="detail-eyebrow">Date filter and comparison</span><h2 id="responseFilterTitle">Refine this dashboard</h2><p>Dimension filters remain unavailable until response-time values are synchronized at those dimensions.</p></div>
+            <span id="responseRangeSummary" class="detail-range-summary">Loading range</span>
+          </div>
+          <form id="responseFilterForm" class="response-filter-form" novalidate>
+            <label class="response-filter-field"><span>Date range</span><select id="responseRange" name="range"><option value="7d">Last 7 days</option><option value="30d">Last 30 days</option><option value="90d">Last 90 days</option><option value="mtd">Month to date</option><option value="custom">Custom date range</option></select></label>
+            <label class="response-filter-field" data-custom-date hidden><span>Start date</span><input id="responseStartDate" name="start" type="date" /></label>
+            <label class="response-filter-field" data-custom-date hidden><span>End date</span><input id="responseEndDate" name="end" type="date" /></label>
+            <div class="response-filter-actions"><button class="detail-filter-button" type="submit">Apply filter</button><button id="responseResetFilters" class="response-reset-button" type="button">Reset</button></div>
+          </form>
+          <p id="responseFilterValidation" class="detail-filter-validation" role="alert"></p>
+          <div id="responseActiveFilters" class="response-active-filters" aria-live="polite"></div>
+        </section>
+
+        <section id="responseAvailability" class="sla-readiness" data-ready="false" role="status">
+          <strong id="responseAvailabilityTitle">Checking synchronized response fields</strong>
+          <span id="responseAvailabilityText">Metrics are shown only when Daily Volume contains non-empty response or resolution counts.</span>
+        </section>
+
+        <section id="responseSummary" class="detail-summary-grid response-summary-grid" aria-label="Response-time summary and comparison"></section>
+
+        <section class="detail-card response-chart-card">
+          <div class="detail-card-heading"><div><h2>Daily response and resolution trend</h2><p>Average calendar minutes from synchronized Google Sheet totals</p></div><span id="responseDataBadge" class="placeholder-badge">Synchronized Google Sheet</span></div>
+          <div id="responseTrendChart" class="response-trend-chart" aria-live="polite"></div>
+        </section>
+
+        <section class="detail-card detail-table-card">
+          <div class="detail-card-heading detail-table-heading"><div><h2>Daily response-time history</h2><p>Newest reporting dates appear first</p></div><span id="responseTableMeta" class="detail-table-meta">Loading records</span></div>
+          <p class="detail-table-scroll-hint">Scroll horizontally to view all columns.</p>
+          <div class="detail-table-scroll" role="region" tabindex="0" aria-label="Daily response-time data table">
+            <table class="detail-table"><caption id="responseTableCaption" class="chart-data-summary"></caption><thead><tr><th scope="col">Date</th><th scope="col">Responded Tickets</th><th scope="col">Avg First Response</th><th scope="col">Median First Response</th><th scope="col">Resolved Tickets</th><th scope="col">Avg Resolution</th><th scope="col">Median Resolution</th></tr></thead><tbody id="responseTableBody"></tbody></table>
+          </div>
+        </section>
+      </div>
+    </section>
+    <p class="footer-note">Response Times uses synchronized Google Sheet fields only. Missing workbook metrics are shown as unavailable.</p>
+  </main>
+  <script type="module" src="./scripts/response-times.js?v=2"></script>
 </body>
 </html>

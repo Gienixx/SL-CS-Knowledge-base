@@ -1,0 +1,56 @@
+name: Phase 3 Step 11 Dashboard Migration
+
+on:
+  pull_request:
+    paths:
+      - 'dashboard.html'
+      - 'report-details.html'
+      - 'agent-analytics.html'
+      - 'response-times.html'
+      - 'phase3-step11-dashboard.css'
+      - 'scripts/sheet-reporting.js'
+      - 'scripts/report-details.js'
+      - 'scripts/agent-analytics.js'
+      - 'scripts/response-times.js'
+      - 'supabase/migrations/2026070401_phase3_step11_dashboard_features.sql'
+      - 'supabase/verification/phase3_step11_dashboard_check.sql'
+      - 'docs/phase-3-step-11-dashboard-migration.md'
+      - 'tests/phase3-step11-dashboard-migration.test.mjs'
+      - 'package.json'
+      - '.github/workflows/phase3-step11.yml'
+  push:
+    branches: [main]
+    paths:
+      - 'dashboard.html'
+      - 'report-details.html'
+      - 'agent-analytics.html'
+      - 'response-times.html'
+      - 'phase3-step11-dashboard.css'
+      - 'scripts/sheet-reporting.js'
+      - 'scripts/report-details.js'
+      - 'scripts/agent-analytics.js'
+      - 'scripts/response-times.js'
+      - 'supabase/migrations/2026070401_phase3_step11_dashboard_features.sql'
+      - 'supabase/verification/phase3_step11_dashboard_check.sql'
+      - 'docs/phase-3-step-11-dashboard-migration.md'
+      - 'tests/phase3-step11-dashboard-migration.test.mjs'
+      - 'package.json'
+      - '.github/workflows/phase3-step11.yml'
+
+permissions:
+  contents: read
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - run: npm run test:phase3-step11
+      - run: node --check scripts/sheet-reporting.js
+      - run: node --check scripts/report-details.js
+      - run: node --check scripts/agent-analytics.js
+      - run: node --check scripts/response-times.js
