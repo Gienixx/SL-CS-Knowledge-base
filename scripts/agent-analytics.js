@@ -1,674 +1,313 @@
-import { supabase } from './supabaseClient.js?v=8'
 import {
-  requiresFirstLoginPasswordChange
-} from './first-login-policy.js?v=4'
+  DIMENSION_KEYS,
+  comparison,
+  formatAht,
+  formatCount,
+  formatDate,
+  formatPercent,
+  latestDate,
+  loadAgentDimensionRows,
+  loadAllAgentDimensions,
+  loadFilterOptions,
+  loadTargets,
+  logout,
+  normalize,
+  parseRange,
+  previousRange,
+  rangeLabel,
+  requireApprovedUser,
+  resolveRange,
+  rowsForRange,
+  selectedDimension,
+  targetStatus
+} from './sheet-reporting.js?v=1'
 
-const REPORT_TIME_ZONE = 'America/New_York'
 const SVG_NS = 'http://www.w3.org/2000/svg'
 
 function elements() {
   return {
-    page: document.getElementById('agentAnalyticsPage'),
-    status: document.getElementById('agentAnalyticsStatus'),
-    content: document.getElementById('agentAnalyticsContent'),
-    logout: document.getElementById('agentAnalyticsLogoutLink'),
-    form: document.getElementById('agentAnalyticsFilterForm'),
-    range: document.getElementById('agentAnalyticsRange'),
-    start: document.getElementById('agentAnalyticsStartDate'),
-    end: document.getElementById('agentAnalyticsEndDate'),
-    agent: document.getElementById('agentAnalyticsAgent'),
-    reset: document.getElementById('agentAnalyticsResetFilters'),
-    validation: document.getElementById('agentAnalyticsFilterValidation'),
-    rangeSummary: document.getElementById('agentRangeSummary'),
-    activeFilters: document.getElementById('agentAnalyticsActiveFilters'),
-    readiness: document.getElementById('agentMappingReadiness'),
-    readinessTitle: document.getElementById('agentMappingReadinessTitle'),
-    readinessText: document.getElementById('agentMappingReadinessText'),
-    summary: document.getElementById('agentAnalyticsSummary'),
-    badge: document.getElementById('agentAnalyticsDataBadge'),
-    trendTitle: document.getElementById('agentTrendTitle'),
-    trendSubtitle: document.getElementById('agentTrendSubtitle'),
-    chart: document.getElementById('agentAnalyticsTrendChart'),
-    ranking: document.getElementById('agentAnalyticsRanking'),
-    tableMeta: document.getElementById('agentAnalyticsTableMeta'),
-    tableCaption: document.getElementById('agentAnalyticsTableCaption'),
-    tableBody: document.getElementById('agentAnalyticsTableBody')
+    page: document.getElementById('agentAnalyticsPage'), status: document.getElementById('agentAnalyticsStatus'), content: document.getElementById('agentAnalyticsContent'),
+    logout: document.getElementById('agentAnalyticsLogoutLink'), form: document.getElementById('agentAnalyticsFilterForm'), range: document.getElementById('agentAnalyticsRange'),
+    start: document.getElementById('agentAnalyticsStartDate'), end: document.getElementById('agentAnalyticsEndDate'), agent: document.getElementById('agentAnalyticsAgent'),
+    reset: document.getElementById('agentAnalyticsResetFilters'), validation: document.getElementById('agentAnalyticsFilterValidation'), rangeSummary: document.getElementById('agentRangeSummary'),
+    activeFilters: document.getElementById('agentAnalyticsActiveFilters'), summary: document.getElementById('agentAnalyticsSummary'), badge: document.getElementById('agentAnalyticsDataBadge'),
+    trendTitle: document.getElementById('agentTrendTitle'), trendSubtitle: document.getElementById('agentTrendSubtitle'), chart: document.getElementById('agentAnalyticsTrendChart'),
+    rankingTitle: document.getElementById('agentRankingTitle'), rankingSubtitle: document.getElementById('agentRankingSubtitle'), ranking: document.getElementById('agentAnalyticsRanking'),
+    dimensionSection: document.getElementById('agentDimensionSection'), dimensionBreakdown: document.getElementById('agentDimensionBreakdown'), tableMeta: document.getElementById('agentAnalyticsTableMeta'),
+    tableCaption: document.getElementById('agentAnalyticsTableCaption'), tableHead: document.getElementById('agentAnalyticsTableHead'), tableBody: document.getElementById('agentAnalyticsTableBody')
   }
 }
 
-function normalize(value) {
-  return String(value || '').trim().toLowerCase()
-}
-
-function isIsoDate(value) {
-  return /^\d{4}-\d{2}-\d{2}$/.test(String(value || '')) &&
-    !Number.isNaN(new Date(`${value}T00:00:00Z`).getTime())
-}
-
-function addDays(value, amount) {
-  const date = new Date(`${value}T12:00:00Z`)
-  date.setUTCDate(date.getUTCDate() + amount)
-  return date.toISOString().slice(0, 10)
-}
-
-function todayInEastern() {
-  const parts = new Intl.DateTimeFormat('en-CA', {
-    timeZone: REPORT_TIME_ZONE,
-    year: 'numeric',
-    month: '2-digit',
-    day: '2-digit'
-  }).formatToParts(new Date())
-  const values = Object.fromEntries(
-    parts.filter(part => part.type !== 'literal').map(part => [part.type, part.value])
-  )
-  return `${values.year}-${values.month}-${values.day}`
-}
-
-function formatDate(value, short = false) {
-  if (!value) return 'No date'
-  const date = new Date(`${value}T00:00:00Z`)
-  if (Number.isNaN(date.getTime())) return String(value)
-  return new Intl.DateTimeFormat('en-US', {
-    timeZone: 'UTC',
-    month: short ? 'short' : 'long',
-    day: 'numeric',
-    year: short ? undefined : 'numeric'
-  }).format(date)
-}
-
-function formatCount(value) {
-  if (value === null || value === undefined || value === '') return 'Unavailable'
-  const number = Number(value)
-  return Number.isFinite(number)
-    ? new Intl.NumberFormat('en-US', { maximumFractionDigits: 1 }).format(number)
-    : 'Unavailable'
-}
-
-function formatAht(value) {
-  if (value === null || value === undefined || value === '') return 'Unavailable'
-  const minutes = Number(value)
-  if (!Number.isFinite(minutes) || minutes < 0) return 'Unavailable'
-  const totalSeconds = Math.round(minutes * 60)
-  const wholeMinutes = Math.floor(totalSeconds / 60)
-  const seconds = totalSeconds % 60
-  return `${wholeMinutes}:${String(seconds).padStart(2, '0')}`
-}
-
-function formatDuration(value) {
-  if (value === null || value === undefined || value === '') return 'Unavailable'
-  const minutes = Number(value)
-  if (!Number.isFinite(minutes) || minutes < 0) return 'Unavailable'
-  if (minutes < 60) {
-    return `${new Intl.NumberFormat('en-US', { maximumFractionDigits: 1 }).format(minutes)} min`
-  }
-  const hours = minutes / 60
-  if (hours < 24) {
-    return `${new Intl.NumberFormat('en-US', { maximumFractionDigits: 1 }).format(hours)} hr`
-  }
-  return `${new Intl.NumberFormat('en-US', { maximumFractionDigits: 1 }).format(hours / 24)} days`
-}
-
-function formatPercent(value) {
-  if (value === null || value === undefined || value === '') return 'Unavailable'
-  const ratio = Number(value)
-  return Number.isFinite(ratio)
-    ? new Intl.NumberFormat('en-US', {
-        style: 'percent',
-        minimumFractionDigits: 1,
-        maximumFractionDigits: 1
-      }).format(ratio)
-    : 'Unavailable'
-}
-
-function formatIndex(value) {
-  if (value === null || value === undefined || value === '') return 'Unavailable'
-  const number = Number(value)
-  return Number.isFinite(number)
-    ? new Intl.NumberFormat('en-US', { maximumFractionDigits: 1 }).format(number)
-    : 'Unavailable'
-}
-
-function parseRequest() {
+function parseState() {
   const params = new URLSearchParams(window.location.search)
-  const allowedRanges = new Set(['7d', '30d', '90d', 'mtd', 'custom'])
   return {
-    range: allowedRanges.has(params.get('range')) ? params.get('range') : '30d',
-    start: isIsoDate(params.get('start')) ? params.get('start') : '',
-    end: isIsoDate(params.get('end')) ? params.get('end') : '',
-    agent: normalize(params.get('agent'))
+    ...parseRange(params, '30d'),
+    agent: normalize(params.get('agent')),
+    app: normalize(params.get('app')),
+    platform: normalize(params.get('platform')),
+    country: normalize(params.get('country')),
+    concern: normalize(params.get('concern') || params.get('driver')),
+    priority: normalize(params.get('priority')),
+    channel: normalize(params.get('channel'))
   }
 }
 
-function resolveRange(state) {
-  const anchorDate = todayInEastern()
-  if (state.range === 'custom') {
-    if (!isIsoDate(state.start) || !isIsoDate(state.end)) {
-      throw new Error('Choose both a valid start date and end date.')
+function sum(rows, key) { return rows.reduce((total, row) => total + (Number(row[key]) || 0), 0) }
+
+function aggregateProductivity(rows) {
+  const groups = new Map()
+  rows.forEach(row => {
+    const key = normalize(row.agent_key)
+    if (!key) return
+    const item = groups.get(key) || { agent_key: key, agent_name: row.agent_name || key, solved_tickets: 0, open_values: [], latest_open: null, latest_date: '', aht_weighted: 0, aht_solved: 0, aht_values: [] }
+    const solved = Number(row.solved_tickets) || 0
+    const open = Number(row.open_tickets)
+    const aht = Number(row.aht_value)
+    item.solved_tickets += solved
+    if (Number.isFinite(open)) {
+      item.open_values.push(open)
+      if (row.report_date >= item.latest_date) { item.latest_date = row.report_date; item.latest_open = open }
     }
-    if (state.start > state.end) {
-      throw new Error('The start date cannot be after the end date.')
+    if (Number.isFinite(aht)) {
+      item.aht_values.push(aht)
+      if (solved > 0) { item.aht_weighted += aht * solved; item.aht_solved += solved }
     }
-    return { startDate: state.start, endDate: state.end }
-  }
-  if (state.range === 'mtd') {
-    return { startDate: `${anchorDate.slice(0, 7)}-01`, endDate: anchorDate }
-  }
-  const days = Number.parseInt(state.range, 10) || 30
-  return { startDate: addDays(anchorDate, -(days - 1)), endDate: anchorDate }
+    groups.set(key, item)
+  })
+  const agents = [...groups.values()].map(item => ({
+    agent_key: item.agent_key,
+    agent_name: item.agent_name,
+    solved_tickets: item.solved_tickets,
+    latest_open_tickets: item.latest_open,
+    avg_open_tickets: item.open_values.length ? item.open_values.reduce((a, b) => a + b, 0) / item.open_values.length : null,
+    avg_aht_minutes: item.aht_solved ? item.aht_weighted / item.aht_solved : item.aht_values.length ? item.aht_values.reduce((a, b) => a + b, 0) / item.aht_values.length : null
+  }))
+  const teamSolved = sum(agents, 'solved_tickets')
+  const teamOpen = sum(agents, 'avg_open_tickets')
+  agents.forEach(agent => {
+    agent.team_output_share = teamSolved ? agent.solved_tickets / teamSolved : null
+    agent.workload_share = teamOpen ? agent.avg_open_tickets / teamOpen : null
+    agent.workload_adjusted_index = agent.team_output_share !== null && agent.workload_share > 0 ? agent.team_output_share / agent.workload_share * 100 : null
+  })
+  return agents.sort((a, b) => b.solved_tickets - a.solved_tickets || a.agent_name.localeCompare(b.agent_name))
 }
 
-function rangeLabel(range) {
-  return range.startDate === range.endDate
-    ? formatDate(range.startDate)
-    : `${formatDate(range.startDate, true)} – ${formatDate(range.endDate)}`
+function productivityModel(rows) {
+  const agents = aggregateProductivity(rows)
+  const dailyMap = new Map()
+  rows.forEach(row => {
+    const item = dailyMap.get(row.report_date) || { report_date: row.report_date, solved_tickets: 0, open_tickets: 0 }
+    item.solved_tickets += Number(row.solved_tickets) || 0
+    item.open_tickets += Number(row.open_tickets) || 0
+    dailyMap.set(row.report_date, item)
+  })
+  const trend = [...dailyMap.values()].sort((a, b) => a.report_date.localeCompare(b.report_date))
+  return { mode: 'productivity', metricKey: 'agent_solved_tickets', metricValue: sum(agents, 'solved_tickets'), agents, trend }
 }
 
-async function requireApprovedUser() {
-  const {
-    data: { user },
-    error: userError
-  } = await supabase.auth.getUser()
-
-  if (userError) throw userError
-  if (!user) {
-    window.location.replace('./login.html')
-    return null
+function dimensionModel(rows, dimension) {
+  const agentMap = new Map()
+  const dateMap = new Map()
+  rows.forEach(row => {
+    const agent = agentMap.get(row.agent_key) || { agent_key: row.agent_key, agent_name: row.agent_name || row.agent_key, ticket_count: 0 }
+    agent.ticket_count += Number(row.ticket_count) || 0
+    agentMap.set(row.agent_key, agent)
+    dateMap.set(row.report_date, (dateMap.get(row.report_date) || 0) + (Number(row.ticket_count) || 0))
+  })
+  const agents = [...agentMap.values()].sort((a, b) => b.ticket_count - a.ticket_count || a.agent_name.localeCompare(b.agent_name))
+  const total = sum(agents, 'ticket_count')
+  agents.forEach(agent => { agent.team_share = total ? agent.ticket_count / total : null })
+  return {
+    mode: 'dimension', metricKey: `${dimension.key}_ticket_count`, metricValue: total, agents,
+    trend: [...dateMap.entries()].sort(([a], [b]) => a.localeCompare(b)).map(([report_date, ticket_count]) => ({ report_date, ticket_count })),
+    label: rows[0]?.dimension_label || dimension.value
   }
-
-  let currentUser = user
-  if (requiresFirstLoginPasswordChange(currentUser)) {
-    const {
-      data: { session },
-      error: refreshError
-    } = await supabase.auth.refreshSession()
-
-    if (!refreshError && session?.user) currentUser = session.user
-    if (requiresFirstLoginPasswordChange(currentUser)) {
-      window.location.replace('./change-password.html?firstLogin=1')
-      return null
-    }
-  }
-
-  const email = currentUser.email?.trim().toLowerCase()
-  if (!email) return null
-
-  const { data, error } = await supabase
-    .from('login')
-    .select('email')
-    .ilike('email', email)
-    .limit(1)
-
-  if (error) throw error
-  if (!Array.isArray(data) || data.length === 0) {
-    await supabase.auth.signOut()
-    window.location.replace('./login.html')
-    return null
-  }
-  return currentUser
 }
 
-async function loadDashboard(state, range) {
-  const { data, error } = await supabase.rpc(
-    'get_agent_analytics_dashboard',
-    {
-      p_start_date: range.startDate,
-      p_end_date: range.endDate,
-      p_agent_key: state.agent || null,
-      p_time_zone: REPORT_TIME_ZONE
-    }
-  )
-
-  if (error) throw error
-  return data || {}
+async function loadModel(state, range) {
+  const dimension = selectedDimension(state)
+  if (dimension) {
+    const rows = await loadAgentDimensionRows(range, dimension, state.agent)
+    if (!rows.length) throw new Error('No synchronized agent_dimension_metrics rows match this cross-filter.')
+    return dimensionModel(rows, dimension)
+  }
+  const rows = await rowsForRange('agent_productivity', 'report_date, agent_key, agent_name, solved_tickets, open_tickets, aht_value', range, query => state.agent ? query.eq('agent_key', state.agent) : query)
+  return productivityModel(rows)
 }
 
-function initializeForm(ui, state) {
+function populateSelect(select, rows, selected) {
+  const first = select.options[0]
+  select.replaceChildren(first)
+  rows.forEach(row => { const option = document.createElement('option'); option.value = row.key; option.textContent = row.label; select.appendChild(option) })
+  if (selected && ![...select.options].some(option => option.value === selected)) { const option = document.createElement('option'); option.value = selected; option.textContent = selected; select.appendChild(option) }
+  select.value = selected || ''
+}
+
+function initializeForm(ui, state, range, options) {
   ui.range.value = state.range
   ui.start.value = state.start
   ui.end.value = state.end
-
+  populateSelect(ui.agent, options.agent || [], state.agent)
+  DIMENSION_KEYS.forEach(key => {
+    const select = ui.form.elements[key]
+    const rows = options.cross?.[key] || []
+    populateSelect(select, rows, state[key])
+    select.closest('[data-dimension-filter]').hidden = rows.length === 0 && !state[key]
+  })
   const toggleCustom = () => {
     const custom = ui.range.value === 'custom'
-    document.querySelectorAll('[data-custom-date]').forEach(field => {
-      field.hidden = !custom
-    })
-    ui.start.required = custom
-    ui.end.required = custom
-    ui.validation.textContent = ''
+    document.querySelectorAll('[data-custom-date]').forEach(field => { field.hidden = !custom })
+    ui.start.required = custom; ui.end.required = custom
   }
-
-  toggleCustom()
-  ui.range.addEventListener('change', toggleCustom)
-  ui.reset.addEventListener('click', () => {
-    window.location.assign('./agent-analytics.html')
-  })
+  toggleCustom(); ui.range.addEventListener('change', toggleCustom)
+  ui.reset.addEventListener('click', () => window.location.assign('./agent-analytics.html'))
   ui.form.addEventListener('submit', event => {
     event.preventDefault()
-    const mode = ui.range.value
-    const start = ui.start.value
-    const end = ui.end.value
-
-    if (mode === 'custom') {
-      if (!isIsoDate(start) || !isIsoDate(end)) {
-        ui.validation.textContent = 'Choose both a valid start date and end date.'
-        return
-      }
-      if (start > end) {
-        ui.validation.textContent = 'The start date cannot be after the end date.'
-        return
-      }
+    const data = new FormData(ui.form)
+    const active = DIMENSION_KEYS.filter(key => normalize(data.get(key)))
+    if (active.length > 1) { ui.validation.textContent = 'Choose only one dimension filter at a time.'; return }
+    const params = new URLSearchParams({ range: String(data.get('range') || '30d') })
+    if (params.get('range') === 'custom') {
+      const start = String(data.get('start') || ''), end = String(data.get('end') || '')
+      if (!start || !end || start > end) { ui.validation.textContent = 'Choose a valid custom date range.'; return }
+      params.set('start', start); params.set('end', end)
     }
-
-    const url = new URL(window.location.href)
-    url.searchParams.set('range', mode)
-    if (mode === 'custom') {
-      url.searchParams.set('start', start)
-      url.searchParams.set('end', end)
-    } else {
-      url.searchParams.delete('start')
-      url.searchParams.delete('end')
-    }
-
-    const agent = normalize(ui.agent.value)
-    if (agent) url.searchParams.set('agent', agent)
-    else url.searchParams.delete('agent')
-    window.location.assign(url.toString())
+    const agent = normalize(data.get('agent')); if (agent) params.set('agent', agent)
+    DIMENSION_KEYS.forEach(key => { const value = normalize(data.get(key)); if (value) params.set(key, value) })
+    window.location.assign(`./agent-analytics.html?${params}`)
   })
+  ui.rangeSummary.textContent = rangeLabel(range)
 }
 
-function populateAgents(ui, state, options) {
-  const first = ui.agent.options[0]
-  ui.agent.replaceChildren(first)
-  const agents = Array.isArray(options?.agents) ? options.agents : []
-
-  agents.forEach(row => {
-    const option = document.createElement('option')
-    option.value = row.key
-    option.textContent = row.mapped === false
-      ? `${row.label || row.key} — mapping required`
-      : row.label || row.key
-    ui.agent.appendChild(option)
-  })
-
-  ui.agent.value = state.agent
-  if (state.agent && ui.agent.value !== state.agent) {
-    const option = document.createElement('option')
-    option.value = state.agent
-    option.textContent = state.agent
-    ui.agent.appendChild(option)
-    ui.agent.value = state.agent
-  }
-}
-
-function selectedAgentLabel(ui, state) {
-  if (!state.agent) return 'All agents'
-  return ui.agent.selectedOptions?.[0]?.textContent?.replace(' — mapping required', '') || state.agent
-}
-
-function renderActiveFilters(ui, state, range) {
+function renderActiveFilters(ui, state, range, options) {
   ui.activeFilters.replaceChildren()
-  const chips = [rangeLabel(range), 'Ticket Productivity + Zendesk events']
-  if (state.agent) chips.push(`Agent: ${selectedAgentLabel(ui, state)}`)
-
-  chips.forEach(text => {
-    const chip = document.createElement('span')
-    chip.textContent = text
-    ui.activeFilters.appendChild(chip)
-  })
+  const chips = [rangeLabel(range), 'Synchronized Google Sheet']
+  if (state.agent) chips.push(`agent: ${options.agent?.find(row => row.key === state.agent)?.label || state.agent}`)
+  DIMENSION_KEYS.forEach(key => { if (state[key]) chips.push(`${key}: ${options[key]?.find(row => row.key === state[key])?.label || state[key]}`) })
+  chips.forEach(text => { const chip = document.createElement('span'); chip.textContent = text; ui.activeFilters.appendChild(chip) })
 }
 
-function renderReadiness(ui, readiness) {
-  const unmapped = Array.isArray(readiness?.unmappedAgents)
-    ? readiness.unmappedAgents
-    : []
-  const mapped = Number(readiness?.mappedAgents) || 0
-  const ready = unmapped.length === 0 && mapped > 0
-  ui.readiness.dataset.ready = String(ready)
-
-  if (ready) {
-    ui.readinessTitle.textContent = 'Zendesk agent mapping ready'
-    ui.readinessText.textContent = `${formatCount(mapped)} mapped agent${mapped === 1 ? '' : 's'} can use response, resolution, and reopen analytics.`
-    return
-  }
-
-  if (unmapped.length > 0) {
-    ui.readinessTitle.textContent = 'Manual agent mapping required'
-    ui.readinessText.textContent = `${unmapped.map(row => row.label || row.key).join(', ')} must be mapped in Supabase before Zendesk event metrics can be attributed.`
-    return
-  }
-
-  ui.readinessTitle.textContent = 'No mapped agents in this selection'
-  ui.readinessText.textContent = 'Productivity metrics remain available, but Zendesk response, resolution, and reopen values cannot be attributed yet.'
-}
-
-function summaryCards(summary, state, selectedLabel) {
-  const scopeLabel = state.agent ? selectedLabel : 'Team'
-  const teamSolved = Number(summary?.team_solved_tickets)
-  const scopeSolved = Number(summary?.scope_solved_tickets)
-  const teamShare = Number.isFinite(teamSolved) && teamSolved > 0 && Number.isFinite(scopeSolved)
-    ? scopeSolved / teamSolved
-    : null
-
-  return [
-    [`${scopeLabel} solved`, formatCount(summary?.scope_solved_tickets), state.agent ? `${formatPercent(teamShare)} of team output` : 'Selected-period total'],
-    [`${scopeLabel} latest open`, formatCount(summary?.scope_latest_open_tickets), state.agent ? `${formatCount(summary?.team_latest_open_tickets)} open across team` : 'Latest synchronized snapshot'],
-    ['Average AHT', formatAht(summary?.avg_aht_minutes), 'Solved-volume weighted where available'],
-    ['Median AHT', formatAht(summary?.median_aht_minutes), 'Median daily AHT'],
-    ['Average first response', formatDuration(summary?.avg_first_response_minutes), 'Mapped Zendesk tickets'],
-    ['Average resolution', formatDuration(summary?.avg_resolution_minutes), 'Creation to latest period resolution'],
-    ['Reopen rate', formatPercent(summary?.reopen_rate), 'Resolved tickets reopened before range end'],
-    ['Team one-touch resolution', formatPercent(summary?.team_one_touch_resolution_rate), 'Team-level daily sheet metric']
-  ]
-}
-
-function renderSummary(ui, summary, state) {
+function renderSummary(ui, model, prior, target) {
   ui.summary.replaceChildren()
-  summaryCards(summary, state, selectedAgentLabel(ui, state)).forEach(
-    ([label, value, caption]) => {
-      const card = document.createElement('article')
-      card.className = 'detail-summary-card agent-summary-card'
-      const heading = document.createElement('h2')
-      heading.textContent = label
-      const metric = document.createElement('strong')
-      metric.textContent = value
-      const detail = document.createElement('p')
-      detail.textContent = caption
-      card.append(heading, metric, detail)
-      ui.summary.appendChild(card)
-    }
-  )
-}
-
-function svgElement(name, attributes = {}) {
-  const element = document.createElementNS(SVG_NS, name)
-  Object.entries(attributes).forEach(([key, value]) => {
-    element.setAttribute(key, String(value))
+  const change = comparison(model.metricValue, prior.metricValue)
+  const cards = model.mode === 'dimension'
+    ? [['Matched tickets', formatCount(model.metricValue), model.label], ['Agents represented', formatCount(model.agents.length), 'Cross-filtered rows']]
+    : [['Solved tickets', formatCount(model.metricValue), 'Selected period'], ['Latest open', formatCount(sum(model.agents, 'latest_open_tickets')), 'Latest synchronized snapshot'], ['Average AHT', formatAht(weightedAht(model.agents)), 'Solved-weighted where possible'], ['Agents', formatCount(model.agents.length), 'Matching selection']]
+  cards.push(['Previous period', formatCount(prior.metricValue), 'Matched preceding date range'])
+  cards.push(['Absolute change', formatCount(change.absolute), 'Current minus previous'])
+  cards.push(['Percentage change', formatPercent(change.percentage), 'Versus previous period'])
+  const status = targetStatus(model.metricValue, target)
+  if (status) cards.push([target.label || 'Configured target', status.met ? 'Met' : 'Not met', `${formatCount(model.metricValue)} vs ${formatCount(status.goal)}`])
+  cards.forEach(([label, value, caption]) => {
+    const card = document.createElement('article'); card.className = 'agent-summary-card'
+    const heading = document.createElement('h2'); heading.textContent = label
+    const strong = document.createElement('strong'); strong.textContent = value
+    const p = document.createElement('p'); p.textContent = caption
+    card.append(heading, strong, p); ui.summary.appendChild(card)
   })
-  return element
 }
 
-function renderEmpty(container, message) {
-  container.replaceChildren()
-  const empty = document.createElement('div')
-  empty.className = 'agent-empty-state'
-  empty.textContent = message
-  container.appendChild(empty)
+function weightedAht(agents) {
+  const rows = agents.filter(row => Number.isFinite(Number(row.avg_aht_minutes)))
+  const solved = sum(rows, 'solved_tickets')
+  return solved ? rows.reduce((total, row) => total + Number(row.avg_aht_minutes) * (Number(row.solved_tickets) || 0), 0) / solved : rows.length ? rows.reduce((total, row) => total + Number(row.avg_aht_minutes), 0) / rows.length : null
 }
 
-function renderTrend(ui, rows, state) {
+function svg(name, attributes = {}) { const node = document.createElementNS(SVG_NS, name); Object.entries(attributes).forEach(([key, value]) => node.setAttribute(key, String(value))); return node }
+
+function renderChart(ui, model) {
   ui.chart.replaceChildren()
-  const data = Array.isArray(rows) ? rows : []
-  const label = selectedAgentLabel(ui, state)
-  ui.trendTitle.textContent = state.agent
-    ? `${label} solved output and open workload`
-    : 'Team solved output and open workload'
-  ui.trendSubtitle.textContent = 'Daily synchronized Ticket Productivity values'
-
-  if (data.length === 0) {
-    renderEmpty(ui.chart, 'No productivity records match the selected date range.')
-    return
-  }
-
-  const scroll = document.createElement('div')
-  scroll.className = 'agent-chart-scroll'
-  const svg = svgElement('svg', {
-    class: 'agent-chart-svg',
-    viewBox: '0 0 980 350',
-    role: 'img',
-    'aria-label': 'Daily solved ticket and open workload trend'
+  if (!model.trend.length) { ui.chart.textContent = 'No synchronized daily rows match this selection.'; return }
+  const scroll = document.createElement('div'); scroll.className = 'agent-chart-scroll'
+  const image = svg('svg', { class: 'agent-chart-svg', viewBox: '0 0 900 340', role: 'img', 'aria-label': 'Agent analytics trend' })
+  const left = 62, top = 24, width = 806, height = 250
+  const series = model.mode === 'dimension' ? [['ticket_count', 'Matched tickets']] : [['solved_tickets', 'Solved'], ['open_tickets', 'Open']]
+  const maximum = Math.max(1, ...model.trend.flatMap(row => series.map(([key]) => Number(row[key]) || 0)))
+  series.forEach(([key, label], seriesIndex) => {
+    const points = model.trend.map((row, index) => ({ x: model.trend.length === 1 ? left + width / 2 : left + index / (model.trend.length - 1) * width, y: top + height - (Number(row[key]) || 0) / maximum * height, value: Number(row[key]) || 0, date: row.report_date }))
+    image.appendChild(svg('path', { d: points.map((point, index) => `${index ? 'L' : 'M'} ${point.x} ${point.y}`).join(' '), class: seriesIndex ? 'agent-chart-line-open' : 'agent-chart-line-solved' }))
+    points.forEach(point => { const circle = svg('circle', { cx: point.x, cy: point.y, r: 3.5, class: seriesIndex ? 'agent-chart-point-open' : 'agent-chart-point-solved' }); const title = svg('title'); title.textContent = `${formatDate(point.date)} — ${label}: ${formatCount(point.value)}`; circle.appendChild(title); image.appendChild(circle) })
   })
-  const dimensions = { left: 64, top: 24, width: 880, height: 250 }
-  const values = data.flatMap(row => [
-    Number(row.solved_tickets) || 0,
-    Number(row.open_tickets) || 0
-  ])
-  const maximum = Math.max(1, ...values)
-  const niceMaximum = Math.ceil(maximum / 5) * 5 || 1
-
-  for (let tick = 0; tick <= 5; tick += 1) {
-    const ratio = tick / 5
-    const y = dimensions.top + ratio * dimensions.height
-    const value = niceMaximum * (1 - ratio)
-    svg.appendChild(svgElement('line', {
-      x1: dimensions.left,
-      y1: y,
-      x2: dimensions.left + dimensions.width,
-      y2: y,
-      class: 'agent-chart-grid'
-    }))
-    const text = svgElement('text', {
-      x: dimensions.left - 10,
-      y: y + 4,
-      'text-anchor': 'end',
-      class: 'agent-chart-label'
-    })
-    text.textContent = formatCount(Math.round(value))
-    svg.appendChild(text)
-  }
-
-  svg.appendChild(svgElement('line', {
-    x1: dimensions.left,
-    y1: dimensions.top,
-    x2: dimensions.left,
-    y2: dimensions.top + dimensions.height,
-    class: 'agent-chart-axis'
-  }))
-  svg.appendChild(svgElement('line', {
-    x1: dimensions.left,
-    y1: dimensions.top + dimensions.height,
-    x2: dimensions.left + dimensions.width,
-    y2: dimensions.top + dimensions.height,
-    class: 'agent-chart-axis'
-  }))
-
-  ;[
-    { key: 'solved_tickets', label: 'Solved', className: 'solved' },
-    { key: 'open_tickets', label: 'Open', className: 'open' }
-  ].forEach(series => {
-    const points = data.map((row, index) => {
-      const x = data.length === 1
-        ? dimensions.left + dimensions.width / 2
-        : dimensions.left + (index / (data.length - 1)) * dimensions.width
-      const value = Number(row[series.key]) || 0
-      const y = dimensions.top + dimensions.height -
-        (value / niceMaximum) * dimensions.height
-      return { x, y, value, row }
-    })
-    const path = points.map((point, index) =>
-      `${index === 0 ? 'M' : 'L'} ${point.x.toFixed(2)} ${point.y.toFixed(2)}`
-    ).join(' ')
-    svg.appendChild(svgElement('path', {
-      d: path,
-      class: `agent-chart-line-${series.className}`
-    }))
-
-    points.forEach(point => {
-      const circle = svgElement('circle', {
-        cx: point.x,
-        cy: point.y,
-        r: 3.6,
-        class: `agent-chart-point-${series.className}`
-      })
-      const title = svgElement('title')
-      title.textContent = `${formatDate(point.row.report_date)} — ${series.label}: ${formatCount(point.value)}`
-      circle.appendChild(title)
-      svg.appendChild(circle)
-    })
-  })
-
-  const labelCount = Math.min(7, data.length)
-  const indexes = new Set()
-  for (let index = 0; index < labelCount; index += 1) {
-    indexes.add(labelCount === 1
-      ? 0
-      : Math.round((index / (labelCount - 1)) * (data.length - 1)))
-  }
-  indexes.forEach(index => {
-    const x = data.length === 1
-      ? dimensions.left + dimensions.width / 2
-      : dimensions.left + (index / (data.length - 1)) * dimensions.width
-    const text = svgElement('text', {
-      x,
-      y: dimensions.top + dimensions.height + 30,
-      'text-anchor': 'middle',
-      class: 'agent-chart-label'
-    })
-    text.textContent = formatDate(data[index].report_date, true)
-    svg.appendChild(text)
-  })
-
-  scroll.appendChild(svg)
-  const legend = document.createElement('div')
-  legend.className = 'agent-chart-legend'
-  const solved = document.createElement('span')
-  solved.textContent = 'Solved tickets'
-  const open = document.createElement('span')
-  open.textContent = 'Open tickets'
-  legend.append(solved, open)
-  ui.chart.append(scroll, legend)
+  scroll.appendChild(image); ui.chart.appendChild(scroll)
 }
 
-function renderRanking(ui, rows) {
+function stateParams(state) {
+  const params = new URLSearchParams({ range: state.range })
+  if (state.range === 'custom') { params.set('start', state.start); params.set('end', state.end) }
+  DIMENSION_KEYS.forEach(key => { if (state[key]) params.set(key, state[key]) })
+  return params
+}
+
+function renderRanking(ui, model, state) {
   ui.ranking.replaceChildren()
-  const agents = [...(Array.isArray(rows) ? rows : [])].sort((first, second) => {
-    const firstIndex = Number(first.workload_adjusted_index)
-    const secondIndex = Number(second.workload_adjusted_index)
-    if (Number.isFinite(firstIndex) && Number.isFinite(secondIndex)) {
-      return secondIndex - firstIndex || String(first.agent_name).localeCompare(String(second.agent_name))
-    }
-    if (Number.isFinite(firstIndex)) return -1
-    if (Number.isFinite(secondIndex)) return 1
-    return String(first.agent_name).localeCompare(String(second.agent_name))
-  })
-
-  if (agents.length === 0) {
-    renderEmpty(ui.ranking, 'No agents match the selected range.')
-    return
-  }
-
-  const maximum = Math.max(
-    100,
-    ...agents.map(row => Number(row.workload_adjusted_index)).filter(Number.isFinite)
-  )
-
-  agents.forEach(row => {
-    const item = document.createElement('article')
-    item.className = 'agent-ranking-row'
-    const identity = document.createElement('div')
-    identity.className = 'agent-ranking-name'
-    const name = document.createElement('strong')
-    name.textContent = row.agent_name || row.agent_key
-    const context = document.createElement('small')
-    context.textContent = `${formatCount(row.solved_tickets)} solved · ${formatPercent(row.team_output_share)} of team output`
-    identity.append(name, context)
-
-    const track = document.createElement('span')
-    track.className = 'agent-ranking-track'
-    const bar = document.createElement('span')
-    bar.className = 'agent-ranking-bar'
-    const value = Number(row.workload_adjusted_index)
-    bar.style.width = `${Number.isFinite(value) ? Math.max(0, Math.min(100, (value / maximum) * 100)) : 0}%`
-    track.appendChild(bar)
-
-    const metric = document.createElement('strong')
-    metric.className = 'agent-ranking-value'
-    metric.textContent = formatIndex(row.workload_adjusted_index)
-    item.append(identity, track, metric)
-    ui.ranking.appendChild(item)
+  const maximum = Math.max(1, ...model.agents.map(row => Number(model.mode === 'dimension' ? row.ticket_count : row.solved_tickets) || 0))
+  model.agents.forEach(row => {
+    const params = stateParams(state); params.set('agent', row.agent_key)
+    const link = document.createElement('a'); link.className = 'agent-ranking-row'; link.href = `./agent-analytics.html?${params}`
+    const name = document.createElement('span'); name.className = 'agent-ranking-name'; name.textContent = row.agent_name
+    const track = document.createElement('span'); track.className = 'agent-ranking-track'
+    const bar = document.createElement('span'); bar.className = 'agent-ranking-bar'; const value = Number(model.mode === 'dimension' ? row.ticket_count : row.solved_tickets) || 0; bar.style.width = `${value / maximum * 100}%`; track.appendChild(bar)
+    const strong = document.createElement('strong'); strong.className = 'agent-ranking-value'; strong.textContent = formatCount(value)
+    link.append(name, track, strong); ui.ranking.appendChild(link)
   })
 }
 
-function appendTextCell(row, value) {
-  const cell = document.createElement('td')
-  cell.textContent = value
-  row.appendChild(cell)
-}
-
-function renderTable(ui, rows) {
-  ui.tableBody.replaceChildren()
-  const agents = Array.isArray(rows) ? rows : []
-
-  agents.forEach(agent => {
-    const row = document.createElement('tr')
-    appendTextCell(row, agent.agent_name || agent.agent_key)
-    appendTextCell(row, formatCount(agent.solved_tickets))
-    appendTextCell(row, formatCount(agent.latest_open_tickets))
-    appendTextCell(row, formatCount(agent.avg_open_tickets))
-    appendTextCell(row, formatAht(agent.avg_aht_minutes))
-    appendTextCell(row, formatAht(agent.median_aht_minutes))
-    appendTextCell(row, formatDuration(agent.avg_first_response_minutes))
-    appendTextCell(row, formatDuration(agent.avg_resolution_minutes))
-    appendTextCell(row, formatPercent(agent.reopen_rate))
-    appendTextCell(row, formatPercent(agent.team_output_share))
-    appendTextCell(row, formatIndex(agent.workload_adjusted_index))
-
-    const mappingCell = document.createElement('td')
-    const mapping = document.createElement('span')
-    mapping.className = 'agent-mapping-status'
-    mapping.dataset.mapped = String(agent.zendesk_mapped === true)
-    mapping.textContent = agent.zendesk_mapped === true ? 'Mapped' : 'Mapping required'
-    mappingCell.appendChild(mapping)
-    row.appendChild(mappingCell)
-    ui.tableBody.appendChild(row)
+function renderDimensions(ui, rows, state) {
+  ui.dimensionBreakdown.replaceChildren()
+  const groups = new Map()
+  rows.forEach(row => {
+    const key = `${row.dimension_type}:${row.dimension_key}`
+    const item = groups.get(key) || { type: row.dimension_type, key: row.dimension_key, label: row.dimension_label || row.dimension_key, value: 0 }
+    item.value += Number(row.ticket_count) || 0; groups.set(key, item)
   })
-
-  ui.tableMeta.textContent = `${formatCount(agents.length)} agent${agents.length === 1 ? '' : 's'}`
-  ui.tableCaption.textContent = agents.length
-    ? 'Agent performance metrics for the selected date range.'
-    : 'No agent performance data matches the selected date range.'
+  const items = [...groups.values()].sort((a, b) => a.type.localeCompare(b.type) || b.value - a.value)
+  ui.dimensionSection.hidden = items.length === 0
+  items.forEach(item => {
+    const params = stateParams({ ...state, ...Object.fromEntries(DIMENSION_KEYS.map(key => [key, ''])) })
+    if (state.agent) params.set('agent', state.agent)
+    params.set(item.type, item.key)
+    const link = document.createElement('a'); link.className = 'agent-ranking-row'; link.href = `./agent-analytics.html?${params}`
+    const label = document.createElement('span'); label.className = 'agent-ranking-name'; label.textContent = `${item.type}: ${item.label}`
+    const spacer = document.createElement('span'); spacer.className = 'agent-ranking-track'
+    const strong = document.createElement('strong'); strong.className = 'agent-ranking-value'; strong.textContent = formatCount(item.value)
+    link.append(label, spacer, strong); ui.dimensionBreakdown.appendChild(link)
+  })
 }
 
-function showContent(ui) {
-  ui.page.setAttribute('aria-busy', 'false')
-  ui.status.hidden = true
-  ui.content.hidden = false
+function renderTable(ui, model) {
+  ui.tableHead.replaceChildren(); ui.tableBody.replaceChildren()
+  const columns = model.mode === 'dimension'
+    ? [['agent_name', 'Agent', 'text'], ['ticket_count', 'Matched Tickets', 'count'], ['team_share', 'Team Share', 'percent']]
+    : [['agent_name', 'Agent', 'text'], ['solved_tickets', 'Solved', 'count'], ['latest_open_tickets', 'Latest Open', 'count'], ['avg_open_tickets', 'Avg Open', 'count'], ['avg_aht_minutes', 'AHT', 'aht'], ['team_output_share', 'Team Share', 'percent'], ['workload_adjusted_index', 'Workload Index', 'count']]
+  const header = document.createElement('tr'); columns.forEach(([, label]) => { const th = document.createElement('th'); th.scope = 'col'; th.textContent = label; header.appendChild(th) }); ui.tableHead.appendChild(header)
+  model.agents.forEach(row => { const tr = document.createElement('tr'); columns.forEach(([key, , type]) => { const td = document.createElement('td'); const value = row[key]; td.textContent = type === 'count' ? formatCount(value) : type === 'percent' ? formatPercent(value, { ratio: true }) : type === 'aht' ? formatAht(value) : value || 'Unavailable'; tr.appendChild(td) }); ui.tableBody.appendChild(tr) })
+  ui.tableMeta.textContent = `${formatCount(model.agents.length)} agent${model.agents.length === 1 ? '' : 's'}`
+  ui.tableCaption.textContent = model.agents.length ? 'Agent rows for the selected synchronized reporting range.' : 'No agent rows match this selection.'
 }
 
 function showError(ui, error) {
-  console.error('Unable to load agent analytics:', error)
-  ui.page.setAttribute('aria-busy', 'false')
-  ui.content.hidden = true
-  ui.status.hidden = false
-  ui.status.replaceChildren()
-  const heading = document.createElement('h2')
-  heading.textContent = 'Agent analytics could not be loaded'
-  const message = document.createElement('p')
-  message.textContent = String(error?.message || '').includes('get_agent_analytics_dashboard')
-    ? 'Run the Phase 3 Step 7 Supabase migration, then refresh this page.'
-    : error?.message || 'Refresh the page or contact an administrator.'
-  ui.status.append(heading, message)
+  ui.page.setAttribute('aria-busy', 'false'); ui.content.hidden = true; ui.status.hidden = false; ui.status.replaceChildren()
+  const h = document.createElement('h2'); h.textContent = 'Agent analytics unavailable'
+  const p = document.createElement('p'); p.textContent = error?.message || 'The page could not be loaded.'
+  ui.status.append(h, p)
 }
 
 async function initialize() {
-  const ui = elements()
-  const state = parseRequest()
-  initializeForm(ui, state)
-
-  ui.logout.addEventListener('click', async event => {
-    event.preventDefault()
-    await supabase.auth.signOut()
-    window.location.href = './login.html'
-  })
-
+  const ui = elements(); ui.logout.addEventListener('click', event => { event.preventDefault(); logout() })
   try {
-    const user = await requireApprovedUser()
-    if (!user) return
-
-    const range = resolveRange(state)
-    const data = await loadDashboard(state, range)
-    populateAgents(ui, state, data.options)
-    renderActiveFilters(ui, state, range)
-    renderReadiness(ui, data.readiness)
-    renderSummary(ui, data.summary || {}, state)
-    renderTrend(ui, data.trend, state)
-    renderRanking(ui, data.agents)
-    renderTable(ui, data.agents)
-    ui.rangeSummary.textContent = rangeLabel(range)
-    ui.badge.textContent = state.agent ? selectedAgentLabel(ui, state) : 'All agents'
-    showContent(ui)
-  } catch (error) {
-    showError(ui, error)
-  }
+    const state = parseState(); const user = await requireApprovedUser(); if (!user) return
+    const anchor = await latestDate('agent_productivity'); const range = resolveRange(state, anchor); const priorRange = previousRange(range); const dimension = selectedDimension(state)
+    const [options, model, prior, dimensions, targets] = await Promise.all([
+      loadFilterOptions(range), loadModel(state, range), loadModel(state, priorRange).catch(() => ({ metricValue: null })), loadAllAgentDimensions(range, state.agent), loadTargets([dimension ? `${dimension.key}_ticket_count` : 'agent_solved_tickets'])
+    ])
+    initializeForm(ui, state, range, options); renderActiveFilters(ui, state, range, options)
+    renderSummary(ui, model, prior, targets.get(model.metricKey)); renderChart(ui, model); renderRanking(ui, model, state); renderDimensions(ui, dimensions, state); renderTable(ui, model)
+    ui.trendTitle.textContent = model.mode === 'dimension' ? `Matched ${dimension.key} ticket trend` : 'Solved output and open workload'
+    ui.trendSubtitle.textContent = `Current: ${rangeLabel(range)} · Previous: ${rangeLabel(priorRange)}`
+    ui.rankingTitle.textContent = model.mode === 'dimension' ? 'Matched ticket ranking' : 'Workload-adjusted ranking'
+    ui.badge.textContent = 'Synchronized Google Sheet'
+    ui.status.hidden = true; ui.content.hidden = false; ui.page.setAttribute('aria-busy', 'false')
+  } catch (error) { console.error('Unable to initialize agent analytics:', error); showError(ui, error) }
 }
 
 initialize()

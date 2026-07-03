@@ -1,0 +1,39 @@
+/* Phase 3 Step 11 shared presentation for synchronized reporting pages. */
+.report-breakdown-link,
+.agent-ranking-row {
+  color: inherit;
+  text-decoration: none;
+}
+
+.report-breakdown-link:hover,
+.report-breakdown-link:focus-visible,
+.agent-ranking-row:hover,
+.agent-ranking-row:focus-visible {
+  background: rgba(56, 47, 144, 0.05);
+  outline: 2px solid rgba(56, 47, 144, 0.22);
+  outline-offset: 2px;
+}
+
+[data-filter-availability="false"] {
+  opacity: 0.58;
+}
+
+[data-filter-availability="false"] select {
+  cursor: not-allowed;
+}
+
+.sheet-source-note {
+  border: 1px solid rgba(56, 47, 144, 0.16);
+  border-radius: 12px;
+  background: rgba(56, 47, 144, 0.05);
+  color: var(--sl-muted, #6f678f);
+  padding: 0.85rem 1rem;
+}
+
+@media (max-width: 760px) {
+  .detail-summary-grid,
+  .agent-summary-grid,
+  .response-summary-grid {
+    grid-template-columns: 1fr !important;
+  }
+}
