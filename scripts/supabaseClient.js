@@ -10,10 +10,6 @@ export const supabase = createClient(
 
 window.__slSupabase = supabase
 
-if (window.location.pathname.endsWith('/admin.html')) {
-  await import('./admin-invite-protocol.js?v=1')
-}
-
 const FIRST_LOGIN_POLICY_START = Date.parse(
   '2026-06-20T16:00:00.000Z'
 )
