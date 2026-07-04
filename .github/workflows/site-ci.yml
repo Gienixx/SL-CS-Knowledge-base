@@ -21,14 +21,6 @@ jobs:
         run: npm run test:site
       - name: Test reporting system
         run: npm run test:reporting
-      - name: Inventory database filenames
-        run: find supabase/migrations supabase/verification -type f | sort > database-files.txt
-      - name: Upload database filename inventory
-        uses: actions/upload-artifact@v4
-        with:
-          name: database-filenames
-          path: database-files.txt
-          retention-days: 1
       - name: Check database filenames
         run: node --experimental-default-type=module --test --test-name-pattern="Supabase filenames" tests/repository-integrity.test.mjs
       - name: Check retired files
@@ -38,7 +30,14 @@ jobs:
       - name: Check HTML references
         run: node --experimental-default-type=module --test --test-name-pattern="local href and src" tests/repository-integrity.test.mjs
       - name: Check browser module graph
-        run: node --experimental-default-type=module --test --test-name-pattern="every browser script" tests/repository-integrity.test.mjs
+        run: node --experimental-default-type=module --test --test-name-pattern="every browser script" tests/repository-integrity.test.mjs 2>&1 | tee browser-module-audit.txt
+      - name: Upload browser module audit
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: browser-module-audit
+          path: browser-module-audit.txt
+          retention-days: 1
       - name: Check function module graph
         run: node --experimental-default-type=module --test --test-name-pattern="every shared function" tests/repository-integrity.test.mjs
       - name: Check canonical landing page
