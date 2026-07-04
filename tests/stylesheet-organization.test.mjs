@@ -42,6 +42,18 @@ async function resolveLocalReference(importer, reference) {
   return normalizePath(target)
 }
 
+async function resolveBrowserReference(reference) {
+  const clean = cleanReference(reference)
+  if (!clean || isExternalReference(clean)) return null
+
+  const target = clean.startsWith('/')
+    ? pathFromRoot(clean.slice(1))
+    : pathFromRoot(clean.replace(/^\.\//, ''))
+
+  await access(target)
+  return normalizePath(target)
+}
+
 async function rootHtmlFiles() {
   const entries = await readdir(root, { withFileTypes: true })
   return entries
@@ -63,14 +75,15 @@ test('all repository stylesheets are stored under styles/', async () => {
 })
 
 test('HTML and JavaScript stylesheet references resolve inside styles/', async () => {
-  const references = []
+  const resolved = []
   const htmlPattern = /<link\b[^>]*\brel=["'][^"']*stylesheet[^"']*["'][^>]*\bhref=["']([^"']+\.css(?:[?#][^"']*)?)["'][^>]*>|<link\b[^>]*\bhref=["']([^"']+\.css(?:[?#][^"']*)?)["'][^>]*\brel=["'][^"']*stylesheet[^"']*["'][^>]*>/gi
 
   for (const htmlPath of await rootHtmlFiles()) {
     const source = await readFile(pathFromRoot(htmlPath), 'utf8')
     let match
     while ((match = htmlPattern.exec(source))) {
-      references.push([htmlPath, match[1] || match[2]])
+      const target = await resolveLocalReference(htmlPath, match[1] || match[2])
+      if (target) resolved.push(target)
     }
   }
 
@@ -81,14 +94,9 @@ test('HTML and JavaScript stylesheet references resolve inside styles/', async (
     const source = await readFile(pathFromRoot(scriptPath), 'utf8')
     let match
     while ((match = scriptPattern.exec(source))) {
-      references.push([scriptPath, match[1]])
+      const target = await resolveBrowserReference(match[1])
+      if (target) resolved.push(target)
     }
-  }
-
-  const resolved = []
-  for (const [importer, reference] of references) {
-    const target = await resolveLocalReference(importer, reference)
-    if (target) resolved.push(target)
   }
 
   assert.ok(resolved.length > 0, 'At least one stylesheet should be linked')
@@ -121,7 +129,7 @@ test('every stylesheet is connected to a live page, script, or imported styleshe
     const source = await readFile(pathFromRoot(scriptPath), 'utf8')
     let match
     while ((match = scriptPattern.exec(source))) {
-      const target = await resolveLocalReference(scriptPath, match[1])
+      const target = await resolveBrowserReference(match[1])
       if (target) referenced.add(target)
     }
   }
