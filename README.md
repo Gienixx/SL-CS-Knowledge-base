@@ -16,6 +16,7 @@ Google Sheet synchronization is the only active reporting source. The live repor
 
 ## Repository layout
 
+- `styles/` — site stylesheets
 - `scripts/` — browser modules
 - `functions/` — Cloudflare Pages Functions
 - `config/` — active synchronization mappings
