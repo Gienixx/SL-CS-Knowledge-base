@@ -17,7 +17,12 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: 22
-      - run: npm test
+      - name: Test access and content
+        run: npm run test:site
+      - name: Test reporting system
+        run: npm run test:reporting
+      - name: Test repository integrity
+        run: npm run test:repository
       - name: Check JavaScript syntax
         shell: bash
         run: |
