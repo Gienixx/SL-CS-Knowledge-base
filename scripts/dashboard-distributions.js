@@ -55,7 +55,7 @@ function ensureDistributionStyles() {
   const stylesheet = document.createElement('link')
   stylesheet.id = 'dashboardDistributionStyles'
   stylesheet.rel = 'stylesheet'
-  stylesheet.href = './dashboard-distributions.css?v=2'
+  stylesheet.href = './styles/dashboard-distributions.css?v=2'
   document.head.appendChild(stylesheet)
 }
 

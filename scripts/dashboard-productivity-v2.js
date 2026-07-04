@@ -10,7 +10,7 @@ function ensureProductivityStyles() {
   const stylesheet = document.createElement('link')
   stylesheet.id = 'dashboardProductivityStyles'
   stylesheet.rel = 'stylesheet'
-  stylesheet.href = './dashboard-productivity.css?v=1'
+  stylesheet.href = './styles/dashboard-productivity.css?v=1'
   document.head.appendChild(stylesheet)
 }
 

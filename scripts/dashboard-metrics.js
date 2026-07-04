@@ -11,7 +11,7 @@ function ensureLiveDashboardStyles() {
   const stylesheet = document.createElement('link')
   stylesheet.id = 'dashboardLiveStyles'
   stylesheet.rel = 'stylesheet'
-  stylesheet.href = './dashboard-live.css?v=1'
+  stylesheet.href = './styles/dashboard-live.css?v=1'
   document.head.appendChild(stylesheet)
 }
 
