@@ -1,0 +1,43 @@
+name: Site CI
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+
+permissions:
+  contents: read
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: Test access and content
+        run: npm run test:site
+      - name: Test reporting system
+        run: npm run test:reporting
+      - name: Check database filenames
+        run: node --experimental-default-type=module --test --test-name-pattern="Supabase filenames" tests/repository-integrity.test.mjs
+      - name: Check retired files
+        run: node --experimental-default-type=module --test --test-name-pattern="retired disconnected" tests/repository-integrity.test.mjs
+      - name: Check required entry points
+        run: node --experimental-default-type=module --test --test-name-pattern="current site and operational" tests/repository-integrity.test.mjs
+      - name: Check HTML references
+        run: node --experimental-default-type=module --test --test-name-pattern="local href and src" tests/repository-integrity.test.mjs
+      - name: Check browser module graph
+        run: node --experimental-default-type=module --test --test-name-pattern="every browser script" tests/repository-integrity.test.mjs
+      - name: Check function module graph
+        run: node --experimental-default-type=module --test --test-name-pattern="every shared function" tests/repository-integrity.test.mjs
+      - name: Check canonical landing page
+        run: node --experimental-default-type=module --test --test-name-pattern="canonical landing" tests/repository-integrity.test.mjs
+      - name: Check JavaScript syntax
+        shell: bash
+        run: |
+          while IFS= read -r -d '' file; do
+            node --check "$file"
+          done < <(find scripts functions config -type f -name '*.js' -print0)

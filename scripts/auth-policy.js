@@ -1,1 +1,0 @@
-export const FIRST_LOGIN_POLICY_VERSION = 2

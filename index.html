@@ -1,17 +1,22 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="en" data-assets="assets/">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <meta http-equiv="refresh" content="0; url=index-modular.html" />
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>SocialLoop CS Base</title>
-  <script>
-    window.location.replace("index-modular.html");
-  </script>
+  <link rel="stylesheet" href="styles.css?v=modal-details-3">
+  <link rel="stylesheet" href="./button-theme.css?v=1">
 </head>
 <body>
-  <p>
-    Redirecting to <a href="index-modular.html">index-modular.html</a>...
-  </p>
+  <div data-include="partials/hero.html"></div>
+  <div data-include="partials/features.html"></div>
+  <div data-include="partials/modals-arez.html"></div>
+  <div data-include="partials/modals-jean.html"></div>
+  <div data-include="partials/modals-gen.html"></div>
+  <div data-include="partials/modals-ford.html"></div>
+  <div data-include="partials/modals-amora.html"></div>
+  <div data-include="partials/modals-jerson.html"></div>
+  <div data-include="partials/modals-tristan.html"></div>
+  <script type="module" src="./scripts/index.js?v=modal-details-3"></script>
 </body>
 </html>
