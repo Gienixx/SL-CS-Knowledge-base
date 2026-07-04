@@ -35,6 +35,8 @@ jobs:
         run: node --experimental-default-type=module --test --test-name-pattern="every shared function" tests/repository-integrity.test.mjs
       - name: Check canonical landing page
         run: node --experimental-default-type=module --test --test-name-pattern="canonical landing" tests/repository-integrity.test.mjs
+      - name: Check stylesheet organization and asset paths
+        run: node --experimental-default-type=module --test tests/stylesheet-organization.test.mjs
       - name: Check JavaScript syntax
         shell: bash
         run: |
