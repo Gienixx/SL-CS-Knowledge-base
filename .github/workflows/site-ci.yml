@@ -30,14 +30,7 @@ jobs:
       - name: Check HTML references
         run: node --experimental-default-type=module --test --test-name-pattern="local href and src" tests/repository-integrity.test.mjs
       - name: Check browser module graph
-        run: node --experimental-default-type=module --test --test-name-pattern="every browser script" tests/repository-integrity.test.mjs 2>&1 | tee browser-module-audit.txt
-      - name: Upload browser module audit
-        if: always()
-        uses: actions/upload-artifact@v4
-        with:
-          name: browser-module-audit
-          path: browser-module-audit.txt
-          retention-days: 1
+        run: node --experimental-default-type=module --test --test-name-pattern="every browser script" tests/repository-integrity.test.mjs
       - name: Check function module graph
         run: node --experimental-default-type=module --test --test-name-pattern="every shared function" tests/repository-integrity.test.mjs
       - name: Check canonical landing page
