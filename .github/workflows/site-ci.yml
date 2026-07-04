@@ -40,17 +40,7 @@ jobs:
       - name: Check stylesheet links
         run: node --experimental-default-type=module --test --test-name-pattern="HTML and JavaScript stylesheet" tests/stylesheet-organization.test.mjs
       - name: Check stylesheet connections
-        shell: bash
-        run: |
-          set -o pipefail
-          node --experimental-default-type=module --test --test-name-pattern="every stylesheet is connected" tests/stylesheet-organization.test.mjs 2>&1 | tee stylesheet-connections.txt
-      - name: Upload stylesheet connection audit
-        if: always()
-        uses: actions/upload-artifact@v4
-        with:
-          name: stylesheet-connections
-          path: stylesheet-connections.txt
-          retention-days: 1
+        run: node --experimental-default-type=module --test --test-name-pattern="every stylesheet is connected" tests/stylesheet-organization.test.mjs
       - name: Check stylesheet assets
         run: node --experimental-default-type=module --test --test-name-pattern="relative assets referenced" tests/stylesheet-organization.test.mjs
       - name: Check JavaScript syntax
