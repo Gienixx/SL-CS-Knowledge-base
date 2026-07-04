@@ -4,7 +4,7 @@ function ensureLatestDayDateStyles() {
   const stylesheet = document.createElement('link')
   stylesheet.id = 'dashboardLatestDateStyles'
   stylesheet.rel = 'stylesheet'
-  stylesheet.href = './dashboard-latest-date.css?v=2'
+  stylesheet.href = './styles/dashboard-latest-date.css?v=2'
   document.head.appendChild(stylesheet)
 }
 

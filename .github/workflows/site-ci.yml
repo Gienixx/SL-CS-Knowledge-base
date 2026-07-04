@@ -35,6 +35,14 @@ jobs:
         run: node --experimental-default-type=module --test --test-name-pattern="every shared function" tests/repository-integrity.test.mjs
       - name: Check canonical landing page
         run: node --experimental-default-type=module --test --test-name-pattern="canonical landing" tests/repository-integrity.test.mjs
+      - name: Check stylesheet directory
+        run: node --experimental-default-type=module --test --test-name-pattern="all repository stylesheets" tests/stylesheet-organization.test.mjs
+      - name: Check stylesheet links
+        run: node --experimental-default-type=module --test --test-name-pattern="HTML and JavaScript stylesheet" tests/stylesheet-organization.test.mjs
+      - name: Check stylesheet connections
+        run: node --experimental-default-type=module --test --test-name-pattern="every stylesheet is connected" tests/stylesheet-organization.test.mjs
+      - name: Check stylesheet assets
+        run: node --experimental-default-type=module --test --test-name-pattern="relative assets referenced" tests/stylesheet-organization.test.mjs
       - name: Check JavaScript syntax
         shell: bash
         run: |
