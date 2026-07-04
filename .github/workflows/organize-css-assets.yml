@@ -1,0 +1,130 @@
+name: Organize CSS assets
+
+on:
+  push:
+    branches: [organize-css-assets]
+
+permissions:
+  contents: write
+
+jobs:
+  organize:
+    if: github.actor != 'github-actions[bot]'
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      - name: Move root stylesheets and update references
+        shell: bash
+        run: |
+          node <<'NODE'
+          const fs = require('node:fs')
+          const path = require('node:path')
+
+          const root = process.cwd()
+          const stylesDirectory = path.join(root, 'styles')
+          const rootStylesheets = fs.readdirSync(root, { withFileTypes: true })
+            .filter(entry => entry.isFile() && entry.name.endsWith('.css'))
+            .map(entry => entry.name)
+            .sort()
+
+          if (!rootStylesheets.length) {
+            console.log('No root-level stylesheets found.')
+            process.exit(0)
+          }
+
+          fs.mkdirSync(stylesDirectory, { recursive: true })
+
+          const isExternalReference = value => /^(?:[a-z][a-z0-9+.-]*:|\/\/|\/|#|data:|var\()/i.test(value)
+
+          function rewriteCssAssetReferences(content) {
+            return content.replace(/url\(\s*(['"]?)([^'"\)]+)\1\s*\)/g, (full, quote, rawValue) => {
+              const value = rawValue.trim()
+              if (!value || isExternalReference(value)) return full
+
+              const parts = value.match(/^([^?#]+)([?#].*)?$/)
+              if (!parts) return full
+
+              const originalPath = parts[1]
+              const suffix = parts[2] || ''
+              const target = path.resolve(root, originalPath)
+              let rewritten = path.relative(stylesDirectory, target).split(path.sep).join('/')
+              if (!rewritten.startsWith('.')) rewritten = `./${rewritten}`
+
+              return `url(${quote}${rewritten}${suffix}${quote})`
+            })
+          }
+
+          for (const filename of rootStylesheets) {
+            const source = path.join(root, filename)
+            const destination = path.join(stylesDirectory, filename)
+            const content = rewriteCssAssetReferences(fs.readFileSync(source, 'utf8'))
+            fs.writeFileSync(destination, content)
+            fs.unlinkSync(source)
+          }
+
+          const textExtensions = new Set([
+            '.html', '.js', '.mjs', '.json', '.md', '.yml', '.yaml', '.sql', '.gs', '.toml'
+          ])
+          const ignoredDirectories = new Set(['.git', 'node_modules', 'styles'])
+
+          function walk(directory) {
+            const files = []
+            for (const entry of fs.readdirSync(directory, { withFileTypes: true })) {
+              if (entry.isDirectory() && ignoredDirectories.has(entry.name)) continue
+              const fullPath = path.join(directory, entry.name)
+              if (entry.isDirectory()) files.push(...walk(fullPath))
+              else if (textExtensions.has(path.extname(entry.name))) files.push(fullPath)
+            }
+            return files
+          }
+
+          const escapeRegExp = value => value.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
+
+          for (const filePath of walk(root)) {
+            let content = fs.readFileSync(filePath, 'utf8')
+            const original = content
+
+            for (const filename of rootStylesheets) {
+              const pattern = new RegExp(
+                `(^|[^A-Za-z0-9_./-])((?:\\.\\./|\\./|/)?${escapeRegExp(filename)})(?=$|[^A-Za-z0-9_-])`,
+                'g'
+              )
+
+              content = content.replace(pattern, (full, boundary, reference) => {
+                let rewritten
+                if (reference.startsWith('../')) rewritten = `../styles/${filename}`
+                else if (reference.startsWith('./')) rewritten = `./styles/${filename}`
+                else if (reference.startsWith('/')) rewritten = `/styles/${filename}`
+                else rewritten = `styles/${filename}`
+                return `${boundary}${rewritten}`
+              })
+            }
+
+            if (content !== original) fs.writeFileSync(filePath, content)
+          }
+
+          console.log(`Moved ${rootStylesheets.length} stylesheet(s) into styles/.`)
+          console.log(rootStylesheets.join('\n'))
+          NODE
+
+      - name: Commit organized stylesheets
+        shell: bash
+        run: |
+          if git diff --quiet; then
+            echo "No stylesheet changes to commit."
+            exit 0
+          fi
+
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add -A
+          git commit -m "Organize stylesheets under styles directory"
+          git push origin HEAD:organize-css-assets
