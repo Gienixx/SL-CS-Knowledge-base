@@ -163,9 +163,14 @@ test('local href and src references in HTML resolve to repository files', async 
       if (!raw || /^(?:[a-z][a-z0-9+.-]*:|\/\/|#)/i.test(raw)) continue
       const clean = cleanReference(raw)
       if (!clean || clean.includes('${')) continue
+
+      const baseDirectory = htmlPath.startsWith('partials/')
+        ? root
+        : dirname(pathFromRoot(htmlPath))
       const target = clean.startsWith('/')
         ? pathFromRoot(clean.slice(1))
-        : resolve(dirname(pathFromRoot(htmlPath)), clean)
+        : resolve(baseDirectory, clean)
+
       try { await access(target) } catch { missing.push(`${htmlPath} -> ${raw}`) }
     }
   }
