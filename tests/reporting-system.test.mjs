@@ -14,7 +14,8 @@ test('active reporting is synchronized Google Sheet-only', async () => {
     'response-times.html', 'reporting-operations.html',
     'scripts/sheet-reporting.js', 'scripts/report-details.js',
     'scripts/agent-analytics.js', 'scripts/response-times.js',
-    'scripts/reporting-operations.js', 'functions/api/sync-dashboard.js'
+    'scripts/reporting-operations.js', 'scripts/reporting-operations-entry.js',
+    'functions/api/sync-dashboard.js'
   ]
   const contents = (await Promise.all(paths.map(read))).join('\n')
   assert.match(contents, /Google Sheet/)
@@ -49,10 +50,12 @@ test('current database operations and verification files are present', async () 
     'supabase/migrations/2026070401_dashboard_features.sql',
     'supabase/migrations/2026070402_reporting_operations.sql',
     'supabase/migrations/2026070403_sync_history_visibility_fix.sql',
+    'supabase/migrations/2026070607_reporting_operations_admin_access.sql',
     'supabase/verification/google_sheet_contract_check.sql',
     'supabase/verification/sheet_only_reporting_check.sql',
     'supabase/verification/reporting_acceptance_check.sql',
-    'supabase/verification/sync_history_visibility_check.sql'
+    'supabase/verification/sync_history_visibility_check.sql',
+    'supabase/verification/reporting_operations_admin_access_check.sql'
   ]
   for (const path of paths) assert.ok((await read(path)).trim().length > 0, `${path} should not be empty`)
 })

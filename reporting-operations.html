@@ -14,7 +14,7 @@
   <main class="page-shell operations-shell">
     <header class="topbar details-topbar">
       <div class="title-block details-title-block">
-        <span class="detail-eyebrow">Synchronized Google Sheet</span>
+        <span class="detail-eyebrow">Administrator operations</span>
         <h1>Reporting Operations</h1>
         <p>Synchronization health, quality monitoring, audit history, operational alerts, and CSV exports.</p>
       </div>
@@ -31,7 +31,7 @@
       <div id="operationsStatus" class="detail-status" role="status">
         <span class="dashboard-spinner" aria-hidden="true"></span>
         <h2>Loading reporting operations</h2>
-        <p>Checking access and retrieving synchronization and quality history.</p>
+        <p>Checking administrator access and retrieving synchronization and quality history.</p>
       </div>
 
       <div id="operationsContent" class="detail-content" hidden>
@@ -140,8 +140,8 @@
       </div>
     </section>
 
-    <p class="footer-note">Reporting Operations monitors and exports synchronized Google Sheet reporting data only.</p>
+    <p class="footer-note">Reporting Operations is restricted to authorized administrators.</p>
   </main>
-  <script type="module" src="./scripts/reporting-operations.js?v=1"></script>
+  <script type="module" src="./scripts/reporting-operations-entry.js?v=1"></script>
 </body>
 </html>

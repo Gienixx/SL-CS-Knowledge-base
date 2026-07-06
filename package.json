@@ -5,7 +5,7 @@
     "test": "node --experimental-default-type=module --test tests/*.test.mjs",
     "test:repository": "node --experimental-default-type=module --test tests/repository-integrity.test.mjs tests/stylesheet-organization.test.mjs",
     "test:reporting": "node --experimental-default-type=module --test tests/dashboard-sync.test.mjs tests/reporting-system.test.mjs",
-    "test:site": "node --experimental-default-type=module --test tests/access-and-content.test.mjs tests/user-management-resend-invite.test.mjs"
+    "test:site": "node --experimental-default-type=module --test tests/access-and-content.test.mjs tests/reporting-operations-access.test.mjs tests/user-management-resend-invite.test.mjs"
   },
   "dependencies": {
     "@supabase/supabase-js": "^2.53.0"
