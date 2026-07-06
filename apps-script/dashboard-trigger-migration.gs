@@ -2,7 +2,7 @@ const DASHBOARD_SYNC_TRIGGER = Object.freeze({
   currentHandler: 'syncAllDashboardData',
   legacyHandler: 'syncDashboardData',
   timezone: 'America/New_York',
-  hour: 12,
+  hour: 9,
   minute: 0
 })
 
@@ -78,7 +78,7 @@ function inspectDashboardSyncTriggers() {
     expected: {
       handler: DASHBOARD_SYNC_TRIGGER.currentHandler,
       frequency: 'daily',
-      approximateTime: '12:00 PM Eastern',
+      approximateTime: '9:00 AM Eastern',
       timezone: DASHBOARD_SYNC_TRIGGER.timezone
     },
     currentTriggerCount,
