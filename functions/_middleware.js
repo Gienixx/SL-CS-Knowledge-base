@@ -5,26 +5,32 @@ import {
 
 const PROTECTED_ROUTES = Object.freeze({
   '/list-users': {
+    methods: ['GET'],
     permission: 'manage_employees',
     requireAdmin: true
   },
   '/create-user': {
+    methods: ['POST'],
     permission: 'manage_employees',
     requireAdmin: true
   },
   '/user-settings': {
+    methods: ['POST'],
     permission: 'manage_employees',
     requireAdmin: true
   },
   '/remove-account': {
+    methods: ['POST'],
     permission: 'manage_employees',
     requireAdmin: true
   },
   '/delete-user': {
+    methods: ['POST'],
     permission: 'manage_employees',
     requireAdmin: true
   },
   '/change-password': {
+    methods: ['POST'],
     permission: 'manage_employees',
     requireAdmin: true
   }
@@ -47,8 +53,9 @@ export async function onRequest(context) {
 
   const pathname = new URL(context.request.url).pathname
   const route = PROTECTED_ROUTES[pathname]
+  const method = context.request.method.toUpperCase()
 
-  if (!route) {
+  if (!route || !route.methods.includes(method)) {
     return context.next()
   }
 

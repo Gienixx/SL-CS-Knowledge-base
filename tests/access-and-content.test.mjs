@@ -7,6 +7,9 @@ import {
   hasWorkforcePermission,
   normalizeWorkforceAccess
 } from '../shared/workforce-access.js'
+import {
+  onRequest as workforceMiddleware
+} from '../functions/_middleware.js'
 
 const read = path => readFile(new URL(`../${path}`, import.meta.url), 'utf8')
 
@@ -44,6 +47,46 @@ test('authentication and first-login pages remain connected', async () => {
   assert.match(firstLoginPolicy, /requiresFirstLoginPasswordChange/)
 })
 
+test('password invite page GET bypasses the admin password API middleware', async () => {
+  let nextCalls = 0
+
+  const response = await workforceMiddleware({
+    request: new Request(
+      'https://support.example/change-password?invite=1',
+      { method: 'GET' }
+    ),
+    next: async () => {
+      nextCalls += 1
+      return new Response('password page')
+    }
+  })
+
+  assert.equal(nextCalls, 1)
+  assert.equal(response.status, 200)
+  assert.equal(await response.text(), 'password page')
+})
+
+test('password administration POST remains protected', async () => {
+  let nextCalls = 0
+
+  const response = await workforceMiddleware({
+    request: new Request(
+      'https://support.example/change-password',
+      { method: 'POST' }
+    ),
+    next: async () => {
+      nextCalls += 1
+      return new Response('unexpected')
+    }
+  })
+
+  assert.equal(nextCalls, 0)
+  assert.equal(response.status, 401)
+  assert.deepEqual(await response.json(), {
+    error: 'Authentication required.'
+  })
+})
+
 test('dashboard and protected endpoints use the central workforce permission service', async () => {
   const [
     dashboard,
@@ -67,6 +110,7 @@ test('dashboard and protected endpoints use the central workforce permission ser
   assert.match(browserService, /workforce_get_current_access/)
   assert.match(functionHelper, /workforce_get_current_access/)
   assert.match(middleware, /manage_employees/)
+  assert.match(middleware, /methods:\s*\['POST'\]/)
   assert.match(middleware, /requireAdmin:\s*true/)
   assert.match(migration, /security definer/i)
   assert.match(migration, /revoke execute[^;]+from anon/is)
