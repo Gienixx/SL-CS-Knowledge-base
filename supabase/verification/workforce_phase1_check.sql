@@ -1,5 +1,5 @@
 -- Phase 1 Workforce Foundation verification
--- Run after 2026070601_workforce_foundation.sql in the target Supabase project.
+-- Run after both 2026070601 and 2026070602 workforce migrations.
 -- Every query should return the expected result described in its comment.
 
 -- 1. Expected tables: should return 7 rows.
@@ -134,7 +134,7 @@ where table_schema = 'public'
   )
 order by table_name, privilege_type;
 
--- 11. Required helper/RPC functions: should return 9 rows.
+-- 11. Required helper/RPC functions: should return 11 rows.
 select
   p.proname as function_name,
   pg_get_function_identity_arguments(p.oid) as arguments
@@ -143,6 +143,7 @@ join pg_namespace n on n.oid = p.pronamespace
 where n.nspname = 'public'
   and p.proname in (
     'workforce_current_user_is_active',
+    'workforce_current_user_is_agent',
     'workforce_is_admin',
     'workforce_has_permission',
     'workforce_is_assigned_supervisor',
@@ -174,25 +175,45 @@ where schemaname = 'public'
   )
 order by tablename, policyname;
 
--- 13. Profiles with invalid or unfinished team relationships: review manually.
+-- 13. Profiles with unfinished team relationships: review manually.
 select
   profile.email,
   profile.employee_id,
+  profile.base_role,
+  profile.is_agent,
   profile.team_id,
   profile.supervisor_id
 from public.profiles profile
 where profile.employment_status in ('active', 'on_leave')
+  and profile.is_agent is true
   and (profile.team_id is null or profile.supervisor_id is null)
 order by profile.email;
 
--- 14. Confirm all expected users before Phase 1 completion.
+-- 14. Access-type classification: review every profile before rollout.
+select
+  email,
+  employee_id,
+  case
+    when base_role = 'admin' and is_agent is true then 'Admin and Agent'
+    when base_role = 'admin' and is_agent is false then 'Admin'
+    when base_role = 'agent' and is_agent is true and can_edit_articles is true
+      then 'Agent with Article Editor access'
+    when base_role = 'agent' and is_agent is true
+      then 'Regular Agent'
+    else 'Review required'
+  end as access_type
+from public.profiles
+where employment_status in ('active', 'on_leave')
+order by email;
+
+-- 15. Confirm all expected users before Phase 1 completion.
 -- The current project target is 11 active/on-leave users.
 select
   count(*) as active_workforce_users
 from public.profiles
 where employment_status in ('active', 'on_leave');
 
--- 15. Audit trigger coverage: should list six audited workforce tables.
+-- 16. Audit trigger coverage: should list six audited workforce tables.
 select
   event_object_table as table_name,
   trigger_name,
