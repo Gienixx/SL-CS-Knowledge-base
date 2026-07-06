@@ -23,6 +23,7 @@ Deliverables:
 - Backfill profiles from Supabase Auth and `public.login`.
 - Preserve existing `is_admin` and `can_edit_articles` behavior.
 - Add helper functions for current-user permission and supervisor checks.
+- Add an `is_agent` profile flag to distinguish Admin from Admin and Agent access.
 - Enable RLS on every workforce table.
 - Add indexes, constraints, updated-at triggers, and administrative audit triggers.
 - Add secure RPC functions for agent clock-in and clock-out.
@@ -41,10 +42,11 @@ Deliverables:
 - Add a shared browser module for loading the current profile and effective permissions.
 - Add a shared Cloudflare Function authorization helper.
 - Map the existing access types:
-  - Admin and Agent: agent profile with workforce-management permissions.
-  - Admin: admin profile with global workforce permissions.
-  - Agent with Article Editor access: agent profile with `edit_articles`.
-  - Regular Agent: agent profile without elevated permissions.
+  - Admin and Agent: `base_role = 'admin'`, `is_agent = true`, plus explicitly granted workforce permissions.
+  - Admin: `base_role = 'admin'`, `is_agent = false`, plus explicitly granted administrative permissions.
+  - Agent with Article Editor access: `base_role = 'agent'`, `is_agent = true`, plus `edit_articles`.
+  - Regular Agent: `base_role = 'agent'`, `is_agent = true`, without elevated permissions.
+- Treat administrator status as global scope only; each workforce permission remains individually grantable and revocable.
 - Keep `public.login` synchronized while old pages still depend on it.
 
 Acceptance gate:
@@ -113,6 +115,7 @@ Deliverables:
 Acceptance gate:
 
 - An agent cannot clock in or out for another employee.
+- Admin-only profiles cannot use agent clock or leave workflows unless `is_agent` is enabled.
 - An agent cannot directly set overtime, undertime, correction notes, or approval fields.
 - Corrections retain before-and-after values in the audit log.
 
