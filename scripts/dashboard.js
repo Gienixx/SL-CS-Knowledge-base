@@ -86,6 +86,19 @@ document.addEventListener('DOMContentLoaded', async () => {
         : 'none'
     }
 
+    const reportingOperationsBtn =
+      document.getElementById('reportingOperationsBtn')
+
+    const canViewReportingOperations =
+      access.is_admin === true &&
+      hasWorkforcePermission(access, 'view_workforce_reports')
+
+    if (reportingOperationsBtn) {
+      reportingOperationsBtn.style.display = canViewReportingOperations
+        ? 'inline-flex'
+        : 'none'
+    }
+
     const changePasswordBtn =
       document.getElementById('changePasswordBtn')
 
