@@ -3,6 +3,10 @@ import {
   requiresFirstLoginPasswordChange
 } from './first-login-policy.js?v=4'
 import {
+  hasWorkforcePermission,
+  loadCurrentWorkforceAccess
+} from './workforce-permissions.js?v=1'
+import {
   initializePhaseOneDashboard
 } from './dashboard-metrics.js?v=1'
 import {
@@ -63,21 +67,9 @@ document.addEventListener('DOMContentLoaded', async () => {
       return
     }
 
-    const { data: rows, error } = await supabase
-      .from('login')
-      .select('email, is_admin, can_edit_articles')
+    const access = await loadCurrentWorkforceAccess(supabase)
 
-    if (error) {
-      console.error('LOGIN ERROR:', error)
-      alert('Access check failed.')
-      return
-    }
-
-    const allowedUser = rows?.find(
-      row => row.email?.trim().toLowerCase() === email
-    )
-
-    if (!allowedUser) {
+    if (!access.allowed) {
       alert('Access check failed.')
       return
     }
@@ -86,13 +78,12 @@ document.addEventListener('DOMContentLoaded', async () => {
 
     if (addArticleBtn) {
       addArticleBtn.href = './article-management.html'
-    }
-
-    if (
-      allowedUser.can_edit_articles === true &&
-      addArticleBtn
-    ) {
-      addArticleBtn.style.display = 'inline-flex'
+      addArticleBtn.style.display = hasWorkforcePermission(
+        access,
+        'edit_articles'
+      )
+        ? 'inline-flex'
+        : 'none'
     }
 
     const changePasswordBtn =
@@ -101,7 +92,11 @@ document.addEventListener('DOMContentLoaded', async () => {
     const userManagementBtn =
       document.getElementById('userManagementBtn')
 
-    if (allowedUser.is_admin === true) {
+    const canManageEmployees =
+      access.is_admin === true &&
+      hasWorkforcePermission(access, 'manage_employees')
+
+    if (canManageEmployees) {
       if (userManagementBtn) {
         userManagementBtn.style.display = 'inline-flex'
       }
@@ -130,7 +125,12 @@ document.addEventListener('DOMContentLoaded', async () => {
       board.setAttribute('aria-busy', 'false')
     }
 
-    console.log('ACCESS GRANTED:', email)
+    console.log(
+      'ACCESS GRANTED:',
+      email,
+      access.access_type,
+      access.source
+    )
   } catch (error) {
     console.error('Dashboard error:', error)
   }
