@@ -1,0 +1,102 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Team Management | SocialLoop CS Base</title>
+  <link rel="stylesheet" href="./styles/button-theme.css?v=1">
+  <link rel="stylesheet" href="./styles/workforce-admin.css?v=1">
+</head>
+<body>
+  <main class="wf-page">
+    <header class="wf-topbar">
+      <div class="wf-title">
+        <h1>Team Management</h1>
+        <p>Create teams, assign a team supervisor, and control whether a team remains active. Employee membership is assigned from Workforce Management.</p>
+      </div>
+      <nav class="wf-nav" aria-label="Workforce navigation">
+        <a class="wf-link" href="./workforce.html">Workforce Management</a>
+        <a class="wf-link" href="./dashboard.html">← Back to Dashboard</a>
+      </nav>
+    </header>
+
+    <section class="wf-summary-grid" aria-label="Team summary">
+      <article class="wf-summary"><span>Total teams</span><strong id="totalTeams">—</strong></article>
+      <article class="wf-summary"><span>Active teams</span><strong id="activeTeams">—</strong></article>
+      <article class="wf-summary"><span>Assigned employees</span><strong id="assignedEmployees">—</strong></article>
+      <article class="wf-summary"><span>Without supervisor</span><strong id="teamsWithoutSupervisor">—</strong></article>
+    </section>
+
+    <section class="wf-card">
+      <div class="wf-card-header">
+        <h2>Teams</h2>
+        <div class="wf-actions">
+          <button class="wf-btn secondary" id="refreshTeamsButton" type="button">Refresh</button>
+          <button class="wf-btn" id="createTeamButton" type="button">Create Team</button>
+        </div>
+      </div>
+
+      <div class="wf-table-wrap">
+        <table class="wf-table" style="min-width:900px;">
+          <thead>
+            <tr>
+              <th>Team</th>
+              <th>Supervisor</th>
+              <th>Members</th>
+              <th>Status</th>
+              <th>Last updated</th>
+              <th>Action</th>
+            </tr>
+          </thead>
+          <tbody id="teamsTableBody">
+            <tr><td colspan="6" class="wf-empty">Loading teams...</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <p id="teamsMessage" class="wf-message" aria-live="polite"></p>
+    </section>
+  </main>
+
+  <div class="wf-modal" id="teamModal" role="dialog" aria-modal="true" aria-labelledby="teamModalTitle" hidden>
+    <button class="wf-backdrop" type="button" data-close="teamModal" aria-label="Close team dialog"></button>
+    <section class="wf-dialog compact">
+      <div class="wf-dialog-header">
+        <h2 id="teamModalTitle">Create Team</h2>
+        <button class="wf-close" type="button" data-close="teamModal" aria-label="Close">×</button>
+      </div>
+
+      <form id="teamForm" class="wf-form">
+        <input id="teamId" type="hidden">
+        <label class="wf-field">
+          <span>Team name</span>
+          <input class="wf-control" id="teamName" required>
+        </label>
+        <label class="wf-field">
+          <span>Description</span>
+          <textarea class="wf-control" id="teamDescription" placeholder="Optional team description"></textarea>
+        </label>
+        <label class="wf-field">
+          <span>Team supervisor</span>
+          <select class="wf-control" id="teamSupervisor"><option value="">No supervisor</option></select>
+        </label>
+        <label class="wf-check">
+          <input id="teamIsActive" type="checkbox" checked>
+          <span>Team is active</span>
+        </label>
+        <label class="wf-field">
+          <span>Reason for change</span>
+          <input class="wf-control" id="teamChangeReason" placeholder="Optional administrative note for the audit trail">
+        </label>
+        <p class="wf-note">Deactivating a team does not delete employee history or automatically remove current team assignments.</p>
+        <div class="wf-dialog-actions">
+          <button class="wf-btn secondary" type="button" data-close="teamModal">Cancel</button>
+          <button class="wf-btn" id="saveTeamButton" type="submit">Save Team</button>
+        </div>
+      </form>
+      <p id="teamFormMessage" class="wf-message" aria-live="polite"></p>
+    </section>
+  </div>
+
+  <script type="module" src="./scripts/team-management.js?v=1"></script>
+</body>
+</html>

@@ -1,0 +1,173 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Workforce Management | SocialLoop CS Base</title>
+  <link rel="stylesheet" href="./styles/button-theme.css?v=1">
+  <link rel="stylesheet" href="./styles/workforce-admin.css?v=1">
+</head>
+<body>
+  <main class="wf-page">
+    <header class="wf-topbar">
+      <div class="wf-title">
+        <h1>Workforce Management</h1>
+        <p>Manage employee profiles, access types, team assignments, supervisors, employment status, and workforce permissions.</p>
+      </div>
+      <nav class="wf-nav" aria-label="Workforce navigation">
+        <a class="wf-link" href="./team-management.html">Team Management</a>
+        <a class="wf-link" href="./dashboard.html">← Back to Dashboard</a>
+      </nav>
+    </header>
+
+    <section class="wf-summary-grid" aria-label="Workforce summary">
+      <article class="wf-summary"><span>Total profiles</span><strong id="totalProfiles">—</strong></article>
+      <article class="wf-summary"><span>Active agents</span><strong id="activeAgents">—</strong></article>
+      <article class="wf-summary"><span>Administrators</span><strong id="administratorCount">—</strong></article>
+      <article class="wf-summary"><span>Unassigned team</span><strong id="unassignedCount">—</strong></article>
+    </section>
+
+    <section class="wf-card">
+      <div class="wf-card-header">
+        <div>
+          <h2>Employee Profiles</h2>
+          <p class="wf-message" style="margin-top:5px;">Only existing approved users are listed. Add new accounts through User Management first.</p>
+        </div>
+        <div class="wf-actions">
+          <a class="wf-btn secondary" href="./user-management.html">Open User Management</a>
+          <button class="wf-btn" id="refreshEmployeesButton" type="button">Refresh</button>
+        </div>
+      </div>
+
+      <div class="wf-toolbar">
+        <label class="wf-field wide">
+          <span>Search</span>
+          <input class="wf-control" id="employeeSearch" type="search" placeholder="Search by name, email, or employee ID">
+        </label>
+        <label class="wf-field">
+          <span>Status</span>
+          <select class="wf-control" id="statusFilter">
+            <option value="">All statuses</option>
+            <option value="active">Active</option>
+            <option value="on_leave">On leave</option>
+            <option value="inactive">Inactive</option>
+            <option value="terminated">Terminated</option>
+          </select>
+        </label>
+        <label class="wf-field">
+          <span>Team</span>
+          <select class="wf-control" id="teamFilter">
+            <option value="">All teams</option>
+            <option value="unassigned">Unassigned</option>
+          </select>
+        </label>
+      </div>
+
+      <div class="wf-table-wrap">
+        <table class="wf-table">
+          <thead>
+            <tr>
+              <th>Employee</th>
+              <th>Employee ID</th>
+              <th>Access type</th>
+              <th>Team</th>
+              <th>Supervisor</th>
+              <th>Status</th>
+              <th>Permissions</th>
+              <th>Action</th>
+            </tr>
+          </thead>
+          <tbody id="employeeTableBody">
+            <tr><td colspan="8" class="wf-empty">Loading employee profiles...</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <p id="employeesMessage" class="wf-message" aria-live="polite"></p>
+    </section>
+  </main>
+
+  <div class="wf-modal" id="employeeModal" role="dialog" aria-modal="true" aria-labelledby="employeeModalTitle" hidden>
+    <button class="wf-backdrop" type="button" data-close="employeeModal" aria-label="Close employee dialog"></button>
+    <section class="wf-dialog">
+      <div class="wf-dialog-header">
+        <h2 id="employeeModalTitle">Edit Employee</h2>
+        <button class="wf-close" type="button" data-close="employeeModal" aria-label="Close">×</button>
+      </div>
+
+      <form id="employeeForm" class="wf-form">
+        <input id="employeeUserId" type="hidden">
+        <div class="wf-form-grid">
+          <label class="wf-field">
+            <span>Full name</span>
+            <input class="wf-control" id="employeeFullName" required>
+          </label>
+          <label class="wf-field">
+            <span>Email</span>
+            <input class="wf-control" id="employeeEmail" type="email" readonly>
+          </label>
+          <label class="wf-field">
+            <span>Employee ID</span>
+            <input class="wf-control" id="employeeId" required>
+          </label>
+          <label class="wf-field">
+            <span>Employment status</span>
+            <select class="wf-control" id="employmentStatus" required>
+              <option value="active">Active</option>
+              <option value="on_leave">On leave</option>
+              <option value="inactive">Inactive</option>
+              <option value="terminated">Terminated</option>
+            </select>
+          </label>
+          <label class="wf-field">
+            <span>Access type</span>
+            <select class="wf-control" id="accessType" required>
+              <option value="admin_agent">Admin and Agent</option>
+              <option value="admin">Admin</option>
+              <option value="agent_editor">Agent with Article Editor access</option>
+              <option value="regular_agent">Regular Agent</option>
+            </select>
+          </label>
+          <label class="wf-field">
+            <span>Timezone</span>
+            <input class="wf-control" id="employeeTimezone" value="Asia/Manila" required>
+          </label>
+          <label class="wf-field">
+            <span>Team assignment</span>
+            <select class="wf-control" id="employeeTeam"><option value="">No team</option></select>
+          </label>
+          <label class="wf-field">
+            <span>Supervisor</span>
+            <select class="wf-control" id="employeeSupervisor"><option value="">No direct supervisor</option></select>
+          </label>
+          <label class="wf-field full">
+            <span>Reason for change</span>
+            <input class="wf-control" id="employeeChangeReason" placeholder="Optional administrative note for the audit trail">
+          </label>
+        </div>
+
+        <div>
+          <p class="wf-field-label">Effective permissions</p>
+          <div class="wf-check-grid" id="permissionGrid">
+            <label class="wf-check"><input type="checkbox" value="manage_employees"><span>Manage employees</span></label>
+            <label class="wf-check"><input type="checkbox" value="manage_schedules"><span>Manage schedules</span></label>
+            <label class="wf-check"><input type="checkbox" value="view_team_attendance"><span>View team attendance</span></label>
+            <label class="wf-check"><input type="checkbox" value="approve_leave"><span>Approve leave</span></label>
+            <label class="wf-check"><input type="checkbox" value="view_workforce_reports"><span>View workforce reports</span></label>
+            <label class="wf-check"><input type="checkbox" value="edit_articles"><span>Edit articles</span></label>
+            <label class="wf-check"><input type="checkbox" value="manage_payroll"><span>Manage payroll</span></label>
+          </div>
+        </div>
+
+        <p class="wf-note">Access changes are applied transactionally, recorded in the workforce audit log, and synchronized with the current login and article-access fields.</p>
+        <div class="wf-dialog-actions">
+          <button class="wf-btn secondary" type="button" data-close="employeeModal">Cancel</button>
+          <button class="wf-btn" id="saveEmployeeButton" type="submit">Save Employee</button>
+        </div>
+      </form>
+      <p id="employeeFormMessage" class="wf-message" aria-live="polite"></p>
+    </section>
+  </div>
+
+  <script type="module" src="./scripts/workforce.js?v=1"></script>
+</body>
+</html>
