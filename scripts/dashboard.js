@@ -105,9 +105,18 @@ document.addEventListener('DOMContentLoaded', async () => {
     const userManagementBtn =
       document.getElementById('userManagementBtn')
 
+    const workforceManagementBtn =
+      document.getElementById('workforceManagementBtn')
+
     const canManageEmployees =
       access.is_admin === true &&
       hasWorkforcePermission(access, 'manage_employees')
+
+    if (workforceManagementBtn) {
+      workforceManagementBtn.style.display = canManageEmployees
+        ? 'inline-flex'
+        : 'none'
+    }
 
     if (canManageEmployees) {
       if (userManagementBtn) {
