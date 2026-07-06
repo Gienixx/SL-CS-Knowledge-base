@@ -47,8 +47,9 @@
       <p id="usersMessage" class="um-message" aria-live="polite"></p>
 
       <div class="um-actions" style="justify-content:flex-end;margin-top:16px;">
-        <button class="um-btn danger" id="deleteUserButton" type="button" disabled>Delete</button>
+        <button class="um-btn secondary" id="resendInviteButton" type="button" disabled>Resend Invite</button>
         <button class="um-btn secondary" id="editUserButton" type="button" disabled>Edit</button>
+        <button class="um-btn danger" id="deleteUserButton" type="button" disabled>Delete</button>
       </div>
     </section>
 
@@ -130,5 +131,6 @@
   </div>
 
   <script type="module" src="./scripts/user-management.js?v=1"></script>
+  <script type="module" src="./scripts/user-management-resend-invite.js?v=1"></script>
 </body>
 </html>
