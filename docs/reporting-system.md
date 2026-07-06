@@ -10,7 +10,7 @@ The active reporting UI consists of:
 - `report-details.html` — detailed trends and comparisons
 - `agent-analytics.html` — productivity and available agent dimensions
 - `response-times.html` — response and resolution metrics when supported by synchronized counts
-- `reporting-operations.html` — synchronization status, quality checks, alerts, audit history, and CSV exports
+- `reporting-operations.html` — administrator-only synchronization status, quality checks, alerts, audit history, and CSV exports
 
 ## Source policy
 
@@ -35,7 +35,9 @@ Run `syncAllDashboardData()` from the workbook script. Successful and failed run
 
 ## Operations
 
-Use `/reporting-operations.html` to review:
+`/reporting-operations.html` is restricted to active administrators who retain the explicit `view_workforce_reports` permission. The browser hides the navigation link and blocks page initialization for other users, while Supabase RLS protects the underlying synchronization, quality, alert, and audit records from direct access.
+
+Authorized administrators can review:
 
 - latest synchronization status and age
 - imported row count and latest report date
