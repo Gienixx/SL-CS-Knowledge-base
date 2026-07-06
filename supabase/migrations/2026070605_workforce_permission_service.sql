@@ -69,14 +69,21 @@ begin
   where user_id = v_user_id;
 
   select
-    coalesce(login_user.is_admin, false),
-    coalesce(login_user.can_edit_articles, false)
+    coalesce((
+      select login_user.is_admin
+      from public.login login_user
+      where lower(login_user.email) = lower(v_profile.email)
+      limit 1
+    ), false),
+    coalesce((
+      select login_user.can_edit_articles
+      from public.login login_user
+      where lower(login_user.email) = lower(v_profile.email)
+      limit 1
+    ), false)
   into
     v_legacy_is_admin,
-    v_legacy_can_edit
-  from public.login login_user
-  where lower(login_user.email) = lower(v_profile.email)
-  limit 1;
+    v_legacy_can_edit;
 
   return jsonb_build_object(
     'user_id', v_profile.user_id,
