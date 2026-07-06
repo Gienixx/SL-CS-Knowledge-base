@@ -114,5 +114,8 @@ $$;
 comment on function public.workforce_get_current_access() is
   'Returns the authenticated workforce profile and effective explicit permissions for shared browser and server authorization.';
 
+-- Supabase may grant EXECUTE directly to anon in addition to the PostgreSQL
+-- PUBLIC default. Revoke both before granting only authenticated access.
+revoke execute on function public.workforce_get_current_access() from anon;
 revoke all on function public.workforce_get_current_access() from public;
 grant execute on function public.workforce_get_current_access() to authenticated;
