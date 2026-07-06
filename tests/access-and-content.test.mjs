@@ -45,12 +45,20 @@ test('authentication and first-login pages remain connected', async () => {
 })
 
 test('dashboard and protected endpoints use the central workforce permission service', async () => {
-  const [dashboard, browserService, middleware, functionHelper, migration] = await Promise.all([
+  const [
+    dashboard,
+    browserService,
+    middleware,
+    functionHelper,
+    migration,
+    correctiveMigration
+  ] = await Promise.all([
     read('scripts/dashboard.js'),
     read('scripts/workforce-permissions.js'),
     read('functions/_middleware.js'),
     read('functions/_shared/workforce-auth.js'),
-    read('supabase/migrations/2026070605_workforce_permission_service.sql')
+    read('supabase/migrations/2026070605_workforce_permission_service.sql'),
+    read('supabase/migrations/2026070606_workforce_rpc_permissions.sql')
   ])
 
   assert.match(dashboard, /loadCurrentWorkforceAccess/)
@@ -61,7 +69,11 @@ test('dashboard and protected endpoints use the central workforce permission ser
   assert.match(middleware, /manage_employees/)
   assert.match(middleware, /requireAdmin:\s*true/)
   assert.match(migration, /security definer/i)
+  assert.match(migration, /revoke execute[^;]+from anon/is)
   assert.match(migration, /grant execute[^;]+authenticated/is)
+  assert.match(correctiveMigration, /revoke execute[^;]+from anon/is)
+  assert.match(correctiveMigration, /revoke all[^;]+from public/is)
+  assert.match(correctiveMigration, /grant execute[^;]+authenticated/is)
 })
 
 test('the four supported access types are mapped consistently', () => {
