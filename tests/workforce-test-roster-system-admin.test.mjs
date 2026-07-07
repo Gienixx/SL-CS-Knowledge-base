@@ -38,7 +38,7 @@ test('Arby stays an agent while receiving hidden global system access', async ()
   )
   assert.match(migration, /profile\.base_role = 'admin'[\s\S]*profile\.is_system_admin is true/)
   assert.match(migration, /'is_system_admin', v_is_active and v_profile\.is_system_admin/)
-  assert.match(migration, /when v_profile\.is_system_admin is true[\s\S]*v_profile\.base_role/)
+  assert.match(migration, /if v_profile\.is_system_admin is true then[\s\S]*v_base_role := 'agent'[\s\S]*v_is_agent := true/)
   assert.match(migration, /if v_profile\.is_system_admin is true then[\s\S]*v_is_granted := true/)
 })
 
