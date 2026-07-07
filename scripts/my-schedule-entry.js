@@ -41,6 +41,18 @@ function enableManagerDraftVisibility() {
   }
 }
 
+function markDraftEntries() {
+  document.querySelectorAll('.schedule-entry').forEach(entry => {
+    const status = entry
+      .querySelector('.schedule-entry-status')
+      ?.textContent
+      ?.trim()
+      ?.toLowerCase()
+
+    entry.classList.toggle('scheduled', status === 'scheduled')
+  })
+}
+
 function keepManagerControlsAvailable() {
   const scheduledOption = document.querySelector(
     '#myScheduleStatus option[value="scheduled"]'
@@ -57,6 +69,8 @@ function keepManagerControlsAvailable() {
     subtitle.textContent =
       'View your assigned shifts, including draft schedules, rest days, holidays, and changes.'
   }
+
+  markDraftEntries()
 }
 
 const access = await loadCurrentWorkforceAccess(supabase)
@@ -69,6 +83,15 @@ if (canManageSchedules) {
 await import('./my-schedule.js?v=1')
 
 if (canManageSchedules) {
+  const calendar = document.getElementById('myScheduleCalendar')
+
+  if (calendar) {
+    new MutationObserver(markDraftEntries).observe(calendar, {
+      childList: true,
+      subtree: true
+    })
+  }
+
   window.setTimeout(keepManagerControlsAvailable, 0)
 
   document.getElementById('myScheduleScope')?.addEventListener('change', () => {
