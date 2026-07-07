@@ -277,8 +277,8 @@
           <label class="wf-field">
             <span>Status</span>
             <select class="wf-control" id="scheduleStatus" required>
-              <option value="scheduled">Scheduled</option>
-              <option value="published">Published</option>
+              <option value="scheduled">Scheduled (draft — hidden from agents)</option>
+              <option value="published" selected>Published (visible to agent)</option>
               <option value="changed">Changed</option>
               <option value="cancelled">Cancelled</option>
               <option value="completed">Completed</option>
@@ -310,7 +310,7 @@
           </label>
         </div>
 
-        <p class="wf-note">Editing a published shift automatically marks it as Changed when the employee, date, times, rest-day status, or holiday details are modified.</p>
+        <p class="wf-note">Published schedules are visible to the assigned agent. Scheduled entries remain drafts. Editing a published shift automatically marks it as Changed when the employee, date, times, rest-day status, or holiday details are modified.</p>
         <div class="wf-dialog-actions">
           <button class="wf-btn secondary" type="button" data-schedule-close>Cancel</button>
           <button class="wf-btn" id="saveScheduleButton" type="submit">Save Schedule</button>
@@ -321,6 +321,6 @@
   </div>
 
   <script type="module" src="./scripts/workforce.js?v=2"></script>
-  <script type="module" src="./scripts/workforce-schedules.js?v=1"></script>
+  <script type="module" src="./scripts/workforce-schedules-entry.js?v=1"></script>
 </body>
 </html>
