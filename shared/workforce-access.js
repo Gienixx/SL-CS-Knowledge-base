@@ -41,8 +41,16 @@ export function createPermissionMap(source = {}) {
 export function getWorkforceAccessType({
   is_admin: isAdmin = false,
   is_agent: isAgent = false,
+  is_system_admin: isSystemAdmin = false,
   permissions = {}
 } = {}) {
+  // The site owner is intentionally represented as a Regular Agent in visible
+  // workforce role labels. The hidden system-administrator capability is used
+  // only for authorization and is never exposed as a selectable access type.
+  if (isSystemAdmin) {
+    return 'regular_agent'
+  }
+
   if (isAdmin && isAgent) {
     return 'admin_agent'
   }
@@ -72,7 +80,12 @@ export function normalizeWorkforceAccess(
   const permissions = createPermissionMap(data.permissions)
   const authenticated = Boolean(user?.id || data.user_id)
   const isActive = data.is_active === true
-  const isAdmin = isActive && data.is_admin === true
+  const baseRole = normalizeText(data.base_role) || 'agent'
+  const isSystemAdmin = isActive && data.is_system_admin === true
+  const isAdmin = isActive && (
+    data.is_admin === true ||
+    isSystemAdmin
+  )
   const isAgent = isActive && data.is_agent === true
 
   if (isActive && data.can_edit_articles === true) {
@@ -94,8 +107,9 @@ export function normalizeWorkforceAccess(
     employee_id: normalizeText(data.employee_id),
     employment_status: normalizeText(data.employment_status),
     is_active: isActive,
-    base_role: normalizeText(data.base_role) || 'agent',
+    base_role: baseRole,
     is_admin: isAdmin,
+    is_system_admin: isSystemAdmin,
     is_agent: isAgent,
     team_id: data.team_id || null,
     supervisor_id: data.supervisor_id || null,
@@ -107,8 +121,9 @@ export function normalizeWorkforceAccess(
       ? data.legacy
       : null,
     access_type: getWorkforceAccessType({
-      is_admin: isAdmin,
+      is_admin: baseRole === 'admin',
       is_agent: isAgent,
+      is_system_admin: isSystemAdmin,
       permissions
     })
   }
@@ -167,6 +182,7 @@ export function createLegacyWorkforceAccess(
       is_active: true,
       base_role: isAdmin ? 'admin' : 'agent',
       is_admin: isAdmin,
+      is_system_admin: false,
       is_agent: true,
       timezone: 'Asia/Manila',
       permissions,
