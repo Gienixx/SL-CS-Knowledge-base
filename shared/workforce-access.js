@@ -28,6 +28,11 @@ function normalizeEmail(value) {
   return normalizeText(value).toLowerCase()
 }
 
+function normalizeUuidList(value, fallback = []) {
+  const source = Array.isArray(value) ? value : fallback
+  return [...new Set(source.filter(item => typeof item === 'string' && item.trim()))]
+}
+
 export function createPermissionMap(source = {}) {
   const permissions = {}
 
@@ -44,9 +49,6 @@ export function getWorkforceAccessType({
   is_system_admin: isSystemAdmin = false,
   permissions = {}
 } = {}) {
-  // The site owner is intentionally represented as a Regular Agent in visible
-  // workforce role labels. The hidden system-administrator capability is used
-  // only for authorization and is never exposed as a selectable access type.
   if (isSystemAdmin) {
     return 'regular_agent'
   }
@@ -78,7 +80,7 @@ export function normalizeWorkforceAccess(
     : {}
 
   const permissions = createPermissionMap(data.permissions)
-  const authenticated = Boolean(user?.id || data.user_id)
+  const authenticated = Boolean(user?.id || data.auth_user_id || data.user_id)
   const isActive = data.is_active === true
   const baseRole = normalizeText(data.base_role) || 'agent'
   const isSystemAdmin = isActive && data.is_system_admin === true
@@ -87,6 +89,15 @@ export function normalizeWorkforceAccess(
     isSystemAdmin
   )
   const isAgent = isActive && data.is_agent === true
+  const resolvedUserId = data.user_id || user?.id || null
+  const linkedProfileIds = normalizeUuidList(
+    data.linked_profile_ids,
+    resolvedUserId ? [resolvedUserId] : []
+  )
+
+  if (resolvedUserId && !linkedProfileIds.includes(resolvedUserId)) {
+    linkedProfileIds.unshift(resolvedUserId)
+  }
 
   if (isActive && data.can_edit_articles === true) {
     permissions.edit_articles = true
@@ -101,7 +112,9 @@ export function normalizeWorkforceAccess(
     allowed: authenticated && isActive,
     source,
     user,
-    user_id: data.user_id || user?.id || null,
+    auth_user_id: data.auth_user_id || user?.id || null,
+    user_id: resolvedUserId,
+    linked_profile_ids: linkedProfileIds,
     full_name: normalizeText(data.full_name),
     email: normalizeEmail(data.email || user?.email),
     employee_id: normalizeText(data.employee_id),
@@ -143,7 +156,9 @@ export function createLegacyWorkforceAccess(
   if (!row) {
     return normalizeWorkforceAccess(
       {
+        auth_user_id: user?.id || null,
         user_id: user?.id || null,
+        linked_profile_ids: user?.id ? [user.id] : [],
         email: user?.email || '',
         is_active: false,
         employment_status: 'inactive',
@@ -170,7 +185,9 @@ export function createLegacyWorkforceAccess(
 
   return normalizeWorkforceAccess(
     {
+      auth_user_id: user?.id || null,
       user_id: user?.id || null,
+      linked_profile_ids: user?.id ? [user.id] : [],
       full_name:
         normalizeText(row.name) ||
         normalizeText(metadata.full_name) ||
