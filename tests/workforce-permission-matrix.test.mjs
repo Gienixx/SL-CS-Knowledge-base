@@ -227,14 +227,12 @@ test('inactive users and administrators with revoked grants are denied', () => {
   assert.equal(hasWorkforcePermission(revokedAdmin, 'manage_schedules'), true)
 })
 
-test('protected account-management endpoints require both administrator scope and manage_employees', async () => {
-  const allowedAdminAgent = await runProtectedRoute(fixtures.adminAgent)
-  assert.equal(allowedAdminAgent.response.status, 204)
-  assert.equal(allowedAdminAgent.nextCalls, 1)
-
-  const allowedAdminOnly = await runProtectedRoute(fixtures.adminOnly)
-  assert.equal(allowedAdminOnly.response.status, 204)
-  assert.equal(allowedAdminOnly.nextCalls, 1)
+test('protected account-management endpoints require administrator scope and manage_employees', async () => {
+  for (const fixture of [fixtures.adminAgent, fixtures.adminOnly]) {
+    const allowed = await runProtectedRoute(fixture)
+    assert.equal(allowed.response.status, 204)
+    assert.equal(allowed.nextCalls, 1)
+  }
 
   const revokedAdmin = await runProtectedRoute(accessPayload({
     base_role: 'admin',
@@ -265,12 +263,13 @@ test('protected account-management endpoints require both administrator scope an
   assert.equal(anonymous.nextCalls, 0)
 })
 
-test('page guards enforce admin-only management and agent-only attendance workflows', async () => {
-  const [workforce, teams, attendance, schedule, middleware] = await Promise.all([
+test('page guards enforce management, attendance, and schedule boundaries', async () => {
+  const [workforce, teams, attendance, schedule, homeNav, middleware] = await Promise.all([
     read('scripts/workforce.js'),
     read('scripts/team-management.js'),
     read('scripts/attendance.js'),
-    read('scripts/my-schedule.js'),
+    read('scripts/my-schedule-v2.js'),
+    read('scripts/home-workforce-nav.js'),
     read('functions/_middleware.js')
   ])
 
@@ -278,16 +277,25 @@ test('page guards enforce admin-only management and agent-only attendance workfl
   assert.match(workforce, /access\.is_admin !== true/)
   assert.match(teams, /requireWorkforcePermission\(supabase,\s*'manage_employees'/)
   assert.match(teams, /access\.is_admin !== true/)
+
   assert.match(attendance, /access\.is_agent !== true/)
   assert.match(attendance, /linked_profile_ids/)
   assert.match(attendance, /\.rpc\('workforce_clock_in'/)
   assert.match(attendance, /\.rpc\('workforce_clock_out'/)
-  assert.match(schedule, /linked_profile_ids/)
+
+  assert.match(schedule, /personalProfileIds/)
+  assert.match(schedule, /query\s*=\s*query\.in\('user_id',\s*personalProfileIds\)/)
+  assert.match(schedule, /access\.is_agent !== true && !canManageSchedules/)
+
+  assert.match(homeNav, /access\.is_admin\s*===\s*true/)
+  assert.match(homeNav, /hasWorkforcePermission\(access,\s*'manage_employees'\)/)
+  assert.match(homeNav, /access\.is_agent\s*===\s*true/)
+
   assert.match(middleware, /permission:\s*'manage_employees'/)
   assert.match(middleware, /requireAdmin:\s*true/)
 })
 
-test('database security artifacts retain RLS, supervisor scope, identity-safe attendance, and anonymous denial', async () => {
+test('database artifacts retain RLS, supervisor scope, identity safety, and anonymous denial', async () => {
   const [foundation, permissionService, attendanceMigration] = await Promise.all([
     read('supabase/migrations/2026070601_workforce_foundation.sql'),
     read('supabase/migrations/2026070605_workforce_permission_service.sql'),
