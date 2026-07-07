@@ -187,6 +187,11 @@ $$;
 revoke execute on function public.workforce_admin_save_schedule(
   uuid, uuid, date, integer, timestamptz, timestamptz, text, text,
   boolean, boolean, text, text
+) from public;
+
+revoke execute on function public.workforce_admin_save_schedule(
+  uuid, uuid, date, integer, timestamptz, timestamptz, text, text,
+  boolean, boolean, text, text
 ) from anon;
 
 grant execute on function public.workforce_admin_save_schedule(
