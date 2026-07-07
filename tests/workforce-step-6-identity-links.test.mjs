@@ -8,7 +8,7 @@ test('Step 6 explicitly verifies workforce identity-link table security', async 
   const [migration, identityVerification, step6SecurityCheck] = await Promise.all([
     read('supabase/migrations/2026070705_workforce_identity_links.sql'),
     read('supabase/verification/workforce_identity_links_check.sql'),
-    read('supabase/verification/workforce_step6_identity_links_security_check.sql')
+    read('supabase/verification/workforce_identity_links_security_check.sql')
   ])
 
   assert.match(migration, /create table if not exists public\.workforce_identity_links/i)
