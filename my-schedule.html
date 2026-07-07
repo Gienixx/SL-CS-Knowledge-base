@@ -1,0 +1,153 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>My Schedule | SocialLoop CS Base</title>
+  <link rel="stylesheet" href="./styles/button-theme.css?v=1">
+  <link rel="stylesheet" href="./styles/workforce-admin.css?v=2">
+  <link rel="stylesheet" href="./styles/my-schedule.css?v=1">
+</head>
+<body>
+  <main class="wf-page schedule-page">
+    <header class="wf-topbar">
+      <div class="wf-title">
+        <h1>My Schedule</h1>
+        <p id="schedulePageSubtitle">View assigned shifts, rest days, holidays, and schedule changes.</p>
+      </div>
+      <nav class="wf-nav" aria-label="Schedule navigation">
+        <a id="scheduleWorkforceLink" class="wf-link" href="./workforce.html" hidden>Workforce Management</a>
+        <a class="wf-link" href="./dashboard.html">← Back to Dashboard</a>
+      </nav>
+    </header>
+
+    <section class="wf-summary-grid" aria-label="Schedule summary">
+      <article class="wf-summary"><span>Entries shown</span><strong id="myScheduleCount">—</strong></article>
+      <article class="wf-summary"><span>Published shifts</span><strong id="myPublishedCount">—</strong></article>
+      <article class="wf-summary"><span>Changed shifts</span><strong id="myChangedCount">—</strong></article>
+      <article class="wf-summary"><span>Rest days</span><strong id="myRestDayCount">—</strong></article>
+    </section>
+
+    <section id="scheduleChangeNotice" class="schedule-change-notice" hidden aria-live="polite">
+      <strong id="scheduleChangeNoticeTitle">Schedule changes available</strong>
+      <span id="scheduleChangeNoticeText"></span>
+    </section>
+
+    <section class="wf-card">
+      <div class="wf-card-header">
+        <div>
+          <h2>Schedule Calendar</h2>
+          <p class="wf-message" style="margin-top:5px;">Changed entries are highlighted so updates are easy to identify.</p>
+        </div>
+        <div class="wf-actions">
+          <button class="wf-btn secondary" id="refreshMyScheduleButton" type="button">Refresh</button>
+        </div>
+      </div>
+
+      <div class="wf-range-bar" aria-label="Schedule date navigation">
+        <div class="wf-actions">
+          <button class="wf-row-btn" id="previousMyScheduleRange" type="button" aria-label="Previous schedule range">← Previous</button>
+          <button class="wf-row-btn" id="currentMyScheduleRange" type="button">Today</button>
+          <button class="wf-row-btn" id="nextMyScheduleRange" type="button" aria-label="Next schedule range">Next →</button>
+        </div>
+        <strong id="myScheduleRangeLabel">—</strong>
+      </div>
+
+      <div class="wf-toolbar schedule-toolbar my-schedule-toolbar">
+        <label class="wf-field">
+          <span>View</span>
+          <select class="wf-control" id="myScheduleView">
+            <option value="week">Week</option>
+            <option value="month">Month</option>
+          </select>
+        </label>
+        <label class="wf-field" id="scheduleScopeField" hidden>
+          <span>Scope</span>
+          <select class="wf-control" id="myScheduleScope">
+            <option value="self">My schedule</option>
+            <option value="team">Team schedule</option>
+          </select>
+        </label>
+        <label class="wf-field" id="scheduleEmployeeField" hidden>
+          <span>Employee</span>
+          <select class="wf-control" id="myScheduleEmployee"><option value="">All permitted employees</option></select>
+        </label>
+        <label class="wf-field">
+          <span>Status</span>
+          <select class="wf-control" id="myScheduleStatus">
+            <option value="">All visible statuses</option>
+            <option value="published">Published</option>
+            <option value="changed">Changed</option>
+            <option value="cancelled">Cancelled</option>
+            <option value="completed">Completed</option>
+            <option value="scheduled">Scheduled</option>
+          </select>
+        </label>
+      </div>
+
+      <div class="schedule-calendar-shell">
+        <div class="schedule-weekday-row" aria-hidden="true">
+          <span>Mon</span><span>Tue</span><span>Wed</span><span>Thu</span><span>Fri</span><span>Sat</span><span>Sun</span>
+        </div>
+        <div id="myScheduleCalendar" class="schedule-calendar" aria-label="Schedule calendar"></div>
+      </div>
+
+      <p id="myScheduleMessage" class="wf-message" aria-live="polite"></p>
+    </section>
+
+    <section class="wf-card">
+      <div class="wf-card-header">
+        <div>
+          <h2>Schedule Details</h2>
+          <p class="wf-message" style="margin-top:5px;">Use the list for exact times, status, employee, and last update information.</p>
+        </div>
+      </div>
+
+      <div class="wf-table-wrap">
+        <table class="wf-table wf-schedule-table">
+          <thead>
+            <tr>
+              <th>Date</th>
+              <th>Employee</th>
+              <th>Shift</th>
+              <th>Type</th>
+              <th>Status</th>
+              <th>Last updated</th>
+              <th>Details</th>
+            </tr>
+          </thead>
+          <tbody id="myScheduleTableBody">
+            <tr><td colspan="7" class="wf-empty">Loading schedule entries...</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </section>
+  </main>
+
+  <div class="wf-modal" id="myScheduleModal" role="dialog" aria-modal="true" aria-labelledby="myScheduleModalTitle" hidden>
+    <button class="wf-backdrop" type="button" data-my-schedule-close aria-label="Close schedule details"></button>
+    <section class="wf-dialog compact">
+      <div class="wf-dialog-header">
+        <h2 id="myScheduleModalTitle">Schedule Details</h2>
+        <button class="wf-close" type="button" data-my-schedule-close aria-label="Close">×</button>
+      </div>
+      <dl class="schedule-detail-list">
+        <div><dt>Employee</dt><dd id="detailEmployee">—</dd></div>
+        <div><dt>Date</dt><dd id="detailDate">—</dd></div>
+        <div><dt>Shift</dt><dd id="detailShift">—</dd></div>
+        <div><dt>Timezone</dt><dd id="detailTimezone">—</dd></div>
+        <div><dt>Type</dt><dd id="detailType">—</dd></div>
+        <div><dt>Status</dt><dd id="detailStatus">—</dd></div>
+        <div><dt>Last updated</dt><dd id="detailUpdated">—</dd></div>
+        <div class="full"><dt>Notes</dt><dd id="detailNotes">No notes provided.</dd></div>
+      </dl>
+      <p id="detailChangedNote" class="wf-note" hidden>This schedule was changed after it was published. Review the updated date and shift time.</p>
+      <div class="wf-dialog-actions">
+        <button class="wf-btn secondary" type="button" data-my-schedule-close>Close</button>
+      </div>
+    </section>
+  </div>
+
+  <script type="module" src="./scripts/my-schedule.js?v=1"></script>
+</body>
+</html>
