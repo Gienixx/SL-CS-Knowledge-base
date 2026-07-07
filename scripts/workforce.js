@@ -23,6 +23,7 @@ let profiles = []
 let teams = []
 let permissionsByUser = new Map()
 let lastFocusedElement = null
+let editingSystemAdmin = false
 
 const STATUS_LABELS = Object.freeze({
   active: 'Active',
@@ -95,6 +96,7 @@ function accessTypeFor(profile) {
   return getWorkforceAccessType({
     is_admin: profile.base_role === 'admin',
     is_agent: profile.is_agent === true,
+    is_system_admin: profile.is_system_admin === true,
     permissions: profilePermissions(profile.user_id)
   })
 }
@@ -283,10 +285,28 @@ function readPermissionCheckboxes() {
 }
 
 function applyAccessTypeRules() {
-  const selected = accessTypeSelect.value
-  const editArticles = document.querySelector('#permissionGrid input[value="edit_articles"]')
+  const permissionInputs = [
+    ...document.querySelectorAll('#permissionGrid input[type="checkbox"]')
+  ]
+  const editArticles = permissionInputs.find(input => input.value === 'edit_articles')
+
+  if (editingSystemAdmin) {
+    accessTypeSelect.disabled = true
+    permissionInputs.forEach(input => {
+      input.checked = true
+      input.disabled = true
+    })
+    return
+  }
+
+  accessTypeSelect.disabled = false
+  permissionInputs.forEach(input => {
+    input.disabled = false
+  })
 
   if (!editArticles) return
+
+  const selected = accessTypeSelect.value
 
   if (selected === 'agent_editor') {
     editArticles.checked = true
@@ -294,14 +314,14 @@ function applyAccessTypeRules() {
   } else if (selected === 'regular_agent') {
     editArticles.checked = false
     editArticles.disabled = true
-  } else {
-    editArticles.disabled = false
   }
 }
 
 function openEmployee(userId) {
   const profile = profiles.find(item => item.user_id === userId)
   if (!profile) return
+
+  editingSystemAdmin = profile.is_system_admin === true
 
   document.getElementById('employeeUserId').value = profile.user_id
   document.getElementById('employeeFullName').value = profile.full_name || ''
@@ -329,7 +349,7 @@ async function loadWorkforceData() {
     const [profileResult, teamResult, permissionResult] = await Promise.all([
       supabase
         .from('profiles')
-        .select('user_id, full_name, email, employee_id, employment_status, base_role, is_agent, team_id, supervisor_id, can_edit_articles, can_manage_payroll, timezone, updated_at')
+        .select('user_id, full_name, email, employee_id, employment_status, base_role, is_agent, is_system_admin, team_id, supervisor_id, can_edit_articles, can_manage_payroll, timezone, updated_at')
         .order('full_name'),
       supabase
         .from('teams')
@@ -388,14 +408,21 @@ async function saveEmployee(event) {
   const timezone = normalizeText(document.getElementById('employeeTimezone').value) || 'Asia/Manila'
   const reason = normalizeText(document.getElementById('employeeChangeReason').value) || null
   const permissions = readPermissionCheckboxes()
+  const profile = profiles.find(item => item.user_id === userId)
 
   if (!userId || !fullName || !employeeId) {
     setMessage(formMessage, 'Full name and employee ID are required.', 'error')
     return
   }
 
-  if (accessType === 'agent_editor') permissions.edit_articles = true
-  if (accessType === 'regular_agent') permissions.edit_articles = false
+  if (profile?.is_system_admin === true) {
+    WORKFORCE_PERMISSION_KEYS.forEach(key => {
+      permissions[key] = true
+    })
+  } else {
+    if (accessType === 'agent_editor') permissions.edit_articles = true
+    if (accessType === 'regular_agent') permissions.edit_articles = false
+  }
 
   setLoading(saveButton, true, 'Saving...', 'Save Employee')
   setMessage(formMessage, 'Saving employee profile and permissions...')
