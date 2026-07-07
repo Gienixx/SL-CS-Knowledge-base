@@ -43,7 +43,7 @@ let access = null
 let profiles = []
 let schedules = []
 let personalProfileIds = []
-let anchorDate = todayInTimeZone('Asia/Manila')
+let anchorDate = todayInTimeZone('America/New_York')
 let canManageSchedules = false
 let canViewTeam = false
 let lastFocusedElement = null
@@ -150,7 +150,7 @@ function formatDate(value, includeWeekday = true) {
   }).format(parseDateKey(value))
 }
 
-function formatDateTime(value, timeZone = 'Asia/Manila') {
+function formatDateTime(value, timeZone = 'America/New_York') {
   if (!value) return '—'
   return new Intl.DateTimeFormat('en-US', {
     timeZone,
@@ -164,7 +164,7 @@ function formatShift(schedule) {
   if (!schedule.shift_start || !schedule.shift_end) return 'Time not available'
 
   const formatter = new Intl.DateTimeFormat('en-US', {
-    timeZone: schedule.timezone || 'Asia/Manila',
+    timeZone: schedule.timezone || 'America/New_York',
     hour: 'numeric',
     minute: '2-digit'
   })
@@ -349,7 +349,7 @@ function renderCalendar(rows) {
     }
   }
 
-  const today = todayInTimeZone(access?.timezone || 'Asia/Manila')
+  const today = todayInTimeZone(access?.timezone || 'America/New_York')
   let cursor = range.start
 
   while (cursor <= range.end) {
@@ -438,7 +438,7 @@ function renderTable(rows) {
       row.append(
         textCell(formatDate(schedule.shift_date), `Sequence ${schedule.shift_sequence}`),
         textCell(employeeName(schedule.user_id), profileById(schedule.user_id)?.employee_id || ''),
-        textCell(formatShift(schedule), schedule.timezone || 'Asia/Manila'),
+        textCell(formatShift(schedule), schedule.timezone || 'America/New_York'),
         typeCell,
         statusCell,
         textCell(formatDateTime(schedule.updated_at, schedule.timezone)),
@@ -559,7 +559,7 @@ function openScheduleDetails(scheduleId) {
   document.getElementById('detailEmployee').textContent = employeeName(schedule.user_id)
   document.getElementById('detailDate').textContent = formatDate(schedule.shift_date)
   document.getElementById('detailShift').textContent = formatShift(schedule)
-  document.getElementById('detailTimezone').textContent = schedule.timezone || 'Asia/Manila'
+  document.getElementById('detailTimezone').textContent = schedule.timezone || 'America/New_York'
   document.getElementById('detailType').textContent = scheduleType(schedule)
   document.getElementById('detailStatus').textContent = STATUS_LABELS[schedule.status] || schedule.status
   document.getElementById('detailUpdated').textContent = formatDateTime(schedule.updated_at, schedule.timezone)
@@ -595,7 +595,7 @@ function bindEvents() {
   })
 
   elements.current.addEventListener('click', async () => {
-    anchorDate = todayInTimeZone(access.timezone || 'Asia/Manila')
+    anchorDate = todayInTimeZone(access.timezone || 'America/New_York')
     await loadSchedules()
   })
 

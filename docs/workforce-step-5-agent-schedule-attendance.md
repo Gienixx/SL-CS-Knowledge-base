@@ -49,14 +49,15 @@ The UI queries all profile IDs returned by `workforce_get_current_access()`, so 
 ## Deployment order
 
 1. Apply `supabase/migrations/2026070801_agent_attendance_interface.sql` in the internal Supabase environment.
-2. Run `supabase/verification/agent_attendance_check.sql`.
-3. Deploy the site files to the internal Cloudflare Pages environment.
-4. Test with a Regular Agent account.
-5. Test with an Agent with Article Editor access account.
-6. Test with an Admin and Agent account.
-7. Confirm an Admin-only account is denied attendance clock access.
-8. Test a released shift, changed shift, rest day, unscheduled day, duplicate clock-in, and clock-out.
-9. Review the resulting rows in `attendance` and `workforce_audit_logs`.
+2. Apply `supabase/migrations/2026070802_workforce_timezone_new_york.sql`.
+3. Run `supabase/verification/agent_attendance_check.sql` and `supabase/verification/workforce_timezone_check.sql`.
+4. Deploy the site files to the internal Cloudflare Pages environment.
+5. Test with a Regular Agent account.
+6. Test with an Agent with Article Editor access account.
+7. Test with an Admin and Agent account.
+8. Confirm an Admin-only account is denied attendance clock access.
+9. Test a released shift, changed shift, rest day, unscheduled day, duplicate clock-in, and clock-out.
+10. Review the resulting rows in `attendance` and `workforce_audit_logs`.
 
 ## Step 5 acceptance checks
 

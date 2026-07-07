@@ -69,7 +69,7 @@ function setBusy(value, label = '') {
 
 function localDateKey(date = new Date()) {
   const parts = new Intl.DateTimeFormat('en-CA', {
-    timeZone: access?.timezone || 'Asia/Manila',
+    timeZone: access?.timezone || 'America/New_York',
     year: 'numeric',
     month: '2-digit',
     day: '2-digit'
@@ -105,7 +105,7 @@ function formatDate(value, includeWeekday = true) {
 function formatDateTime(value) {
   if (!value) return '—'
   return new Intl.DateTimeFormat('en-US', {
-    timeZone: access?.timezone || 'Asia/Manila',
+    timeZone: access?.timezone || 'America/New_York',
     dateStyle: 'medium',
     timeStyle: 'short'
   }).format(new Date(value))
@@ -114,7 +114,7 @@ function formatDateTime(value) {
 function formatTime(value) {
   if (!value) return '—'
   return new Intl.DateTimeFormat('en-US', {
-    timeZone: access?.timezone || 'Asia/Manila',
+    timeZone: access?.timezone || 'America/New_York',
     hour: 'numeric',
     minute: '2-digit',
     second: '2-digit'
@@ -127,7 +127,7 @@ function formatShift(schedule) {
   if (!schedule.shift_start || !schedule.shift_end) return 'Shift time unavailable'
 
   const formatter = new Intl.DateTimeFormat('en-US', {
-    timeZone: schedule.timezone || access?.timezone || 'Asia/Manila',
+    timeZone: schedule.timezone || access?.timezone || 'America/New_York',
     hour: 'numeric',
     minute: '2-digit'
   })
@@ -192,7 +192,7 @@ function setBadge(element, text, modifier = 'muted') {
 function updateLiveClock() {
   const now = new Date()
   elements.liveClock.textContent = new Intl.DateTimeFormat('en-US', {
-    timeZone: access?.timezone || 'Asia/Manila',
+    timeZone: access?.timezone || 'America/New_York',
     hour: 'numeric',
     minute: '2-digit',
     second: '2-digit'
@@ -538,7 +538,7 @@ async function initialize() {
     throw new Error('No workforce profile is linked to this account.')
   }
 
-  elements.timeZone.textContent = access.timezone || 'Asia/Manila'
+  elements.timeZone.textContent = access.timezone || 'America/New_York'
   elements.historyMonth.value = localDateKey().slice(0, 7)
 
   const workforceLink = document.getElementById('attendanceWorkforceLink')
