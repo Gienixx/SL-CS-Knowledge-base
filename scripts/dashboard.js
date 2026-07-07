@@ -99,6 +99,17 @@ document.addEventListener('DOMContentLoaded', async () => {
         : 'none'
     }
 
+    const myScheduleBtn = document.getElementById('myScheduleBtn')
+    const canViewSchedules =
+      access.is_agent === true ||
+      hasWorkforcePermission(access, 'manage_schedules')
+
+    if (myScheduleBtn) {
+      myScheduleBtn.style.display = canViewSchedules
+        ? 'inline-flex'
+        : 'none'
+    }
+
     const changePasswordBtn =
       document.getElementById('changePasswordBtn')
 
