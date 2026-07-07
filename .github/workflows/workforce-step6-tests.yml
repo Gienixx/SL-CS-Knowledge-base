@@ -1,0 +1,65 @@
+name: Workforce Step 6 Tests
+
+on:
+  push:
+    branches:
+      - workforce-step-6-permission-tests
+  pull_request:
+    paths:
+      - "package.json"
+      - "tests/**"
+      - "shared/**"
+      - "functions/**"
+      - "scripts/**"
+      - "supabase/**"
+      - ".github/workflows/workforce-step6-tests.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  permission-tests:
+    name: Permission matrix and regression suite
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          cache: npm
+          cache-dependency-path: package.json
+
+      - name: Install dependencies
+        run: npm install --no-audit --no-fund
+
+      - name: Run Workforce Step 6 permission tests
+        id: workforce_permissions
+        shell: bash
+        run: |
+          set -o pipefail
+          npm run test:workforce-permissions 2>&1 | tee workforce-permission-test.log
+
+      - name: Run complete regression suite
+        id: regression_suite
+        if: always()
+        shell: bash
+        run: |
+          set -o pipefail
+          npm test 2>&1 | tee complete-regression-test.log
+
+      - name: Upload complete test logs
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: workforce-step6-test-logs
+          path: |
+            workforce-permission-test.log
+            complete-regression-test.log
+          if-no-files-found: warn
+          retention-days: 14

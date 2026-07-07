@@ -4,19 +4,20 @@ import test from 'node:test'
 
 const read = path => readFile(new URL(`../${path}`, import.meta.url), 'utf8')
 
-test('dashboard exposes Workforce Management only through the employee permission gate', async () => {
+test('home exposes Workforce Management only through the employee permission gate', async () => {
   const [html, script] = await Promise.all([
-    read('dashboard.html'),
-    read('scripts/dashboard.js')
+    read('home.html'),
+    read('scripts/home-workforce-nav.js')
   ])
 
   assert.match(
     html,
-    /id="workforceManagementBtn"[^>]*href="\.\/workforce\.html"[^>]*style="display:none;"/
+    /id="homeWorkforceManagementBtn"[^>]*href="\.\/workforce\.html"[^>]*hidden/
   )
-  assert.match(script, /workforceManagementBtn/)
+  assert.match(script, /homeWorkforceManagementBtn/)
   assert.match(script, /access\.is_admin\s*===\s*true/)
   assert.match(script, /hasWorkforcePermission\(access,\s*'manage_employees'\)/)
+  assert.match(script, /workforceManagementButton\.hidden\s*=\s*!canManageEmployees/)
 })
 
 test('employee and team pages require authorized workforce administration', async () => {
