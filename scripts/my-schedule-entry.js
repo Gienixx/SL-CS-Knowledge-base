@@ -58,7 +58,7 @@ function keepManagerControlsAvailable() {
     '#myScheduleStatus option[value="scheduled"]'
   )
 
-  if (scheduledOption) {
+  if (scheduledOption?.disabled) {
     scheduledOption.disabled = false
   }
 
@@ -84,11 +84,20 @@ await import('./my-schedule.js?v=1')
 
 if (canManageSchedules) {
   const calendar = document.getElementById('myScheduleCalendar')
+  const statusSelect = document.getElementById('myScheduleStatus')
 
   if (calendar) {
     new MutationObserver(markDraftEntries).observe(calendar, {
       childList: true,
       subtree: true
+    })
+  }
+
+  if (statusSelect) {
+    new MutationObserver(keepManagerControlsAvailable).observe(statusSelect, {
+      attributes: true,
+      subtree: true,
+      attributeFilter: ['disabled']
     })
   }
 
