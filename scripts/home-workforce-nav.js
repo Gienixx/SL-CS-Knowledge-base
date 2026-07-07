@@ -1,3 +1,4 @@
+import { supabase } from './supabaseClient.js?v=8'
 import {
   hasWorkforcePermission,
   loadCurrentWorkforceAccess
@@ -14,7 +15,7 @@ async function configureHomeWorkforceNavigation() {
   }
 
   try {
-    const access = await loadCurrentWorkforceAccess(supabaseClient())
+    const access = await loadCurrentWorkforceAccess(supabase)
 
     if (!access.allowed) {
       return
@@ -38,10 +39,6 @@ async function configureHomeWorkforceNavigation() {
   } catch (error) {
     console.error('Home workforce navigation failed:', error)
   }
-}
-
-function supabaseClient() {
-  return window.__socialLoopSupabase
 }
 
 document.addEventListener('DOMContentLoaded', configureHomeWorkforceNavigation)
