@@ -25,10 +25,9 @@ test('editing an existing draft preserves its stored status until an administrat
 })
 
 test('authorized schedule managers default to Team schedule scope', async () => {
-  const entry = await read('scripts/my-schedule-entry.js')
+  const script = await read('scripts/my-schedule-v2.js')
 
-  assert.match(entry, /function enableDefaultTeamScope/)
-  assert.match(entry, /scope\.value = 'team'/)
-  assert.match(entry, /scope\.dispatchEvent\(new Event\('change'/)
-  assert.match(entry, /if \(canManageSchedules\)/)
+  assert.match(script, /canViewTeam = canManageSchedules/)
+  assert.match(script, /elements\.scope\.value = canViewTeam \? 'team' : 'self'/)
+  assert.match(script, /elements\.scope\.addEventListener\('change'/)
 })
