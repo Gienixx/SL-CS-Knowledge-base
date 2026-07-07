@@ -1,0 +1,125 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Attendance | SocialLoop CS Base</title>
+  <link rel="stylesheet" href="./styles/button-theme.css?v=1">
+  <link rel="stylesheet" href="./styles/workforce-admin.css?v=2">
+  <link rel="stylesheet" href="./styles/attendance.css?v=1">
+</head>
+<body>
+  <main class="wf-page attendance-page">
+    <header class="wf-topbar">
+      <div class="wf-title">
+        <h1>Attendance</h1>
+        <p>Clock in, clock out, review today’s shift, and view your attendance history.</p>
+      </div>
+      <nav class="wf-nav" aria-label="Attendance navigation">
+        <a class="wf-link" href="./my-schedule.html">My Schedule</a>
+        <a id="attendanceWorkforceLink" class="wf-link" href="./workforce.html" hidden>Workforce Management</a>
+        <a class="wf-link" href="./home.html">← Back to Home</a>
+      </nav>
+    </header>
+
+    <section class="attendance-hero" aria-labelledby="attendanceTodayTitle">
+      <div class="attendance-clock-panel">
+        <p class="attendance-eyebrow">Current local time</p>
+        <time id="attendanceLiveClock" class="attendance-live-clock">—</time>
+        <p id="attendanceTimeZone" class="attendance-timezone">Asia/Manila</p>
+      </div>
+
+      <div class="attendance-today-panel">
+        <div class="attendance-today-heading">
+          <div>
+            <p class="attendance-eyebrow">Today</p>
+            <h2 id="attendanceTodayTitle">Loading attendance...</h2>
+          </div>
+          <span id="attendanceTodayBadge" class="wf-badge muted">Loading</span>
+        </div>
+
+        <dl class="attendance-today-details">
+          <div><dt>Date</dt><dd id="attendanceTodayDate">—</dd></div>
+          <div><dt>Assigned shift</dt><dd id="attendanceTodayShift">—</dd></div>
+          <div><dt>Clock in</dt><dd id="attendanceTodayClockIn">—</dd></div>
+          <div><dt>Clock out</dt><dd id="attendanceTodayClockOut">—</dd></div>
+          <div><dt>Worked time</dt><dd id="attendanceTodayWorked">—</dd></div>
+          <div><dt>Attendance status</dt><dd id="attendanceTodayStatus">—</dd></div>
+        </dl>
+
+        <div id="attendanceScheduleChooser" class="attendance-schedule-chooser" hidden>
+          <label class="wf-field">
+            <span>Today’s shift</span>
+            <select id="attendanceScheduleSelect" class="wf-control"></select>
+          </label>
+          <p id="attendanceScheduleHelp" class="attendance-help"></p>
+        </div>
+
+        <div id="attendanceScheduleNotice" class="attendance-notice" hidden></div>
+
+        <div class="attendance-actions">
+          <button id="attendanceClockInButton" class="wf-btn attendance-action-primary" type="button" disabled>Clock In</button>
+          <button id="attendanceClockOutButton" class="wf-btn secondary attendance-action-secondary" type="button" disabled>Clock Out</button>
+          <button id="attendanceRefreshButton" class="wf-row-btn" type="button">Refresh</button>
+        </div>
+        <p id="attendanceActionMessage" class="wf-message" aria-live="polite"></p>
+      </div>
+    </section>
+
+    <section class="wf-summary-grid attendance-summary-grid" aria-label="Attendance summary">
+      <article class="wf-summary"><span>Records this month</span><strong id="attendanceMonthCount">—</strong></article>
+      <article class="wf-summary"><span>Days present</span><strong id="attendancePresentCount">—</strong></article>
+      <article class="wf-summary"><span>Late records</span><strong id="attendanceLateCount">—</strong></article>
+      <article class="wf-summary"><span>Total worked</span><strong id="attendanceWorkedTotal">—</strong></article>
+    </section>
+
+    <section class="wf-card">
+      <div class="wf-card-header">
+        <div>
+          <h2>Attendance History</h2>
+          <p class="wf-message" style="margin-top:5px;">Review your recorded clock times, status, and attendance adjustments.</p>
+        </div>
+        <div class="attendance-history-controls">
+          <label class="wf-field">
+            <span>Month</span>
+            <input id="attendanceHistoryMonth" class="wf-control" type="month">
+          </label>
+          <label class="wf-field">
+            <span>Status</span>
+            <select id="attendanceHistoryStatus" class="wf-control">
+              <option value="">All statuses</option>
+              <option value="present">Present</option>
+              <option value="absent">Absent</option>
+              <option value="on_leave">On leave</option>
+              <option value="excused">Excused</option>
+            </select>
+          </label>
+        </div>
+      </div>
+
+      <div class="wf-table-wrap">
+        <table class="wf-table attendance-table">
+          <thead>
+            <tr>
+              <th>Date</th>
+              <th>Assigned shift</th>
+              <th>Clock in</th>
+              <th>Clock out</th>
+              <th>Worked</th>
+              <th>Status</th>
+              <th>Adjustments</th>
+              <th>Notes</th>
+            </tr>
+          </thead>
+          <tbody id="attendanceHistoryBody">
+            <tr><td colspan="8" class="wf-empty">Loading attendance history...</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <p id="attendanceHistoryMessage" class="wf-message" aria-live="polite"></p>
+    </section>
+  </main>
+
+  <script type="module" src="./scripts/attendance.js?v=1"></script>
+</body>
+</html>
