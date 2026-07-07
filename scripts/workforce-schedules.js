@@ -28,7 +28,7 @@ if (section) {
   let profiles = []
   let teams = []
   let schedules = []
-  let anchorDate = todayInTimeZone('Asia/Manila')
+  let anchorDate = todayInTimeZone('America/New_York')
   let lastFocusedElement = null
 
   const STATUS_LABELS = Object.freeze({
@@ -149,7 +149,7 @@ if (section) {
     if (schedule.is_rest_day) return 'Rest day'
 
     const formatter = new Intl.DateTimeFormat('en-US', {
-      timeZone: schedule.timezone || 'Asia/Manila',
+      timeZone: schedule.timezone || 'America/New_York',
       hour: 'numeric',
       minute: '2-digit'
     })
@@ -396,7 +396,7 @@ if (section) {
     document.getElementById('scheduleModalTitle').textContent = 'Create Schedule Entry'
     document.getElementById('scheduleDate').value = anchorDate
     document.getElementById('scheduleSequence').value = '1'
-    document.getElementById('scheduleTimezone').value = 'Asia/Manila'
+    document.getElementById('scheduleTimezone').value = 'America/New_York'
     document.getElementById('scheduleStatus').value = 'scheduled'
     document.getElementById('scheduleEmployee').value = employeeFilter.value || ''
     setMessage(formMessage, '')
@@ -413,7 +413,7 @@ if (section) {
       document.getElementById('scheduleEmployee').value = schedule.user_id
       document.getElementById('scheduleDate').value = schedule.shift_date
       document.getElementById('scheduleSequence').value = String(schedule.shift_sequence)
-      document.getElementById('scheduleTimezone').value = schedule.timezone || 'Asia/Manila'
+      document.getElementById('scheduleTimezone').value = schedule.timezone || 'America/New_York'
       document.getElementById('scheduleStatus').value = schedule.status
       restDayInput.checked = schedule.is_rest_day === true
       holidayInput.checked = schedule.is_holiday === true
@@ -478,7 +478,7 @@ if (section) {
     const userId = document.getElementById('scheduleEmployee').value
     const shiftDate = document.getElementById('scheduleDate').value
     const sequence = Number(document.getElementById('scheduleSequence').value)
-    const timezone = normalizeText(document.getElementById('scheduleTimezone').value) || 'Asia/Manila'
+    const timezone = normalizeText(document.getElementById('scheduleTimezone').value) || 'America/New_York'
     const status = document.getElementById('scheduleStatus').value
     const isRestDay = restDayInput.checked
     const isHoliday = holidayInput.checked
@@ -564,7 +564,7 @@ if (section) {
       await loadScheduleData()
     })
     todayButton.addEventListener('click', async () => {
-      anchorDate = todayInTimeZone('Asia/Manila')
+      anchorDate = todayInTimeZone('America/New_York')
       await loadScheduleData()
     })
     nextButton.addEventListener('click', async () => {

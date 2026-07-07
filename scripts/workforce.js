@@ -329,7 +329,7 @@ function openEmployee(userId) {
   document.getElementById('employeeId').value = profile.employee_id || ''
   document.getElementById('employmentStatus').value = profile.employment_status
   document.getElementById('accessType').value = accessTypeFor(profile)
-  document.getElementById('employeeTimezone').value = profile.timezone || 'Asia/Manila'
+  document.getElementById('employeeTimezone').value = profile.timezone || 'America/New_York'
   document.getElementById('employeeTeam').value = profile.team_id || ''
   document.getElementById('employeeChangeReason').value = ''
 
@@ -405,7 +405,7 @@ async function saveEmployee(event) {
   const accessType = accessTypeSelect.value
   const teamId = document.getElementById('employeeTeam').value || null
   const supervisorId = document.getElementById('employeeSupervisor').value || null
-  const timezone = normalizeText(document.getElementById('employeeTimezone').value) || 'Asia/Manila'
+  const timezone = normalizeText(document.getElementById('employeeTimezone').value) || 'America/New_York'
   const reason = normalizeText(document.getElementById('employeeChangeReason').value) || null
   const permissions = readPermissionCheckboxes()
   const profile = profiles.find(item => item.user_id === userId)
