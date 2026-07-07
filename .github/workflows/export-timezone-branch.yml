@@ -1,6 +1,7 @@
 name: Export timezone branch
 
 on:
+  pull_request:
   push:
     branches: [workforce-timezone-new-york]
 
