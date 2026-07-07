@@ -4,25 +4,23 @@ import test from 'node:test'
 
 const read = path => readFile(new URL(`../${path}`, import.meta.url), 'utf8')
 
-test('authorized schedule managers bypass only the personal released-status filter', async () => {
-  const entry = await read('scripts/my-schedule-entry.js')
+test('authorized schedule managers can view personal drafts through the canonical controller', async () => {
+  const script = await read('scripts/my-schedule-v2.js')
 
-  assert.match(entry, /hasWorkforcePermission\(access,\s*'manage_schedules'\)/)
-  assert.match(entry, /table !== 'work_schedules'/)
-  assert.match(entry, /column === 'status'/)
-  assert.match(entry, /RELEASED_STATUSES\.every/)
-  assert.match(entry, /return this/)
-  assert.match(entry, /await import\('\.\/my-schedule\.js\?v=1'\)/)
+  assert.match(script, /hasWorkforcePermission\(access,\s*'manage_schedules'\)/)
+  assert.match(script, /query = query\.in\('user_id', personalProfileIds\)/)
+  assert.match(script, /if \(!canManageSchedules\) \{\s*query = query\.in\('status', RELEASED_STATUSES\)/)
 })
 
-test('regular agents retain the existing released-status restriction', async () => {
-  const [entry, schedule] = await Promise.all([
-    read('scripts/my-schedule-entry.js'),
-    read('scripts/my-schedule.js')
-  ])
+test('regular agents retain the released-status restriction', async () => {
+  const script = await read('scripts/my-schedule-v2.js')
 
-  assert.match(entry, /if \(canManageSchedules\) \{\s*enableManagerDraftVisibility\(\)/)
-  assert.match(schedule, /\.in\('status',\s*\['published',\s*'changed',\s*'cancelled',\s*'completed'\]\)/)
+  assert.match(script, /const RELEASED_STATUSES = Object\.freeze\(\[/)
+  assert.match(script, /'published'/)
+  assert.match(script, /'changed'/)
+  assert.match(script, /'cancelled'/)
+  assert.match(script, /'completed'/)
+  assert.match(script, /if \(!canManageSchedules\)/)
 })
 
 test('hidden scope controls remain hidden and draft entries receive distinct styling', async () => {
@@ -31,7 +29,7 @@ test('hidden scope controls remain hidden and draft entries receive distinct sty
     read('styles/my-schedule.css')
   ])
 
-  assert.match(html, /scripts\/my-schedule-entry\.js\?v=1/)
+  assert.match(html, /scripts\/my-schedule-v2\.js\?v=1/)
   assert.match(styles, /^\[hidden\]\{display:none!important\}/)
   assert.match(styles, /\.schedule-entry\.scheduled/)
 })
