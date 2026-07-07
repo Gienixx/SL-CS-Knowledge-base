@@ -15,7 +15,7 @@ Step 5 completes the agent-facing workforce experience:
 - `scripts/attendance.js`
 - `styles/attendance.css`
 - `supabase/migrations/2026070801_agent_attendance_interface.sql`
-- `supabase/verification/workforce_step5_attendance_check.sql`
+- `supabase/verification/agent_attendance_check.sql`
 - `tests/agent-attendance-interface.test.mjs`
 
 The Home sidebar and My Schedule page are also updated with Attendance navigation.
@@ -49,7 +49,7 @@ The UI queries all profile IDs returned by `workforce_get_current_access()`, so 
 ## Deployment order
 
 1. Apply `supabase/migrations/2026070801_agent_attendance_interface.sql` in the internal Supabase environment.
-2. Run `supabase/verification/workforce_step5_attendance_check.sql`.
+2. Run `supabase/verification/agent_attendance_check.sql`.
 3. Deploy the site files to the internal Cloudflare Pages environment.
 4. Test with a Regular Agent account.
 5. Test with an Agent with Article Editor access account.
