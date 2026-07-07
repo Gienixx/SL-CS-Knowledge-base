@@ -6,11 +6,12 @@ import {
 
 async function configureHomeWorkforceNavigation() {
   const myScheduleButton = document.getElementById('homeMyScheduleBtn')
+  const attendanceButton = document.getElementById('homeAttendanceBtn')
   const workforceManagementButton = document.getElementById(
     'homeWorkforceManagementBtn'
   )
 
-  if (!myScheduleButton && !workforceManagementButton) {
+  if (!myScheduleButton && !attendanceButton && !workforceManagementButton) {
     return
   }
 
@@ -25,12 +26,18 @@ async function configureHomeWorkforceNavigation() {
       access.is_agent === true ||
       hasWorkforcePermission(access, 'manage_schedules')
 
+    const canUseAttendance = access.is_agent === true
+
     const canManageEmployees =
       access.is_admin === true &&
       hasWorkforcePermission(access, 'manage_employees')
 
     if (myScheduleButton) {
       myScheduleButton.hidden = !canViewSchedules
+    }
+
+    if (attendanceButton) {
+      attendanceButton.hidden = !canUseAttendance
     }
 
     if (workforceManagementButton) {
