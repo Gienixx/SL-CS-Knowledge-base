@@ -73,6 +73,35 @@ function keepManagerControlsAvailable() {
   markDraftEntries()
 }
 
+function enableDefaultTeamScope() {
+  const scopeField = document.getElementById('scheduleScopeField')
+  const scope = document.getElementById('myScheduleScope')
+  let applied = false
+
+  const apply = () => {
+    if (applied || !scope || scopeField?.hidden) return
+
+    const teamOption = [...scope.options].some(option => option.value === 'team')
+    if (!teamOption) return
+
+    applied = true
+    if (scope.value !== 'team') {
+      scope.value = 'team'
+      scope.dispatchEvent(new Event('change', { bubbles: true }))
+    }
+  }
+
+  if (scopeField) {
+    new MutationObserver(apply).observe(scopeField, {
+      attributes: true,
+      attributeFilter: ['hidden']
+    })
+  }
+
+  window.setTimeout(apply, 0)
+  window.setTimeout(apply, 500)
+}
+
 const access = await loadCurrentWorkforceAccess(supabase)
 const canManageSchedules = hasWorkforcePermission(access, 'manage_schedules')
 
@@ -101,6 +130,7 @@ if (canManageSchedules) {
     })
   }
 
+  enableDefaultTeamScope()
   window.setTimeout(keepManagerControlsAvailable, 0)
 
   document.getElementById('myScheduleScope')?.addEventListener('change', () => {
