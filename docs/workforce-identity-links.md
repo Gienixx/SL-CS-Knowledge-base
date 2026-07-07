@@ -10,14 +10,23 @@ Without an explicit link, Row-Level Security treats those records as belonging t
 
 Migration `2026070705_workforce_identity_links.sql` adds `public.workforce_identity_links` with auditable Auth-user-to-profile pairs.
 
+Migration `2026070706_workforce_identity_coverage.sql` validates and enforces coverage across the entire existing site population. It does not target only Arby or the dummy test account.
+
 Links are backfilled through:
 
 - Exact Auth UUID matches
 - Exact normalized email matches
 - Unique legacy name or email-local-part aliases
-- Future manual links when required
 
-The alias backfill runs only when the Auth email local part is unique among Auth users.
+The all-user coverage migration then verifies:
+
+- Every Supabase Auth account present in `public.login` has at least one active workforce-profile link
+- Every active agent profile owning a schedule, attendance record, or leave request is linked to an Auth account
+- Ambiguous inferred aliases do not silently grant access
+- Future profile creation or email changes synchronize exact links and revoke stale automatic email links
+- Inactive accounts remain inactive; identity linking does not reactivate them
+
+If any current account or workforce-record owner remains unresolved, the coverage migration raises an exception and rolls back instead of leaving a partially repaired deployment.
 
 ## Authorization behavior
 
@@ -32,25 +41,38 @@ The identity-link table is not directly readable by browser roles. It is consume
 
 ## Account provisioning
 
-The `zz_login_workforce_identity_link` trigger runs after login synchronization and creates an exact identity link for newly provisioned accounts. Correctly created future users should therefore not require alias repair.
+The `zz_login_workforce_identity_link` trigger runs after login synchronization and creates an exact identity link for newly provisioned accounts.
+
+The `profiles_workforce_identity_link` trigger handles profiles created or updated outside the ordinary login flow. It also disables stale automatic email links after an email reassignment. Correctly created future users should not require legacy alias repair.
 
 ## Deployment
 
-1. Apply `supabase/migrations/2026070705_workforce_identity_links.sql` in Supabase SQL Editor.
-2. Run `supabase/verification/workforce_identity_links_check.sql`.
-3. Confirm object and privilege checks are true.
-4. Confirm the exact-link, safe-alias, and orphan blocker queries return zero rows.
-5. Review the multi-profile identity result and confirm expected accounts such as Arby or the dummy test account.
-6. Confirm the published-schedule query lists any existing schedule attached to a linked non-Auth UUID.
-7. Sign out and sign back in, or hard-refresh My Schedule after Cloudflare and Supabase changes are available.
+Run the files in this exact order in Supabase SQL Editor:
+
+1. `supabase/migrations/2026070705_workforce_identity_links.sql`
+2. `supabase/migrations/2026070706_workforce_identity_coverage.sql`
+3. `supabase/verification/workforce_identity_coverage_check.sql`
+
+Expected verification results:
+
+- All required-object booleans return `true`
+- The unlinked site-account query returns zero rows
+- The unlinked workforce-record-owner query returns zero rows
+- The ambiguous inferred-alias query returns zero rows
+- The account coverage table contains every current site login
+- The linked-schedule table includes legacy schedules attached to non-identical profile UUIDs, including the affected test account where applicable
+- A recent `workforce_identity_coverage_verified` audit entry exists
+
+After the SQL deployment, sign out and sign back in or hard-refresh My Schedule after Cloudflare finishes deploying the frontend changes.
 
 ## Troubleshooting
 
 When Team Schedule shows an employee row but the same logged-in person sees zero entries in My Schedule:
 
-- Confirm the row is inside the selected date range.
-- Confirm its status is Published, Changed, or Completed for regular agents.
-- Run the identity-link verification script.
-- Check that the Auth email appears with the workforce profile and schedule in the multi-profile or linked-schedule results.
+- Confirm the row is inside the selected date range
+- Confirm its status is Published, Changed, or Completed for regular agents
+- Run the all-user identity coverage verification script
+- Locate the Auth email in the account coverage table
+- Confirm the scheduled workforce profile appears inside its linked-profile JSON
 
 Do not weaken RLS or expose all team schedules to regular agents as a workaround.
