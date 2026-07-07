@@ -9,6 +9,30 @@ function getCurrentRouteName() {
     return lastSegment.replace(/\.html$/, '')
 }
 
+function configureHomeBackNavigation() {
+    const routeName = getCurrentRouteName()
+
+    if (routeName === 'kb') {
+        const backButton = document.querySelector('.logout-btn')
+
+        if (backButton) {
+            backButton.textContent = 'Back to Home'
+            backButton.onclick = () => {
+                window.location.href = './home.html'
+            }
+        }
+    }
+
+    if (routeName === 'org-chart') {
+        const backLink = document.querySelector('.org-link')
+
+        if (backLink) {
+            backLink.href = './home.html'
+            backLink.textContent = '← Back to Home'
+        }
+    }
+}
+
 async function loadAuthenticatedPageEnhancements() {
     const routeName = getCurrentRouteName()
     const modules = []
@@ -69,4 +93,5 @@ async function requireAuthentication() {
     }
 }
 
+configureHomeBackNavigation()
 requireAuthentication()
