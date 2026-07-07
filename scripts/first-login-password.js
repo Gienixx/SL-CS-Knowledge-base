@@ -7,7 +7,7 @@ const form = document.getElementById('changePasswordForm')
 const message = document.getElementById('message')
 const newPasswordInput = document.getElementById('newPassword')
 const confirmPasswordInput = document.getElementById('confirmPassword')
-const backToDashboard = document.getElementById('backToDashboard')
+const backToHome = document.getElementById('backToHome')
 const firstLoginNotice = document.getElementById('firstLoginNotice')
 const pageTitle = document.getElementById('pageTitle')
 const pageDescription = document.getElementById('pageDescription')
@@ -36,7 +36,7 @@ async function initializeFirstLoginFlow() {
     requiresFirstLoginPasswordChange(user)
 
   if (firstLoginRequired) {
-    backToDashboard.hidden = true
+    backToHome.hidden = true
     firstLoginNotice.hidden = false
     pageTitle.textContent = 'Create a New Password'
     pageDescription.textContent =
@@ -102,7 +102,7 @@ async function initializeFirstLoginFlow() {
     setMessage('Password updated successfully.', 'success')
 
     window.setTimeout(() => {
-      window.location.replace('./dashboard.html')
+      window.location.replace('./home.html')
     }, 700)
   })
 
