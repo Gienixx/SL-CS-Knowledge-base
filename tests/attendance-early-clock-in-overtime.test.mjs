@@ -30,3 +30,12 @@ test('database policy enforces the window and combines pre-shift and post-shift 
   assert.match(migration, /v_overtime_minutes := v_early_overtime_minutes \+ v_post_shift_overtime_minutes/)
   assert.match(migration, /status not in \('published', 'changed'\)/)
 })
+
+test('released shifts cannot bypass the window with an unscheduled clock-in request', async () => {
+  const migration = await read('supabase/migrations/2026070804_attendance_released_schedule_enforcement.sql')
+
+  assert.match(migration, /v_has_released_schedule/)
+  assert.match(migration, /schedule\.status in \('published', 'changed'\)/)
+  assert.match(migration, /Select that shift before clocking in/)
+  assert.match(migration, /if p_schedule_id is null then/)
+})
