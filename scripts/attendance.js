@@ -5,7 +5,6 @@ import {
 } from './workforce-permissions.js?v=1'
 
 const RELEASED_SCHEDULE_STATUSES = Object.freeze(['published', 'changed'])
-const EARLY_CLOCK_IN_WINDOW_MINUTES = 15
 const ATTENDANCE_STATUS_LABELS = Object.freeze({
   present: 'Present',
   absent: 'Absent',
@@ -139,18 +138,16 @@ function scheduleForAttendance(record) {
 
 function scheduleWindow(schedule, now = new Date()) {
   if (!schedule || schedule.is_rest_day || !schedule.shift_start || !schedule.shift_end) {
-    return { state: 'unavailable', opensAt: null, startsAt: null, endsAt: null }
+    return { state: 'unavailable', startsAt: null, endsAt: null }
   }
 
   const startsAt = new Date(schedule.shift_start)
   const endsAt = new Date(schedule.shift_end)
-  const opensAt = new Date(startsAt.getTime() - EARLY_CLOCK_IN_WINDOW_MINUTES * 60_000)
   const nowMs = now.getTime()
 
-  if (nowMs < opensAt.getTime()) return { state: 'future', opensAt, startsAt, endsAt }
-  if (nowMs >= endsAt.getTime()) return { state: 'ended', opensAt, startsAt, endsAt }
-  if (nowMs < startsAt.getTime()) return { state: 'early', opensAt, startsAt, endsAt }
-  return { state: 'active', opensAt, startsAt, endsAt }
+  if (nowMs >= endsAt.getTime()) return { state: 'ended', startsAt, endsAt }
+  if (nowMs < startsAt.getTime()) return { state: 'early', startsAt, endsAt }
+  return { state: 'active', startsAt, endsAt }
 }
 
 function minutesBetween(start, end = new Date()) {
@@ -227,11 +224,10 @@ function renderScheduleChooser() {
     })
 
     const optionValues = [...elements.scheduleSelect.options].map(option => option.value)
-    const openSchedule = workingSchedules.find(schedule => ['early', 'active'].includes(scheduleWindow(schedule, now).state))
-    const upcomingSchedule = workingSchedules.find(schedule => scheduleWindow(schedule, now).state === 'future')
+    const availableSchedule = workingSchedules.find(schedule => ['early', 'active'].includes(scheduleWindow(schedule, now).state))
     const preferred = optionValues.includes(previous)
       ? previous
-      : openSchedule?.id || upcomingSchedule?.id || workingSchedules[0].id
+      : availableSchedule?.id || workingSchedules[0].id
 
     elements.scheduleSelect.value = preferred
     elements.scheduleChooser.hidden = false
@@ -282,10 +278,8 @@ function updateScheduleHelp() {
   }
 
   const window = scheduleWindow(schedule)
-  if (window.state === 'future') {
-    elements.scheduleHelp.textContent = `Clock-in opens at ${formatTime(window.opensAt, schedule.timezone)}, 15 minutes before this shift.`
-  } else if (window.state === 'early') {
-    elements.scheduleHelp.textContent = 'Clock-in is open. Minutes before the scheduled start will count as overtime.'
+  if (window.state === 'early') {
+    elements.scheduleHelp.textContent = 'Clock-in is available. Minutes before the scheduled start count as pre-shift overtime, subject to the 20-hour work-date limit.'
   } else if (window.state === 'active') {
     elements.scheduleHelp.textContent = 'This shift is currently active. You can clock in now.'
   } else if (window.state === 'ended') {
