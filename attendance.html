@@ -13,7 +13,7 @@
     <header class="wf-topbar">
       <div class="wf-title">
         <h1>Attendance</h1>
-        <p>Clock in, clock out, review today’s shift, and view your attendance history.</p>
+        <p>Clock in, clock out, review your available shift, and view your attendance history.</p>
       </div>
       <nav class="wf-nav" aria-label="Attendance navigation">
         <a class="wf-link" href="./my-schedule.html">My Schedule</a>
@@ -32,14 +32,14 @@
       <div class="attendance-today-panel">
         <div class="attendance-today-heading">
           <div>
-            <p class="attendance-eyebrow">Today</p>
+            <p class="attendance-eyebrow">Current attendance</p>
             <h2 id="attendanceTodayTitle">Loading attendance...</h2>
           </div>
           <span id="attendanceTodayBadge" class="wf-badge muted">Loading</span>
         </div>
 
         <dl class="attendance-today-details">
-          <div><dt>Date</dt><dd id="attendanceTodayDate">—</dd></div>
+          <div><dt>Work date</dt><dd id="attendanceTodayDate">—</dd></div>
           <div><dt>Assigned shift</dt><dd id="attendanceTodayShift">—</dd></div>
           <div><dt>Clock in</dt><dd id="attendanceTodayClockIn">—</dd></div>
           <div><dt>Clock out</dt><dd id="attendanceTodayClockOut">—</dd></div>
@@ -49,14 +49,14 @@
 
         <div id="attendanceScheduleChooser" class="attendance-schedule-chooser" hidden>
           <label class="wf-field">
-            <span>Today’s shift</span>
+            <span>Available shift</span>
             <select id="attendanceScheduleSelect" class="wf-control"></select>
           </label>
           <p id="attendanceScheduleHelp" class="attendance-help"></p>
         </div>
 
         <div id="attendanceScheduleNotice" class="attendance-notice" hidden></div>
-        <p class="attendance-help">Clock-in opens 15 minutes before your published or changed shift. Qualifying minutes worked before the scheduled start are added to overtime.</p>
+        <p class="attendance-help">Clock-in opens 15 minutes before a published or changed shift. Active overnight shifts and multiple shifts on the same work date are supported.</p>
 
         <div class="attendance-actions">
           <button id="attendanceClockInButton" class="wf-btn attendance-action-primary" type="button" disabled>Clock In</button>
@@ -69,7 +69,7 @@
 
     <section class="wf-summary-grid attendance-summary-grid" aria-label="Attendance summary">
       <article class="wf-summary"><span>Records this month</span><strong id="attendanceMonthCount">—</strong></article>
-      <article class="wf-summary"><span>Days present</span><strong id="attendancePresentCount">—</strong></article>
+      <article class="wf-summary"><span>Shifts present</span><strong id="attendancePresentCount">—</strong></article>
       <article class="wf-summary"><span>Late records</span><strong id="attendanceLateCount">—</strong></article>
       <article class="wf-summary"><span>Total worked</span><strong id="attendanceWorkedTotal">—</strong></article>
     </section>
@@ -121,7 +121,6 @@
     </section>
   </main>
 
-  <script type="module" src="./scripts/attendance.js?v=1"></script>
-  <script type="module" src="./scripts/attendance-clock-in-window.js?v=1"></script>
+  <script type="module" src="./scripts/attendance.js?v=2"></script>
 </body>
 </html>
