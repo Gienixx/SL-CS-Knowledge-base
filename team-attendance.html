@@ -6,7 +6,7 @@
   <title>Team Attendance | SocialLoop CS Base</title>
   <link rel="stylesheet" href="./styles/button-theme.css?v=1">
   <link rel="stylesheet" href="./styles/workforce-admin.css?v=2">
-  <link rel="stylesheet" href="./styles/team-attendance.css?v=1">
+  <link rel="stylesheet" href="./styles/team-attendance.css?v=2">
 </head>
 <body>
   <main class="wf-page team-attendance-page">
@@ -104,7 +104,7 @@
       <div class="wf-card-header">
         <div>
           <h2 id="teamAttendanceTableTitle">Attendance Records</h2>
-          <p class="wf-message team-attendance-table-note">Clock-in and clock-out are effective values. This Step 10 page is read-only; correction and approval actions are added in later steps.</p>
+          <p id="teamAttendanceTableNote" class="wf-message team-attendance-table-note">Clock-in and clock-out are effective values. Correction actions are shown only to explicitly authorized administrators.</p>
         </div>
       </div>
 
@@ -128,6 +128,7 @@
               <th>Correction status</th>
               <th>Last corrected by</th>
               <th>Last corrected date</th>
+              <th id="teamAttendanceActionHeader" hidden>Action</th>
             </tr>
           </thead>
           <tbody id="teamAttendanceTableBody">
@@ -139,6 +140,77 @@
     </section>
   </main>
 
-  <script type="module" src="./scripts/team-attendance.js?v=1"></script>
+  <div class="wf-modal" id="attendanceCorrectionModal" role="dialog" aria-modal="true" aria-labelledby="attendanceCorrectionTitle" hidden>
+    <button class="wf-backdrop" type="button" data-correction-close aria-label="Close attendance correction dialog"></button>
+    <section class="wf-dialog attendance-correction-dialog">
+      <div class="wf-dialog-header">
+        <div>
+          <h2 id="attendanceCorrectionTitle">Correct Attendance</h2>
+          <p id="attendanceCorrectionSummary" class="wf-message attendance-correction-summary"></p>
+        </div>
+        <button class="wf-close" type="button" data-correction-close aria-label="Close">×</button>
+      </div>
+
+      <form id="attendanceCorrectionForm" class="wf-form">
+        <input id="attendanceCorrectionId" type="hidden">
+        <div class="wf-form-grid">
+          <label class="wf-field">
+            <span>Attendance status</span>
+            <select id="attendanceCorrectionStatus" class="wf-control" required>
+              <option value="present">Present</option>
+              <option value="absent">Absent</option>
+              <option value="on_leave">On leave</option>
+              <option value="excused">Excused</option>
+            </select>
+          </label>
+          <label class="wf-field">
+            <span>Linked schedule</span>
+            <select id="attendanceCorrectionSchedule" class="wf-control">
+              <option value="">Unscheduled</option>
+            </select>
+          </label>
+          <label class="wf-field">
+            <span>Effective clock-in</span>
+            <input id="attendanceCorrectionClockIn" class="wf-control" type="datetime-local" step="60">
+          </label>
+          <label class="wf-field">
+            <span>Effective clock-out</span>
+            <input id="attendanceCorrectionClockOut" class="wf-control" type="datetime-local" step="60">
+          </label>
+          <label class="wf-field full">
+            <span>Administrative notes</span>
+            <textarea id="attendanceCorrectionAdminNotes" class="wf-control" placeholder="Optional operational notes about the corrected record"></textarea>
+          </label>
+          <label class="wf-field">
+            <span>Correction reason</span>
+            <select id="attendanceCorrectionReason" class="wf-control" required>
+              <option value="">Select a reason</option>
+              <option value="forgot_clock_in">Forgot clock-in</option>
+              <option value="forgot_clock_out">Forgot clock-out</option>
+              <option value="system_issue">System issue</option>
+              <option value="connection_issue">Connection issue</option>
+              <option value="incorrect_schedule">Incorrect schedule</option>
+              <option value="approved_overtime">Approved overtime</option>
+              <option value="manager_confirmed">Manager confirmed</option>
+              <option value="other">Other</option>
+            </select>
+          </label>
+          <label class="wf-field">
+            <span>Reason notes</span>
+            <textarea id="attendanceCorrectionReasonNotes" class="wf-control" placeholder="Required when Other is selected"></textarea>
+          </label>
+        </div>
+
+        <p id="attendanceCorrectionApprovalNote" class="wf-note"></p>
+        <div class="wf-dialog-actions">
+          <button class="wf-btn secondary" type="button" data-correction-close>Cancel</button>
+          <button id="attendanceCorrectionSaveButton" class="wf-btn" type="submit">Save Correction</button>
+        </div>
+      </form>
+      <p id="attendanceCorrectionMessage" class="wf-message" aria-live="polite"></p>
+    </section>
+  </div>
+
+  <script type="module" src="./scripts/team-attendance.js?v=2"></script>
 </body>
 </html>
