@@ -8,8 +8,10 @@ const read = path => readFile(new URL(`../${path}`, import.meta.url), 'utf8')
 test('Home loads the workforce schedule calendar integration', async () => {
   const page = await read('home.html')
 
-  assert.match(page, /home-workforce-calendar\.css\?v=1/)
-  assert.match(page, /home-workforce-calendar\.js\?v=2/)
+  assert.match(page, /home-workforce-calendar\.css\?v=2/)
+  assert.match(page, /home-workforce-calendar\.js\?v=3/)
+  assert.match(page, /id="homeUpcomingEyebrow"/)
+  assert.match(page, /id="homeUpcomingTitle"/)
   assert.match(page, />My shift</)
   assert.match(page, />Rest day</)
   assert.match(page, />Holiday</)
@@ -49,10 +51,32 @@ test('Home calendar reflects shifts, rest days, holidays, and multiple entries',
   assert.match(script, /work-cancelled/)
 })
 
-test('Home schedule dates link back to My Schedule', async () => {
+test('Home upcoming events are populated from My Schedule', async () => {
+  const script = await read('scripts/home-workforce-calendar.js')
+
+  assert.match(script, /refreshUpcomingSchedules/)
+  assert.match(script, /UPCOMING_LOOKAHEAD_DAYS = 90/)
+  assert.match(script, /UPCOMING_SCHEDULE_LIMIT = 5/)
+  assert.match(script, /document\.getElementById\('upcomingEventList'\)/)
+  assert.match(script, /Upcoming schedule/)
+  assert.match(script, /createUpcomingScheduleCard/)
+  assert.match(script, /schedule\.notes/)
+  assert.match(script, /STATUS_LABELS/)
+})
+
+test('Home upcoming schedule excludes completed, cancelled, and ended shifts', async () => {
+  const script = await read('scripts/home-workforce-calendar.js')
+
+  assert.match(script, /schedule\.status === 'cancelled' \|\| schedule\.status === 'completed'/)
+  assert.match(script, /new Date\(schedule\.shift_end\)\.getTime\(\) > now\.getTime\(\)/)
+  assert.match(script, /\.slice\(0, UPCOMING_SCHEDULE_LIMIT\)/)
+})
+
+test('Home schedule entries link back to My Schedule', async () => {
   const script = await read('scripts/home-workforce-calendar.js')
 
   assert.match(script, /window\.location\.href = '\.\/my-schedule\.html'/)
+  assert.match(script, /card\.href = '\.\/my-schedule\.html'/)
   assert.match(script, /My Schedule:/)
   assert.match(script, /button\.title = details/)
 })
