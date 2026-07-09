@@ -357,6 +357,34 @@ async function loadReferenceData() {
   populateFilters()
 }
 
+function mergeAttendanceReferences(rows) {
+  const employeeIds = new Set(employees.map(employee => employee.user_id))
+  const teamIds = new Set(teams.map(team => team.id))
+
+  rows.forEach(row => {
+    if (row.employee_user_id && !employeeIds.has(row.employee_user_id)) {
+      employees.push({
+        user_id: row.employee_user_id,
+        full_name: row.employee_name || 'Unknown employee',
+        email: row.employee_email || '',
+        employee_id: row.employee_id || '',
+        team_id: row.team_id || null,
+        timezone: row.employee_timezone || access?.timezone || 'Asia/Manila'
+      })
+      employeeIds.add(row.employee_user_id)
+    }
+
+    if (row.team_id && !teamIds.has(row.team_id)) {
+      teams.push({ id: row.team_id, name: row.team_name || 'Unnamed team' })
+      teamIds.add(row.team_id)
+    }
+  })
+
+  employees.sort((left, right) => left.full_name.localeCompare(right.full_name))
+  teams.sort((left, right) => left.name.localeCompare(right.name))
+  populateFilters()
+}
+
 async function loadAttendance() {
   const range = validateDateRange()
   setMessage(elements.filterMessage, 'Loading authorized attendance records...')
@@ -368,6 +396,7 @@ async function loadAttendance() {
 
   if (error) throw error
   attendanceRows = data || []
+  mergeAttendanceReferences(attendanceRows)
   renderTable()
   setMessage(elements.filterMessage, `Attendance loaded for ${formatDate(range.start)} through ${formatDate(range.end)}.`, 'success')
 }
