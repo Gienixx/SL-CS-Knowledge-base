@@ -19,6 +19,17 @@ const REVIEW_STATUS_LABELS = Object.freeze({
   locked: 'Locked'
 })
 
+const CORRECTION_REASON_LABELS = Object.freeze({
+  forgot_clock_in: 'Forgot clock-in',
+  forgot_clock_out: 'Forgot clock-out',
+  system_issue: 'System issue',
+  connection_issue: 'Connection issue',
+  incorrect_schedule: 'Incorrect schedule',
+  approved_overtime: 'Approved overtime',
+  manager_confirmed: 'Manager confirmed',
+  other: 'Other'
+})
+
 const elements = {
   workforceLink: document.getElementById('teamAttendanceWorkforceLink'),
   recordCount: document.getElementById('teamAttendanceRecordCount'),
@@ -39,7 +50,23 @@ const elements = {
   refreshButton: document.getElementById('teamAttendanceRefreshButton'),
   filterMessage: document.getElementById('teamAttendanceFilterMessage'),
   tableBody: document.getElementById('teamAttendanceTableBody'),
-  tableMessage: document.getElementById('teamAttendanceTableMessage')
+  tableMessage: document.getElementById('teamAttendanceTableMessage'),
+  tableNote: document.getElementById('teamAttendanceTableNote'),
+  actionHeader: document.getElementById('teamAttendanceActionHeader'),
+  correctionModal: document.getElementById('attendanceCorrectionModal'),
+  correctionForm: document.getElementById('attendanceCorrectionForm'),
+  correctionId: document.getElementById('attendanceCorrectionId'),
+  correctionSummary: document.getElementById('attendanceCorrectionSummary'),
+  correctionStatus: document.getElementById('attendanceCorrectionStatus'),
+  correctionSchedule: document.getElementById('attendanceCorrectionSchedule'),
+  correctionClockIn: document.getElementById('attendanceCorrectionClockIn'),
+  correctionClockOut: document.getElementById('attendanceCorrectionClockOut'),
+  correctionAdminNotes: document.getElementById('attendanceCorrectionAdminNotes'),
+  correctionReason: document.getElementById('attendanceCorrectionReason'),
+  correctionReasonNotes: document.getElementById('attendanceCorrectionReasonNotes'),
+  correctionApprovalNote: document.getElementById('attendanceCorrectionApprovalNote'),
+  correctionSaveButton: document.getElementById('attendanceCorrectionSaveButton'),
+  correctionMessage: document.getElementById('attendanceCorrectionMessage')
 }
 
 let access = null
@@ -47,14 +74,36 @@ let employees = []
 let teams = []
 let attendanceRows = []
 let busy = false
+let correctionBusy = false
+let correctionRecord = null
+let lastFocusedElement = null
+
+function normalizeText(value) {
+  return typeof value === 'string' ? value.trim() : ''
+}
 
 function errorMessage(error) {
   return error?.message || 'An unexpected error occurred.'
 }
 
 function setMessage(element, text, type = '') {
+  if (!element) return
   element.textContent = text
   element.className = type ? `wf-message ${type}` : 'wf-message'
+}
+
+function canCorrectAttendance() {
+  return Boolean(
+    access?.is_admin === true &&
+    hasWorkforcePermission(access, 'correct_attendance')
+  )
+}
+
+function canApproveAttendance() {
+  return Boolean(
+    access?.is_admin === true &&
+    hasWorkforcePermission(access, 'approve_attendance')
+  )
 }
 
 function localDateKey(date = new Date(), timezone = access?.timezone || 'Asia/Manila') {
@@ -121,6 +170,21 @@ function formatDateTime(value, timezone, includeDate = false) {
   }).format(new Date(value))
 }
 
+function formatDateTimeLocalInput(value, timezone) {
+  if (!value) return ''
+  const parts = new Intl.DateTimeFormat('en-CA', {
+    timeZone: timezone || access?.timezone || 'Asia/Manila',
+    year: 'numeric',
+    month: '2-digit',
+    day: '2-digit',
+    hour: '2-digit',
+    minute: '2-digit',
+    hourCycle: 'h23'
+  }).formatToParts(new Date(value))
+  const values = Object.fromEntries(parts.map(part => [part.type, part.value]))
+  return `${values.year}-${values.month}-${values.day}T${values.hour}:${values.minute}`
+}
+
 function formatMinutes(value) {
   if (value === null || value === undefined) return 'Pending'
   const safeMinutes = Math.max(0, Number(value) || 0)
@@ -135,6 +199,16 @@ function formatShift(row) {
   if (!row.scheduled_start || !row.scheduled_end) return 'Shift unavailable'
   const timezone = row.schedule_timezone || row.employee_timezone || access?.timezone
   return `${formatDateTime(row.scheduled_start, timezone)} – ${formatDateTime(row.scheduled_end, timezone)}`
+}
+
+function formatCorrectionScheduleOption(schedule, row) {
+  const timezone = schedule.timezone || row.employee_timezone || access?.timezone
+  const status = schedule.status === 'changed'
+    ? 'Changed'
+    : schedule.status === 'completed'
+      ? 'Completed'
+      : 'Published'
+  return `${formatDateTime(schedule.shift_start, timezone)} – ${formatDateTime(schedule.shift_end, timezone)} · Shift ${schedule.shift_sequence} · ${status}`
 }
 
 function statusBadgeClass(status) {
@@ -217,6 +291,19 @@ function createCorrectionStatusCell(row) {
   return createBadgeCell(labels)
 }
 
+function createActionCell(record) {
+  const cell = document.createElement('td')
+  cell.className = 'wf-row-actions team-attendance-action-cell'
+  const button = document.createElement('button')
+  button.type = 'button'
+  button.className = 'wf-row-btn'
+  button.textContent = record.review_status === 'locked' ? 'Locked' : 'Correct'
+  button.disabled = record.review_status === 'locked'
+  button.addEventListener('click', () => openCorrection(record))
+  cell.appendChild(button)
+  return cell
+}
+
 function filteredRows() {
   const employeeId = elements.employeeFilter.value
   const teamId = elements.teamFilter.value
@@ -248,12 +335,14 @@ function renderSummary(rows) {
 
 function renderTable() {
   const rows = filteredRows()
+  const showActions = canCorrectAttendance()
+  elements.actionHeader.hidden = !showActions
   elements.tableBody.replaceChildren()
 
   if (!rows.length) {
     const row = document.createElement('tr')
     const cell = document.createElement('td')
-    cell.colSpan = 16
+    cell.colSpan = showActions ? 17 : 16
     cell.className = 'wf-empty'
     cell.textContent = 'No attendance records match the selected filters.'
     row.appendChild(cell)
@@ -275,11 +364,12 @@ function renderTable() {
           ? 'Session in progress'
           : ''
 
-      const correctionSecondary = [record.correction_reason, record.admin_notes]
-        .filter(Boolean)
-        .join(' · ')
+      const correctionSecondary = [
+        CORRECTION_REASON_LABELS[record.correction_reason] || record.correction_reason,
+        record.admin_notes
+      ].filter(Boolean).join(' · ')
 
-      row.append(
+      const cells = [
         createEmployeeCell(record),
         createCell(record.team_name || 'Unassigned'),
         createCell(formatDate(record.work_date), '', 'compact'),
@@ -296,8 +386,10 @@ function renderTable() {
         createCorrectionStatusCell(record),
         createCell(record.corrected_by_name || '—', correctionSecondary),
         createCell(formatDateTime(record.corrected_at, record.employee_timezone, true))
-      )
+      ]
 
+      if (showActions) cells.push(createActionCell(record))
+      row.append(...cells)
       elements.tableBody.appendChild(row)
     })
   }
@@ -436,6 +528,166 @@ async function resetFilters() {
   await refreshAttendance()
 }
 
+function setCorrectionBusy(value) {
+  correctionBusy = value
+  elements.correctionSaveButton.disabled = value
+  elements.correctionSchedule.disabled = value
+  elements.correctionStatus.disabled = value
+  elements.correctionSaveButton.textContent = value ? 'Saving...' : 'Save Correction'
+}
+
+function openCorrectionModal() {
+  lastFocusedElement = document.activeElement
+  elements.correctionModal.hidden = false
+  document.body.classList.add('modal-open')
+  requestAnimationFrame(() => elements.correctionStatus.focus())
+}
+
+function closeCorrectionModal() {
+  if (correctionBusy) return
+  elements.correctionModal.hidden = true
+  document.body.classList.remove('modal-open')
+  elements.correctionForm.reset()
+  correctionRecord = null
+  setMessage(elements.correctionMessage, '')
+  if (lastFocusedElement instanceof HTMLElement) lastFocusedElement.focus()
+}
+
+function syncCorrectionStatusFields() {
+  const isPresent = elements.correctionStatus.value === 'present'
+  elements.correctionClockIn.disabled = !isPresent
+  elements.correctionClockOut.disabled = !isPresent
+  elements.correctionClockIn.required = isPresent
+
+  if (!isPresent) {
+    elements.correctionClockIn.value = ''
+    elements.correctionClockOut.value = ''
+  }
+}
+
+function syncCorrectionReasonFields() {
+  const requiresNotes = elements.correctionReason.value === 'other'
+  elements.correctionReasonNotes.required = requiresNotes
+  elements.correctionReasonNotes.placeholder = requiresNotes
+    ? 'Explain the correction reason'
+    : 'Optional supporting details'
+}
+
+async function loadCorrectionSchedules(record) {
+  elements.correctionSchedule.disabled = true
+  elements.correctionSchedule.replaceChildren(new Option('Loading eligible schedules...', ''))
+
+  const { data, error } = await supabase.rpc('workforce_list_attendance_correction_schedules', {
+    p_attendance_id: record.attendance_id
+  })
+
+  if (error) throw error
+
+  elements.correctionSchedule.replaceChildren(new Option('Unscheduled', ''))
+  for (const schedule of data || []) {
+    elements.correctionSchedule.appendChild(new Option(
+      formatCorrectionScheduleOption(schedule, record),
+      schedule.schedule_id
+    ))
+  }
+
+  elements.correctionSchedule.value = record.schedule_id || ''
+  elements.correctionSchedule.disabled = false
+}
+
+async function openCorrection(record) {
+  if (!canCorrectAttendance() || record.review_status === 'locked') return
+
+  correctionRecord = record
+  elements.correctionId.value = record.attendance_id
+  elements.correctionSummary.textContent = `${record.employee_name} · ${formatDate(record.work_date)} · ${record.employee_timezone}`
+  elements.correctionStatus.value = record.attendance_status || 'present'
+  elements.correctionClockIn.value = formatDateTimeLocalInput(record.clock_in, record.employee_timezone)
+  elements.correctionClockOut.value = formatDateTimeLocalInput(record.clock_out, record.employee_timezone)
+  elements.correctionAdminNotes.value = record.admin_notes || ''
+  elements.correctionReason.value = ''
+  elements.correctionReasonNotes.value = ''
+  elements.correctionApprovalNote.textContent = canApproveAttendance()
+    ? 'Complete corrected records will be approved automatically because you also have attendance approval access.'
+    : 'The record will be marked Corrected and will remain unapproved because you do not have attendance approval access.'
+  syncCorrectionStatusFields()
+  syncCorrectionReasonFields()
+  setMessage(elements.correctionMessage, 'Loading eligible schedules...')
+  openCorrectionModal()
+
+  try {
+    await loadCorrectionSchedules(record)
+    setMessage(elements.correctionMessage, '')
+  } catch (error) {
+    setMessage(elements.correctionMessage, errorMessage(error), 'error')
+  }
+}
+
+async function saveCorrection(event) {
+  event.preventDefault()
+  if (correctionBusy || !correctionRecord) return
+
+  const reasonCode = elements.correctionReason.value
+  const reasonNotes = normalizeText(elements.correctionReasonNotes.value)
+  const attendanceStatus = elements.correctionStatus.value
+  const clockIn = elements.correctionClockIn.value || null
+  const clockOut = elements.correctionClockOut.value || null
+
+  if (!reasonCode) {
+    setMessage(elements.correctionMessage, 'Select a correction reason.', 'error')
+    return
+  }
+
+  if (reasonCode === 'other' && !reasonNotes) {
+    setMessage(elements.correctionMessage, 'Reason notes are required when Other is selected.', 'error')
+    return
+  }
+
+  if (attendanceStatus === 'present' && !clockIn) {
+    setMessage(elements.correctionMessage, 'Present attendance requires an effective clock-in.', 'error')
+    return
+  }
+
+  if (clockIn && clockOut && clockOut < clockIn) {
+    setMessage(elements.correctionMessage, 'Clock-out cannot be earlier than clock-in.', 'error')
+    return
+  }
+
+  setCorrectionBusy(true)
+  setMessage(elements.correctionMessage, 'Saving correction and recalculating attendance...')
+
+  try {
+    const { data, error } = await supabase.rpc('workforce_correct_attendance', {
+      p_attendance_id: correctionRecord.attendance_id,
+      p_clock_in_local: attendanceStatus === 'present' ? clockIn : null,
+      p_clock_out_local: attendanceStatus === 'present' ? clockOut : null,
+      p_attendance_status: attendanceStatus,
+      p_schedule_id: elements.correctionSchedule.value || null,
+      p_admin_notes: normalizeText(elements.correctionAdminNotes.value) || null,
+      p_reason_code: reasonCode,
+      p_reason_notes: reasonNotes || null
+    })
+
+    if (error) throw error
+
+    const reviewStatus = data?.review_status || 'corrected'
+    setMessage(
+      elements.correctionMessage,
+      reviewStatus === 'approved'
+        ? 'Attendance corrected, recalculated, and approved.'
+        : 'Attendance corrected and recalculated. Approval is still required.',
+      'success'
+    )
+
+    await refreshAttendance()
+    window.setTimeout(() => closeCorrectionModal(), 500)
+  } catch (error) {
+    setMessage(elements.correctionMessage, errorMessage(error), 'error')
+  } finally {
+    setCorrectionBusy(false)
+  }
+}
+
 function bindEvents() {
   elements.refreshButton.addEventListener('click', refreshAttendance)
   elements.resetButton.addEventListener('click', resetFilters)
@@ -451,6 +703,20 @@ function bindEvents() {
   ]) {
     element.addEventListener('change', renderTable)
   }
+
+  elements.correctionStatus.addEventListener('change', syncCorrectionStatusFields)
+  elements.correctionReason.addEventListener('change', syncCorrectionReasonFields)
+  elements.correctionForm.addEventListener('submit', saveCorrection)
+
+  document.querySelectorAll('[data-correction-close]').forEach(button => {
+    button.addEventListener('click', closeCorrectionModal)
+  })
+
+  document.addEventListener('keydown', event => {
+    if (event.key === 'Escape' && !elements.correctionModal.hidden) {
+      closeCorrectionModal()
+    }
+  })
 }
 
 async function initialize() {
@@ -470,9 +736,18 @@ async function initialize() {
   elements.workforceLink.hidden = !(
     access.is_admin === true && hasWorkforcePermission(access, 'manage_employees')
   )
+
   elements.scope.textContent = access.is_admin === true
     ? 'Showing attendance for all employees permitted by your administrator access.'
     : 'Showing only employees assigned to your authorized supervisor scope.'
+
+  elements.tableNote.textContent = canCorrectAttendance()
+    ? 'Clock-in and clock-out are effective values. Use Correct to update authorized records through the audited server workflow.'
+    : 'Clock-in and clock-out are effective values. Your attendance access is read-only.'
+
+  elements.correctionApprovalNote.textContent = canApproveAttendance()
+    ? 'Complete corrected records will be approved automatically.'
+    : 'Corrected records will remain unapproved.'
 
   const range = defaultDateRange()
   elements.startDate.value = range.start
