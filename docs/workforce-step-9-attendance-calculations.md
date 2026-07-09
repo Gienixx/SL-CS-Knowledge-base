@@ -61,7 +61,7 @@ Unscheduled attendance remains supported for compatibility, but it does not rece
 
 ## Overtime ceiling
 
-The maximum credited overtime is 1,200 minutes, or 20 hours, per employee per scheduled work date.
+The 20-hour overtime ceiling equals 1,200 credited minutes per employee per scheduled work date.
 
 The recalculator sums all other attendance records for the same employee and work date, determines the remaining allowance, then credits pre-shift overtime first and post-shift overtime from the remaining balance.
 
