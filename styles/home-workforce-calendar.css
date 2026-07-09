@@ -106,6 +106,16 @@
   border-style:dashed;
 }
 
+.home-schedule-event-card.completed{
+  border-color:rgba(66,165,109,.34);
+  background:linear-gradient(135deg,rgba(66,165,109,.07),#fff);
+}
+
+.home-schedule-event-card.completed .home-schedule-event-meta{
+  color:#2f7f4f;
+  font-weight:850;
+}
+
 .home-schedule-event-meta{
   font-weight:650;
 }
