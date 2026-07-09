@@ -89,23 +89,39 @@ holiday_overtime_minutes
 
 The trusted calculation function now accepts rest-day and holiday flags. The original seven-argument calculation contract remains available as a compatibility wrapper for normal attendance calculations.
 
-## Deployment
+## Legacy-data preflight
 
-Do not apply the migration while an employee attendance session is actively being tested or while workforce pages are issuing database requests.
+The previous structured-attendance constraint permitted legacy rows with all structured minute fields set to `NULL` while `total_overtime_minutes` or `overtime_minutes` remained nonzero.
 
-Apply:
+That overtime has no reliable schedule-based classification. The RDOT/holiday-aware constraint therefore rejects it until it is normalized.
+
+Run the audited preflight before the main migration:
 
 ```text
-supabase/migrations/2026070906_rest_day_holiday_overtime.sql
+supabase/maintenance/rest_day_holiday_overtime_preflight.sql
 ```
 
-Then run:
+For each affected row, the preflight:
+
+1. Stores the complete previous row in `workforce_audit_logs`.
+2. Records the normalized after-state.
+3. Resets only `total_overtime_minutes` and legacy `overtime_minutes` to zero.
+4. Leaves clock times, attendance status, work date, schedule link, and worked duration unchanged.
+5. Rolls back if any unclassified overtime remains.
+
+## Deployment
+
+Do not apply the scripts while an employee attendance session is actively being tested or while workforce pages are issuing database requests.
+
+Apply in this order:
 
 ```text
+supabase/maintenance/rest_day_holiday_overtime_preflight.sql
+supabase/migrations/2026070906_rest_day_holiday_overtime.sql
 supabase/verification/rest_day_holiday_overtime_check.sql
 ```
 
-Every blocker query in section 5 must return zero rows.
+Every blocker query in verification section 5 must return zero rows.
 
 ## Manual validation
 
