@@ -8,12 +8,28 @@ const VISIBLE_SCHEDULE_STATUSES = Object.freeze([
   'completed'
 ])
 
+const MONTH_INDEX = Object.freeze({
+  january: 0,
+  february: 1,
+  march: 2,
+  april: 3,
+  may: 4,
+  june: 5,
+  july: 6,
+  august: 7,
+  september: 8,
+  october: 9,
+  november: 10,
+  december: 11
+})
+
 const state = {
   access: null,
   profileIds: [],
   schedules: [],
   rangeKey: '',
-  loading: false
+  loading: false,
+  refreshQueued: false
 }
 
 document.addEventListener('DOMContentLoaded', initializeHomeWorkforceCalendar)
@@ -56,7 +72,10 @@ function installCalendarNavigationRefresh() {
 }
 
 async function refreshVisibleScheduleMonth() {
-  if (state.loading) return
+  if (state.loading) {
+    state.refreshQueued = true
+    return
+  }
 
   const displayMonth = resolveDisplayedMonth()
   if (!displayMonth) return
@@ -65,6 +84,7 @@ async function refreshVisibleScheduleMonth() {
   const rangeKey = `${range.start}:${range.end}`
 
   state.loading = true
+  state.refreshQueued = false
 
   try {
     if (state.rangeKey !== rangeKey) {
@@ -89,18 +109,26 @@ async function refreshVisibleScheduleMonth() {
     console.error('Home schedule calendar refresh failed:', error)
   } finally {
     state.loading = false
+
+    if (state.refreshQueued) {
+      state.refreshQueued = false
+      window.requestAnimationFrame(() => refreshVisibleScheduleMonth())
+    }
   }
 }
 
 function resolveDisplayedMonth() {
   const label = document.getElementById('calendarMonthLabel')
-  const text = label?.textContent?.trim()
-  if (!text) return null
+  const text = label?.textContent?.trim().toLowerCase()
+  const match = text?.match(/^([a-z]+)\s+(\d{4})$/)
 
-  const parsed = new Date(`${text} 1, 12:00:00`)
-  if (Number.isNaN(parsed.getTime())) return null
+  if (!match) return null
 
-  return new Date(parsed.getFullYear(), parsed.getMonth(), 1)
+  const month = MONTH_INDEX[match[1]]
+  const year = Number(match[2])
+
+  if (!Number.isInteger(month) || !Number.isInteger(year)) return null
+  return new Date(year, month, 1)
 }
 
 function calendarGridRange(displayMonth) {
