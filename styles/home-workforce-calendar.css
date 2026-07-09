@@ -85,6 +85,80 @@
 .event-dot.work-rest-day{background:#888}
 .event-dot.work-holiday{background:var(--home-gold)}
 
+.home-schedule-event-card{
+  color:inherit;
+  text-decoration:none;
+  transition:transform 150ms ease,border-color 150ms ease,box-shadow 150ms ease;
+}
+
+.home-schedule-event-card:hover{
+  transform:translateY(-1px);
+  border-color:rgba(67,143,210,.35);
+  box-shadow:0 8px 20px rgba(36,27,93,.07);
+}
+
+.home-schedule-event-card.changed{
+  border-color:rgba(255,194,26,.55);
+  background:linear-gradient(135deg,rgba(255,194,26,.08),#fff);
+}
+
+.home-schedule-event-card.scheduled{
+  border-style:dashed;
+}
+
+.home-schedule-event-meta{
+  font-weight:650;
+}
+
+.event-copy .home-schedule-event-note{
+  margin-top:2px;
+  color:var(--home-muted);
+  font-size:.55rem;
+  font-style:italic;
+}
+
+.event-type.shift{
+  color:#246ca7;
+  background:rgba(67,143,210,.14);
+}
+
+.event-type.rest-day{
+  color:#5d5d5d;
+  background:rgba(120,120,120,.14);
+}
+
+.event-type.holiday{
+  color:#8b6400;
+  background:rgba(255,194,26,.2);
+}
+
+.home-schedule-empty{
+  display:grid;
+  gap:4px;
+  padding:16px;
+  border:1px dashed var(--home-line);
+  border-radius:14px;
+  color:var(--home-text);
+  background:rgba(255,255,255,.72);
+  text-decoration:none;
+}
+
+.home-schedule-empty strong{
+  color:var(--home-navy);
+  font-size:.72rem;
+}
+
+.home-schedule-empty span{
+  color:var(--home-muted);
+  font-size:.62rem;
+  line-height:1.45;
+}
+
+.home-schedule-empty:hover{
+  border-color:rgba(67,143,210,.35);
+  background:#fff;
+}
+
 @media(max-width:1120px){
   .home-work-schedule-label{font-size:.48rem}
 }
