@@ -2,6 +2,8 @@ export const WORKFORCE_PERMISSION_KEYS = Object.freeze([
   'manage_employees',
   'manage_schedules',
   'view_team_attendance',
+  'correct_attendance',
+  'approve_attendance',
   'approve_leave',
   'view_workforce_reports',
   'edit_articles',
@@ -107,6 +109,14 @@ export function normalizeWorkforceAccess(
     permissions.manage_payroll = true
   }
 
+  if (isActive && data.can_correct_attendance === true) {
+    permissions.correct_attendance = true
+  }
+
+  if (isActive && data.can_approve_attendance === true) {
+    permissions.approve_attendance = true
+  }
+
   return {
     authenticated,
     allowed: authenticated && isActive,
@@ -130,6 +140,8 @@ export function normalizeWorkforceAccess(
     permissions,
     can_edit_articles: permissions.edit_articles === true,
     can_manage_payroll: permissions.manage_payroll === true,
+    can_correct_attendance: permissions.correct_attendance === true,
+    can_approve_attendance: permissions.approve_attendance === true,
     legacy: data.legacy && typeof data.legacy === 'object'
       ? data.legacy
       : null,
@@ -205,6 +217,8 @@ export function createLegacyWorkforceAccess(
       permissions,
       can_edit_articles: permissions.edit_articles,
       can_manage_payroll: false,
+      can_correct_attendance: false,
+      can_approve_attendance: false,
       legacy: {
         is_admin: isAdmin,
         can_edit_articles: row.can_edit_articles === true
