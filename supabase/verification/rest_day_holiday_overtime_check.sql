@@ -1,5 +1,7 @@
 -- Rest-day and holiday overtime verification.
--- Run after 2026070906_rest_day_holiday_overtime.sql.
+-- Run only after:
+--   1. supabase/maintenance/rest_day_holiday_overtime_preflight.sql
+--   2. supabase/migrations/2026070906_rest_day_holiday_overtime.sql
 
 -- ---------------------------------------------------------------------------
 -- 1. Required attendance columns
@@ -75,7 +77,7 @@ begin
     'public.workforce_calculate_attendance(timestamptz,timestamptz,timestamptz,timestamptz,date,text,integer,boolean,boolean)'
   ) is null then
     raise exception
-      'Special-day attendance calculator is missing. Apply 2026070906_rest_day_holiday_overtime.sql successfully before running this verification.';
+      'Special-day attendance calculator is missing. Run the preflight and apply 2026070906_rest_day_holiday_overtime.sql successfully before verification.';
   end if;
 end
 $$;
