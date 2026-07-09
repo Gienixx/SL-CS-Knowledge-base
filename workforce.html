@@ -230,6 +230,8 @@
             <label class="wf-check"><input type="checkbox" value="manage_employees"><span>Manage employees</span></label>
             <label class="wf-check"><input type="checkbox" value="manage_schedules"><span>Manage schedules</span></label>
             <label class="wf-check"><input type="checkbox" value="view_team_attendance"><span>View team attendance</span></label>
+            <label class="wf-check"><input type="checkbox" value="correct_attendance"><span>Correct attendance</span></label>
+            <label class="wf-check"><input type="checkbox" value="approve_attendance"><span>Approve attendance</span></label>
             <label class="wf-check"><input type="checkbox" value="approve_leave"><span>Approve leave</span></label>
             <label class="wf-check"><input type="checkbox" value="view_workforce_reports"><span>View workforce reports</span></label>
             <label class="wf-check"><input type="checkbox" value="edit_articles"><span>Edit articles</span></label>
@@ -237,7 +239,7 @@
           </div>
         </div>
 
-        <p class="wf-note">Access changes are applied transactionally, recorded in the workforce audit log, and synchronized with the current login and article-access fields.</p>
+        <p class="wf-note">Attendance correction and approval permissions apply only to administrators. Payroll access does not include either permission. Access changes are applied transactionally and recorded in the workforce audit log.</p>
         <div class="wf-dialog-actions">
           <button class="wf-btn secondary" type="button" data-close="employeeModal">Cancel</button>
           <button class="wf-btn" id="saveEmployeeButton" type="submit">Save Employee</button>
@@ -320,7 +322,7 @@
     </section>
   </div>
 
-  <script type="module" src="./scripts/workforce.js?v=2"></script>
+  <script type="module" src="./scripts/workforce.js?v=3"></script>
   <script type="module" src="./scripts/workforce-schedules-entry.js?v=1"></script>
 </body>
 </html>
