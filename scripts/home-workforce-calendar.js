@@ -1,7 +1,10 @@
-import { supabase } from './supabaseClient.js?v=9'
-import { loadCurrentWorkforceAccess } from './workforce-permissions.js?v=1'
+import { supabase } from './supabaseClient.js?v=8'
+import {
+  hasWorkforcePermission,
+  loadCurrentWorkforceAccess
+} from './workforce-permissions.js?v=1'
 
-const VISIBLE_SCHEDULE_STATUSES = Object.freeze([
+const RELEASED_SCHEDULE_STATUSES = Object.freeze([
   'published',
   'changed',
   'cancelled',
@@ -29,7 +32,8 @@ const state = {
   schedules: [],
   rangeKey: '',
   loading: false,
-  refreshQueued: false
+  refreshQueued: false,
+  canManageSchedules: false
 }
 
 document.addEventListener('DOMContentLoaded', initializeHomeWorkforceCalendar)
@@ -46,6 +50,11 @@ async function initializeHomeWorkforceCalendar() {
     if (!state.access.allowed || state.access.is_agent !== true) {
       return
     }
+
+    state.canManageSchedules = Boolean(
+      state.access.is_admin === true &&
+      hasWorkforcePermission(state.access, 'manage_schedules')
+    )
 
     state.profileIds = [...new Set([
       ...(Array.isArray(state.access.linked_profile_ids)
@@ -88,13 +97,18 @@ async function refreshVisibleScheduleMonth() {
 
   try {
     if (state.rangeKey !== rangeKey) {
-      const { data, error } = await supabase
+      let query = supabase
         .from('work_schedules')
         .select('id, user_id, shift_date, shift_sequence, shift_start, shift_end, timezone, status, is_rest_day, is_holiday, holiday_name')
         .in('user_id', state.profileIds)
         .gte('shift_date', range.start)
         .lte('shift_date', range.end)
-        .in('status', VISIBLE_SCHEDULE_STATUSES)
+
+      if (!state.canManageSchedules) {
+        query = query.in('status', RELEASED_SCHEDULE_STATUSES)
+      }
+
+      const { data, error } = await query
         .order('shift_date')
         .order('shift_sequence')
 
