@@ -302,11 +302,15 @@ function createCalendarEntry(schedule) {
   if (schedule.status === 'changed') button.classList.add('changed')
   if (schedule.status === 'scheduled') button.classList.add('scheduled')
   if (schedule.status === 'cancelled') button.classList.add('cancelled')
+  if (schedule.status === 'completed') button.classList.add('completed')
   if (schedule.is_rest_day) button.classList.add('rest-day')
   button.setAttribute(
     'aria-label',
     `${employeeName(schedule.user_id)}, ${formatDate(schedule.shift_date)}, ${formatShift(schedule)}, ${STATUS_LABELS[schedule.status] || schedule.status}`
   )
+
+  const content = document.createElement('span')
+  content.className = 'schedule-entry-content'
 
   const time = document.createElement('span')
   time.className = 'schedule-entry-time'
@@ -318,11 +322,8 @@ function createCalendarEntry(schedule) {
     ? employeeName(schedule.user_id)
     : scheduleType(schedule)
 
-  const status = document.createElement('span')
-  status.className = 'schedule-entry-status'
-  status.textContent = STATUS_LABELS[schedule.status] || schedule.status
-
-  button.append(time, person, status)
+  content.append(time, person)
+  button.appendChild(content)
   button.addEventListener('click', () => openScheduleDetails(schedule.id))
   return button
 }
@@ -407,145 +408,125 @@ function renderTable(rows) {
     return
   }
 
-  rows
-    .slice()
-    .sort((a, b) => a.shift_date.localeCompare(b.shift_date) || a.shift_sequence - b.shift_sequence)
-    .forEach(schedule => {
-      const row = document.createElement('tr')
-      const typeCell = document.createElement('td')
-      const statusCell = document.createElement('td')
-      const actionCell = document.createElement('td')
+  rows.forEach(schedule => {
+    const row = document.createElement('tr')
+    const typeCell = document.createElement('td')
+    const statusCell = document.createElement('td')
+    const detailsCell = document.createElement('td')
+    detailsCell.className = 'wf-row-actions'
 
-      typeCell.appendChild(badge(
-        schedule.is_rest_day ? 'Rest day' : 'Shift',
-        schedule.is_rest_day ? 'muted' : ''
-      ))
-      if (schedule.is_holiday) {
-        typeCell.appendChild(badge(schedule.holiday_name || 'Holiday', 'warning'))
-      }
-      statusCell.appendChild(badge(
-        STATUS_LABELS[schedule.status] || schedule.status,
-        statusModifier(schedule.status)
-      ))
+    typeCell.appendChild(badge(scheduleType(schedule), schedule.is_rest_day ? 'muted' : ''))
+    statusCell.appendChild(badge(
+      STATUS_LABELS[schedule.status] || schedule.status,
+      statusModifier(schedule.status)
+    ))
 
-      const detailsButton = document.createElement('button')
-      detailsButton.type = 'button'
-      detailsButton.className = 'schedule-details-button'
-      detailsButton.textContent = 'View'
-      detailsButton.addEventListener('click', () => openScheduleDetails(schedule.id))
-      actionCell.appendChild(detailsButton)
+    const detailsButton = document.createElement('button')
+    detailsButton.type = 'button'
+    detailsButton.className = 'schedule-details-button'
+    detailsButton.textContent = 'View'
+    detailsButton.addEventListener('click', () => openScheduleDetails(schedule.id))
+    detailsCell.appendChild(detailsButton)
 
-      row.append(
-        textCell(formatDate(schedule.shift_date), `Sequence ${schedule.shift_sequence}`),
-        textCell(employeeName(schedule.user_id), profileById(schedule.user_id)?.employee_id || ''),
-        textCell(formatShift(schedule), schedule.timezone || 'America/New_York'),
-        typeCell,
-        statusCell,
-        textCell(formatDateTime(schedule.updated_at, schedule.timezone)),
-        actionCell
-      )
-      elements.tableBody.appendChild(row)
-    })
+    row.append(
+      textCell(formatDate(schedule.shift_date), `Sequence ${schedule.shift_sequence}`),
+      textCell(employeeName(schedule.user_id)),
+      textCell(formatShift(schedule), schedule.timezone),
+      typeCell,
+      statusCell,
+      textCell(formatDateTime(schedule.updated_at, schedule.timezone)),
+      detailsCell
+    )
+    elements.tableBody.appendChild(row)
+  })
 }
 
-function renderAll() {
+function render() {
   const rows = visibleSchedules()
+    .slice()
+    .sort((a, b) => a.shift_date.localeCompare(b.shift_date) || a.shift_sequence - b.shift_sequence)
+
+  elements.rangeLabel.textContent = formatRange(selectedRange())
   renderSummary(rows)
   renderChangeNotice(rows)
   renderCalendar(rows)
   renderTable(rows)
+  setMessage(`${rows.length} schedule ${rows.length === 1 ? 'entry' : 'entries'} shown.`)
 }
 
-function populateEmployeeOptions() {
-  const previous = elements.employee.value
+function populateEmployeeFilter() {
+  const current = elements.employee.value
   elements.employee.replaceChildren(new Option('All permitted employees', ''))
+
   profiles
-    .slice()
-    .sort((a, b) => a.full_name.localeCompare(b.full_name))
-    .forEach(profile => elements.employee.appendChild(new Option(
-      `${profile.full_name} — ${profile.employee_id}`,
-      profile.user_id
-    )))
+    .filter(profile => profile.is_agent === true && ['active', 'on_leave'].includes(profile.employment_status))
+    .sort((left, right) => left.full_name.localeCompare(right.full_name))
+    .forEach(profile => {
+      const label = profile.employee_id
+        ? `${profile.full_name} — ${profile.employee_id}`
+        : profile.full_name
+      elements.employee.appendChild(new Option(label, profile.user_id))
+    })
 
-  if ([...elements.employee.options].some(option => option.value === previous)) {
-    elements.employee.value = previous
+  if ([...elements.employee.options].some(option => option.value === current)) {
+    elements.employee.value = current
   }
 }
 
-function updateScopeControls() {
-  const teamScope = currentScope() === 'team'
-  elements.scopeField.hidden = !canViewTeam
-  elements.employeeField.hidden = !teamScope
-
-  const scheduledOption = elements.status.querySelector('option[value="scheduled"]')
-  if (scheduledOption) scheduledOption.disabled = !canManageSchedules
-  if (!canManageSchedules && elements.status.value === 'scheduled') {
-    elements.status.value = ''
-  }
-
-  if (teamScope) {
-    elements.subtitle.textContent = 'View schedules for employees within your authorized supervisory scope.'
-  } else if (personalProfileIds.length > 1) {
-    elements.subtitle.textContent = 'View schedules linked to your authenticated account and Arby workforce identity.'
-  } else if (canManageSchedules) {
-    elements.subtitle.textContent = 'View your assigned shifts, including draft schedules, rest days, holidays, and changes.'
-  } else {
-    elements.subtitle.textContent = 'View your assigned shifts, rest days, holidays, and schedule changes.'
-  }
-}
-
-async function loadProfiles() {
+async function loadReferenceData() {
   const { data, error } = await supabase
     .from('profiles')
-    .select('user_id, full_name, email, employee_id, employment_status, is_agent, team_id, supervisor_id, timezone')
+    .select('user_id, full_name, email, employee_id, team_id, employment_status, is_agent')
     .order('full_name')
 
   if (error) throw error
   profiles = data || []
   resolvePersonalProfileIds()
-  canViewTeam = canManageSchedules &&
-    profiles.some(profile => !personalProfileIds.includes(profile.user_id))
-
-  elements.scope.value = canViewTeam ? 'team' : 'self'
-  populateEmployeeOptions()
-  updateScopeControls()
+  populateEmployeeFilter()
 }
 
 async function loadSchedules() {
   const range = selectedRange()
-  elements.rangeLabel.textContent = formatRange(range)
+  const userIds = currentScope() === 'team'
+    ? profiles.map(profile => profile.user_id)
+    : personalProfileIds
+
+  if (!userIds.length) {
+    schedules = []
+    render()
+    return
+  }
+
+  let query = supabase
+    .from('work_schedules')
+    .select('id, user_id, team_id, shift_date, shift_sequence, shift_start, shift_end, timezone, status, is_rest_day, is_holiday, holiday_name, notes, updated_at')
+    .in('user_id', userIds)
+    .gte('shift_date', range.start)
+    .lte('shift_date', range.end)
+
+  if (!canManageSchedules) query = query.in('status', RELEASED_STATUSES)
+
+  const { data, error } = await query
+    .order('shift_date')
+    .order('shift_sequence')
+
+  if (error) throw error
+  schedules = data || []
+  render()
+}
+
+function setAnchor(direction) {
+  if (elements.view.value === 'month') anchorDate = addMonths(anchorDate, direction)
+  else anchorDate = addDays(anchorDate, direction * 7)
+}
+
+async function refresh() {
   setLoading(true)
   setMessage('Loading schedule entries...')
 
   try {
-    let query = supabase
-      .from('work_schedules')
-      .select('id, user_id, team_id, shift_date, shift_sequence, shift_start, shift_end, timezone, status, is_rest_day, is_holiday, holiday_name, notes, updated_at')
-      .gte('shift_date', range.start)
-      .lte('shift_date', range.end)
-      .order('shift_date')
-      .order('shift_sequence')
-
-    if (currentScope() === 'self') {
-      query = query.in('user_id', personalProfileIds)
-      if (!canManageSchedules) {
-        query = query.in('status', RELEASED_STATUSES)
-      }
-    }
-
-    const { data, error } = await query
-    if (error) throw error
-
-    schedules = data || []
-    renderAll()
-
-    const linkedIdentityText = currentScope() === 'self' && personalProfileIds.length > 1
-      ? ` ${personalProfileIds.length} linked workforce identities were checked.`
-      : ''
-    setMessage(`${schedules.length} schedule entr${schedules.length === 1 ? 'y' : 'ies'} loaded.${linkedIdentityText}`)
+    await loadSchedules()
   } catch (error) {
-    schedules = []
-    renderAll()
     setMessage(errorMessage(error), 'error')
   } finally {
     setLoading(false)
@@ -556,6 +537,7 @@ function openScheduleDetails(scheduleId) {
   const schedule = schedules.find(item => item.id === scheduleId)
   if (!schedule) return
 
+  document.getElementById('myScheduleModalTitle').textContent = formatShift(schedule)
   document.getElementById('detailEmployee').textContent = employeeName(schedule.user_id)
   document.getElementById('detailDate').textContent = formatDate(schedule.shift_date)
   document.getElementById('detailShift').textContent = formatShift(schedule)
@@ -569,7 +551,7 @@ function openScheduleDetails(scheduleId) {
   lastFocusedElement = document.activeElement
   elements.modal.hidden = false
   document.body.classList.add('modal-open')
-  requestAnimationFrame(() => elements.modal.querySelector('.wf-close')?.focus())
+  requestAnimationFrame(() => elements.modal.querySelector('[data-my-schedule-close]')?.focus())
 }
 
 function closeScheduleDetails() {
@@ -578,7 +560,39 @@ function closeScheduleDetails() {
   if (lastFocusedElement instanceof HTMLElement) lastFocusedElement.focus()
 }
 
+function updateScopeUi() {
+  const teamMode = currentScope() === 'team'
+  elements.employeeField.hidden = !teamMode
+  elements.subtitle.textContent = teamMode
+    ? 'View permitted team schedules, rest days, holidays, and schedule changes.'
+    : 'View assigned shifts, rest days, holidays, and schedule changes.'
+}
+
 function bindEvents() {
+  elements.previous.addEventListener('click', async () => {
+    setAnchor(-1)
+    await refresh()
+  })
+
+  elements.current.addEventListener('click', async () => {
+    anchorDate = todayInTimeZone(access?.timezone || 'America/New_York')
+    await refresh()
+  })
+
+  elements.next.addEventListener('click', async () => {
+    setAnchor(1)
+    await refresh()
+  })
+
+  elements.refresh.addEventListener('click', refresh)
+  elements.view.addEventListener('change', refresh)
+  elements.status.addEventListener('change', render)
+  elements.employee.addEventListener('change', render)
+  elements.scope.addEventListener('change', async () => {
+    updateScopeUi()
+    await refresh()
+  })
+
   document.querySelectorAll('[data-my-schedule-close]').forEach(button => {
     button.addEventListener('click', closeScheduleDetails)
   })
@@ -586,34 +600,6 @@ function bindEvents() {
   document.addEventListener('keydown', event => {
     if (event.key === 'Escape' && !elements.modal.hidden) closeScheduleDetails()
   })
-
-  elements.previous.addEventListener('click', async () => {
-    anchorDate = elements.view.value === 'month'
-      ? addMonths(anchorDate, -1)
-      : addDays(anchorDate, -7)
-    await loadSchedules()
-  })
-
-  elements.current.addEventListener('click', async () => {
-    anchorDate = todayInTimeZone(access.timezone || 'America/New_York')
-    await loadSchedules()
-  })
-
-  elements.next.addEventListener('click', async () => {
-    anchorDate = elements.view.value === 'month'
-      ? addMonths(anchorDate, 1)
-      : addDays(anchorDate, 7)
-    await loadSchedules()
-  })
-
-  elements.refresh.addEventListener('click', loadSchedules)
-  elements.view.addEventListener('change', loadSchedules)
-  elements.scope.addEventListener('change', async () => {
-    updateScopeControls()
-    await loadSchedules()
-  })
-  elements.employee.addEventListener('change', renderAll)
-  elements.status.addEventListener('change', renderAll)
 }
 
 async function initialize() {
@@ -624,31 +610,28 @@ async function initialize() {
     return
   }
 
-  if (!access.allowed) {
-    window.alert('An active workforce profile is required to view schedules.')
-    window.location.replace('./dashboard.html')
+  if (!access.allowed || access.is_agent !== true) {
+    window.alert('Schedule access is available only to active agent profiles.')
+    window.location.replace('./home.html')
     return
   }
 
-  canManageSchedules = hasWorkforcePermission(access, 'manage_schedules')
-  if (access.is_agent !== true && !canManageSchedules) {
-    window.alert('Schedule access is available only to agents and authorized schedule managers.')
-    window.location.replace('./dashboard.html')
-    return
-  }
+  canManageSchedules = access.is_admin === true && hasWorkforcePermission(access, 'manage_schedules')
+  canViewTeam = hasWorkforcePermission(access, 'view_team_attendance')
+  elements.scopeField.hidden = !canViewTeam
+  elements.scope.value = 'self'
+  elements.employeeField.hidden = true
 
   const workforceLink = document.getElementById('scheduleWorkforceLink')
-  workforceLink.hidden = !(
-    access.is_admin === true &&
-    hasWorkforcePermission(access, 'manage_employees')
-  )
+  workforceLink.hidden = !canManageSchedules
 
   bindEvents()
-  await loadProfiles()
-  await loadSchedules()
+  updateScopeUi()
+  await loadReferenceData()
+  await refresh()
 }
 
 initialize().catch(error => {
-  console.error('My Schedule initialization failed:', error)
+  console.error('Schedule initialization failed:', error)
   setMessage(errorMessage(error), 'error')
 })
