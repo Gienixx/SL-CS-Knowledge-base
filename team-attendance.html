@@ -1,0 +1,144 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Team Attendance | SocialLoop CS Base</title>
+  <link rel="stylesheet" href="./styles/button-theme.css?v=1">
+  <link rel="stylesheet" href="./styles/workforce-admin.css?v=2">
+  <link rel="stylesheet" href="./styles/team-attendance.css?v=1">
+</head>
+<body>
+  <main class="wf-page team-attendance-page">
+    <header class="wf-topbar">
+      <div class="wf-title">
+        <h1>Team Attendance</h1>
+        <p>Review authorized employee attendance, structured work-time calculations, overtime, missing clock-outs, and correction status.</p>
+      </div>
+      <nav class="wf-nav" aria-label="Team attendance navigation">
+        <a id="teamAttendanceWorkforceLink" class="wf-link" href="./workforce.html" hidden>Workforce Management</a>
+        <a class="wf-link" href="./home.html">← Back to Home</a>
+      </nav>
+    </header>
+
+    <section class="wf-summary-grid" aria-label="Team attendance summary">
+      <article class="wf-summary"><span>Records shown</span><strong id="teamAttendanceRecordCount">—</strong></article>
+      <article class="wf-summary"><span>Open sessions</span><strong id="teamAttendanceOpenCount">—</strong></article>
+      <article class="wf-summary"><span>Missing clock-out</span><strong id="teamAttendanceMissingCount">—</strong></article>
+      <article class="wf-summary"><span>Overtime records</span><strong id="teamAttendanceOvertimeCount">—</strong></article>
+    </section>
+
+    <section class="wf-card team-attendance-filter-card" aria-labelledby="teamAttendanceFiltersTitle">
+      <div class="wf-card-header">
+        <div>
+          <h2 id="teamAttendanceFiltersTitle">Attendance Filters</h2>
+          <p id="teamAttendanceScope" class="wf-message team-attendance-scope">Loading your authorized attendance scope...</p>
+        </div>
+        <div class="wf-actions">
+          <button id="teamAttendanceResetButton" class="wf-btn secondary" type="button">Reset</button>
+          <button id="teamAttendanceRefreshButton" class="wf-btn" type="button">Refresh</button>
+        </div>
+      </div>
+
+      <div class="team-attendance-filter-grid">
+        <label class="wf-field">
+          <span>Start date</span>
+          <input id="teamAttendanceStartDate" class="wf-control" type="date" required>
+        </label>
+        <label class="wf-field">
+          <span>End date</span>
+          <input id="teamAttendanceEndDate" class="wf-control" type="date" required>
+        </label>
+        <label class="wf-field">
+          <span>Employee</span>
+          <select id="teamAttendanceEmployeeFilter" class="wf-control">
+            <option value="">All authorized employees</option>
+          </select>
+        </label>
+        <label class="wf-field">
+          <span>Team</span>
+          <select id="teamAttendanceTeamFilter" class="wf-control">
+            <option value="">All authorized teams</option>
+          </select>
+        </label>
+        <label class="wf-field">
+          <span>Attendance status</span>
+          <select id="teamAttendanceStatusFilter" class="wf-control">
+            <option value="">All statuses</option>
+            <option value="present">Present</option>
+            <option value="absent">Absent</option>
+            <option value="on_leave">On leave</option>
+            <option value="excused">Excused</option>
+          </select>
+        </label>
+        <label class="wf-field">
+          <span>Corrected records</span>
+          <select id="teamAttendanceCorrectedFilter" class="wf-control">
+            <option value="">All records</option>
+            <option value="corrected">Corrected only</option>
+            <option value="not_corrected">Not corrected</option>
+          </select>
+        </label>
+      </div>
+
+      <fieldset class="team-attendance-flag-filters">
+        <legend>Record flags</legend>
+        <label class="wf-check wf-check-card">
+          <input id="teamAttendanceOpenFilter" type="checkbox">
+          <span>Open attendance records</span>
+        </label>
+        <label class="wf-check wf-check-card">
+          <input id="teamAttendanceMissingFilter" type="checkbox">
+          <span>Missing clock-out</span>
+        </label>
+        <label class="wf-check wf-check-card">
+          <input id="teamAttendanceOvertimeFilter" type="checkbox">
+          <span>Overtime records</span>
+        </label>
+      </fieldset>
+
+      <p id="teamAttendanceFilterMessage" class="wf-message" aria-live="polite"></p>
+    </section>
+
+    <section class="wf-card" aria-labelledby="teamAttendanceTableTitle">
+      <div class="wf-card-header">
+        <div>
+          <h2 id="teamAttendanceTableTitle">Attendance Records</h2>
+          <p class="wf-message team-attendance-table-note">Clock-in and clock-out are effective values. This Step 10 page is read-only; correction and approval actions are added in later steps.</p>
+        </div>
+      </div>
+
+      <div class="wf-table-wrap team-attendance-table-wrap">
+        <table class="wf-table team-attendance-table">
+          <thead>
+            <tr>
+              <th>Employee</th>
+              <th>Team</th>
+              <th>Work date</th>
+              <th>Assigned shift</th>
+              <th>Clock-in</th>
+              <th>Clock-out</th>
+              <th>Regular time</th>
+              <th>Pre-shift overtime</th>
+              <th>Post-shift overtime</th>
+              <th>Total overtime</th>
+              <th>Late minutes</th>
+              <th>Undertime</th>
+              <th>Status</th>
+              <th>Correction status</th>
+              <th>Last corrected by</th>
+              <th>Last corrected date</th>
+            </tr>
+          </thead>
+          <tbody id="teamAttendanceTableBody">
+            <tr><td colspan="16" class="wf-empty">Loading team attendance...</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <p id="teamAttendanceTableMessage" class="wf-message" aria-live="polite"></p>
+    </section>
+  </main>
+
+  <script type="module" src="./scripts/team-attendance.js?v=1"></script>
+</body>
+</html>
