@@ -81,6 +81,19 @@ test('special-day calculation stays within the aggregate work-date overtime limi
   assert.match(migration, /workforce_recalculate_attendance_work_date/)
 })
 
+test('preflight audits and normalizes only legacy unclassified overtime', async () => {
+  const preflight = await read('supabase/maintenance/rest_day_holiday_overtime_preflight.sql')
+
+  assert.match(preflight, /pre_shift_overtime_minutes is null/)
+  assert.match(preflight, /regular_minutes is null/)
+  assert.match(preflight, /post_shift_overtime_minutes is null/)
+  assert.match(preflight, /legacy_unclassified_overtime_normalized/)
+  assert.match(preflight, /before_data/)
+  assert.match(preflight, /total_overtime_minutes = 0/)
+  assert.match(preflight, /overtime_minutes = 0/)
+  assert.match(preflight, /Legacy unclassified overtime remains after normalization/)
+})
+
 test('verification covers RDOT, holiday OT, precedence, and blockers', async () => {
   const verification = await read('supabase/verification/rest_day_holiday_overtime_check.sql')
 
@@ -89,4 +102,5 @@ test('verification covers RDOT, holiday OT, precedence, and blockers', async () 
   assert.match(verification, /Rest day plus holiday/)
   assert.match(verification, /Every blocker query in section 5 must return zero rows/)
   assert.match(verification, /having sum\(total_overtime_minutes\) > 1200/)
+  assert.match(verification, /timestamptz,timestamptz,timestamptz,timestamptz/)
 })
