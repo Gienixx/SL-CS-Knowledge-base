@@ -11,6 +11,14 @@ const RELEASED_SCHEDULE_STATUSES = Object.freeze([
   'completed'
 ])
 
+const STATUS_LABELS = Object.freeze({
+  scheduled: 'Scheduled',
+  published: 'Published',
+  changed: 'Changed',
+  cancelled: 'Cancelled',
+  completed: 'Completed'
+})
+
 const MONTH_INDEX = Object.freeze({
   january: 0,
   february: 1,
@@ -26,10 +34,14 @@ const MONTH_INDEX = Object.freeze({
   december: 11
 })
 
+const UPCOMING_SCHEDULE_LIMIT = 5
+const UPCOMING_LOOKAHEAD_DAYS = 90
+
 const state = {
   access: null,
   profileIds: [],
   schedules: [],
+  upcomingSchedules: [],
   rangeKey: '',
   loading: false,
   refreshQueued: false,
@@ -66,7 +78,10 @@ async function initializeHomeWorkforceCalendar() {
     if (!state.profileIds.length) return
 
     installCalendarNavigationRefresh()
-    await refreshVisibleScheduleMonth()
+    await Promise.all([
+      refreshVisibleScheduleMonth(),
+      refreshUpcomingSchedules()
+    ])
   } catch (error) {
     console.error('Home workforce calendar failed:', error)
   }
@@ -78,6 +93,21 @@ function installCalendarNavigationRefresh() {
       window.requestAnimationFrame(() => refreshVisibleScheduleMonth())
     })
   }
+}
+
+function buildScheduleQuery(startDate, endDate) {
+  let query = supabase
+    .from('work_schedules')
+    .select('id, user_id, shift_date, shift_sequence, shift_start, shift_end, timezone, status, is_rest_day, is_holiday, holiday_name, notes')
+    .in('user_id', state.profileIds)
+    .gte('shift_date', startDate)
+    .lte('shift_date', endDate)
+
+  if (!state.canManageSchedules) {
+    query = query.in('status', RELEASED_SCHEDULE_STATUSES)
+  }
+
+  return query
 }
 
 async function refreshVisibleScheduleMonth() {
@@ -97,18 +127,7 @@ async function refreshVisibleScheduleMonth() {
 
   try {
     if (state.rangeKey !== rangeKey) {
-      let query = supabase
-        .from('work_schedules')
-        .select('id, user_id, shift_date, shift_sequence, shift_start, shift_end, timezone, status, is_rest_day, is_holiday, holiday_name')
-        .in('user_id', state.profileIds)
-        .gte('shift_date', range.start)
-        .lte('shift_date', range.end)
-
-      if (!state.canManageSchedules) {
-        query = query.in('status', RELEASED_SCHEDULE_STATUSES)
-      }
-
-      const { data, error } = await query
+      const { data, error } = await buildScheduleQuery(range.start, range.end)
         .order('shift_date')
         .order('shift_sequence')
 
@@ -129,6 +148,177 @@ async function refreshVisibleScheduleMonth() {
       window.requestAnimationFrame(() => refreshVisibleScheduleMonth())
     }
   }
+}
+
+async function refreshUpcomingSchedules() {
+  const now = new Date()
+  const today = dateKeyInTimeZone(now, state.access?.timezone || 'America/New_York')
+  const endDate = addDays(today, UPCOMING_LOOKAHEAD_DAYS)
+
+  try {
+    const { data, error } = await buildScheduleQuery(today, endDate)
+      .order('shift_date')
+      .order('shift_sequence')
+      .limit(30)
+
+    if (error) throw error
+
+    state.upcomingSchedules = (data || [])
+      .filter(schedule => isUpcomingSchedule(schedule, now, today))
+      .sort(compareUpcomingSchedules)
+      .slice(0, UPCOMING_SCHEDULE_LIMIT)
+
+    renderUpcomingSchedules()
+  } catch (error) {
+    console.error('Home upcoming schedule refresh failed:', error)
+  }
+}
+
+function isUpcomingSchedule(schedule, now, today) {
+  if (schedule.status === 'cancelled' || schedule.status === 'completed') {
+    return false
+  }
+
+  if (schedule.shift_date > today) return true
+  if (schedule.shift_date < today) return false
+
+  if (schedule.is_rest_day || schedule.is_holiday) return true
+  if (!schedule.shift_end) return true
+
+  return new Date(schedule.shift_end).getTime() > now.getTime()
+}
+
+function compareUpcomingSchedules(left, right) {
+  const dateComparison = left.shift_date.localeCompare(right.shift_date)
+  if (dateComparison !== 0) return dateComparison
+
+  const leftTime = left.shift_start
+    ? new Date(left.shift_start).getTime()
+    : Number.POSITIVE_INFINITY
+  const rightTime = right.shift_start
+    ? new Date(right.shift_start).getTime()
+    : Number.POSITIVE_INFINITY
+
+  if (leftTime !== rightTime) return leftTime - rightTime
+  return Number(left.shift_sequence || 0) - Number(right.shift_sequence || 0)
+}
+
+function renderUpcomingSchedules() {
+  const list = document.getElementById('upcomingEventList')
+  if (!list) return
+
+  const eyebrow = document.getElementById('homeUpcomingEyebrow')
+  const title = document.getElementById('homeUpcomingTitle')
+  if (eyebrow) eyebrow.textContent = 'My schedule'
+  if (title) title.textContent = 'Upcoming schedule'
+
+  list.replaceChildren()
+
+  if (!state.upcomingSchedules.length) {
+    const empty = document.createElement('a')
+    empty.className = 'home-schedule-empty'
+    empty.href = './my-schedule.html'
+    empty.innerHTML = '<strong>No upcoming schedule entries</strong><span>Open My Schedule to review your assigned dates.</span>'
+    list.appendChild(empty)
+    return
+  }
+
+  state.upcomingSchedules.forEach(schedule => {
+    list.appendChild(createUpcomingScheduleCard(schedule))
+  })
+}
+
+function createUpcomingScheduleCard(schedule) {
+  const card = document.createElement('a')
+  card.className = 'event-card home-schedule-event-card'
+  card.href = './my-schedule.html'
+  card.setAttribute('aria-label', `${formatScheduleDate(schedule.shift_date)}: ${scheduleDescription(schedule)}`)
+
+  if (schedule.status === 'changed') card.classList.add('changed')
+  if (schedule.status === 'scheduled') card.classList.add('scheduled')
+
+  const dateBox = document.createElement('div')
+  dateBox.className = 'event-date-box'
+
+  const date = parseDateKey(schedule.shift_date)
+  const month = document.createElement('span')
+  month.textContent = new Intl.DateTimeFormat('en-US', {
+    timeZone: 'UTC',
+    month: 'short'
+  }).format(date)
+
+  const day = document.createElement('strong')
+  day.textContent = String(date.getUTCDate())
+  dateBox.append(month, day)
+
+  const copy = document.createElement('div')
+  copy.className = 'event-copy'
+
+  const heading = document.createElement('strong')
+  heading.textContent = upcomingScheduleTitle(schedule)
+
+  const meta = document.createElement('span')
+  meta.className = 'home-schedule-event-meta'
+  meta.textContent = upcomingScheduleMeta(schedule)
+
+  copy.append(heading, meta)
+
+  if (schedule.notes) {
+    const notes = document.createElement('span')
+    notes.className = 'home-schedule-event-note'
+    notes.textContent = schedule.notes
+    copy.appendChild(notes)
+  }
+
+  const type = document.createElement('span')
+  const typeValue = scheduleType(schedule)
+  type.className = `event-type ${typeValue.className}`
+  type.textContent = typeValue.label
+
+  card.append(dateBox, copy, type)
+  return card
+}
+
+function upcomingScheduleTitle(schedule) {
+  if (schedule.is_rest_day) {
+    return schedule.is_holiday && schedule.holiday_name
+      ? `Rest day · ${schedule.holiday_name}`
+      : 'Rest day'
+  }
+
+  if (schedule.is_holiday && !schedule.shift_start) {
+    return schedule.holiday_name || 'Holiday'
+  }
+
+  if (!schedule.shift_start || !schedule.shift_end) {
+    return 'Shift time unavailable'
+  }
+
+  return formatShiftRange(schedule)
+}
+
+function upcomingScheduleMeta(schedule) {
+  const details = [STATUS_LABELS[schedule.status] || schedule.status]
+
+  if (schedule.is_holiday && schedule.shift_start) {
+    details.push(schedule.holiday_name || 'Holiday')
+  }
+
+  if (schedule.timezone && !schedule.is_rest_day) {
+    details.push(schedule.timezone)
+  }
+
+  return details.filter(Boolean).join(' · ')
+}
+
+function scheduleType(schedule) {
+  if (schedule.is_rest_day) {
+    return { label: 'Rest day', className: 'rest-day' }
+  }
+  if (schedule.is_holiday) {
+    return { label: 'Holiday', className: 'holiday' }
+  }
+  return { label: 'Shift', className: 'shift' }
 }
 
 function resolveDisplayedMonth() {
@@ -303,18 +493,53 @@ function scheduleDescription(schedule) {
     return `Shift time unavailable, ${status}`
   }
 
+  const holiday = schedule.is_holiday
+    ? `, ${schedule.holiday_name || 'holiday'}`
+    : ''
+
+  return `${formatShiftRange(schedule)}${holiday}, ${status}`
+}
+
+function formatShiftRange(schedule) {
   const formatter = new Intl.DateTimeFormat('en-US', {
     timeZone: schedule.timezone || state.access?.timezone || 'America/New_York',
     hour: 'numeric',
     minute: '2-digit'
   })
 
-  const shift = `${formatter.format(new Date(schedule.shift_start))}–${formatter.format(new Date(schedule.shift_end))}`
-  const holiday = schedule.is_holiday
-    ? `, ${schedule.holiday_name || 'holiday'}`
-    : ''
+  return `${formatter.format(new Date(schedule.shift_start))} – ${formatter.format(new Date(schedule.shift_end))}`
+}
 
-  return `${shift}${holiday}, ${status}`
+function formatScheduleDate(value) {
+  return new Intl.DateTimeFormat('en-US', {
+    timeZone: 'UTC',
+    weekday: 'long',
+    month: 'long',
+    day: 'numeric',
+    year: 'numeric'
+  }).format(parseDateKey(value))
+}
+
+function parseDateKey(value) {
+  const [year, month, day] = String(value).split('-').map(Number)
+  return new Date(Date.UTC(year, month - 1, day))
+}
+
+function dateKeyInTimeZone(date, timeZone) {
+  const parts = new Intl.DateTimeFormat('en-CA', {
+    timeZone,
+    year: 'numeric',
+    month: '2-digit',
+    day: '2-digit'
+  }).formatToParts(date)
+  const values = Object.fromEntries(parts.map(part => [part.type, part.value]))
+  return `${values.year}-${values.month}-${values.day}`
+}
+
+function addDays(value, amount) {
+  const date = parseDateKey(value)
+  date.setUTCDate(date.getUTCDate() + amount)
+  return date.toISOString().slice(0, 10)
 }
 
 function toLocalIsoDate(date) {
