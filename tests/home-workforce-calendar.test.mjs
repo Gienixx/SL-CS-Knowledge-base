@@ -23,10 +23,18 @@ test('Home schedule calendar loads only the current agent schedule scope', async
   assert.match(script, /linked_profile_ids/)
   assert.match(script, /\.from\('work_schedules'\)/)
   assert.match(script, /\.in\('user_id', state\.profileIds\)/)
-  assert.match(script, /VISIBLE_SCHEDULE_STATUSES/)
+  assert.match(script, /RELEASED_SCHEDULE_STATUSES/)
   assert.doesNotMatch(script, /\.insert\(/)
   assert.doesNotMatch(script, /\.update\(/)
   assert.doesNotMatch(script, /\.delete\(/)
+})
+
+test('Home calendar matches My Schedule draft visibility for schedule administrators', async () => {
+  const script = await read('scripts/home-workforce-calendar.js')
+
+  assert.match(script, /hasWorkforcePermission\(state\.access, 'manage_schedules'\)/)
+  assert.match(script, /if \(!state\.canManageSchedules\)/)
+  assert.match(script, /query = query\.in\('status', RELEASED_SCHEDULE_STATUSES\)/)
 })
 
 test('Home calendar reflects shifts, rest days, holidays, and multiple entries', async () => {
