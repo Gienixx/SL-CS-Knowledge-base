@@ -1,0 +1,461 @@
+import { supabase } from './supabaseClient.js?v=9'
+import {
+  hasWorkforcePermission,
+  loadCurrentWorkforceAccess
+} from './workforce-permissions.js?v=1'
+
+const ATTENDANCE_STATUS_LABELS = Object.freeze({
+  present: 'Present',
+  absent: 'Absent',
+  on_leave: 'On leave',
+  excused: 'Excused'
+})
+
+const REVIEW_STATUS_LABELS = Object.freeze({
+  pending: 'Pending',
+  approved: 'Approved',
+  corrected: 'Corrected',
+  rejected: 'Rejected',
+  locked: 'Locked'
+})
+
+const elements = {
+  workforceLink: document.getElementById('teamAttendanceWorkforceLink'),
+  recordCount: document.getElementById('teamAttendanceRecordCount'),
+  openCount: document.getElementById('teamAttendanceOpenCount'),
+  missingCount: document.getElementById('teamAttendanceMissingCount'),
+  overtimeCount: document.getElementById('teamAttendanceOvertimeCount'),
+  scope: document.getElementById('teamAttendanceScope'),
+  startDate: document.getElementById('teamAttendanceStartDate'),
+  endDate: document.getElementById('teamAttendanceEndDate'),
+  employeeFilter: document.getElementById('teamAttendanceEmployeeFilter'),
+  teamFilter: document.getElementById('teamAttendanceTeamFilter'),
+  statusFilter: document.getElementById('teamAttendanceStatusFilter'),
+  correctedFilter: document.getElementById('teamAttendanceCorrectedFilter'),
+  openFilter: document.getElementById('teamAttendanceOpenFilter'),
+  missingFilter: document.getElementById('teamAttendanceMissingFilter'),
+  overtimeFilter: document.getElementById('teamAttendanceOvertimeFilter'),
+  resetButton: document.getElementById('teamAttendanceResetButton'),
+  refreshButton: document.getElementById('teamAttendanceRefreshButton'),
+  filterMessage: document.getElementById('teamAttendanceFilterMessage'),
+  tableBody: document.getElementById('teamAttendanceTableBody'),
+  tableMessage: document.getElementById('teamAttendanceTableMessage')
+}
+
+let access = null
+let employees = []
+let teams = []
+let attendanceRows = []
+let busy = false
+
+function errorMessage(error) {
+  return error?.message || 'An unexpected error occurred.'
+}
+
+function setMessage(element, text, type = '') {
+  element.textContent = text
+  element.className = type ? `wf-message ${type}` : 'wf-message'
+}
+
+function localDateKey(date = new Date(), timezone = access?.timezone || 'Asia/Manila') {
+  const parts = new Intl.DateTimeFormat('en-CA', {
+    timeZone: timezone,
+    year: 'numeric',
+    month: '2-digit',
+    day: '2-digit'
+  }).formatToParts(date)
+  const values = Object.fromEntries(parts.map(part => [part.type, part.value]))
+  return `${values.year}-${values.month}-${values.day}`
+}
+
+function defaultDateRange() {
+  const today = localDateKey()
+  return { start: `${today.slice(0, 7)}-01`, end: today }
+}
+
+function parseDateKey(value) {
+  const [year, month, day] = String(value).split('-').map(Number)
+  return new Date(Date.UTC(year, month - 1, day))
+}
+
+function dateRangeDays(start, end) {
+  return Math.floor((parseDateKey(end) - parseDateKey(start)) / 86400000)
+}
+
+function validateDateRange() {
+  const start = elements.startDate.value
+  const end = elements.endDate.value
+
+  if (!start || !end) {
+    throw new Error('Start date and end date are required.')
+  }
+
+  if (end < start) {
+    throw new Error('End date cannot be earlier than start date.')
+  }
+
+  if (dateRangeDays(start, end) > 366) {
+    throw new Error('Select a date range of 367 days or fewer.')
+  }
+
+  return { start, end }
+}
+
+function formatDate(value) {
+  if (!value) return '—'
+  return new Intl.DateTimeFormat('en-US', {
+    timeZone: 'UTC',
+    month: 'short',
+    day: 'numeric',
+    year: 'numeric'
+  }).format(parseDateKey(value))
+}
+
+function formatDateTime(value, timezone, includeDate = false) {
+  if (!value) return '—'
+  return new Intl.DateTimeFormat('en-US', {
+    timeZone: timezone || access?.timezone || 'Asia/Manila',
+    ...(includeDate ? { month: 'short', day: 'numeric', year: 'numeric' } : {}),
+    hour: 'numeric',
+    minute: '2-digit'
+  }).format(new Date(value))
+}
+
+function formatMinutes(value) {
+  if (value === null || value === undefined) return 'Pending'
+  const safeMinutes = Math.max(0, Number(value) || 0)
+  const hours = Math.floor(safeMinutes / 60)
+  const minutes = safeMinutes % 60
+  if (!hours) return `${minutes}m`
+  return `${hours}h ${minutes}m`
+}
+
+function formatShift(row) {
+  if (!row.schedule_id) return 'Unscheduled'
+  if (!row.scheduled_start || !row.scheduled_end) return 'Shift unavailable'
+  const timezone = row.schedule_timezone || row.employee_timezone || access?.timezone
+  return `${formatDateTime(row.scheduled_start, timezone)} – ${formatDateTime(row.scheduled_end, timezone)}`
+}
+
+function statusBadgeClass(status) {
+  if (status === 'present' || status === 'approved') return 'success'
+  if (status === 'absent' || status === 'rejected') return 'danger'
+  if (status === 'on_leave' || status === 'excused' || status === 'pending' || status === 'corrected') return 'warning'
+  return 'muted'
+}
+
+function createCell(primary, secondary = '', className = '') {
+  const cell = document.createElement('td')
+  const stack = document.createElement('div')
+  stack.className = `team-attendance-cell-stack${className ? ` ${className}` : ''}`
+
+  const main = document.createElement('span')
+  main.className = 'team-attendance-time'
+  main.textContent = primary || '—'
+  stack.appendChild(main)
+
+  if (secondary) {
+    const sub = document.createElement('span')
+    sub.className = 'team-attendance-muted'
+    sub.textContent = secondary
+    stack.appendChild(sub)
+  }
+
+  cell.appendChild(stack)
+  return cell
+}
+
+function createEmployeeCell(row) {
+  const secondary = [row.employee_id, row.employee_email].filter(Boolean).join(' · ')
+  const cell = createCell(row.employee_name || 'Unknown employee', secondary)
+  cell.querySelector('.team-attendance-time').className = 'wf-person'
+  return cell
+}
+
+function createMinutesCell(value, secondary = '') {
+  const cell = createCell(formatMinutes(value), secondary, 'compact')
+  cell.querySelector('.team-attendance-time').className = 'team-attendance-minute-value'
+  return cell
+}
+
+function createBadgeCell(labels) {
+  const cell = document.createElement('td')
+  const stack = document.createElement('div')
+  stack.className = 'team-attendance-status-stack'
+
+  labels.forEach(({ label, modifier = 'muted' }) => {
+    const badge = document.createElement('span')
+    badge.className = `wf-badge ${modifier}`
+    badge.textContent = label
+    stack.appendChild(badge)
+  })
+
+  if (!labels.length) cell.textContent = '—'
+  else cell.appendChild(stack)
+  return cell
+}
+
+function createAttendanceStatusCell(row) {
+  const labels = [{
+    label: ATTENDANCE_STATUS_LABELS[row.attendance_status] || row.attendance_status || 'Unknown',
+    modifier: statusBadgeClass(row.attendance_status)
+  }]
+
+  if (row.is_open) labels.push({ label: 'Open', modifier: 'warning' })
+  if (row.is_missing_clock_out) labels.push({ label: 'Missing clock-out', modifier: 'danger' })
+  return createBadgeCell(labels)
+}
+
+function createCorrectionStatusCell(row) {
+  const reviewStatus = row.review_status || 'pending'
+  const labels = [{
+    label: REVIEW_STATUS_LABELS[reviewStatus] || reviewStatus,
+    modifier: statusBadgeClass(reviewStatus)
+  }]
+
+  if (row.is_corrected) labels.push({ label: 'Corrected', modifier: 'warning' })
+  return createBadgeCell(labels)
+}
+
+function filteredRows() {
+  const employeeId = elements.employeeFilter.value
+  const teamId = elements.teamFilter.value
+  const status = elements.statusFilter.value
+  const corrected = elements.correctedFilter.value
+  const openOnly = elements.openFilter.checked
+  const missingOnly = elements.missingFilter.checked
+  const overtimeOnly = elements.overtimeFilter.checked
+
+  return attendanceRows.filter(row => {
+    if (employeeId && row.employee_user_id !== employeeId) return false
+    if (teamId && row.team_id !== teamId) return false
+    if (status && row.attendance_status !== status) return false
+    if (corrected === 'corrected' && !row.is_corrected) return false
+    if (corrected === 'not_corrected' && row.is_corrected) return false
+    if (openOnly && !row.is_open) return false
+    if (missingOnly && !row.is_missing_clock_out) return false
+    if (overtimeOnly && Number(row.total_overtime_minutes) <= 0) return false
+    return true
+  })
+}
+
+function renderSummary(rows) {
+  elements.recordCount.textContent = rows.length
+  elements.openCount.textContent = rows.filter(row => row.is_open).length
+  elements.missingCount.textContent = rows.filter(row => row.is_missing_clock_out).length
+  elements.overtimeCount.textContent = rows.filter(row => Number(row.total_overtime_minutes) > 0).length
+}
+
+function renderTable() {
+  const rows = filteredRows()
+  elements.tableBody.replaceChildren()
+
+  if (!rows.length) {
+    const row = document.createElement('tr')
+    const cell = document.createElement('td')
+    cell.colSpan = 16
+    cell.className = 'wf-empty'
+    cell.textContent = 'No attendance records match the selected filters.'
+    row.appendChild(cell)
+    elements.tableBody.appendChild(row)
+  } else {
+    rows.forEach(record => {
+      const row = document.createElement('tr')
+      if (record.is_open) row.classList.add('is-open')
+      if (record.is_missing_clock_out) row.classList.add('is-missing-clock-out')
+
+      const scheduleSecondary = [
+        record.schedule_status === 'changed' ? 'Changed schedule' : '',
+        record.shift_sequence ? `Shift ${record.shift_sequence}` : ''
+      ].filter(Boolean).join(' · ')
+
+      const clockOutSecondary = record.is_missing_clock_out
+        ? 'Required review'
+        : record.is_open
+          ? 'Session in progress'
+          : ''
+
+      const correctionSecondary = [record.correction_reason, record.admin_notes]
+        .filter(Boolean)
+        .join(' · ')
+
+      row.append(
+        createEmployeeCell(record),
+        createCell(record.team_name || 'Unassigned'),
+        createCell(formatDate(record.work_date), '', 'compact'),
+        createCell(formatShift(record), scheduleSecondary),
+        createCell(formatDateTime(record.clock_in, record.employee_timezone)),
+        createCell(formatDateTime(record.clock_out, record.employee_timezone), clockOutSecondary),
+        createMinutesCell(record.regular_minutes, `Worked ${formatMinutes(record.total_worked_minutes)}`),
+        createMinutesCell(record.pre_shift_overtime_minutes),
+        createMinutesCell(record.post_shift_overtime_minutes),
+        createMinutesCell(record.total_overtime_minutes),
+        createMinutesCell(record.minutes_late),
+        createMinutesCell(record.undertime_minutes),
+        createAttendanceStatusCell(record),
+        createCorrectionStatusCell(record),
+        createCell(record.corrected_by_name || '—', correctionSecondary),
+        createCell(formatDateTime(record.corrected_at, record.employee_timezone, true))
+      )
+
+      elements.tableBody.appendChild(row)
+    })
+  }
+
+  renderSummary(rows)
+  setMessage(
+    elements.tableMessage,
+    `${rows.length} of ${attendanceRows.length} attendance record${attendanceRows.length === 1 ? '' : 's'} shown.`
+  )
+}
+
+function populateFilters() {
+  const selectedEmployee = elements.employeeFilter.value
+  const selectedTeam = elements.teamFilter.value
+
+  elements.employeeFilter.replaceChildren(new Option('All authorized employees', ''))
+  employees.forEach(employee => {
+    const label = employee.employee_id
+      ? `${employee.full_name} · ${employee.employee_id}`
+      : employee.full_name
+    elements.employeeFilter.appendChild(new Option(label, employee.user_id))
+  })
+
+  elements.teamFilter.replaceChildren(new Option('All authorized teams', ''))
+  teams.forEach(team => {
+    elements.teamFilter.appendChild(new Option(team.name, team.id))
+  })
+
+  if ([...elements.employeeFilter.options].some(option => option.value === selectedEmployee)) {
+    elements.employeeFilter.value = selectedEmployee
+  }
+  if ([...elements.teamFilter.options].some(option => option.value === selectedTeam)) {
+    elements.teamFilter.value = selectedTeam
+  }
+}
+
+async function loadReferenceData() {
+  const [profileResult, teamResult] = await Promise.all([
+    supabase
+      .from('profiles')
+      .select('user_id, full_name, email, employee_id, team_id, timezone, employment_status')
+      .order('full_name'),
+    supabase
+      .from('teams')
+      .select('id, name, is_active')
+      .order('name')
+  ])
+
+  if (profileResult.error) throw profileResult.error
+  if (teamResult.error) throw teamResult.error
+
+  employees = (profileResult.data || [])
+    .filter(profile => access.is_admin === true || profile.user_id !== access.user_id)
+
+  const permittedTeamIds = new Set(employees.map(profile => profile.team_id).filter(Boolean))
+  teams = (teamResult.data || []).filter(team => permittedTeamIds.has(team.id))
+  populateFilters()
+}
+
+async function loadAttendance() {
+  const range = validateDateRange()
+  setMessage(elements.filterMessage, 'Loading authorized attendance records...')
+
+  const { data, error } = await supabase.rpc('workforce_list_team_attendance', {
+    p_start_date: range.start,
+    p_end_date: range.end
+  })
+
+  if (error) throw error
+  attendanceRows = data || []
+  renderTable()
+  setMessage(elements.filterMessage, `Attendance loaded for ${formatDate(range.start)} through ${formatDate(range.end)}.`, 'success')
+}
+
+function setBusy(value) {
+  busy = value
+  elements.refreshButton.disabled = value
+  elements.resetButton.disabled = value
+  elements.refreshButton.textContent = value ? 'Refreshing...' : 'Refresh'
+}
+
+async function refreshAttendance() {
+  if (busy) return
+  setBusy(true)
+
+  try {
+    await loadAttendance()
+  } catch (error) {
+    setMessage(elements.filterMessage, errorMessage(error), 'error')
+    setMessage(elements.tableMessage, errorMessage(error), 'error')
+  } finally {
+    setBusy(false)
+  }
+}
+
+async function resetFilters() {
+  const range = defaultDateRange()
+  elements.startDate.value = range.start
+  elements.endDate.value = range.end
+  elements.employeeFilter.value = ''
+  elements.teamFilter.value = ''
+  elements.statusFilter.value = ''
+  elements.correctedFilter.value = ''
+  elements.openFilter.checked = false
+  elements.missingFilter.checked = false
+  elements.overtimeFilter.checked = false
+  await refreshAttendance()
+}
+
+function bindEvents() {
+  elements.refreshButton.addEventListener('click', refreshAttendance)
+  elements.resetButton.addEventListener('click', resetFilters)
+
+  for (const element of [
+    elements.employeeFilter,
+    elements.teamFilter,
+    elements.statusFilter,
+    elements.correctedFilter,
+    elements.openFilter,
+    elements.missingFilter,
+    elements.overtimeFilter
+  ]) {
+    element.addEventListener('change', renderTable)
+  }
+}
+
+async function initialize() {
+  access = await loadCurrentWorkforceAccess(supabase)
+
+  if (!access.authenticated) {
+    window.location.replace(`./login.html?returnTo=${encodeURIComponent('./team-attendance.html')}`)
+    return
+  }
+
+  if (!access.allowed || !hasWorkforcePermission(access, 'view_team_attendance')) {
+    window.alert('You do not have permission to view team attendance.')
+    window.location.replace('./home.html')
+    return
+  }
+
+  elements.workforceLink.hidden = !(
+    access.is_admin === true && hasWorkforcePermission(access, 'manage_employees')
+  )
+  elements.scope.textContent = access.is_admin === true
+    ? 'Showing attendance for all employees permitted by your administrator access.'
+    : 'Showing only employees assigned to your authorized supervisor scope.'
+
+  const range = defaultDateRange()
+  elements.startDate.value = range.start
+  elements.endDate.value = range.end
+  bindEvents()
+
+  await loadReferenceData()
+  await refreshAttendance()
+}
+
+initialize().catch(error => {
+  console.error('Team attendance initialization failed:', error)
+  setMessage(elements.filterMessage, errorMessage(error), 'error')
+  setMessage(elements.tableMessage, errorMessage(error), 'error')
+})
