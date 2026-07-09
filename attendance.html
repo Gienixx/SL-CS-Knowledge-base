@@ -49,14 +49,14 @@
 
         <div id="attendanceScheduleChooser" class="attendance-schedule-chooser" hidden>
           <label class="wf-field">
-            <span>Available shift</span>
+            <span>Available shift or work date</span>
             <select id="attendanceScheduleSelect" class="wf-control"></select>
           </label>
           <p id="attendanceScheduleHelp" class="attendance-help"></p>
         </div>
 
         <div id="attendanceScheduleNotice" class="attendance-notice" hidden></div>
-        <p class="attendance-help">Clock-in is available before a published or changed shift. Pre-shift and post-shift overtime are credited up to 20 hours in total per scheduled work date.</p>
+        <p class="attendance-help">Clock-in is available for published or changed shifts, rest days, and holidays. Rest-day work is recorded as RDOT; holiday work is recorded as overtime. All overtime is limited to 20 credited hours per employee and work date.</p>
 
         <div class="attendance-actions">
           <button id="attendanceClockInButton" class="wf-btn attendance-action-primary" type="button" disabled>Clock In</button>
@@ -121,6 +121,6 @@
     </section>
   </main>
 
-  <script type="module" src="./scripts/attendance.js?v=3"></script>
+  <script type="module" src="./scripts/attendance.js?v=4"></script>
 </body>
 </html>

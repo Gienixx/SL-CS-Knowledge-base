@@ -110,17 +110,49 @@ function formatTime(value, timezone = access?.timezone || 'America/New_York') {
   }).format(new Date(value))
 }
 
+function isSpecialDay(schedule) {
+  return Boolean(schedule?.is_rest_day || schedule?.is_holiday)
+}
+
+function specialDayType(schedule) {
+  if (schedule?.is_rest_day) return 'rest_day'
+  if (schedule?.is_holiday) return 'holiday'
+  return null
+}
+
+function specialDayLabel(schedule) {
+  if (schedule?.is_rest_day) {
+    return schedule.is_holiday && schedule.holiday_name
+      ? `Rest day · ${schedule.holiday_name}`
+      : 'Rest day'
+  }
+
+  if (schedule?.is_holiday) {
+    return schedule.holiday_name ? `Holiday · ${schedule.holiday_name}` : 'Holiday'
+  }
+
+  return ''
+}
+
 function formatShift(schedule) {
   if (!schedule) return 'No assigned shift'
-  if (schedule.is_rest_day) return 'Rest day'
-  if (!schedule.shift_start || !schedule.shift_end) return 'Shift time unavailable'
+
+  if (schedule.is_rest_day && (!schedule.shift_start || !schedule.shift_end)) {
+    return specialDayLabel(schedule)
+  }
+
+  if (!schedule.shift_start || !schedule.shift_end) {
+    return schedule.is_holiday ? specialDayLabel(schedule) : 'Shift time unavailable'
+  }
 
   const formatter = new Intl.DateTimeFormat('en-US', {
     timeZone: schedule.timezone || access?.timezone || 'America/New_York',
     hour: 'numeric',
     minute: '2-digit'
   })
-  return `${formatter.format(new Date(schedule.shift_start))} – ${formatter.format(new Date(schedule.shift_end))}`
+  const shiftTime = `${formatter.format(new Date(schedule.shift_start))} – ${formatter.format(new Date(schedule.shift_end))}`
+  const specialLabel = specialDayLabel(schedule)
+  return specialLabel ? `${shiftTime} · ${specialLabel}` : shiftTime
 }
 
 function scheduleById(scheduleId) {
@@ -136,8 +168,30 @@ function scheduleForAttendance(record) {
   return record.work_schedules || scheduleById(record.schedule_id)
 }
 
-function scheduleWindow(schedule, now = new Date()) {
-  if (!schedule || schedule.is_rest_day || !schedule.shift_start || !schedule.shift_end) {
+function scheduleAvailability(schedule, now = new Date()) {
+  if (!schedule) return { state: 'unavailable', startsAt: null, endsAt: null }
+
+  if (isSpecialDay(schedule)) {
+    const today = localDateKey(now)
+    const yesterday = offsetDateKey(today, -1)
+    const endsAt = schedule.shift_end ? new Date(schedule.shift_end) : null
+
+    if (schedule.shift_date === today) {
+      return { state: 'special', startsAt: null, endsAt }
+    }
+
+    if (
+      schedule.shift_date === yesterday &&
+      endsAt &&
+      now.getTime() < endsAt.getTime()
+    ) {
+      return { state: 'active', startsAt: schedule.shift_start ? new Date(schedule.shift_start) : null, endsAt }
+    }
+
+    return { state: schedule.shift_date < today ? 'ended' : 'future', startsAt: null, endsAt }
+  }
+
+  if (!schedule.shift_start || !schedule.shift_end) {
     return { state: 'unavailable', startsAt: null, endsAt: null }
   }
 
@@ -168,6 +222,9 @@ function formatMinutes(totalMinutes) {
 
 function workedMinutes(record, now = new Date()) {
   if (!record?.clock_in) return 0
+  if (record.clock_out && Number.isFinite(Number(record.total_worked_minutes))) {
+    return Math.max(0, Number(record.total_worked_minutes) || 0)
+  }
   return minutesBetween(record.clock_in, record.clock_out || now)
 }
 
@@ -204,36 +261,45 @@ function setBadge(element, text, modifier = 'muted') {
 function scheduleOptionLabel(schedule) {
   const dateLabel = schedule.shift_date === localDateKey() ? '' : `${formatDate(schedule.shift_date, false)} · `
   const statusLabel = schedule.status === 'changed' ? ' · Changed' : ''
-  return `${dateLabel}${formatShift(schedule)}${statusLabel}`
+  const overtimeLabel = schedule.is_rest_day
+    ? ' · RDOT'
+    : schedule.is_holiday
+      ? ' · OT'
+      : ''
+  return `${dateLabel}${formatShift(schedule)}${overtimeLabel}${statusLabel}`
 }
 
 function renderScheduleChooser() {
   const previous = elements.scheduleSelect.value
   const now = new Date()
-  const workingSchedules = visibleSchedules
-    .filter(schedule => !schedule.is_rest_day && schedule.shift_start && schedule.shift_end)
-    .filter(schedule => scheduleWindow(schedule, now).state !== 'ended' || recentAttendance.some(record => record.schedule_id === schedule.id))
-    .sort((a, b) => new Date(a.shift_start) - new Date(b.shift_start))
-  const restSchedules = visibleSchedules.filter(schedule => schedule.is_rest_day && schedule.shift_date === localDateKey())
+  const selectableSchedules = visibleSchedules
+    .filter(schedule => {
+      const availability = scheduleAvailability(schedule, now)
+      return availability.state !== 'ended' || recentAttendance.some(record => record.schedule_id === schedule.id)
+    })
+    .sort((left, right) => {
+      const leftTime = left.shift_start ? new Date(left.shift_start).getTime() : parseDateKey(left.shift_date).getTime()
+      const rightTime = right.shift_start ? new Date(right.shift_start).getTime() : parseDateKey(right.shift_date).getTime()
+      return leftTime - rightTime
+    })
 
   elements.scheduleSelect.replaceChildren()
 
-  if (workingSchedules.length) {
-    workingSchedules.forEach(schedule => {
+  if (selectableSchedules.length) {
+    selectableSchedules.forEach(schedule => {
       elements.scheduleSelect.appendChild(new Option(scheduleOptionLabel(schedule), schedule.id))
     })
 
     const optionValues = [...elements.scheduleSelect.options].map(option => option.value)
-    const availableSchedule = workingSchedules.find(schedule => ['early', 'active'].includes(scheduleWindow(schedule, now).state))
+    const availableSchedule = selectableSchedules.find(schedule =>
+      ['special', 'early', 'active'].includes(scheduleAvailability(schedule, now).state)
+    )
     const preferred = optionValues.includes(previous)
       ? previous
-      : availableSchedule?.id || workingSchedules[0].id
+      : availableSchedule?.id || selectableSchedules[0].id
 
     elements.scheduleSelect.value = preferred
     elements.scheduleChooser.hidden = false
-  } else if (restSchedules.length) {
-    elements.scheduleChooser.hidden = true
-    elements.scheduleHelp.textContent = ''
   } else {
     elements.scheduleSelect.appendChild(new Option('No linked schedule', ''))
     elements.scheduleChooser.hidden = false
@@ -241,18 +307,25 @@ function renderScheduleChooser() {
 }
 
 function renderScheduleNotice() {
-  const changedSchedules = visibleSchedules.filter(schedule => schedule.status === 'changed' && !schedule.is_rest_day)
-  const restDay = visibleSchedules.find(schedule => schedule.is_rest_day && schedule.shift_date === localDateKey())
+  const selected = selectedSchedule()
+  const changedSchedules = visibleSchedules.filter(schedule => schedule.status === 'changed')
 
   elements.scheduleNotice.hidden = true
   elements.scheduleNotice.className = 'attendance-notice'
   elements.scheduleNotice.textContent = ''
 
-  if (restDay && !visibleSchedules.some(schedule => !schedule.is_rest_day && schedule.shift_date === localDateKey())) {
-    elements.scheduleNotice.textContent = restDay.is_holiday
-      ? `Today is marked as a rest day${restDay.holiday_name ? ` for ${restDay.holiday_name}` : ' and holiday'}. Clock-in is disabled.`
-      : 'Today is marked as a rest day. Clock-in is disabled.'
-    elements.scheduleNotice.classList.add('danger')
+  if (selected?.is_rest_day) {
+    elements.scheduleNotice.textContent = selected.is_holiday
+      ? 'This date is both a rest day and a holiday. All credited work is classified as RDOT so minutes are not counted twice.'
+      : 'This is a rest day. You may clock in, and all credited work will be classified as RDOT.'
+    elements.scheduleNotice.hidden = false
+    return
+  }
+
+  if (selected?.is_holiday) {
+    elements.scheduleNotice.textContent = selected.holiday_name
+      ? `${selected.holiday_name}: you may clock in, and all credited work will count as overtime.`
+      : 'This is a holiday. You may clock in, and all credited work will count as overtime.'
     elements.scheduleNotice.hidden = false
     return
   }
@@ -273,17 +346,25 @@ function updateScheduleHelp() {
   }
 
   if (record?.clock_in && record.clock_out) {
-    elements.scheduleHelp.textContent = 'Attendance for this shift has already been completed.'
+    elements.scheduleHelp.textContent = 'Attendance for this shift or work date has already been completed.'
     return
   }
 
-  const window = scheduleWindow(schedule)
-  if (window.state === 'early') {
+  const availability = scheduleAvailability(schedule)
+  if (availability.state === 'special') {
+    elements.scheduleHelp.textContent = schedule.is_rest_day
+      ? 'Clock-in is available for this rest day. All credited worked minutes count as RDOT, subject to the 20-hour work-date limit.'
+      : 'Clock-in is available for this holiday. All credited worked minutes count as overtime, subject to the 20-hour work-date limit.'
+  } else if (availability.state === 'early') {
     elements.scheduleHelp.textContent = 'Clock-in is available. Minutes before the scheduled start count as pre-shift overtime, subject to the 20-hour work-date limit.'
-  } else if (window.state === 'active') {
-    elements.scheduleHelp.textContent = 'This shift is currently active. You can clock in now.'
-  } else if (window.state === 'ended') {
-    elements.scheduleHelp.textContent = 'This shift has already ended and is no longer available for clock-in.'
+  } else if (availability.state === 'active') {
+    elements.scheduleHelp.textContent = isSpecialDay(schedule)
+      ? 'This special-day schedule is still active. Credited work remains overtime.'
+      : 'This shift is currently active. You can clock in now.'
+  } else if (availability.state === 'ended') {
+    elements.scheduleHelp.textContent = 'This shift or work date has ended and is no longer available for clock-in.'
+  } else if (availability.state === 'future') {
+    elements.scheduleHelp.textContent = 'Rest-day and holiday clock-in opens on the scheduled work date.'
   } else {
     elements.scheduleHelp.textContent = 'Clock-in is unavailable for this schedule.'
   }
@@ -293,14 +374,13 @@ function updateActionState() {
   const openRecord = openAttendanceRecord()
   const schedule = selectedSchedule()
   const selectedRecord = attendanceForSelectedSchedule()
-  const onlyRestDay = visibleSchedules.length > 0 && visibleSchedules.every(schedule => schedule.is_rest_day)
-  const window = schedule ? scheduleWindow(schedule) : null
+  const availability = schedule ? scheduleAvailability(schedule) : null
   const scheduleClockInOpen = schedule
-    ? ['early', 'active'].includes(window.state)
-    : visibleSchedules.filter(item => !item.is_rest_day).length === 0
+    ? ['special', 'early', 'active'].includes(availability.state)
+    : visibleSchedules.length === 0
   const selectedCompleted = Boolean(selectedRecord?.clock_in && selectedRecord.clock_out)
 
-  elements.clockInButton.disabled = busy || Boolean(openRecord) || selectedCompleted || onlyRestDay || !scheduleClockInOpen
+  elements.clockInButton.disabled = busy || Boolean(openRecord) || selectedCompleted || !scheduleClockInOpen
   elements.clockOutButton.disabled = busy || !openRecord
   elements.scheduleSelect.disabled = busy || Boolean(openRecord)
   updateScheduleHelp()
@@ -311,7 +391,7 @@ function renderToday() {
 
   const record = currentAttendanceRecord()
   const recordSchedule = scheduleForAttendance(record)
-  const fallbackSchedule = selectedSchedule() || visibleSchedules.find(schedule => !schedule.is_rest_day) || visibleSchedules[0] || null
+  const fallbackSchedule = selectedSchedule() || visibleSchedules[0] || null
   const displaySchedule = recordSchedule || fallbackSchedule
   const displayDate = record?.work_date || displaySchedule?.shift_date || localDateKey()
 
@@ -329,7 +409,7 @@ function renderToday() {
     setBadge(elements.todayBadge, 'Not clocked in', 'muted')
   } else if (record.clock_in && !record.clock_out) {
     elements.todayTitle.textContent = 'Shift in progress'
-    setBadge(elements.todayBadge, 'Clocked in', 'success')
+    setBadge(elements.todayBadge, specialDayType(recordSchedule) === 'rest_day' ? 'RDOT in progress' : 'Clocked in', 'success')
   } else if (record.clock_in && record.clock_out) {
     elements.todayTitle.textContent = 'Attendance completed'
     setBadge(elements.todayBadge, 'Clocked out', 'success')
@@ -396,9 +476,13 @@ function createAdjustmentsCell(record) {
   const cell = document.createElement('td')
   const wrap = document.createElement('div')
   wrap.className = 'attendance-adjustments'
+  const restDayOvertime = Math.max(0, Number(record.rest_day_overtime_minutes) || 0)
+  const totalOvertime = Math.max(0, Number(record.total_overtime_minutes ?? record.overtime_minutes) || 0)
+  const normalOvertime = Math.max(0, totalOvertime - restDayOvertime)
   const adjustments = [
     ['Late', record.minutes_late],
-    ['OT', record.overtime_minutes],
+    ['RDOT', restDayOvertime],
+    ['OT', normalOvertime],
     ['UT', record.undertime_minutes]
   ].filter(([, minutes]) => Number(minutes) > 0)
 
@@ -434,6 +518,13 @@ function renderHistory() {
     rows.forEach(record => {
       const row = document.createElement('tr')
       const schedule = record.work_schedules || null
+      const scheduleNote = schedule?.is_rest_day
+        ? 'Rest-day overtime'
+        : schedule?.is_holiday
+          ? 'Holiday overtime'
+          : schedule?.status === 'changed'
+            ? 'Changed schedule'
+            : ''
       const notes = [record.admin_notes, record.correction_reason].filter(Boolean).join(' · ')
       const noteCell = document.createElement('td')
       noteCell.className = 'attendance-note-cell'
@@ -441,7 +532,7 @@ function renderHistory() {
 
       row.append(
         createTextCell(formatDate(record.work_date), record.corrected_at ? 'Corrected by an administrator' : ''),
-        createTextCell(formatShift(schedule), schedule?.status === 'changed' ? 'Changed schedule' : ''),
+        createTextCell(formatShift(schedule), scheduleNote),
         createTextCell(formatTime(record.clock_in)),
         createTextCell(formatTime(record.clock_out)),
         createTextCell(record.clock_in ? formatMinutes(workedMinutes(record)) : '—'),
@@ -473,11 +564,12 @@ async function loadToday() {
     .gte('shift_date', rangeStart)
     .lte('shift_date', rangeEnd)
     .in('status', RELEASED_SCHEDULE_STATUSES)
-    .order('shift_start')
+    .order('shift_date')
+    .order('shift_sequence')
 
   const attendanceQuery = supabase
     .from('attendance')
-    .select('id, user_id, schedule_id, work_date, clock_in, clock_out, attendance_status, is_late, minutes_late, overtime_minutes, undertime_minutes, correction_reason, admin_notes, corrected_at, created_at, updated_at, work_schedules(id, shift_date, shift_start, shift_end, timezone, status, is_rest_day, is_holiday, holiday_name)')
+    .select('id, user_id, schedule_id, work_date, clock_in, clock_out, attendance_status, is_late, minutes_late, overtime_minutes, pre_shift_overtime_minutes, regular_minutes, post_shift_overtime_minutes, rest_day_overtime_minutes, holiday_overtime_minutes, total_overtime_minutes, total_worked_minutes, undertime_minutes, correction_reason, admin_notes, corrected_at, created_at, updated_at, work_schedules(id, shift_date, shift_start, shift_end, timezone, status, is_rest_day, is_holiday, holiday_name)')
     .in('user_id', profileIds)
     .gte('work_date', rangeStart)
     .lte('work_date', rangeEnd)
@@ -498,7 +590,7 @@ async function loadHistory() {
 
   const { data, error } = await supabase
     .from('attendance')
-    .select('id, user_id, schedule_id, work_date, clock_in, clock_out, attendance_status, is_late, minutes_late, overtime_minutes, undertime_minutes, correction_reason, admin_notes, corrected_at, created_at, updated_at, work_schedules(id, shift_date, shift_start, shift_end, timezone, status, is_rest_day, is_holiday, holiday_name)')
+    .select('id, user_id, schedule_id, work_date, clock_in, clock_out, attendance_status, is_late, minutes_late, overtime_minutes, pre_shift_overtime_minutes, regular_minutes, post_shift_overtime_minutes, rest_day_overtime_minutes, holiday_overtime_minutes, total_overtime_minutes, total_worked_minutes, undertime_minutes, correction_reason, admin_notes, corrected_at, created_at, updated_at, work_schedules(id, shift_date, shift_start, shift_end, timezone, status, is_rest_day, is_holiday, holiday_name)')
     .in('user_id', profileIds)
     .gte('work_date', range.start)
     .lte('work_date', range.end)
@@ -538,14 +630,28 @@ async function refreshAll({ silent = false } = {}) {
 async function clockIn() {
   if (busy || elements.clockInButton.disabled) return
   const scheduleId = elements.scheduleSelect.value || null
+  const schedule = selectedSchedule()
   setBusy(true, 'clock-in')
-  setActionMessage('Recording your clock-in...')
+  setActionMessage(
+    schedule?.is_rest_day
+      ? 'Recording your rest-day overtime clock-in...'
+      : schedule?.is_holiday
+        ? 'Recording your holiday overtime clock-in...'
+        : 'Recording your clock-in...'
+  )
 
   try {
     const { error } = await supabase.rpc('workforce_clock_in', { p_schedule_id: scheduleId })
     if (error) throw error
     await Promise.all([loadToday(), loadHistory()])
-    setActionMessage('Clock-in recorded successfully.', 'success')
+    setActionMessage(
+      schedule?.is_rest_day
+        ? 'Rest-day overtime clock-in recorded successfully.'
+        : schedule?.is_holiday
+          ? 'Holiday overtime clock-in recorded successfully.'
+          : 'Clock-in recorded successfully.',
+      'success'
+    )
   } catch (error) {
     setActionMessage(errorMessage(error), 'error')
   } finally {
