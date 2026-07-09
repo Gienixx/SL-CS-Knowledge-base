@@ -16,11 +16,12 @@ declare
   v_total_overtime_changed boolean := false;
   v_is_correction_action boolean := false;
   v_has_correction_metadata boolean := false;
+  v_correction_reason text := nullif(trim(coalesce(new.correction_reason, '')), '');
 begin
   v_has_correction_metadata :=
     new.corrected_by is not null
     or new.corrected_at is not null
-    or nullif(trim(coalesce(new.correction_reason, '')), '') is not null;
+    or v_correction_reason is not null;
 
   v_is_correction_action := case
     when tg_op = 'INSERT' then v_has_correction_metadata
@@ -30,6 +31,22 @@ begin
       or new.correction_reason is distinct from old.correction_reason
       or new.admin_notes is distinct from old.admin_notes
   end;
+
+  if v_is_correction_action and (
+    v_correction_reason is null
+    or v_correction_reason not in (
+      'forgot_clock_in',
+      'forgot_clock_out',
+      'system_issue',
+      'connection_issue',
+      'incorrect_schedule',
+      'approved_overtime',
+      'manager_confirmed',
+      'other'
+    )
+  ) then
+    raise exception 'A valid correction reason is required.';
+  end if;
 
   if tg_op = 'INSERT' then
     if new.original_clock_in is null
@@ -120,7 +137,7 @@ end;
 $$;
 
 comment on function public.workforce_prepare_attendance_storage() is
-  'Captures immutable original timestamps for genuine clock actions, preserves null originals during correction actions, and retains correction status on later updates.';
+  'Captures immutable original timestamps for genuine clock actions, preserves null originals during correction actions, validates correction reason codes, and retains correction status on later updates.';
 
 insert into public.workforce_audit_logs (
   actor_user_id,
@@ -137,9 +154,10 @@ insert into public.workforce_audit_logs (
     'corrections_do_not_rewrite_missing_originals', true,
     'later_self_service_clock_out_capture_preserved', true,
     'corrected_status_persists', true,
+    'correction_reason_codes_enforced', true,
     'original_timestamps_remain_immutable', true
   ),
-  'Updated original timestamp handling for the Step 12 correction workflow'
+  'Updated original timestamp and correction reason handling for the Step 12 correction workflow'
 );
 
 commit;
