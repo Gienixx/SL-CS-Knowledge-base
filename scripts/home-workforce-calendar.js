@@ -175,12 +175,13 @@ async function refreshUpcomingSchedules() {
 }
 
 function isUpcomingSchedule(schedule, now, today) {
-  if (schedule.status === 'cancelled' || schedule.status === 'completed') {
+  if (schedule.status === 'cancelled') {
     return false
   }
 
   if (schedule.shift_date > today) return true
   if (schedule.shift_date < today) return false
+  if (schedule.status === 'completed') return true
 
   if (schedule.is_rest_day || schedule.is_holiday) return true
   if (!schedule.shift_end) return true
@@ -207,11 +208,6 @@ function renderUpcomingSchedules() {
   const list = document.getElementById('upcomingEventList')
   if (!list) return
 
-  const eyebrow = document.getElementById('homeUpcomingEyebrow')
-  const title = document.getElementById('homeUpcomingTitle')
-  if (eyebrow) eyebrow.textContent = 'My schedule'
-  if (title) title.textContent = 'Upcoming schedule'
-
   list.replaceChildren()
 
   if (!state.upcomingSchedules.length) {
@@ -236,6 +232,7 @@ function createUpcomingScheduleCard(schedule) {
 
   if (schedule.status === 'changed') card.classList.add('changed')
   if (schedule.status === 'scheduled') card.classList.add('scheduled')
+  if (schedule.status === 'completed') card.classList.add('completed')
 
   const dateBox = document.createElement('div')
   dateBox.className = 'event-date-box'
@@ -256,12 +253,15 @@ function createUpcomingScheduleCard(schedule) {
 
   const heading = document.createElement('strong')
   heading.textContent = upcomingScheduleTitle(schedule)
+  copy.appendChild(heading)
 
-  const meta = document.createElement('span')
-  meta.className = 'home-schedule-event-meta'
-  meta.textContent = upcomingScheduleMeta(schedule)
-
-  copy.append(heading, meta)
+  const metaText = upcomingScheduleMeta(schedule)
+  if (metaText) {
+    const meta = document.createElement('span')
+    meta.className = 'home-schedule-event-meta'
+    meta.textContent = metaText
+    copy.appendChild(meta)
+  }
 
   if (schedule.notes) {
     const notes = document.createElement('span')
@@ -298,7 +298,13 @@ function upcomingScheduleTitle(schedule) {
 }
 
 function upcomingScheduleMeta(schedule) {
-  const details = [STATUS_LABELS[schedule.status] || schedule.status]
+  const details = []
+
+  if (schedule.status === 'completed') {
+    details.push('✓ Completed')
+  } else if (schedule.status === 'changed' || schedule.status === 'scheduled') {
+    details.push(STATUS_LABELS[schedule.status])
+  }
 
   if (schedule.is_holiday && schedule.shift_start) {
     details.push(schedule.holiday_name || 'Holiday')
