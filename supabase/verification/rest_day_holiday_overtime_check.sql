@@ -29,30 +29,56 @@ select
 
 select
   to_regprocedure(
-    'public.workforce_calculate_attendance(timestamp with time zone,timestamp with time zone,timestamp with time zone,timestamp with time zone,date,text,integer,boolean,boolean)'
+    'public.workforce_calculate_attendance(timestamptz,timestamptz,timestamptz,timestamptz,date,text,integer,boolean,boolean)'
   ) is not null as special_day_calculator_exists,
   to_regprocedure('public.workforce_clock_in(uuid)') is not null
     as clock_in_function_exists;
 
-with calculator as (
-  select pg_get_functiondef(
-    'public.workforce_calculate_attendance(timestamp with time zone,timestamp with time zone,timestamp with time zone,timestamp with time zone,date,text,integer,boolean,boolean)'::regprocedure
-  ) as definition
-), clock_in_function as (
-  select pg_get_functiondef('public.workforce_clock_in(uuid)'::regprocedure) as definition
+with function_oids as (
+  select
+    to_regprocedure(
+      'public.workforce_calculate_attendance(timestamptz,timestamptz,timestamptz,timestamptz,date,text,integer,boolean,boolean)'
+    ) as calculator_oid,
+    to_regprocedure('public.workforce_clock_in(uuid)') as clock_in_oid
+), definitions as (
+  select
+    case
+      when calculator_oid is null then null
+      else pg_get_functiondef(calculator_oid)
+    end as calculator_definition,
+    case
+      when clock_in_oid is null then null
+      else pg_get_functiondef(clock_in_oid)
+    end as clock_in_definition
+  from function_oids
 )
 select
-  position('rest_day_overtime_minutes := v_credited_special_minutes' in calculator.definition) > 0
+  calculator_definition is not null
+    as calculator_definition_available,
+  position('rest_day_overtime_minutes := v_credited_special_minutes' in coalesce(calculator_definition, '')) > 0
     as rest_day_minutes_are_rdot,
-  position('holiday_overtime_minutes := v_credited_special_minutes' in calculator.definition) > 0
+  position('holiday_overtime_minutes := v_credited_special_minutes' in coalesce(calculator_definition, '')) > 0
     as holiday_minutes_are_overtime,
-  position('if coalesce(p_is_rest_day, false) then' in calculator.definition) > 0
+  position('if coalesce(p_is_rest_day, false) then' in coalesce(calculator_definition, '')) > 0
     as rest_day_precedence_exists,
-  position('v_schedule.is_rest_day or v_schedule.is_holiday' in clock_in_function.definition) > 0
+  position('v_schedule.is_rest_day or v_schedule.is_holiday' in coalesce(clock_in_definition, '')) > 0
     as special_day_clock_in_is_allowed,
-  position('Rest-day and holiday clock-in is available only on the scheduled work date.' in clock_in_function.definition) > 0
+  position('Rest-day and holiday clock-in is available only on the scheduled work date.' in coalesce(clock_in_definition, '')) > 0
     as special_day_date_boundary_exists
-from calculator, clock_in_function;
+from definitions;
+
+-- Stop with an explicit deployment message instead of an ambiguous regprocedure
+-- cast failure when the migration was not applied or rolled back.
+do $$
+begin
+  if to_regprocedure(
+    'public.workforce_calculate_attendance(timestamptz,timestamptz,timestamptz,timestamptz,date,text,integer,boolean,boolean)'
+  ) is null then
+    raise exception
+      'Special-day attendance calculator is missing. Apply 2026070906_rest_day_holiday_overtime.sql successfully before running this verification.';
+  end if;
+end
+$$;
 
 -- ---------------------------------------------------------------------------
 -- 3. Direct calculator examples
@@ -123,7 +149,9 @@ select
     as authenticated_can_clock_in,
   has_function_privilege(
     'authenticated',
-    'public.workforce_calculate_attendance(timestamp with time zone,timestamp with time zone,timestamp with time zone,timestamp with time zone,date,text,integer,boolean,boolean)',
+    to_regprocedure(
+      'public.workforce_calculate_attendance(timestamptz,timestamptz,timestamptz,timestamptz,date,text,integer,boolean,boolean)'
+    ),
     'EXECUTE'
   ) as browser_can_call_internal_calculator_should_be_false;
 
