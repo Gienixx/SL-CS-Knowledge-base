@@ -56,6 +56,15 @@ test('Google Calendar OAuth endpoints enforce authenticated initiation and singl
   assert.match(callback, /resolution=merge-duplicates/)
 })
 
+test('Google Calendar callback always redirects to the root Home page', async () => {
+  const helper = await read('functions/_shared/google-calendar.js')
+
+  assert.match(helper, /return value === '\.\/home\.html' \|\| value === '\/home\.html'/)
+  assert.match(helper, /\? '\/home\.html'/)
+  assert.match(helper, /new URL\(safeReturnTo\(returnTo\), requestUrl\.origin\)/)
+  assert.doesNotMatch(helper, /new URL\(safeReturnTo\(returnTo\), request\.url\)/)
+})
+
 test('Google Calendar events refresh server-side and expose only required event fields', async () => {
   const events = await read('functions/google-calendar/events.js')
   const sanitizeBlock = events.match(
