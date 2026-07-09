@@ -425,12 +425,13 @@ export async function googleApiRequest(url, accessToken, options = {}) {
 
 export function safeReturnTo(value) {
   return value === './home.html' || value === '/home.html'
-    ? value
-    : './home.html'
+    ? '/home.html'
+    : '/home.html'
 }
 
 export function redirectWithResult(request, returnTo, values) {
-  const destination = new URL(safeReturnTo(returnTo), request.url)
+  const requestUrl = new URL(request.url)
+  const destination = new URL(safeReturnTo(returnTo), requestUrl.origin)
 
   for (const [key, value] of Object.entries(values)) {
     if (value !== undefined && value !== null && value !== '') {
