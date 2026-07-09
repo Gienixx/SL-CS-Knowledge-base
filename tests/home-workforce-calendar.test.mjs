@@ -8,10 +8,10 @@ const read = path => readFile(new URL(`../${path}`, import.meta.url), 'utf8')
 test('Home loads the workforce schedule calendar integration', async () => {
   const page = await read('home.html')
 
-  assert.match(page, /home-workforce-calendar\.css\?v=2/)
-  assert.match(page, /home-workforce-calendar\.js\?v=3/)
-  assert.match(page, /id="homeUpcomingEyebrow"/)
-  assert.match(page, /id="homeUpcomingTitle"/)
+  assert.match(page, /home-workforce-calendar\.css\?v=3/)
+  assert.match(page, /home-workforce-calendar\.js\?v=4/)
+  assert.match(page, /<h2 id="homeUpcomingTitle">Upcoming Events<\/h2>/)
+  assert.doesNotMatch(page, /homeUpcomingEyebrow/)
   assert.match(page, />My shift</)
   assert.match(page, />Rest day</)
   assert.match(page, />Holiday</)
@@ -58,16 +58,28 @@ test('Home upcoming events are populated from My Schedule', async () => {
   assert.match(script, /UPCOMING_LOOKAHEAD_DAYS = 90/)
   assert.match(script, /UPCOMING_SCHEDULE_LIMIT = 5/)
   assert.match(script, /document\.getElementById\('upcomingEventList'\)/)
-  assert.match(script, /Upcoming schedule/)
   assert.match(script, /createUpcomingScheduleCard/)
   assert.match(script, /schedule\.notes/)
-  assert.match(script, /STATUS_LABELS/)
 })
 
-test('Home upcoming schedule excludes completed, cancelled, and ended shifts', async () => {
+test('Home upcoming events hide Published and mark completed entries with a check', async () => {
+  const script = await read('scripts/home-workforce-calendar.js')
+  const metaFunction = script.match(
+    /function upcomingScheduleMeta\(schedule\) \{[\s\S]*?\n\}/
+  )?.[0] || ''
+
+  assert.match(script, /if \(schedule\.status === 'completed'\) return true/)
+  assert.match(script, /card\.classList\.add\('completed'\)/)
+  assert.match(metaFunction, /details\.push\('✓ Completed'\)/)
+  assert.match(metaFunction, /schedule\.status === 'changed' \|\| schedule\.status === 'scheduled'/)
+  assert.doesNotMatch(metaFunction, /Published/)
+  assert.doesNotMatch(metaFunction, /STATUS_LABELS\[schedule\.status\] \|\| schedule\.status/)
+})
+
+test('Home upcoming events exclude cancelled and ended incomplete shifts', async () => {
   const script = await read('scripts/home-workforce-calendar.js')
 
-  assert.match(script, /schedule\.status === 'cancelled' \|\| schedule\.status === 'completed'/)
+  assert.match(script, /schedule\.status === 'cancelled'/)
   assert.match(script, /new Date\(schedule\.shift_end\)\.getTime\(\) > now\.getTime\(\)/)
   assert.match(script, /\.slice\(0, UPCOMING_SCHEDULE_LIMIT\)/)
 })
