@@ -1,0 +1,90 @@
+.calendar-day{
+  display:flex;
+  flex-direction:column;
+  align-items:center;
+  justify-content:flex-start;
+  gap:2px;
+  padding:4px 2px 3px;
+  overflow:hidden;
+}
+
+.home-calendar-date-number{
+  display:block;
+  line-height:1;
+}
+
+.home-work-schedule-label{
+  display:block;
+  width:100%;
+  min-width:0;
+  padding:2px 2px;
+  border-radius:4px;
+  overflow:hidden;
+  color:var(--home-navy);
+  background:rgba(67,143,210,.14);
+  font-size:.43rem;
+  font-weight:800;
+  line-height:1.05;
+  text-align:center;
+  text-overflow:ellipsis;
+  white-space:nowrap;
+}
+
+.calendar-day.has-work-schedule{
+  box-shadow:inset 0 0 0 1px rgba(67,143,210,.18);
+}
+
+.calendar-day.has-work-schedule:hover:not(.muted){
+  background:rgba(67,143,210,.08);
+}
+
+.calendar-day.work-rest-day .home-work-schedule-label{
+  color:#5d5d5d;
+  background:rgba(120,120,120,.14);
+}
+
+.calendar-day.work-holiday .home-work-schedule-label{
+  color:#8b6400;
+  background:rgba(255,194,26,.2);
+}
+
+.calendar-day.work-changed .home-work-schedule-label{
+  color:#765500;
+  background:rgba(255,194,26,.28);
+}
+
+.calendar-day.work-cancelled .home-work-schedule-label{
+  color:#9f2525;
+  background:rgba(217,85,85,.13);
+  text-decoration:line-through;
+}
+
+.calendar-day.today .home-work-schedule-label{
+  color:var(--home-navy-deep);
+  background:#fff;
+}
+
+.calendar-day.muted .home-work-schedule-label{
+  opacity:.56;
+}
+
+.calendar-day.has-event.has-work-schedule::after{
+  left:auto;
+  right:4px;
+  bottom:4px;
+  transform:none;
+}
+
+.calendar-legend{
+  display:flex;
+  flex-wrap:wrap;
+  gap:7px 11px;
+}
+
+.event-dot.work-shift{background:#438fd2}
+.event-dot.work-rest-day{background:#888}
+.event-dot.work-holiday{background:var(--home-gold)}
+
+@media(max-width:1120px){
+  .home-work-schedule-label{font-size:.48rem}
+}
