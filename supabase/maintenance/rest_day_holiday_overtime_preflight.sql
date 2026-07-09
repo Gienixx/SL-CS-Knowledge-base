@@ -5,55 +5,63 @@
 -- Such overtime is unclassified and cannot satisfy the new RDOT/holiday-aware
 -- totals constraint. This script preserves every affected row in the audit log
 -- before resetting only the unclassified overtime totals.
+--
+-- This implementation intentionally uses one data-modifying CTE rather than a
+-- temporary table so it works in SQL runners that execute statements through
+-- transaction-pooler boundaries.
 
 begin;
 
-create temporary table special_day_overtime_preflight_rows
-on commit drop
-as
-select attendance_row.*
-from public.attendance attendance_row
-where attendance_row.pre_shift_overtime_minutes is null
-  and attendance_row.regular_minutes is null
-  and attendance_row.post_shift_overtime_minutes is null
-  and (
-    coalesce(attendance_row.total_overtime_minutes, 0) <> 0
-    or coalesce(attendance_row.overtime_minutes, 0) <> 0
-  );
-
-insert into public.workforce_audit_logs (
-  actor_user_id,
-  action,
-  entity_type,
-  entity_id,
-  before_data,
-  after_data,
-  reason
+with affected as materialized (
+  select attendance_row.*
+  from public.attendance attendance_row
+  where attendance_row.pre_shift_overtime_minutes is null
+    and attendance_row.regular_minutes is null
+    and attendance_row.post_shift_overtime_minutes is null
+    and (
+      coalesce(attendance_row.total_overtime_minutes, 0) <> 0
+      or coalesce(attendance_row.overtime_minutes, 0) <> 0
+    )
+  for update
+), audit_rows as (
+  insert into public.workforce_audit_logs (
+    actor_user_id,
+    action,
+    entity_type,
+    entity_id,
+    before_data,
+    after_data,
+    reason
+  )
+  select
+    auth.uid(),
+    'legacy_unclassified_overtime_normalized',
+    'attendance',
+    affected.id,
+    to_jsonb(affected),
+    to_jsonb(affected) || jsonb_build_object(
+      'total_overtime_minutes', 0,
+      'overtime_minutes', 0
+    ),
+    'Normalized legacy unclassified overtime before enabling RDOT and holiday overtime'
+  from affected
+  returning entity_id
+), updated_rows as (
+  update public.attendance attendance_row
+  set total_overtime_minutes = 0,
+      overtime_minutes = 0,
+      updated_at = now()
+  from affected
+  where attendance_row.id = affected.id
+  returning attendance_row.id
 )
 select
-  auth.uid(),
-  'legacy_unclassified_overtime_normalized',
-  'attendance',
-  affected.id,
-  to_jsonb(affected),
-  to_jsonb(affected) || jsonb_build_object(
-    'total_overtime_minutes', 0,
-    'overtime_minutes', 0
-  ),
-  'Normalized legacy unclassified overtime before enabling RDOT and holiday overtime'
-from special_day_overtime_preflight_rows affected;
+  (select count(*) from affected) as affected_rows,
+  (select count(*) from audit_rows) as audited_rows,
+  (select count(*) from updated_rows) as normalized_rows;
 
-update public.attendance attendance_row
-set total_overtime_minutes = 0,
-    overtime_minutes = 0,
-    updated_at = now()
-where attendance_row.id in (
-  select affected.id
-  from special_day_overtime_preflight_rows affected
-);
-
--- This must return zero rows before commit. Raising an exception rolls the
--- entire preflight back if any legacy unclassified overtime remains.
+-- Raising an exception rolls the transaction back if any incompatible legacy
+-- overtime remains after the atomic normalization statement.
 do $$
 begin
   if exists (
@@ -74,7 +82,6 @@ $$;
 
 commit;
 
--- Report how many rows were normalized in the current database audit history.
-select count(*) as normalized_rows
-from public.workforce_audit_logs
-where action = 'legacy_unclassified_overtime_normalized';
+-- Idempotency note:
+-- A successful rerun returns zero affected, audited, and normalized rows because
+-- the incompatible overtime values were already cleared by the first run.
