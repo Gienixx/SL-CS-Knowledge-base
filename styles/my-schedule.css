@@ -10,24 +10,30 @@
 .schedule-weekday-row{border-bottom:1px solid var(--wf-border);background:rgba(36,27,93,.055)}
 .schedule-weekday-row span{padding:11px 12px;text-align:center;color:var(--wf-navy);font-size:.76rem;font-weight:850;text-transform:uppercase;letter-spacing:.05em}
 .schedule-calendar{align-items:stretch}
-.schedule-day{min-height:150px;padding:10px;border-right:1px solid var(--wf-border);border-bottom:1px solid var(--wf-border);background:#fff}
+.schedule-day{min-height:150px;padding:9px;border-right:1px solid var(--wf-border);border-bottom:1px solid var(--wf-border);background:#fff}
 .schedule-day:nth-child(7n){border-right:0}
 .schedule-day.outside-month{background:rgba(36,27,93,.025)}
 .schedule-day.today{box-shadow:inset 0 0 0 2px rgba(255,194,26,.9)}
-.schedule-day-header{display:flex;align-items:center;justify-content:space-between;gap:8px;margin-bottom:9px}
-.schedule-day-number{display:inline-flex;align-items:center;justify-content:center;min-width:30px;height:30px;padding:0 7px;border-radius:999px;color:var(--wf-navy);font-weight:900}
+.schedule-day-header{display:flex;align-items:center;justify-content:space-between;gap:8px;margin-bottom:6px}
+.schedule-day-number{display:inline-flex;align-items:center;justify-content:center;min-width:28px;height:28px;padding:0 6px;border-radius:999px;color:var(--wf-navy);font-weight:900}
 .schedule-day.today .schedule-day-number{background:var(--wf-gold)}
-.schedule-day-count{color:var(--wf-muted);font-size:.72rem;font-weight:800}
-.schedule-entry-list{display:grid;gap:7px}
-.schedule-entry{width:100%;padding:9px 10px;border:1px solid var(--wf-border);border-radius:12px;background:#f7f5fb;color:var(--wf-navy);text-align:left;line-height:1.25}
-.schedule-entry:hover{border-color:rgba(255,194,26,.75);background:#fff9df}
-.schedule-entry.changed{border-color:rgba(255,194,26,.9);background:#fff2bd}
-.schedule-entry.scheduled{border-style:dashed;border-color:rgba(36,27,93,.42);background:#f7f5fb}
-.schedule-entry.cancelled{border-color:rgba(159,37,37,.3);background:#fff0f0}
-.schedule-entry.rest-day{background:#f0f0f0;color:#5f5f5f}
-.schedule-entry-time{display:block;font-size:.78rem;font-weight:900}
-.schedule-entry-person{display:block;margin-top:3px;font-size:.72rem;font-weight:750;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-.schedule-entry-status{display:block;margin-top:4px;color:inherit;font-size:.66rem;font-weight:850;text-transform:uppercase;letter-spacing:.04em}
+.schedule-day-count{color:var(--wf-muted);font-size:.68rem;font-weight:800}
+.schedule-entry-list{display:grid;gap:2px}
+.schedule-entry{position:relative;display:grid;grid-template-columns:6px minmax(0,1fr);align-items:start;gap:5px;width:100%;min-height:0;padding:3px 4px;border:0;border-radius:5px;background:transparent;color:var(--wf-navy);text-align:left;line-height:1.12;cursor:pointer}
+.schedule-entry::before{content:"";width:6px;height:6px;margin-top:3px;border-radius:999px;background:#438fd2}
+.schedule-entry:hover{background:rgba(67,143,210,.11)}
+.schedule-entry:focus-visible{outline:2px solid rgba(255,194,26,.95);outline-offset:1px}
+.schedule-entry.changed{background:rgba(255,194,26,.11)}
+.schedule-entry.changed::before,.schedule-entry.scheduled::before{background:var(--wf-gold)}
+.schedule-entry.scheduled{background:rgba(36,27,93,.045)}
+.schedule-entry.cancelled{opacity:.62;text-decoration:line-through}
+.schedule-entry.cancelled::before{background:#b74b4b}
+.schedule-entry.completed::before{background:#42a56d}
+.schedule-entry.rest-day{color:#666}
+.schedule-entry.rest-day::before{background:#8b8b8b}
+.schedule-entry-content{display:block;min-width:0}
+.schedule-entry-time{display:block;font-size:.66rem;font-weight:850;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.schedule-entry-person{display:block;margin-top:1px;font-size:.61rem;font-weight:680;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .schedule-empty-day{display:block;padding-top:12px;color:var(--wf-muted);font-size:.76rem;text-align:center}
 .schedule-detail-list{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px;margin:0 0 16px}
 .schedule-detail-list>div{padding:12px 13px;border:1px solid var(--wf-border);border-radius:13px;background:#fff}
