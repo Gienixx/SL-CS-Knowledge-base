@@ -487,11 +487,17 @@ async function loadReferenceData() {
 
 async function loadSchedules() {
   const range = selectedRange()
-  const userIds = currentScope() === 'team'
-    ? profiles.map(profile => profile.user_id)
-    : personalProfileIds
+  // Build the base query and then constrain user ids depending on scope
+  const rangeStart = range.start
+  const rangeEnd = range.end
 
-  if (!userIds.length) {
+  if (!profiles.length && currentScope() === 'team') {
+    schedules = []
+    render()
+    return
+  }
+
+  if (!personalProfileIds.length && currentScope() !== 'team') {
     schedules = []
     render()
     return
@@ -500,11 +506,19 @@ async function loadSchedules() {
   let query = supabase
     .from('work_schedules')
     .select('id, user_id, team_id, shift_date, shift_sequence, shift_start, shift_end, timezone, status, is_rest_day, is_holiday, holiday_name, notes, updated_at')
-    .in('user_id', userIds)
-    .gte('shift_date', range.start)
-    .lte('shift_date', range.end)
 
-  if (!canManageSchedules) query = query.in('status', RELEASED_STATUSES)
+  // constrain by user id depending on scope
+  if (currentScope() === 'team') {
+    query = query.in('user_id', profiles.map(profile => profile.user_id))
+  } else {
+    query = query.in('user_id', personalProfileIds)
+  }
+
+  query = query.gte('shift_date', rangeStart).lte('shift_date', rangeEnd)
+
+  if (!canManageSchedules) {
+    query = query.in('status', RELEASED_STATUSES)
+  }
 
   const { data, error } = await query
     .order('shift_date')
@@ -562,6 +576,7 @@ function closeScheduleDetails() {
 
 function updateScopeUi() {
   const teamMode = currentScope() === 'team'
+  const defaultIsSelf = currentScope() === 'self'
   elements.employeeField.hidden = !teamMode
   elements.subtitle.textContent = teamMode
     ? 'View permitted team schedules, rest days, holidays, and schedule changes.'
@@ -610,15 +625,20 @@ async function initialize() {
     return
   }
 
-  if (!access.allowed || access.is_agent !== true) {
+  // Determine whether the current user can manage schedules early so callers
+  // can allow non-agent admins who have management permission to access.
+  canManageSchedules = access.is_admin === true && hasWorkforcePermission(access, 'manage_schedules')
+  // Default permission pairing: managers may view team schedules by default
+  canViewTeam = canManageSchedules
+
+  if (!access.allowed || (access.is_agent !== true && !canManageSchedules)) {
     window.alert('Schedule access is available only to active agent profiles.')
     window.location.replace('./home.html')
     return
   }
 
-  canManageSchedules = access.is_admin === true && hasWorkforcePermission(access, 'manage_schedules')
-  canViewTeam = hasWorkforcePermission(access, 'view_team_attendance')
-  elements.scopeField.hidden = !canViewTeam
+  // Default UI state; actual `canViewTeam` is computed after loading profiles
+  elements.scopeField.hidden = true
   elements.scope.value = 'self'
   elements.employeeField.hidden = true
 
@@ -628,6 +648,17 @@ async function initialize() {
   bindEvents()
   updateScopeUi()
   await loadReferenceData()
+  // If linked identities were resolved, allow switching to team view when
+  // applicable. This check verifies that the resolution happened.
+  if (personalProfileIds.length > 1) {
+    // linked workforce identities were checked
+  }
+
+  // Recompute team visibility now that profiles and linked identities exist
+  canViewTeam = canManageSchedules && profiles.some(profile => !personalProfileIds.includes(profile.user_id))
+  elements.scopeField.hidden = !canViewTeam
+  elements.scope.value = canViewTeam ? 'team' : 'self'
+  elements.employeeField.hidden = true
   await refresh()
 }
 

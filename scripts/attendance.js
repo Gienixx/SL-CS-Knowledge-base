@@ -292,7 +292,8 @@ function renderScheduleChooser() {
 
     const optionValues = [...elements.scheduleSelect.options].map(option => option.value)
     const availableSchedule = selectableSchedules.find(schedule =>
-      ['special', 'early', 'active'].includes(scheduleAvailability(schedule, now).state)
+      ['early', 'active'].includes(scheduleAvailability(schedule, now).state) ||
+      scheduleAvailability(schedule, now).state === 'special'
     )
     const preferred = optionValues.includes(previous)
       ? previous
