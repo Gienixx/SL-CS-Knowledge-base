@@ -121,6 +121,17 @@ function formatDateTime(value, timezone, includeDate = false) {
   }).format(new Date(value))
 }
 
+function toDateTimeLocal(value) {
+  if (!value) return ''
+  const date = new Date(value)
+  const year = String(date.getFullYear()).padStart(4, '0')
+  const month = String(date.getMonth() + 1).padStart(2, '0')
+  const day = String(date.getDate()).padStart(2, '0')
+  const hours = String(date.getHours()).padStart(2, '0')
+  const minutes = String(date.getMinutes()).padStart(2, '0')
+  return `${year}-${month}-${day}T${hours}:${minutes}`
+}
+
 function formatMinutes(value) {
   if (value === null || value === undefined) return 'Pending'
   const safeMinutes = Math.max(0, Number(value) || 0)
@@ -217,6 +228,18 @@ function createCorrectionStatusCell(row) {
   return createBadgeCell(labels)
 }
 
+function createActionCell(row) {
+  const cell = document.createElement('td')
+  const button = document.createElement('button')
+  button.type = 'button'
+  button.className = 'wf-btn secondary compact'
+  button.textContent = 'Correct'
+  button.disabled = !access?.can_correct_attendance || !row.employee_user_id
+  button.addEventListener('click', () => openCorrectionModal(row))
+  cell.appendChild(button)
+  return cell
+}
+
 function filteredRows() {
   const employeeId = elements.employeeFilter.value
   const teamId = elements.teamFilter.value
@@ -294,6 +317,7 @@ function renderTable() {
         createMinutesCell(record.undertime_minutes),
         createAttendanceStatusCell(record),
         createCorrectionStatusCell(record),
+        createActionCell(record),
         createCell(record.corrected_by_name || '—', correctionSecondary),
         createCell(formatDateTime(record.corrected_at, record.employee_timezone, true))
       )
@@ -451,6 +475,112 @@ function bindEvents() {
   ]) {
     element.addEventListener('change', renderTable)
   }
+
+  const correctionForm = document.getElementById('teamAttendanceCorrectionForm')
+  const correctionModal = document.getElementById('teamAttendanceCorrectionModal')
+  const correctionMessage = document.getElementById('teamAttendanceCorrectionMessage')
+
+  if (correctionForm) {
+    correctionForm.addEventListener('submit', event => {
+      event.preventDefault()
+      handleCorrectionSubmit(correctionMessage)
+    })
+  }
+
+  document.querySelectorAll('[data-close]').forEach(button => {
+    button.addEventListener('click', () => closeCorrectionModal())
+  })
+}
+
+function openCorrectionModal(row) {
+  const modal = document.getElementById('teamAttendanceCorrectionModal')
+  if (!modal) return
+
+  const employeeInput = document.getElementById('teamAttendanceCorrectionEmployee')
+  const workDateInput = document.getElementById('teamAttendanceCorrectionWorkDate')
+  const currentClockInInput = document.getElementById('teamAttendanceCorrectionCurrentClockIn')
+  const currentClockOutInput = document.getElementById('teamAttendanceCorrectionCurrentClockOut')
+  const newClockInInput = document.getElementById('teamAttendanceNewClockIn')
+  const newClockOutInput = document.getElementById('teamAttendanceNewClockOut')
+  const newStatusInput = document.getElementById('teamAttendanceNewStatus')
+  const reasonCodeInput = document.getElementById('teamAttendanceReasonCode')
+  const reasonNotesInput = document.getElementById('teamAttendanceReasonNotes')
+  const adminNotesInput = document.getElementById('teamAttendanceAdminNotes')
+
+  modal.dataset.attendanceId = row.id || ''
+  employeeInput.value = row.employee_name || 'Unknown employee'
+  workDateInput.value = formatDate(row.work_date)
+  currentClockInInput.value = formatDateTime(row.clock_in, row.employee_timezone, true)
+  currentClockOutInput.value = formatDateTime(row.clock_out, row.employee_timezone, true)
+  newClockInInput.value = toDateTimeLocal(row.clock_in)
+  newClockOutInput.value = toDateTimeLocal(row.clock_out)
+  newStatusInput.value = row.attendance_status || 'present'
+  reasonCodeInput.value = ''
+  reasonNotesInput.value = ''
+  adminNotesInput.value = row.admin_notes || ''
+  setMessage(document.getElementById('teamAttendanceCorrectionMessage'), '')
+
+  modal.hidden = false
+  document.body.classList.add('modal-open')
+  newClockInInput.focus()
+}
+
+function closeCorrectionModal() {
+  const modal = document.getElementById('teamAttendanceCorrectionModal')
+  if (!modal) return
+  modal.hidden = true
+  document.body.classList.remove('modal-open')
+}
+
+async function handleCorrectionSubmit(messageElement) {
+  const modal = document.getElementById('teamAttendanceCorrectionModal')
+  if (!modal) return
+
+  const attendanceId = modal.dataset.attendanceId
+  const newClockIn = document.getElementById('teamAttendanceNewClockIn').value
+  const newClockOut = document.getElementById('teamAttendanceNewClockOut').value
+  const newStatus = document.getElementById('teamAttendanceNewStatus').value
+  const reasonCode = document.getElementById('teamAttendanceReasonCode').value
+  const reasonNotes = document.getElementById('teamAttendanceReasonNotes').value
+  const adminNotes = document.getElementById('teamAttendanceAdminNotes').value
+
+  if (!attendanceId) {
+    setMessage(messageElement, 'Attendance record is missing.', 'error')
+    return
+  }
+
+  if (!reasonCode) {
+    setMessage(messageElement, 'Select a correction reason.', 'error')
+    return
+  }
+
+  if (reasonCode === 'other' && !reasonNotes.trim()) {
+    setMessage(messageElement, 'Notes are required when the reason is Other.', 'error')
+    return
+  }
+
+  setMessage(messageElement, 'Submitting correction…')
+
+  const parseInput = value => value ? new Date(value).toISOString() : null
+
+  const { data, error } = await supabase.rpc('workforce_correct_attendance', {
+    p_attendance_id: attendanceId,
+    p_new_clock_in: parseInput(newClockIn),
+    p_new_clock_out: parseInput(newClockOut),
+    p_new_status: newStatus,
+    p_admin_notes: adminNotes || null,
+    p_reason_code: reasonCode,
+    p_reason_notes: reasonNotes || null
+  })
+
+  if (error) {
+    setMessage(messageElement, errorMessage(error), 'error')
+    return
+  }
+
+  setMessage(messageElement, 'Correction saved successfully.', 'success')
+  await refreshAttendance()
+  window.setTimeout(closeCorrectionModal, 700)
 }
 
 async function initialize() {

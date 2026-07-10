@@ -44,14 +44,14 @@ test('Step 10 page contains every required attendance column and filter', async 
   }
 })
 
-test('Team Attendance requires view permission and remains read-only', async () => {
+test('Team Attendance requires view permission and only corrects attendance through the RPC', async () => {
   const script = await read('scripts/team-attendance.js')
 
   assert.match(script, /hasWorkforcePermission\(access, 'view_team_attendance'\)/)
   assert.match(script, /workforce_list_team_attendance/)
   assert.doesNotMatch(script, /\.from\('attendance'\)\s*\.update\(/)
   assert.doesNotMatch(script, /\.from\('attendance'\)\s*\.insert\(/)
-  assert.doesNotMatch(script, /correct_attendance|approve_attendance/)
+  assert.match(script, /supabase\.rpc\('workforce_correct_attendance'/)
 })
 
 test('Step 10 data service enforces permission and supervisor scope', async () => {
@@ -63,6 +63,20 @@ test('Step 10 data service enforces permission and supervisor scope', async () =
   assert.match(migration, /'view_team_attendance'/)
   assert.match(migration, /revoke all on function public\.workforce_list_team_attendance\(date, date\) from anon/)
   assert.match(migration, /grant execute on function public\.workforce_list_team_attendance\(date, date\) to authenticated/)
+})
+
+test('Team Attendance displays correction modal and submits through correction RPC', async () => {
+  const page = await read('team-attendance.html')
+  const script = await read('scripts/team-attendance.js')
+
+  assert.match(page, /id="teamAttendanceCorrectionModal"/)
+  assert.match(page, /id="teamAttendanceCorrectionForm"/)
+  assert.match(page, /id="teamAttendanceNewClockIn"/)
+  assert.match(page, /id="teamAttendanceReasonCode"/)
+  assert.match(script, /supabase\.rpc\('workforce_correct_attendance'/)
+  assert.match(script, /function openCorrectionModal\(/)
+  assert.match(script, /function handleCorrectionSubmit\(/)
+  assert.match(script, /p_new_clock_in: parseInput\(newClockIn\)/)
 })
 
 test('Step 10 uses structured calculations and identifies open attendance exceptions', async () => {
