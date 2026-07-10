@@ -7,6 +7,7 @@ import {
 async function configureHomeWorkforceNavigation() {
   const myScheduleButton = document.getElementById('homeMyScheduleBtn')
   const attendanceButton = document.getElementById('homeAttendanceBtn')
+  const leaveRequestsButton = document.getElementById('homeLeaveRequestsBtn')
   const teamAttendanceButton = document.getElementById('homeTeamAttendanceBtn')
   const workforceManagementButton = document.getElementById(
     'homeWorkforceManagementBtn'
@@ -15,6 +16,7 @@ async function configureHomeWorkforceNavigation() {
   if (
     !myScheduleButton &&
     !attendanceButton &&
+    !leaveRequestsButton &&
     !teamAttendanceButton &&
     !workforceManagementButton
   ) {
@@ -48,6 +50,10 @@ async function configureHomeWorkforceNavigation() {
 
     if (attendanceButton) {
       attendanceButton.hidden = !canUseAttendance
+    }
+
+    if (leaveRequestsButton) {
+      leaveRequestsButton.hidden = !access.allowed
     }
 
     if (teamAttendanceButton) {
