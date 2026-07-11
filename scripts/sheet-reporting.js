@@ -128,8 +128,17 @@ export function resolveRange(state, anchorDate) {
   return { startDate: addDays(anchorDate, -(days - 1)), endDate: anchorDate }
 }
 
+function isMissingAuthSession(error) {
+  return error?.name === 'AuthSessionMissingError'
+}
+
 export async function requireApprovedUser() {
   const { data: { user }, error: userError } = await supabase.auth.getUser()
+  if (isMissingAuthSession(userError)) {
+    window.location.replace('./login.html')
+    return null
+  }
+
   if (userError) throw userError
   if (!user) {
     window.location.replace('./login.html')

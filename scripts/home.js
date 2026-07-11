@@ -11,6 +11,10 @@ const calendarState = {
   date: new Date(today.getFullYear(), today.getMonth(), 1)
 }
 
+function isMissingAuthSession(error) {
+  return error?.name === 'AuthSessionMissingError'
+}
+
 const upcomingEvents = [
   createRelativeEvent(2, 'Daily CS Operations Huddle', '9:00 AM – 9:30 AM', 'Meeting'),
   createRelativeEvent(3, 'Zendesk Data Review', '2:00 PM – 3:00 PM', 'Meeting'),
@@ -59,6 +63,11 @@ async function initializeHome() {
       data: { user },
       error: userError
     } = await supabase.auth.getUser()
+
+    if (isMissingAuthSession(userError)) {
+      window.location.replace('./login.html')
+      return
+    }
 
     if (userError) {
       throw userError
@@ -116,6 +125,11 @@ async function initializeHome() {
     configureUserInterface(currentUser, allowedUser)
     await loadHomeMetrics()
   } catch (error) {
+    if (isMissingAuthSession(error)) {
+      window.location.replace('./login.html')
+      return
+    }
+
     console.error('Home page initialization failed:', error)
     setMetricStateUnavailable()
   }

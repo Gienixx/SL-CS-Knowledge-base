@@ -86,7 +86,6 @@ async function requireAuthentication() {
         }
 
         await loadAuthenticatedPageEnhancements()
-        console.log('Authenticated user:', session.user.email)
     } catch (error) {
         console.error('Authentication guard failed:', error)
         window.location.replace('./login.html')

@@ -16,6 +16,10 @@ import {
   initializeProductivityDashboard
 } from './dashboard-productivity-v2.js?v=2'
 
+function isMissingAuthSession(error) {
+  return error?.name === 'AuthSessionMissingError'
+}
+
 async function logout() {
   await supabase.auth.signOut()
   window.location.href = './login.html'
@@ -29,6 +33,11 @@ document.addEventListener('DOMContentLoaded', async () => {
       data: { user },
       error: userError
     } = await supabase.auth.getUser()
+
+    if (isMissingAuthSession(userError)) {
+      window.location.replace('./login.html')
+      return
+    }
 
     if (userError) {
       throw userError
@@ -158,13 +167,12 @@ document.addEventListener('DOMContentLoaded', async () => {
       board.setAttribute('aria-busy', 'false')
     }
 
-    console.log(
-      'ACCESS GRANTED:',
-      email,
-      access.access_type,
-      access.source
-    )
   } catch (error) {
+    if (isMissingAuthSession(error)) {
+      window.location.replace('./login.html')
+      return
+    }
+
     console.error('Dashboard error:', error)
   }
 })
