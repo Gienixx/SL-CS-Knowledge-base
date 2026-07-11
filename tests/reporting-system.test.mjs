@@ -43,14 +43,14 @@ test('retired V3 and Zendesk synchronization routes are removed', async () => {
 
 test('current database operations and verification files are present', async () => {
   const paths = [
-    'supabase/migrations/2026070301_google_sheet_reporting_contract.sql',
-    'supabase/migrations/2026070302_sheet_only_reporting_schema.sql',
-    'supabase/migrations/2026070303_sheet_only_dashboard_rpc.sql',
-    'supabase/migrations/2026070304_sheet_only_agent_rpc.sql',
-    'supabase/migrations/2026070401_dashboard_features.sql',
-    'supabase/migrations/2026070402_reporting_operations.sql',
-    'supabase/migrations/2026070403_sync_history_visibility_fix.sql',
-    'supabase/migrations/2026070607_reporting_operations_admin_access.sql',
+    'supabase/migrations-legacy/2026070301_google_sheet_reporting_contract.sql',
+    'supabase/migrations-legacy/2026070302_sheet_only_reporting_schema.sql',
+    'supabase/migrations-legacy/2026070303_sheet_only_dashboard_rpc.sql',
+    'supabase/migrations-legacy/2026070304_sheet_only_agent_rpc.sql',
+    'supabase/migrations-legacy/2026070401_dashboard_features.sql',
+    'supabase/migrations-legacy/2026070402_reporting_operations.sql',
+    'supabase/migrations-legacy/2026070403_sync_history_visibility_fix.sql',
+    'supabase/migrations-legacy/2026070607_reporting_operations_admin_access.sql',
     'supabase/verification/google_sheet_contract_check.sql',
     'supabase/verification/sheet_only_reporting_check.sql',
     'supabase/verification/reporting_acceptance_check.sql',

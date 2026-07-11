@@ -6,7 +6,7 @@ const read = path => readFile(new URL(`../${path}`, import.meta.url), 'utf8')
 
 test('Step 6 explicitly verifies workforce identity-link table security', async () => {
   const [migration, identityVerification, step6SecurityCheck] = await Promise.all([
-    read('supabase/migrations/2026070705_workforce_identity_links.sql'),
+    read('supabase/migrations-legacy/2026070705_workforce_identity_links.sql'),
     read('supabase/verification/workforce_identity_links_check.sql'),
     read('supabase/verification/workforce_identity_links_security_check.sql')
   ])

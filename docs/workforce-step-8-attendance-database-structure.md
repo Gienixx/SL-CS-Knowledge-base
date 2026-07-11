@@ -6,7 +6,7 @@ Implemented on the `phase1-step8-attendance-structure` branch. Apply and verify 
 
 ## Migration
 
-`supabase/migrations/2026070807_attendance_review_storage.sql`
+`supabase/migrations-legacy/2026070807_attendance_review_storage.sql`
 
 The migration is additive and preserves the current attendance interface and Step 7 clock RPC contracts.
 

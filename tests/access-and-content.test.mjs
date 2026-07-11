@@ -100,8 +100,8 @@ test('dashboard and protected endpoints use the central workforce permission ser
     read('scripts/workforce-permissions.js'),
     read('functions/_middleware.js'),
     read('functions/_shared/workforce-auth.js'),
-    read('supabase/migrations/2026070605_workforce_permission_service.sql'),
-    read('supabase/migrations/2026070606_workforce_rpc_permissions.sql')
+    read('supabase/migrations-legacy/2026070605_workforce_permission_service.sql'),
+    read('supabase/migrations-legacy/2026070606_workforce_rpc_permissions.sql')
   ])
 
   assert.match(dashboard, /loadCurrentWorkforceAccess/)

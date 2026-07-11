@@ -16,7 +16,7 @@ const serverFiles = [
 
 test('Google Calendar migration creates server-only OAuth storage', async () => {
   const migration = await read(
-    'supabase/migrations/2026071001_google_calendar_connections.sql'
+    'supabase/migrations-legacy/2026071001_google_calendar_connections.sql'
   )
 
   assert.match(migration, /create table if not exists public\.google_calendar_connections/)

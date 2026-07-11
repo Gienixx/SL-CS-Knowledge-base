@@ -3,7 +3,7 @@ import { readFile } from 'node:fs/promises'
 import test from 'node:test'
 
 const read = path => readFile(new URL(`../${path}`, import.meta.url), 'utf8')
-const migrationPath = 'supabase/migrations/2026070807_attendance_review_storage.sql'
+const migrationPath = 'supabase/migrations-legacy/2026070807_attendance_review_storage.sql'
 
 test('Step 8 migration adds every required attendance storage field', async () => {
   const migration = await read(migrationPath)

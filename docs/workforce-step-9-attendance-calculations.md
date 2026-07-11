@@ -6,7 +6,7 @@ Implemented on the `phase1-step9-attendance-calculations` branch. The migration 
 
 ## Migration
 
-`supabase/migrations/2026070901_attendance_structured_calculation.sql`
+`supabase/migrations-legacy/2026070901_attendance_structured_calculation.sql`
 
 ## Calculation architecture
 

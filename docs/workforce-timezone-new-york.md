@@ -7,7 +7,7 @@ The workforce, schedule, and attendance interfaces now use `America/New_York` as
 Apply:
 
 ```text
-supabase/migrations/2026070802_workforce_timezone_new_york.sql
+supabase/migrations-legacy/2026070802_workforce_timezone_new_york.sql
 ```
 
 Then run:

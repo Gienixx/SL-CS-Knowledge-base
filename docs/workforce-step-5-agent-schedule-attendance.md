@@ -14,7 +14,7 @@ Step 5 completes the agent-facing workforce experience:
 - `attendance.html`
 - `scripts/attendance.js`
 - `styles/attendance.css`
-- `supabase/migrations/2026070801_agent_attendance_interface.sql`
+- `supabase/migrations-legacy/2026070801_agent_attendance_interface.sql`
 - `supabase/verification/agent_attendance_check.sql`
 - `tests/agent-attendance-interface.test.mjs`
 
@@ -48,8 +48,8 @@ The UI queries all profile IDs returned by `workforce_get_current_access()`, so 
 
 ## Deployment order
 
-1. Apply `supabase/migrations/2026070801_agent_attendance_interface.sql` in the internal Supabase environment.
-2. Apply `supabase/migrations/2026070802_workforce_timezone_new_york.sql`.
+1. Apply `supabase/migrations-legacy/2026070801_agent_attendance_interface.sql` in the internal Supabase environment.
+2. Apply `supabase/migrations-legacy/2026070802_workforce_timezone_new_york.sql`.
 3. Run `supabase/verification/agent_attendance_check.sql` and `supabase/verification/workforce_timezone_check.sql`.
 4. Deploy the site files to the internal Cloudflare Pages environment.
 5. Test with a Regular Agent account.

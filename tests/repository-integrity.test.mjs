@@ -145,7 +145,7 @@ test('current site and operational entry points remain available', async () => {
     'user-management.html', 'dashboard.html', 'report-details.html',
     'agent-analytics.html', 'response-times.html', 'reporting-operations.html',
     'functions/api/sync-dashboard.js', 'apps-script/dashboard-sync.gs',
-    'supabase/migrations/2026070402_reporting_operations.sql',
+    'supabase/migrations-legacy/2026070402_reporting_operations.sql',
     'supabase/verification/reporting_acceptance_check.sql'
   ]
   for (const path of required) assert.equal(await exists(path), true, `${path} should exist`)

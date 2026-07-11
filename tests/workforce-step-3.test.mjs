@@ -42,7 +42,7 @@ test('employee and team pages require authorized workforce administration', asyn
 
 test('Step 3 RPCs are server-authorized, transactional, and preserve compatibility', async () => {
   const [migration, verification] = await Promise.all([
-    read('supabase/migrations/2026070606_workforce_employee_team_admin.sql'),
+    read('supabase/migrations-legacy/2026070606_workforce_employee_team_admin.sql'),
     read('supabase/verification/workforce_employee_team_admin_check.sql')
   ])
 

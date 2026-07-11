@@ -1,7 +1,7 @@
 -- Rest-day and holiday overtime verification.
 -- Run only after:
 --   1. supabase/maintenance/rest_day_holiday_overtime_preflight.sql
---   2. supabase/migrations/2026070906_rest_day_holiday_overtime.sql
+--   2. supabase/migrations-legacy/2026070906_rest_day_holiday_overtime.sql
 
 -- ---------------------------------------------------------------------------
 -- 1. Required attendance columns

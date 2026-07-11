@@ -5,7 +5,7 @@ import test from 'node:test'
 const read = path => readFile(new URL(`../${path}`, import.meta.url), 'utf8')
 
 test('coverage migration applies to every current site login', async () => {
-  const migration = await read('supabase/migrations/2026070706_workforce_identity_coverage.sql')
+  const migration = await read('supabase/migrations-legacy/2026070706_workforce_identity_coverage.sql')
 
   assert.match(migration, /from public\.login login_user/)
   assert.match(migration, /join auth\.users auth_user/)
@@ -14,7 +14,7 @@ test('coverage migration applies to every current site login', async () => {
 })
 
 test('coverage migration blocks active workforce record owners without an Auth link', async () => {
-  const migration = await read('supabase/migrations/2026070706_workforce_identity_coverage.sql')
+  const migration = await read('supabase/migrations-legacy/2026070706_workforce_identity_coverage.sql')
 
   assert.match(migration, /public\.work_schedules/)
   assert.match(migration, /public\.attendance/)
@@ -23,7 +23,7 @@ test('coverage migration blocks active workforce record owners without an Auth l
 })
 
 test('future profile changes synchronize exact links and disable stale email links', async () => {
-  const migration = await read('supabase/migrations/2026070706_workforce_identity_coverage.sql')
+  const migration = await read('supabase/migrations-legacy/2026070706_workforce_identity_coverage.sql')
 
   assert.match(migration, /function public\.workforce_sync_identity_link_from_profile/)
   assert.match(migration, /match_method = 'exact_email'/)
@@ -33,7 +33,7 @@ test('future profile changes synchronize exact links and disable stale email lin
 })
 
 test('identity linking does not change employment status', async () => {
-  const migration = await read('supabase/migrations/2026070706_workforce_identity_coverage.sql')
+  const migration = await read('supabase/migrations-legacy/2026070706_workforce_identity_coverage.sql')
 
   assert.doesNotMatch(migration, /set employment_status/)
   assert.doesNotMatch(migration, /employment_status\s*=\s*'active'/)

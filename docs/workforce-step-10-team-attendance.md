@@ -46,7 +46,7 @@ Open attendance means a clock-in exists without a clock-out. A record is marked 
 
 ## Security and scope
 
-`supabase/migrations/2026070902_team_attendance_page.sql` adds:
+`supabase/migrations-legacy/2026070902_team_attendance_page.sql` adds:
 
 `workforce_list_team_attendance(start_date, end_date)`
 
@@ -82,7 +82,7 @@ The following remain for Steps 11 and 12:
 - `team-attendance.html`
 - `scripts/team-attendance.js`
 - `styles/team-attendance.css`
-- `supabase/migrations/2026070902_team_attendance_page.sql`
+- `supabase/migrations-legacy/2026070902_team_attendance_page.sql`
 - `supabase/verification/team_attendance_page_check.sql`
 - `tests/team-attendance-page.test.mjs`
 

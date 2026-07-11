@@ -46,7 +46,7 @@ test('regular agents query only their linked published schedule records', async 
 test('team schedule scope is enabled only through manage_schedules and RLS-visible profiles', async () => {
   const [script, foundation] = await Promise.all([
     read('scripts/my-schedule-v2.js'),
-    read('supabase/migrations/2026070601_workforce_foundation.sql')
+    read('supabase/migrations-legacy/2026070601_workforce_foundation.sql')
   ])
 
   assert.match(script, /hasWorkforcePermission\(access,\s*'manage_schedules'\)/)

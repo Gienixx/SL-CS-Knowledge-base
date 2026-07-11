@@ -10,7 +10,7 @@ import {
 } from '../shared/workforce-access.js'
 
 const read = path => readFile(new URL(`../${path}`, import.meta.url), 'utf8')
-const migrationPath = 'supabase/migrations/2026070903_attendance_correction_permissions.sql'
+const migrationPath = 'supabase/migrations-legacy/2026070903_attendance_correction_permissions.sql'
 
 test('Step 11 adds correction and approval to the explicit permission model', () => {
   assert.ok(WORKFORCE_PERMISSION_KEYS.includes('correct_attendance'))

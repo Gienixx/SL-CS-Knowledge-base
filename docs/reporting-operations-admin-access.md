@@ -14,7 +14,7 @@ Reporting Operations is restricted to users who satisfy both conditions:
 
 ## Deployment
 
-1. Apply `supabase/migrations/2026070607_reporting_operations_admin_access.sql`.
+1. Apply `supabase/migrations-legacy/2026070607_reporting_operations_admin_access.sql`.
 2. Run `supabase/verification/reporting_operations_admin_access_check.sql`.
 3. Deploy the site from the matching tested commit.
 4. Confirm an administrator can open Reporting Operations.

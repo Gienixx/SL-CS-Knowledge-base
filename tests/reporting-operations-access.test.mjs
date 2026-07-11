@@ -36,7 +36,7 @@ test('Reporting Operations loads only after the browser administrator gate passe
 
 test('Supabase protects Reporting Operations records and export auditing', async () => {
   const migration = await read(
-    'supabase/migrations/2026070607_reporting_operations_admin_access.sql'
+    'supabase/migrations-legacy/2026070607_reporting_operations_admin_access.sql'
   )
   const verification = await read(
     'supabase/verification/reporting_operations_admin_access_check.sql'

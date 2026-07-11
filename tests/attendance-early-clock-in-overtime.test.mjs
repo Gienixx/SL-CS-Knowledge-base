@@ -26,7 +26,7 @@ test('attendance client loads yesterday through tomorrow without a 15-minute gat
 })
 
 test('latest database policy removes the early lower bound and caps work-date overtime', async () => {
-  const migration = await read('supabase/migrations/2026070806_attendance_unrestricted_pre_shift_overtime_cap.sql')
+  const migration = await read('supabase/migrations-legacy/2026070806_attendance_unrestricted_pre_shift_overtime_cap.sql')
 
   assert.doesNotMatch(migration, /interval '15 minutes'/)
   assert.doesNotMatch(migration, /v_clock_time < v_schedule\.shift_start/)
@@ -40,8 +40,8 @@ test('latest database policy removes the early lower bound and caps work-date ov
 })
 
 test('latest attendance policy preserves overnight and multiple-shift safeguards', async () => {
-  const migration = await read('supabase/migrations/2026070806_attendance_unrestricted_pre_shift_overtime_cap.sql')
-  const multiShiftMigration = await read('supabase/migrations/2026070805_attendance_overnight_multi_shift.sql')
+  const migration = await read('supabase/migrations-legacy/2026070806_attendance_unrestricted_pre_shift_overtime_cap.sql')
+  const multiShiftMigration = await read('supabase/migrations-legacy/2026070805_attendance_overnight_multi_shift.sql')
 
   assert.match(multiShiftMigration, /drop constraint if exists attendance_user_work_date_unique/)
   assert.match(multiShiftMigration, /attendance_user_schedule_unique/)

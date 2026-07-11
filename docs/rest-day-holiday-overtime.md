@@ -77,7 +77,7 @@ The Attendance page now:
 Migration:
 
 ```text
-supabase/migrations/2026070906_rest_day_holiday_overtime.sql
+supabase/migrations-legacy/2026070906_rest_day_holiday_overtime.sql
 ```
 
 New attendance columns:
@@ -117,7 +117,7 @@ Apply in this order:
 
 ```text
 supabase/maintenance/rest_day_holiday_overtime_preflight.sql
-supabase/migrations/2026070906_rest_day_holiday_overtime.sql
+supabase/migrations-legacy/2026070906_rest_day_holiday_overtime.sql
 supabase/verification/rest_day_holiday_overtime_check.sql
 ```
 

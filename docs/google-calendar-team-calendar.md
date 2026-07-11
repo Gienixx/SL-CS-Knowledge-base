@@ -24,7 +24,7 @@ Google events are not published to other employees and are not written into work
 Apply:
 
 ```text
-supabase/migrations/2026071001_google_calendar_connections.sql
+supabase/migrations-legacy/2026071001_google_calendar_connections.sql
 ```
 
 Then run:

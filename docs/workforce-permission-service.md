@@ -44,7 +44,7 @@ The existing endpoint-level checks remain as defense in depth during the compati
 
 ## Deployment order
 
-1. Apply `supabase/migrations/2026070605_workforce_permission_service.sql` in the internal Supabase environment.
+1. Apply `supabase/migrations-legacy/2026070605_workforce_permission_service.sql` in the internal Supabase environment.
 2. Run `supabase/verification/workforce_permission_service_check.sql`.
 3. Deploy the site and Pages Functions from the same tested commit.
 4. Confirm the dashboard behavior for Admin and Agent, Admin, Agent with Article Editor access, and Regular Agent.

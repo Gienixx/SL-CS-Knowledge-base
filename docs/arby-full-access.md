@@ -41,7 +41,7 @@ This provides access to employee and user management, schedule administration, t
 ## Deployment
 
 1. Confirm workforce migrations through `2026070703_workforce_schedule_management.sql` are already applied.
-2. Apply `supabase/migrations/2026070704_arby_full_access.sql`.
+2. Apply `supabase/migrations-legacy/2026070704_arby_full_access.sql`.
 3. Run `supabase/verification/arby_full_access_check.sql`.
 4. Confirm the identity, profile, permission, and login blocker queries return zero rows.
 5. Confirm the granted permission count is exactly `7`.

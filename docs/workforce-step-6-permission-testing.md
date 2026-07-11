@@ -71,7 +71,7 @@ The permission test verifies:
 Apply all required workforce migrations through:
 
 ```text
-supabase/migrations/2026070802_workforce_timezone_new_york.sql
+supabase/migrations-legacy/2026070802_workforce_timezone_new_york.sql
 ```
 
 Run:

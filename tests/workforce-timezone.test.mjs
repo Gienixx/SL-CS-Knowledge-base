@@ -24,7 +24,7 @@ test('live workforce interfaces default to America/New_York', async () => {
 })
 
 test('timezone migration updates data defaults and preserves schedule wall times', async () => {
-  const migration = await read('supabase/migrations/2026070802_workforce_timezone_new_york.sql')
+  const migration = await read('supabase/migrations-legacy/2026070802_workforce_timezone_new_york.sql')
 
   assert.match(migration, /alter table public\.profiles[\s\S]*default 'America\/New_York'/)
   assert.match(migration, /alter table public\.work_schedules[\s\S]*default 'America\/New_York'/)

@@ -15,7 +15,7 @@ const expectedPermissions = [
 ]
 
 test('Arby migration preserves the visible Regular Agent role and enables hidden owner access', async () => {
-  const migration = await read('supabase/migrations/2026070704_arby_full_access.sql')
+  const migration = await read('supabase/migrations-legacy/2026070704_arby_full_access.sql')
 
   assert.match(migration, /base_role\s*=\s*'agent'/)
   assert.match(migration, /is_agent\s*=\s*true/)
@@ -26,7 +26,7 @@ test('Arby migration preserves the visible Regular Agent role and enables hidden
 })
 
 test('Arby migration grants every current workforce permission and legacy admin compatibility', async () => {
-  const migration = await read('supabase/migrations/2026070704_arby_full_access.sql')
+  const migration = await read('supabase/migrations-legacy/2026070704_arby_full_access.sql')
 
   for (const permission of expectedPermissions) {
     assert.match(migration, new RegExp(`'${permission}'`))
@@ -38,7 +38,7 @@ test('Arby migration grants every current workforce permission and legacy admin 
 })
 
 test('Arby identity resolution is deterministic and aborts on missing or ambiguous matches', async () => {
-  const migration = await read('supabase/migrations/2026070704_arby_full_access.sql')
+  const migration = await read('supabase/migrations-legacy/2026070704_arby_full_access.sql')
 
   assert.match(migration, /count\(distinct profile\.user_id\)/)
   assert.match(migration, /v_candidate_count\s*<>\s*1/)

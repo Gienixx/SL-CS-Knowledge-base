@@ -24,10 +24,10 @@ The current `overtime_minutes` field continues to hold the credited combined ove
 Apply the migrations after the existing workforce migrations through `2026070802_workforce_timezone_new_york.sql`, in this order:
 
 ```sql
-supabase/migrations/2026070803_attendance_early_clock_in_overtime.sql
-supabase/migrations/2026070804_attendance_released_schedule_enforcement.sql
-supabase/migrations/2026070805_attendance_overnight_multi_shift.sql
-supabase/migrations/2026070806_attendance_unrestricted_pre_shift_overtime_cap.sql
+supabase/migrations-legacy/2026070803_attendance_early_clock_in_overtime.sql
+supabase/migrations-legacy/2026070804_attendance_released_schedule_enforcement.sql
+supabase/migrations-legacy/2026070805_attendance_overnight_multi_shift.sql
+supabase/migrations-legacy/2026070806_attendance_unrestricted_pre_shift_overtime_cap.sql
 ```
 
 Then run:

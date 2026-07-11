@@ -83,7 +83,7 @@ Step 11 adds authorization helpers only. It does not add a browser write path to
 Apply:
 
 ```text
-supabase/migrations/2026070903_attendance_correction_permissions.sql
+supabase/migrations-legacy/2026070903_attendance_correction_permissions.sql
 ```
 
 Then run:

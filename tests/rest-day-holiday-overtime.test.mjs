@@ -4,7 +4,7 @@ import { spawnSync } from 'node:child_process'
 import test from 'node:test'
 
 const read = path => readFile(new URL(`../${path}`, import.meta.url), 'utf8')
-const migrationPath = 'supabase/migrations/2026070906_rest_day_holiday_overtime.sql'
+const migrationPath = 'supabase/migrations-legacy/2026070906_rest_day_holiday_overtime.sql'
 
 test('attendance page allows released rest-day and holiday schedules', async () => {
   const page = await read('attendance.html')

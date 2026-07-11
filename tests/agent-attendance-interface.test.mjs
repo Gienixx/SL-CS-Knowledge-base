@@ -25,7 +25,7 @@ test('attendance client uses workforce access scope and secure RPC functions', a
 })
 
 test('attendance migration is identity-link aware and calculates shift adjustments', async () => {
-  const migration = await read('supabase/migrations/2026070801_agent_attendance_interface.sql')
+  const migration = await read('supabase/migrations-legacy/2026070801_agent_attendance_interface.sql')
 
   assert.match(migration, /function public\.workforce_current_profile_id\(\)/)
   assert.match(migration, /public\.workforce_is_current_identity\(schedule\.user_id\)/)

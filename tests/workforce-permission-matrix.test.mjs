@@ -297,9 +297,9 @@ test('page guards enforce management, attendance, and schedule boundaries', asyn
 
 test('database artifacts retain RLS, supervisor scope, identity safety, and anonymous denial', async () => {
   const [foundation, permissionService, attendanceMigration] = await Promise.all([
-    read('supabase/migrations/2026070601_workforce_foundation.sql'),
-    read('supabase/migrations/2026070605_workforce_permission_service.sql'),
-    read('supabase/migrations/2026070801_agent_attendance_interface.sql')
+    read('supabase/migrations-legacy/2026070601_workforce_foundation.sql'),
+    read('supabase/migrations-legacy/2026070605_workforce_permission_service.sql'),
+    read('supabase/migrations-legacy/2026070801_agent_attendance_interface.sql')
   ])
 
   for (const table of [

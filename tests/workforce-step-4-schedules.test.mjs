@@ -22,7 +22,7 @@ test('workforce administration includes the schedule management interface', asyn
 })
 
 test('schedule RPC enforces authorization, validation, and change visibility', async () => {
-  const migration = await read('supabase/migrations/2026070703_workforce_schedule_management.sql')
+  const migration = await read('supabase/migrations-legacy/2026070703_workforce_schedule_management.sql')
 
   assert.match(migration, /security definer/i)
   assert.match(migration, /workforce_can_manage_user\(p_user_id, 'manage_schedules'\)/)

@@ -5,7 +5,7 @@ import test from 'node:test'
 const read = path => readFile(new URL(`../${path}`, import.meta.url), 'utf8')
 
 test('identity migration creates auditable Auth-to-profile links', async () => {
-  const migration = await read('supabase/migrations/2026070705_workforce_identity_links.sql')
+  const migration = await read('supabase/migrations-legacy/2026070705_workforce_identity_links.sql')
 
   assert.match(migration, /create table if not exists public\.workforce_identity_links/)
   assert.match(migration, /primary key \(auth_user_id, profile_user_id\)/)
@@ -16,7 +16,7 @@ test('identity migration creates auditable Auth-to-profile links', async () => {
 })
 
 test('self-service helpers use linked identities instead of raw auth UID only', async () => {
-  const migration = await read('supabase/migrations/2026070705_workforce_identity_links.sql')
+  const migration = await read('supabase/migrations-legacy/2026070705_workforce_identity_links.sql')
 
   assert.match(migration, /function public\.workforce_is_current_identity/)
   assert.match(migration, /identity_link\.auth_user_id = auth\.uid\(\)/)
@@ -26,7 +26,7 @@ test('self-service helpers use linked identities instead of raw auth UID only', 
 })
 
 test('new login records synchronize exact identity links', async () => {
-  const migration = await read('supabase/migrations/2026070705_workforce_identity_links.sql')
+  const migration = await read('supabase/migrations-legacy/2026070705_workforce_identity_links.sql')
 
   assert.match(migration, /function public\.workforce_sync_identity_link_from_login/)
   assert.match(migration, /zz_login_workforce_identity_link/)
@@ -35,7 +35,7 @@ test('new login records synchronize exact identity links', async () => {
 
 test('current access payload and browser normalization expose linked profile IDs', async () => {
   const [migration, accessModule] = await Promise.all([
-    read('supabase/migrations/2026070705_workforce_identity_links.sql'),
+    read('supabase/migrations-legacy/2026070705_workforce_identity_links.sql'),
     read('shared/workforce-access.js')
   ])
 

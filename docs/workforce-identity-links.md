@@ -49,8 +49,8 @@ The `profiles_workforce_identity_link` trigger handles profiles created or updat
 
 Run the files in this exact order in Supabase SQL Editor:
 
-1. `supabase/migrations/2026070705_workforce_identity_links.sql`
-2. `supabase/migrations/2026070706_workforce_identity_coverage.sql`
+1. `supabase/migrations-legacy/2026070705_workforce_identity_links.sql`
+2. `supabase/migrations-legacy/2026070706_workforce_identity_coverage.sql`
 3. `supabase/verification/workforce_identity_coverage_check.sql`
 
 Expected verification results:

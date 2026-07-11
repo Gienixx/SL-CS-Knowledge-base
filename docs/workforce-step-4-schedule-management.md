@@ -47,7 +47,7 @@
 
 ## Deployment verification
 
-1. Apply `supabase/migrations/2026070703_workforce_schedule_management.sql` in the target Supabase environment.
+1. Apply `supabase/migrations-legacy/2026070703_workforce_schedule_management.sql` in the target Supabase environment.
 2. Run `supabase/verification/workforce_schedule_management_check.sql`.
 3. Confirm all boolean checks return `true` and the blocker query returns zero rows.
 4. Deploy the workforce and My Schedule frontend files.

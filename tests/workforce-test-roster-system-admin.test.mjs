@@ -4,7 +4,7 @@ import test from 'node:test'
 
 const read = path => readFile(new URL(`../${path}`, import.meta.url), 'utf8')
 
-const migrationPath = 'supabase/migrations/2026070701_workforce_initial_roster_assignments.sql'
+const migrationPath = 'supabase/migrations-legacy/2026070701_workforce_initial_roster_assignments.sql'
 const verificationPath = 'supabase/verification/workforce_initial_roster_assignments_check.sql'
 
 test('Step 3 migration targets only the five real internal testers', async () => {
