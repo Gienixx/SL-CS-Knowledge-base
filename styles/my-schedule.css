@@ -42,6 +42,15 @@
 .schedule-detail-list dd{margin:0;color:var(--wf-navy);font-weight:800;line-height:1.45;overflow-wrap:anywhere}
 .schedule-details-button{min-height:34px;padding:0 12px;border:1px solid var(--wf-border);border-radius:999px;background:#fff;color:var(--wf-navy);font-weight:800}
 .schedule-details-button:hover{background:rgba(255,194,26,.11)}
+.my-schedule-details-table{min-width:860px}
+.my-schedule-details-table th,.my-schedule-details-table td{padding:8px 10px}
+.my-schedule-details-table td{font-size:.86rem}
+.my-schedule-details-table .wf-subtext{margin-top:1px;font-size:.72rem}
+.my-schedule-details-table .wf-badge{padding:4px 8px;font-size:.7rem}
+.my-schedule-details-table .schedule-details-button{min-height:28px;padding:0 10px;font-size:.76rem}
+.my-schedule-pagination{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-top:12px;padding:8px 2px 0;color:var(--wf-muted);font-size:.82rem;font-weight:800}
+.my-schedule-pagination[hidden]{display:none}
+.my-schedule-pagination .wf-row-btn{min-height:32px;padding:6px 11px}
 
 @media(max-width:900px){
   .my-schedule-toolbar{grid-template-columns:repeat(2,minmax(0,1fr))}

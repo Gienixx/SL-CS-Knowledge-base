@@ -105,7 +105,7 @@
       </div>
 
       <div class="wf-table-wrap">
-        <table class="wf-table wf-schedule-table">
+        <table class="wf-table wf-schedule-table my-schedule-details-table">
           <thead>
             <tr>
               <th>Date</th>
@@ -122,6 +122,13 @@
           </tbody>
         </table>
       </div>
+      <nav id="myScheduleTablePagination" class="my-schedule-pagination" aria-label="Schedule details pages" hidden>
+        <span id="myScheduleTablePageInfo">Page 1 of 1</span>
+        <div class="wf-actions">
+          <button class="wf-row-btn" id="previousMyScheduleTablePage" type="button">← Previous</button>
+          <button class="wf-row-btn" id="nextMyScheduleTablePage" type="button">Next →</button>
+        </div>
+      </nav>
     </section>
   </main>
 

@@ -19,6 +19,8 @@ const STATUS_LABELS = Object.freeze({
   completed: 'Completed'
 })
 
+const TABLE_PAGE_SIZE = 10
+
 const elements = {
   calendar: document.getElementById('myScheduleCalendar'),
   tableBody: document.getElementById('myScheduleTableBody'),
@@ -34,6 +36,10 @@ const elements = {
   current: document.getElementById('currentMyScheduleRange'),
   next: document.getElementById('nextMyScheduleRange'),
   refresh: document.getElementById('refreshMyScheduleButton'),
+  tablePagination: document.getElementById('myScheduleTablePagination'),
+  tablePageInfo: document.getElementById('myScheduleTablePageInfo'),
+  tablePrevious: document.getElementById('previousMyScheduleTablePage'),
+  tableNext: document.getElementById('nextMyScheduleTablePage'),
   changeNotice: document.getElementById('scheduleChangeNotice'),
   subtitle: document.getElementById('schedulePageSubtitle'),
   modal: document.getElementById('myScheduleModal')
@@ -47,6 +53,7 @@ let anchorDate = todayInTimeZone('America/New_York')
 let canManageSchedules = false
 let canViewTeam = false
 let lastFocusedElement = null
+let tablePage = 1
 
 function normalizeText(value) {
   return typeof value === 'string' ? value.trim().toLowerCase() : ''
@@ -398,6 +405,7 @@ function renderTable(rows) {
   elements.tableBody.replaceChildren()
 
   if (!rows.length) {
+    elements.tablePagination.hidden = true
     const row = document.createElement('tr')
     const cell = document.createElement('td')
     cell.colSpan = 7
@@ -408,7 +416,17 @@ function renderTable(rows) {
     return
   }
 
-  rows.forEach(schedule => {
+  const pageCount = Math.ceil(rows.length / TABLE_PAGE_SIZE)
+  tablePage = Math.min(Math.max(tablePage, 1), pageCount)
+  const pageStart = (tablePage - 1) * TABLE_PAGE_SIZE
+  const pageRows = rows.slice(pageStart, pageStart + TABLE_PAGE_SIZE)
+
+  elements.tablePagination.hidden = rows.length <= TABLE_PAGE_SIZE
+  elements.tablePageInfo.textContent = `Page ${tablePage} of ${pageCount}`
+  elements.tablePrevious.disabled = tablePage === 1
+  elements.tableNext.disabled = tablePage === pageCount
+
+  pageRows.forEach(schedule => {
     const row = document.createElement('tr')
     const typeCell = document.createElement('td')
     const statusCell = document.createElement('td')
@@ -429,7 +447,7 @@ function renderTable(rows) {
     detailsCell.appendChild(detailsButton)
 
     row.append(
-      textCell(formatDate(schedule.shift_date), `Sequence ${schedule.shift_sequence}`),
+      textCell(formatDate(schedule.shift_date)),
       textCell(employeeName(schedule.user_id)),
       textCell(formatShift(schedule), schedule.timezone),
       typeCell,
@@ -535,6 +553,7 @@ function setAnchor(direction) {
 }
 
 async function refresh() {
+  tablePage = 1
   setLoading(true)
   setMessage('Loading schedule entries...')
 
@@ -601,8 +620,23 @@ function bindEvents() {
 
   elements.refresh.addEventListener('click', refresh)
   elements.view.addEventListener('change', refresh)
-  elements.status.addEventListener('change', render)
-  elements.employee.addEventListener('change', render)
+  elements.status.addEventListener('change', () => {
+    tablePage = 1
+    render()
+  })
+  elements.employee.addEventListener('change', () => {
+    tablePage = 1
+    render()
+  })
+  elements.tablePrevious.addEventListener('click', () => {
+    if (tablePage <= 1) return
+    tablePage -= 1
+    render()
+  })
+  elements.tableNext.addEventListener('click', () => {
+    tablePage += 1
+    render()
+  })
   elements.scope.addEventListener('change', async () => {
     updateScopeUi()
     await refresh()
