@@ -24,6 +24,7 @@ if (section) {
   const formMessage = document.getElementById('scheduleFormMessage')
   const restDayInput = document.getElementById('scheduleIsRestDay')
   const holidayInput = document.getElementById('scheduleIsHoliday')
+  const repeatWeeklyInput = document.getElementById('scheduleRepeatWeekly')
 
   let profiles = []
   let teams = []
@@ -484,6 +485,7 @@ if (section) {
     const isHoliday = holidayInput.checked
     const holidayName = normalizeText(document.getElementById('scheduleHolidayName').value) || null
     const notes = normalizeText(document.getElementById('scheduleNotes').value) || null
+    const repeatWeekly = repeatWeeklyInput.checked
 
     if (!userId || !shiftDate || !Number.isInteger(sequence) || sequence < 1 || sequence > 99) {
       setMessage(formMessage, 'Employee, date, and a shift sequence from 1 to 99 are required.', 'error')
@@ -516,7 +518,7 @@ if (section) {
     setMessage(formMessage, 'Saving schedule entry...')
 
     try {
-      const { error } = await supabase.rpc('workforce_admin_save_schedule', {
+      const { error } = await supabase.rpc('workforce_admin_save_schedule_and_repeat', {
         p_schedule_id: scheduleId,
         p_user_id: userId,
         p_shift_date: shiftDate,
@@ -528,12 +530,19 @@ if (section) {
         p_is_rest_day: isRestDay,
         p_is_holiday: isHoliday,
         p_holiday_name: holidayName,
-        p_notes: notes
+        p_notes: notes,
+        p_repeat_weekly: repeatWeekly
       })
 
       if (error) throw error
 
-      setMessage(formMessage, 'Schedule entry saved successfully.', 'success')
+      setMessage(
+        formMessage,
+        repeatWeekly
+          ? 'Schedule saved and weekly automation enabled.'
+          : 'Schedule entry saved successfully.',
+        'success'
+      )
       anchorDate = shiftDate
       await loadScheduleData()
       window.setTimeout(closeModal, 600)

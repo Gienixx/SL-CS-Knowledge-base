@@ -310,9 +310,13 @@
             <span>Notes</span>
             <textarea class="wf-control" id="scheduleNotes" placeholder="Optional schedule note visible to authorized workforce users"></textarea>
           </label>
+          <label class="wf-check full">
+            <input id="scheduleRepeatWeekly" type="checkbox">
+            <span>Repeat this completed week automatically</span>
+          </label>
         </div>
 
-        <p class="wf-note">Published schedules are visible to the assigned agent. Scheduled entries remain drafts. Editing a published shift automatically marks it as Changed when the employee, date, times, rest-day status, or holiday details are modified.</p>
+        <p class="wf-note">Published schedules are visible to the assigned agent. Scheduled entries remain drafts. To enable repetition, first add exactly one entry for every day from Sunday through Saturday, including rest days, then check the box while saving the final entry. Admin edits to generated schedules are not overwritten.</p>
         <div class="wf-dialog-actions">
           <button class="wf-btn secondary" type="button" data-schedule-close>Cancel</button>
           <button class="wf-btn" id="saveScheduleButton" type="submit">Save Schedule</button>
