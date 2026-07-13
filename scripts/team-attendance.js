@@ -507,7 +507,7 @@ function openCorrectionModal(row) {
   const reasonNotesInput = document.getElementById('teamAttendanceReasonNotes')
   const adminNotesInput = document.getElementById('teamAttendanceAdminNotes')
 
-  modal.dataset.attendanceId = row.id || ''
+  modal.dataset.attendanceId = row.attendance_id || ''
   employeeInput.value = row.employee_name || 'Unknown employee'
   workDateInput.value = formatDate(row.work_date)
   currentClockInInput.value = formatDateTime(row.clock_in, row.employee_timezone, true)

@@ -75,6 +75,7 @@ test('Team Attendance displays correction modal and submits through correction R
   assert.match(page, /id="teamAttendanceReasonCode"/)
   assert.match(script, /supabase\.rpc\('workforce_correct_attendance'/)
   assert.match(script, /function openCorrectionModal\(/)
+  assert.match(script, /modal\.dataset\.attendanceId = row\.attendance_id \|\| ''/)
   assert.match(script, /function handleCorrectionSubmit\(/)
   assert.match(script, /p_new_clock_in: parseInput\(newClockIn\)/)
 })
