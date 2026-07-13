@@ -342,7 +342,7 @@ function updateScheduleHelp() {
   const record = attendanceForSelectedSchedule()
 
   if (!schedule) {
-    elements.scheduleHelp.textContent = 'No released shift is currently available. Clock-in will be recorded as unscheduled attendance.'
+    elements.scheduleHelp.textContent = 'No released shift is currently available. You may clock in, and all credited worked minutes will count as RDOT.'
     return
   }
 
@@ -638,7 +638,9 @@ async function clockIn() {
       ? 'Recording your rest-day overtime clock-in...'
       : schedule?.is_holiday
         ? 'Recording your holiday overtime clock-in...'
-        : 'Recording your clock-in...'
+        : schedule
+          ? 'Recording your clock-in...'
+          : 'Recording your RDOT clock-in...'
   )
 
   try {
@@ -650,7 +652,9 @@ async function clockIn() {
         ? 'Rest-day overtime clock-in recorded successfully.'
         : schedule?.is_holiday
           ? 'Holiday overtime clock-in recorded successfully.'
-          : 'Clock-in recorded successfully.',
+          : schedule
+            ? 'Clock-in recorded successfully.'
+            : 'RDOT clock-in recorded successfully.',
       'success'
     )
   } catch (error) {

@@ -5,6 +5,7 @@ import test from 'node:test'
 
 const read = path => readFile(new URL(`../${path}`, import.meta.url), 'utf8')
 const migrationPath = 'supabase/migrations-legacy/2026070906_rest_day_holiday_overtime.sql'
+const unscheduledRdotMigrationPath = 'supabase/migrations/20260713121540_unscheduled_attendance_as_rdot.sql'
 
 test('attendance page allows released rest-day and holiday schedules', async () => {
   const page = await read('attendance.html')
@@ -17,6 +18,19 @@ test('attendance page allows released rest-day and holiday schedules', async () 
   assert.match(script, /\['special', 'early', 'active'\]/)
   assert.doesNotMatch(script, /Clock-in is disabled/)
   assert.doesNotMatch(script, /every\(schedule => schedule\.is_rest_day\)/)
+})
+
+test('dates without a released shift allow clock-in and are presented as RDOT', async () => {
+  const page = await read('attendance.html')
+  const script = await read('scripts/attendance.js')
+  const migration = await read(unscheduledRdotMigrationPath)
+
+  assert.match(page, /no-shift work is also recorded as RDOT/)
+  assert.match(script, /No released shift is currently available[\s\S]*count as RDOT/)
+  assert.match(script, /Recording your RDOT clock-in/)
+  assert.match(script, /RDOT clock-in recorded successfully/)
+  assert.match(migration, /case when v_attendance\.schedule_id is null then true else v_schedule\.is_rest_day end/)
+  assert.match(migration, /unscheduled_work_classification', 'rest_day_overtime_minutes'/)
 })
 
 test('agent attendance displays RDOT separately from normal overtime', async () => {
