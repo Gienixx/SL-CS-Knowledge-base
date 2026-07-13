@@ -17,6 +17,10 @@ const employeeForm = document.getElementById('employeeForm')
 const formMessage = document.getElementById('employeeFormMessage')
 const saveButton = document.getElementById('saveEmployeeButton')
 const accessTypeSelect = document.getElementById('accessType')
+const tablePagination = document.getElementById('employeeTablePagination')
+const tablePageInfo = document.getElementById('employeeTablePageInfo')
+const tablePreviousButton = document.getElementById('previousEmployeeTablePage')
+const tableNextButton = document.getElementById('nextEmployeeTablePage')
 
 let access = null
 let profiles = []
@@ -24,6 +28,9 @@ let teams = []
 let permissionsByUser = new Map()
 let lastFocusedElement = null
 let editingSystemAdmin = false
+let employeePage = 1
+
+const EMPLOYEE_PAGE_SIZE = 5
 
 const STATUS_LABELS = Object.freeze({
   active: 'Active',
@@ -179,6 +186,7 @@ function renderEmployees() {
   const rows = filteredProfiles()
 
   if (!rows.length) {
+    tablePagination.hidden = true
     const row = document.createElement('tr')
     const cell = document.createElement('td')
     cell.colSpan = 8
@@ -189,7 +197,17 @@ function renderEmployees() {
     return
   }
 
-  rows.forEach(profile => {
+  const pageCount = Math.ceil(rows.length / EMPLOYEE_PAGE_SIZE)
+  employeePage = Math.min(Math.max(employeePage, 1), pageCount)
+  const pageStart = (employeePage - 1) * EMPLOYEE_PAGE_SIZE
+  const pageRows = rows.slice(pageStart, pageStart + EMPLOYEE_PAGE_SIZE)
+
+  tablePagination.hidden = rows.length <= EMPLOYEE_PAGE_SIZE
+  tablePageInfo.textContent = `Page ${employeePage} of ${pageCount}`
+  tablePreviousButton.disabled = employeePage === 1
+  tableNextButton.disabled = employeePage === pageCount
+
+  pageRows.forEach(profile => {
     const row = document.createElement('tr')
     const permissions = profilePermissions(profile.user_id)
     const grantedCount = WORKFORCE_PERMISSION_KEYS.filter(key => permissions[key] === true).length
@@ -342,6 +360,7 @@ function openEmployee(userId) {
 }
 
 async function loadWorkforceData() {
+  employeePage = 1
   setLoading(refreshButton, true, 'Refreshing...', 'Refresh')
   setMessage(pageMessage, 'Loading employee profiles...')
 
@@ -470,9 +489,27 @@ async function initialize() {
   }
 
   refreshButton.addEventListener('click', loadWorkforceData)
-  searchInput.addEventListener('input', renderEmployees)
-  statusFilter.addEventListener('change', renderEmployees)
-  teamFilter.addEventListener('change', renderEmployees)
+  searchInput.addEventListener('input', () => {
+    employeePage = 1
+    renderEmployees()
+  })
+  statusFilter.addEventListener('change', () => {
+    employeePage = 1
+    renderEmployees()
+  })
+  teamFilter.addEventListener('change', () => {
+    employeePage = 1
+    renderEmployees()
+  })
+  tablePreviousButton.addEventListener('click', () => {
+    if (employeePage <= 1) return
+    employeePage -= 1
+    renderEmployees()
+  })
+  tableNextButton.addEventListener('click', () => {
+    employeePage += 1
+    renderEmployees()
+  })
   accessTypeSelect.addEventListener('change', applyAccessTypeRules)
   employeeForm.addEventListener('submit', saveEmployee)
 

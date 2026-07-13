@@ -82,6 +82,13 @@
           </tbody>
         </table>
       </div>
+      <nav id="employeeTablePagination" class="wf-table-pagination" aria-label="Employee profile pages" hidden>
+        <span id="employeeTablePageInfo">Page 1 of 1</span>
+        <div class="wf-actions">
+          <button class="wf-row-btn" id="previousEmployeeTablePage" type="button">← Previous</button>
+          <button class="wf-row-btn" id="nextEmployeeTablePage" type="button">Next →</button>
+        </div>
+      </nav>
       <p id="employeesMessage" class="wf-message" aria-live="polite"></p>
     </section>
 
@@ -333,7 +340,7 @@
     </section>
   </div>
 
-  <script type="module" src="./scripts/workforce.js?v=3"></script>
+  <script type="module" src="./scripts/workforce.js?v=4"></script>
   <script type="module" src="./scripts/workforce-schedules-entry.js?v=2"></script>
 </body>
 </html>
