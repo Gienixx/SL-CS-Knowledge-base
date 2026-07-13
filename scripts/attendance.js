@@ -378,7 +378,7 @@ function updateActionState() {
   const availability = schedule ? scheduleAvailability(schedule) : null
   const scheduleClockInOpen = schedule
     ? ['special', 'early', 'active'].includes(availability.state)
-    : visibleSchedules.length === 0
+    : true
   const selectedCompleted = Boolean(selectedRecord?.clock_in && selectedRecord.clock_out)
 
   elements.clockInButton.disabled = busy || Boolean(openRecord) || selectedCompleted || !scheduleClockInOpen

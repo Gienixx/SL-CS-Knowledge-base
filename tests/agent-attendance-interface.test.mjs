@@ -29,6 +29,8 @@ test('attendance summary does not fall back to an ended prior-day schedule', asy
 
   assert.match(script, /const fallbackSchedule = selectedSchedule\(\) \|\| null/)
   assert.doesNotMatch(script, /selectedSchedule\(\) \|\| visibleSchedules\[0\]/)
+  assert.match(script, /const scheduleClockInOpen = schedule[\s\S]*: true/)
+  assert.doesNotMatch(script, /: visibleSchedules\.length === 0/)
 })
 
 test('attendance migration is identity-link aware and calculates shift adjustments', async () => {
