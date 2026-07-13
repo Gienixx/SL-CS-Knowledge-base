@@ -24,6 +24,13 @@ test('attendance client uses workforce access scope and secure RPC functions', a
   assert.match(script, /\.in\('user_id', profileIds\)/)
 })
 
+test('attendance summary does not fall back to an ended prior-day schedule', async () => {
+  const script = await read('scripts/attendance.js')
+
+  assert.match(script, /const fallbackSchedule = selectedSchedule\(\) \|\| null/)
+  assert.doesNotMatch(script, /selectedSchedule\(\) \|\| visibleSchedules\[0\]/)
+})
+
 test('attendance migration is identity-link aware and calculates shift adjustments', async () => {
   const migration = await read('supabase/migrations-legacy/2026070801_agent_attendance_interface.sql')
 

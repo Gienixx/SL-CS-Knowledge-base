@@ -392,7 +392,7 @@ function renderToday() {
 
   const record = currentAttendanceRecord()
   const recordSchedule = scheduleForAttendance(record)
-  const fallbackSchedule = selectedSchedule() || visibleSchedules[0] || null
+  const fallbackSchedule = selectedSchedule() || null
   const displaySchedule = recordSchedule || fallbackSchedule
   const displayDate = record?.work_date || displaySchedule?.shift_date || localDateKey()
 
