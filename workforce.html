@@ -5,7 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Workforce Management | SocialLoop CS Base</title>
   <link rel="stylesheet" href="./styles/button-theme.css?v=1">
-  <link rel="stylesheet" href="./styles/workforce-admin.css?v=3">
+  <link rel="stylesheet" href="./styles/workforce-admin.css?v=4">
 </head>
 <body>
   <main class="wf-page">
@@ -161,6 +161,13 @@
           </tbody>
         </table>
       </div>
+      <nav id="scheduleTablePagination" class="wf-table-pagination" aria-label="Schedule management pages" hidden>
+        <span id="scheduleTablePageInfo">Page 1 of 1</span>
+        <div class="wf-actions">
+          <button class="wf-row-btn" id="previousScheduleTablePage" type="button">← Previous</button>
+          <button class="wf-row-btn" id="nextScheduleTablePage" type="button">Next →</button>
+        </div>
+      </nav>
       <p id="scheduleMessage" class="wf-message" aria-live="polite"></p>
     </section>
   </main>
@@ -327,6 +334,6 @@
   </div>
 
   <script type="module" src="./scripts/workforce.js?v=3"></script>
-  <script type="module" src="./scripts/workforce-schedules-entry.js?v=1"></script>
+  <script type="module" src="./scripts/workforce-schedules-entry.js?v=2"></script>
 </body>
 </html>

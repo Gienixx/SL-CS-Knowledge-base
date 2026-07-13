@@ -12,7 +12,7 @@ test('new schedules default to Published while Scheduled is clearly identified a
 
   assert.match(html, /option value="scheduled">Scheduled \(draft — hidden from agents\)<\/option>/)
   assert.match(html, /option value="published" selected>Published \(visible to agent\)<\/option>/)
-  assert.match(html, /workforce-schedules-entry\.js\?v=1/)
+  assert.match(html, /workforce-schedules-entry\.js\?v=2/)
   assert.match(entry, /const isNewSchedule = !scheduleId\?\.value/)
   assert.match(entry, /scheduleStatus\.value = 'published'/)
 })

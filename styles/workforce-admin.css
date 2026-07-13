@@ -67,6 +67,9 @@ textarea.wf-control{min-height:96px;resize:vertical;line-height:1.5}
 .wf-compact-table .wf-row-btn{min-height:28px;padding:0 10px;font-size:.76rem}
 .wf-employee-table{min-width:960px}
 .wf-schedule-table.wf-compact-table{min-width:1000px}
+.wf-table-pagination{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-top:12px;padding:8px 2px 0;color:var(--wf-muted);font-size:.82rem;font-weight:800}
+.wf-table-pagination[hidden]{display:none}
+.wf-table-pagination .wf-row-btn{min-height:32px;padding:6px 11px}
 .wf-empty{text-align:center!important;color:var(--wf-muted)!important;padding:30px!important}
 .wf-person{font-weight:800;color:var(--wf-navy)}
 .wf-subtext{display:block;margin-top:3px;color:var(--wf-muted);font-size:.8rem;overflow-wrap:anywhere}

@@ -25,12 +25,19 @@ if (section) {
   const restDayInput = document.getElementById('scheduleIsRestDay')
   const holidayInput = document.getElementById('scheduleIsHoliday')
   const repeatWeeklyInput = document.getElementById('scheduleRepeatWeekly')
+  const tablePagination = document.getElementById('scheduleTablePagination')
+  const tablePageInfo = document.getElementById('scheduleTablePageInfo')
+  const tablePreviousButton = document.getElementById('previousScheduleTablePage')
+  const tableNextButton = document.getElementById('nextScheduleTablePage')
 
   let profiles = []
   let teams = []
   let schedules = []
   let anchorDate = todayInTimeZone('America/New_York')
   let lastFocusedElement = null
+  let schedulePage = 1
+
+  const TABLE_PAGE_SIZE = 10
 
   const STATUS_LABELS = Object.freeze({
     scheduled: 'Scheduled',
@@ -278,6 +285,7 @@ if (section) {
     renderSummary(rows)
 
     if (!rows.length) {
+      tablePagination.hidden = true
       const row = document.createElement('tr')
       const cell = document.createElement('td')
       cell.colSpan = 8
@@ -288,7 +296,17 @@ if (section) {
       return
     }
 
-    rows.forEach(schedule => {
+    const pageCount = Math.ceil(rows.length / TABLE_PAGE_SIZE)
+    schedulePage = Math.min(Math.max(schedulePage, 1), pageCount)
+    const pageStart = (schedulePage - 1) * TABLE_PAGE_SIZE
+    const pageRows = rows.slice(pageStart, pageStart + TABLE_PAGE_SIZE)
+
+    tablePagination.hidden = rows.length <= TABLE_PAGE_SIZE
+    tablePageInfo.textContent = `Page ${schedulePage} of ${pageCount}`
+    tablePreviousButton.disabled = schedulePage === 1
+    tableNextButton.disabled = schedulePage === pageCount
+
+    pageRows.forEach(schedule => {
       const profile = profileById(schedule.user_id)
       const row = document.createElement('tr')
       const typeCell = document.createElement('td')
@@ -429,6 +447,7 @@ if (section) {
   }
 
   async function loadScheduleData() {
+    schedulePage = 1
     const range = selectedRange()
     rangeLabel.textContent = formatRange(range)
     setLoading(refreshButton, true, 'Refreshing...', 'Refresh')
@@ -583,9 +602,27 @@ if (section) {
     refreshButton.addEventListener('click', loadScheduleData)
     createButton.addEventListener('click', () => openSchedule())
     viewSelect.addEventListener('change', loadScheduleData)
-    teamFilter.addEventListener('change', renderSchedules)
-    employeeFilter.addEventListener('change', renderSchedules)
-    statusFilter.addEventListener('change', renderSchedules)
+    teamFilter.addEventListener('change', () => {
+      schedulePage = 1
+      renderSchedules()
+    })
+    employeeFilter.addEventListener('change', () => {
+      schedulePage = 1
+      renderSchedules()
+    })
+    statusFilter.addEventListener('change', () => {
+      schedulePage = 1
+      renderSchedules()
+    })
+    tablePreviousButton.addEventListener('click', () => {
+      if (schedulePage <= 1) return
+      schedulePage -= 1
+      renderSchedules()
+    })
+    tableNextButton.addEventListener('click', () => {
+      schedulePage += 1
+      renderSchedules()
+    })
     restDayInput.addEventListener('change', updateScheduleFormState)
     holidayInput.addEventListener('change', updateScheduleFormState)
     scheduleForm.addEventListener('submit', saveSchedule)
