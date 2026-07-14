@@ -2,6 +2,10 @@ import { supabase } from './supabaseClient.js?v=8'
 import {
   requiresFirstLoginPasswordChange
 } from './first-login-policy.js?v=4'
+import {
+  recurringTeamEventsForMonth,
+  upcomingRecurringTeamEvents
+} from './home-recurring-events.js?v=1'
 
 const SVG_NAMESPACE = 'http://www.w3.org/2000/svg'
 const HOME_HISTORY_LIMIT = 14
@@ -14,41 +18,6 @@ const calendarState = {
 function isMissingAuthSession(error) {
   return error?.name === 'AuthSessionMissingError'
 }
-
-const upcomingEvents = [
-  createRelativeEvent(2, 'Daily CS Operations Huddle', '9:00 AM – 9:30 AM', 'Meeting'),
-  createRelativeEvent(3, 'Zendesk Data Review', '2:00 PM – 3:00 PM', 'Meeting'),
-  createRelativeEvent(5, 'Monthly QA Calibration', '10:00 AM – 11:30 AM', 'Training'),
-  createRelativeEvent(7, 'Ticket Tracker Submission', 'Before 5:00 PM', 'Deadline')
-]
-
-const announcements = [
-  {
-    title: 'Sample: Add the latest operational update for the support team',
-    category: 'Operations',
-    author: 'Support Lead',
-    date: formatRelativeDate(0)
-  },
-  {
-    title: 'Sample: Publish policy changes and escalation reminders here',
-    category: 'Policy',
-    author: 'Operations',
-    date: formatRelativeDate(-1)
-  },
-  {
-    title: 'Sample: Share QA calibration and training schedules here',
-    category: 'Training',
-    author: 'QA Team',
-    date: formatRelativeDate(-2)
-  },
-  {
-    title: 'Sample: Recognize team milestones and important notices here',
-    category: 'General',
-    author: 'Team Lead',
-    date: formatRelativeDate(-3)
-  }
-]
-
 document.addEventListener('DOMContentLoaded', initializeHome)
 
 async function initializeHome() {
@@ -240,35 +209,29 @@ function renderAnnouncements() {
   const body = document.getElementById('announcementRows')
   if (!body) return
 
-  body.innerHTML = announcements.map(item => `
-    <tr>
-      <td>${escapeHtml(item.title)}</td>
-      <td><span class="category-badge ${item.category.toLowerCase()}">${escapeHtml(item.category)}</span></td>
-      <td>${escapeHtml(item.author)}</td>
-      <td>${escapeHtml(item.date)}</td>
-    </tr>
-  `).join('')
+  body.innerHTML = '<tr><td class="home-empty-table-cell" colspan="4">None</td></tr>'
 }
 
 function renderUpcomingEvents() {
   const list = document.getElementById('upcomingEventList')
   if (!list) return
 
-  list.innerHTML = upcomingEvents.map(event => {
-    const date = new Date(`${event.date}T00:00:00`)
-    const month = new Intl.DateTimeFormat('en-US', { month: 'short' }).format(date)
+  const events = upcomingRecurringTeamEvents()
+
+  if (!events.length) {
+    list.innerHTML = '<div class="home-schedule-empty"><strong>None</strong></div>'
+    return
+  }
+
+  list.innerHTML = events.map(event => {
+    const date = new Date(`${event.date}T00:00:00Z`)
+    const month = new Intl.DateTimeFormat('en-US', { timeZone: 'UTC', month: 'short' }).format(date)
 
     return `
-      <article class="event-card">
-        <div class="event-date-box">
-          <span>${escapeHtml(month)}</span>
-          <strong>${date.getDate()}</strong>
-        </div>
-        <div class="event-copy">
-          <strong>${escapeHtml(event.title)}</strong>
-          <span>${escapeHtml(event.time)}</span>
-        </div>
-        <span class="event-type ${event.type.toLowerCase()}">${escapeHtml(event.type)}</span>
+      <article class="event-card home-static-event-card">
+        <div class="event-date-box"><span>${escapeHtml(month)}</span><strong>${date.getUTCDate()}</strong></div>
+        <div class="event-copy"><strong>${escapeHtml(event.title)}</strong><span>${escapeHtml(event.time)}</span></div>
+        <span class="event-type ${escapeHtml(event.type.toLowerCase())}">${escapeHtml(event.type)}</span>
       </article>
     `
   }).join('')
@@ -289,9 +252,13 @@ function renderCalendar() {
     year: 'numeric'
   }).format(calendarState.date)
 
-  const eventMap = new Map(
-    upcomingEvents.map(event => [event.date, event.type.toLowerCase()])
-  )
+  const eventMap = new Map()
+  recurringTeamEventsForMonth(year, month).forEach(event => {
+    const eventType = event.type.toLowerCase()
+    if (!eventMap.has(event.date) || eventType === 'deadline') {
+      eventMap.set(event.date, eventType)
+    }
+  })
 
   const cells = []
 
@@ -523,29 +490,6 @@ function getNiceMaximum(value) {
         : 10
 
   return niceNormalized * magnitude
-}
-
-function createRelativeEvent(dayOffset, title, time, type) {
-  const date = new Date(today)
-  date.setDate(today.getDate() + dayOffset)
-
-  return {
-    title,
-    time,
-    type,
-    date: toLocalIsoDate(date)
-  }
-}
-
-function formatRelativeDate(dayOffset) {
-  const date = new Date(today)
-  date.setDate(today.getDate() + dayOffset)
-
-  return new Intl.DateTimeFormat('en-US', {
-    month: 'short',
-    day: 'numeric',
-    year: 'numeric'
-  }).format(date)
 }
 
 function formatReportDate(value, short = false) {

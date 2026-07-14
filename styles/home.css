@@ -526,9 +526,13 @@ button {
   margin: 1px;
   border: 0;
   border-radius: 10px;
-  color: var(--home-text);
+  color: var(--home-navy);
   background: transparent;
   font-size: 0.68rem;
+  font-weight: 750;
+  opacity: 1;
+  filter: none;
+  transition: color 160ms ease, background 160ms ease, opacity 160ms ease, filter 160ms ease;
 }
 
 .calendar-day:hover:not(.muted) {
@@ -536,7 +540,11 @@ button {
 }
 
 .calendar-day.muted {
-  color: #c5c0d0;
+  color: #aeb5c1;
+  background: rgba(174, 181, 193, 0.06);
+  font-weight: 500;
+  opacity: 0.42;
+  filter: grayscale(1) blur(0.12px);
 }
 
 .calendar-day.today {
@@ -605,6 +613,13 @@ button {
   max-width: 300px;
   color: var(--home-text);
   font-weight: 650;
+}
+
+.announcement-table .home-empty-table-cell {
+  max-width: none;
+  color: var(--home-muted);
+  font-weight: 650;
+  text-align: center;
 }
 
 .category-badge,

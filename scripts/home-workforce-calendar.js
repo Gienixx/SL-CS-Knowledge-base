@@ -208,13 +208,13 @@ function renderUpcomingSchedules() {
   const list = document.getElementById('upcomingEventList')
   if (!list) return
 
+  const recurringEvents = [...list.querySelectorAll('.home-static-event-card')]
   list.replaceChildren()
 
-  if (!state.upcomingSchedules.length) {
-    const empty = document.createElement('a')
+  if (!state.upcomingSchedules.length && !recurringEvents.length) {
+    const empty = document.createElement('div')
     empty.className = 'home-schedule-empty'
-    empty.href = './my-schedule.html'
-    empty.innerHTML = '<strong>No upcoming schedule entries</strong><span>Open My Schedule to review your assigned dates.</span>'
+    empty.innerHTML = '<strong>None</strong>'
     list.appendChild(empty)
     return
   }
@@ -222,6 +222,8 @@ function renderUpcomingSchedules() {
   state.upcomingSchedules.forEach(schedule => {
     list.appendChild(createUpcomingScheduleCard(schedule))
   })
+
+  recurringEvents.forEach(event => list.appendChild(event))
 }
 
 function createUpcomingScheduleCard(schedule) {
