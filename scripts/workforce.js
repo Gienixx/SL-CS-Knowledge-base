@@ -365,25 +365,33 @@ async function loadWorkforceData() {
   setMessage(pageMessage, 'Loading employee profiles...')
 
   try {
-    const [profileResult, teamResult, permissionResult] = await Promise.all([
+    const [profileResult, teamResult] = await Promise.all([
       supabase
         .from('profiles')
         .select('user_id, full_name, email, employee_id, employment_status, base_role, is_agent, is_system_admin, team_id, supervisor_id, can_edit_articles, can_manage_payroll, timezone, updated_at')
+        .eq('is_system_admin', false)
         .order('full_name'),
       supabase
         .from('teams')
-        .select('id, name, description, supervisor_id, is_active, updated_at')
-        .order('name'),
-      supabase
-        .from('user_permissions')
-        .select('user_id, permission_key, is_granted')
+        .select('id, name, description, is_active, updated_at')
+        .order('name')
     ])
 
     if (profileResult.error) throw profileResult.error
     if (teamResult.error) throw teamResult.error
+
+    const visibleProfiles = profileResult.data || []
+    const visibleUserIds = visibleProfiles.map(profile => profile.user_id)
+    const permissionResult = visibleUserIds.length
+      ? await supabase
+        .from('user_permissions')
+        .select('user_id, permission_key, is_granted')
+        .in('user_id', visibleUserIds)
+      : { data: [], error: null }
+
     if (permissionResult.error) throw permissionResult.error
 
-    profiles = profileResult.data || []
+    profiles = visibleProfiles
     teams = teamResult.data || []
     permissionsByUser = new Map()
 

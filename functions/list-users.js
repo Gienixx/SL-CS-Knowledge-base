@@ -296,6 +296,19 @@ async function getLoginUsers(
     : []
 }
 
+async function getSystemOwnerEmail(
+  supabaseUrl,
+  serviceRoleKey
+) {
+  const ownerUrl = new URL(`${supabaseUrl}/rest/v1/profiles`)
+  ownerUrl.searchParams.set('select', 'email')
+  ownerUrl.searchParams.set('is_system_admin', 'eq.true')
+  ownerUrl.searchParams.set('limit', '1')
+
+  const owners = await serviceRequest(ownerUrl.toString(), serviceRoleKey)
+  return normalizeEmail(Array.isArray(owners) ? owners[0]?.email : '')
+}
+
 async function getAuthUsers(
   supabaseUrl,
   serviceRoleKey
@@ -375,7 +388,8 @@ export async function onRequestGet(
 
     const [
       loginUsers,
-      authUsers
+      authUsers,
+      systemOwnerEmail
     ] = await Promise.all([
       getLoginUsers(
         supabaseUrl,
@@ -383,6 +397,11 @@ export async function onRequestGet(
       ),
 
       getAuthUsers(
+        supabaseUrl,
+        serviceRoleKey
+      ),
+
+      getSystemOwnerEmail(
         supabaseUrl,
         serviceRoleKey
       )
@@ -406,7 +425,9 @@ export async function onRequestGet(
     })
 
     const users =
-      loginUsers.map(loginUser => {
+      loginUsers
+        .filter(loginUser => normalizeEmail(loginUser.email) !== systemOwnerEmail)
+        .map(loginUser => {
         const email =
           normalizeEmail(
             loginUser.email

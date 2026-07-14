@@ -173,6 +173,26 @@ async function getLoginUser(supabaseUrl, serviceRoleKey, email) {
     : null
 }
 
+async function isProtectedSystemOwner(
+  supabaseUrl,
+  serviceRoleKey,
+  email,
+  userId = ''
+) {
+  const ownerUrl = new URL(`${supabaseUrl}/rest/v1/profiles`)
+  ownerUrl.searchParams.set('select', 'user_id,email')
+  ownerUrl.searchParams.set('is_system_admin', 'eq.true')
+  ownerUrl.searchParams.set('limit', '1')
+
+  const owners = await serviceRequest(ownerUrl.toString(), serviceRoleKey)
+  const owner = Array.isArray(owners) ? owners[0] : null
+
+  return Boolean(owner) && (
+    normalizeEmail(owner.email) === normalizeEmail(email) ||
+    (userId && owner.user_id === userId)
+  )
+}
+
 async function loginEmailExists(supabaseUrl, serviceRoleKey, email) {
   const userUrl = new URL(`${supabaseUrl}/rest/v1/login`)
   userUrl.searchParams.set('select', 'email')
@@ -280,9 +300,22 @@ export async function onRequestPost(context) {
     const originalEmail = normalizeEmail(
       requestBody.originalEmail || requestBody.email
     )
+    const requestedUserId = normalizeText(requestBody.userId)
 
     if (!originalEmail) {
       throw new RequestError('A valid user email is required.', 400)
+    }
+
+    if (await isProtectedSystemOwner(
+      admin.supabaseUrl,
+      admin.serviceRoleKey,
+      originalEmail,
+      requestedUserId
+    )) {
+      throw new RequestError(
+        'The protected system owner cannot be viewed or changed in User Management.',
+        403
+      )
     }
 
     const existingUser = await getLoginUser(
@@ -302,7 +335,7 @@ export async function onRequestPost(context) {
       })
     }
 
-    const userId = normalizeText(requestBody.userId)
+    const userId = requestedUserId
     const name = normalizeText(requestBody.name || existingUser.name)
     const email = normalizeEmail(requestBody.email || originalEmail)
     const isAdmin = requestBody.isAdmin

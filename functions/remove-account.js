@@ -128,6 +128,16 @@ async function findUserByEmail(baseUrl, serviceKey, email) {
   }
 }
 
+async function isProtectedSystemOwner(baseUrl, serviceKey, email) {
+  const url = new URL(`${baseUrl}/rest/v1/profiles`)
+  url.searchParams.set('select', 'email')
+  url.searchParams.set('is_system_admin', 'eq.true')
+  url.searchParams.set('limit', '1')
+
+  const owners = await serviceFetch(url.toString(), serviceKey)
+  return cleanEmail(Array.isArray(owners) ? owners[0]?.email : '') === email
+}
+
 export async function onRequestPost(context) {
   try {
     const admin = await getAdminContext(context)
@@ -137,6 +147,18 @@ export async function onRequestPost(context) {
     if (!email) {
       const error = new Error('A valid user email is required.')
       error.status = 400
+      throw error
+    }
+
+    if (await isProtectedSystemOwner(
+      admin.baseUrl,
+      admin.serviceKey,
+      email
+    )) {
+      const error = new Error(
+        'The protected system owner cannot be deleted.'
+      )
+      error.status = 403
       throw error
     }
 
