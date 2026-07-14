@@ -4,6 +4,7 @@ import test from 'node:test'
 
 const read = path => readFile(new URL(`../${path}`, import.meta.url), 'utf8')
 const migrationPath = 'supabase/migrations-legacy/2026070902_team_attendance_page.sql'
+const manualEntryMigrationPath = 'supabase/migrations/20260714070649_manual_attendance_entry.sql'
 
 test('Step 10 page contains every required attendance column and filter', async () => {
   const page = await read('team-attendance.html')
@@ -52,6 +53,50 @@ test('Team Attendance requires view permission and only corrects attendance thro
   assert.doesNotMatch(script, /\.from\('attendance'\)\s*\.update\(/)
   assert.doesNotMatch(script, /\.from\('attendance'\)\s*\.insert\(/)
   assert.match(script, /supabase\.rpc\('workforce_correct_attendance'/)
+})
+
+test('Team Attendance lets schedule administrators delete an attendance record with confirmation', async () => {
+  const page = await read('team-attendance.html')
+  const script = await read('scripts/team-attendance.js')
+
+  assert.match(page, /permanently delete invalid test and timing records/)
+  assert.match(script, /access\?\.is_admin === true && hasWorkforcePermission\(access, 'manage_schedules'\)/)
+  assert.match(script, /window\.confirm\(/)
+  assert.match(script, /\.from\('attendance'\)\s*\.delete\(\)\s*\.eq\('id', row\.attendance_id\)\s*\.select\('id'\)/)
+  assert.match(script, /Attendance record deleted successfully\./)
+})
+
+test('Team Attendance lets schedule administrators add an audited manual record', async () => {
+  const page = await read('team-attendance.html')
+  const script = await read('scripts/team-attendance.js')
+  const migration = await read(manualEntryMigrationPath)
+
+  for (const id of [
+    'teamAttendanceAddButton',
+    'teamAttendanceAddModal',
+    'teamAttendanceAddForm',
+    'teamAttendanceAddEmployee',
+    'teamAttendanceAddWorkDate',
+    'teamAttendanceAddSchedule',
+    'teamAttendanceAddClockIn',
+    'teamAttendanceAddClockOut',
+    'teamAttendanceAddReason'
+  ]) {
+    assert.match(page, new RegExp(`id="${id}"`))
+  }
+
+  assert.match(script, /supabase\.rpc\('workforce_create_manual_attendance'/)
+  assert.match(script, /hasWorkforcePermission\(access, 'manage_schedules'\)/)
+  assert.match(migration, /create or replace function public\.workforce_create_manual_attendance\(/)
+  assert.match(migration, /security definer\s+set search_path = ''/)
+  assert.match(migration, /workforce_current_user_is_active\(\)/)
+  assert.match(migration, /workforce_is_admin\(\)/)
+  assert.match(migration, /workforce_has_permission\('manage_schedules'\)/)
+  assert.match(migration, /workforce_can_manage_user\(p_user_id, 'manage_schedules'\)/)
+  assert.match(migration, /workforce_recalculate_attendance\(v_inserted\.id\)/)
+  assert.match(migration, /'manual_attendance_created'/)
+  assert.match(migration, /revoke all on function public\.workforce_create_manual_attendance[\s\S]*from public/)
+  assert.match(migration, /grant execute on function public\.workforce_create_manual_attendance[\s\S]*to authenticated/)
 })
 
 test('Step 10 data service enforces permission and supervisor scope', async () => {

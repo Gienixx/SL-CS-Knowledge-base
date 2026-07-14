@@ -104,8 +104,9 @@
       <div class="wf-card-header">
         <div>
           <h2 id="teamAttendanceTableTitle">Attendance Records</h2>
-          <p class="wf-message team-attendance-table-note">Clock-in and clock-out are effective values. This Step 10 page is read-only; correction and approval actions are added in later steps.</p>
+          <p class="wf-message team-attendance-table-note">Clock-in and clock-out are effective values. Authorized administrators can correct records or permanently delete invalid test and timing records.</p>
         </div>
+        <button id="teamAttendanceAddButton" class="wf-btn" type="button" hidden>Add attendance</button>
       </div>
 
       <div class="wf-table-wrap team-attendance-table-wrap">
@@ -138,6 +139,70 @@
   </div>
   <p id="teamAttendanceTableMessage" class="wf-message" aria-live="polite"></p>
 </section>
+
+  <div class="wf-modal" id="teamAttendanceAddModal" role="dialog" aria-modal="true" aria-labelledby="teamAttendanceAddModalTitle" hidden>
+    <button class="wf-backdrop" type="button" data-close="teamAttendanceAddModal" aria-label="Close add attendance dialog"></button>
+    <section class="wf-dialog compact">
+      <div class="wf-dialog-header">
+        <div>
+          <h2 id="teamAttendanceAddModalTitle">Add attendance record</h2>
+          <p class="wf-message">Use this only for a missing record. Calculations are generated automatically.</p>
+        </div>
+        <button class="wf-close" type="button" data-close="teamAttendanceAddModal" aria-label="Close">×</button>
+      </div>
+
+      <form id="teamAttendanceAddForm" class="wf-form">
+        <div class="wf-form-grid">
+          <label class="wf-field">
+            <span>Employee</span>
+            <select id="teamAttendanceAddEmployee" class="wf-control" required></select>
+          </label>
+          <label class="wf-field">
+            <span>Work date</span>
+            <input id="teamAttendanceAddWorkDate" class="wf-control" type="date" required>
+          </label>
+          <label class="wf-field wf-full-width">
+            <span>Assigned shift</span>
+            <select id="teamAttendanceAddSchedule" class="wf-control">
+              <option value="">No assigned shift (RDOT)</option>
+            </select>
+          </label>
+          <label class="wf-field">
+            <span>Clock-in</span>
+            <input id="teamAttendanceAddClockIn" class="wf-control" type="datetime-local" required>
+          </label>
+          <label class="wf-field">
+            <span>Clock-out</span>
+            <input id="teamAttendanceAddClockOut" class="wf-control" type="datetime-local" required>
+          </label>
+          <label class="wf-field">
+            <span>Attendance status</span>
+            <select id="teamAttendanceAddStatus" class="wf-control" required>
+              <option value="present">Present</option>
+              <option value="absent">Absent</option>
+              <option value="on_leave">On leave</option>
+              <option value="excused">Excused</option>
+            </select>
+          </label>
+          <label class="wf-field">
+            <span>Reason</span>
+            <input id="teamAttendanceAddReason" class="wf-control" type="text" minlength="3" required placeholder="Why is this record being added?">
+          </label>
+          <label class="wf-field wf-full-width">
+            <span>Admin notes</span>
+            <textarea id="teamAttendanceAddNotes" class="wf-control" rows="3" placeholder="Optional details for audit and review"></textarea>
+          </label>
+        </div>
+
+        <p id="teamAttendanceAddMessage" class="wf-message" aria-live="polite"></p>
+
+        <div class="wf-dialog-actions">
+          <button class="wf-btn secondary" type="button" data-close="teamAttendanceAddModal">Cancel</button>
+          <button id="teamAttendanceAddSubmit" class="wf-btn" type="submit">Add attendance</button>
+        </div>
+      </form>
+    </section>
+  </div>
 
   <div class="wf-modal" id="teamAttendanceCorrectionModal" role="dialog" aria-modal="true" aria-labelledby="teamAttendanceCorrectionModalTitle" hidden>
     <button class="wf-backdrop" type="button" data-close="teamAttendanceCorrectionModal" aria-label="Close attendance correction dialog"></button>
@@ -218,6 +283,6 @@
       </form>
     </section>
   </div>
-  <script type="module" src="./scripts/team-attendance.js?v=1"></script>
+  <script type="module" src="./scripts/team-attendance.js?v=2"></script>
 </body>
 </html>

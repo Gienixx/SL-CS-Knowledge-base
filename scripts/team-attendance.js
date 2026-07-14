@@ -37,6 +37,7 @@ const elements = {
   overtimeFilter: document.getElementById('teamAttendanceOvertimeFilter'),
   resetButton: document.getElementById('teamAttendanceResetButton'),
   refreshButton: document.getElementById('teamAttendanceRefreshButton'),
+  addButton: document.getElementById('teamAttendanceAddButton'),
   filterMessage: document.getElementById('teamAttendanceFilterMessage'),
   tableBody: document.getElementById('teamAttendanceTableBody'),
   tableMessage: document.getElementById('teamAttendanceTableMessage')
@@ -230,14 +231,65 @@ function createCorrectionStatusCell(row) {
 
 function createActionCell(row) {
   const cell = document.createElement('td')
-  const button = document.createElement('button')
-  button.type = 'button'
-  button.className = 'wf-btn secondary compact'
-  button.textContent = 'Correct'
-  button.disabled = !access?.can_correct_attendance || !row.employee_user_id
-  button.addEventListener('click', () => openCorrectionModal(row))
-  cell.appendChild(button)
+  const actions = document.createElement('div')
+  actions.className = 'wf-row-actions'
+
+  const correctButton = document.createElement('button')
+  correctButton.type = 'button'
+  correctButton.className = 'wf-btn secondary compact'
+  correctButton.textContent = 'Correct'
+  correctButton.disabled = !access?.can_correct_attendance || !row.employee_user_id
+  correctButton.addEventListener('click', () => openCorrectionModal(row))
+  actions.appendChild(correctButton)
+
+  if (access?.is_admin === true && hasWorkforcePermission(access, 'manage_schedules')) {
+    const deleteButton = document.createElement('button')
+    deleteButton.type = 'button'
+    deleteButton.className = 'wf-btn danger compact'
+    deleteButton.textContent = 'Delete'
+    deleteButton.addEventListener('click', () => deleteAttendance(row, deleteButton))
+    actions.appendChild(deleteButton)
+  }
+
+  cell.appendChild(actions)
   return cell
+}
+
+async function deleteAttendance(row, button) {
+  if (!row.attendance_id || busy) return
+
+  const employee = row.employee_name || 'this employee'
+  const workDate = formatDate(row.work_date)
+  const confirmed = window.confirm(
+    `Delete ${employee}'s attendance record for ${workDate}? This cannot be undone.`
+  )
+
+  if (!confirmed) return
+
+  busy = true
+  button.disabled = true
+  button.textContent = 'Deleting...'
+  setMessage(elements.tableMessage, 'Deleting attendance record...')
+
+  try {
+    const { data, error } = await supabase
+      .from('attendance')
+      .delete()
+      .eq('id', row.attendance_id)
+      .select('id')
+
+    if (error) throw error
+    if (!data?.length) throw new Error('Attendance record was not deleted. Check your permissions and try again.')
+
+    await loadAttendance()
+    setMessage(elements.tableMessage, 'Attendance record deleted successfully.', 'success')
+  } catch (error) {
+    setMessage(elements.tableMessage, errorMessage(error), 'error')
+    button.disabled = false
+    button.textContent = 'Delete'
+  } finally {
+    busy = false
+  }
 }
 
 function filteredRows() {
@@ -358,6 +410,21 @@ function populateFilters() {
   }
 }
 
+function populateAddEmployees() {
+  const select = document.getElementById('teamAttendanceAddEmployee')
+  if (!select) return
+
+  const selected = select.value
+  select.replaceChildren(new Option('Select an employee', ''))
+  employees.forEach(employee => {
+    const label = employee.employee_id
+      ? `${employee.full_name} · ${employee.employee_id}`
+      : employee.full_name
+    select.appendChild(new Option(label, employee.user_id))
+  })
+  if ([...select.options].some(option => option.value === selected)) select.value = selected
+}
+
 async function loadReferenceData() {
   const [profileResult, teamResult] = await Promise.all([
     supabase
@@ -407,6 +474,112 @@ function mergeAttendanceReferences(rows) {
   employees.sort((left, right) => left.full_name.localeCompare(right.full_name))
   teams.sort((left, right) => left.name.localeCompare(right.name))
   populateFilters()
+  populateAddEmployees()
+}
+
+async function loadAddSchedules() {
+  const employeeId = document.getElementById('teamAttendanceAddEmployee')?.value
+  const workDate = document.getElementById('teamAttendanceAddWorkDate')?.value
+  const select = document.getElementById('teamAttendanceAddSchedule')
+  if (!select) return
+
+  select.replaceChildren(new Option('No assigned shift (RDOT)', ''))
+  if (!employeeId || !workDate) return
+
+  const { data, error } = await supabase
+    .from('work_schedules')
+    .select('id, shift_start, shift_end, timezone, status, is_rest_day, is_holiday, holiday_name')
+    .eq('user_id', employeeId)
+    .eq('shift_date', workDate)
+    .in('status', ['published', 'changed'])
+    .order('shift_start')
+
+  if (error) throw error
+
+  for (const schedule of data || []) {
+    const specialDay = schedule.is_rest_day
+      ? 'Rest day'
+      : schedule.is_holiday
+        ? schedule.holiday_name || 'Holiday'
+        : ''
+    const times = schedule.shift_start && schedule.shift_end
+      ? `${formatDateTime(schedule.shift_start, schedule.timezone)} – ${formatDateTime(schedule.shift_end, schedule.timezone)}`
+      : 'No shift times'
+    select.appendChild(new Option([times, specialDay, schedule.status].filter(Boolean).join(' · '), schedule.id))
+  }
+
+  if (select.options.length === 2) select.selectedIndex = 1
+}
+
+async function openAddModal() {
+  const modal = document.getElementById('teamAttendanceAddModal')
+  const form = document.getElementById('teamAttendanceAddForm')
+  if (!modal || !form) return
+
+  form.reset()
+  populateAddEmployees()
+  document.getElementById('teamAttendanceAddWorkDate').value = localDateKey()
+  setMessage(document.getElementById('teamAttendanceAddMessage'), '')
+  await loadAddSchedules()
+  modal.hidden = false
+  document.body.classList.add('modal-open')
+  document.getElementById('teamAttendanceAddEmployee').focus()
+}
+
+function closeAddModal() {
+  const modal = document.getElementById('teamAttendanceAddModal')
+  if (!modal) return
+  modal.hidden = true
+  document.body.classList.remove('modal-open')
+}
+
+async function handleAddSubmit(messageElement) {
+  const employeeId = document.getElementById('teamAttendanceAddEmployee').value
+  const workDate = document.getElementById('teamAttendanceAddWorkDate').value
+  const scheduleId = document.getElementById('teamAttendanceAddSchedule').value
+  const clockIn = document.getElementById('teamAttendanceAddClockIn').value
+  const clockOut = document.getElementById('teamAttendanceAddClockOut').value
+  const status = document.getElementById('teamAttendanceAddStatus').value
+  const reason = document.getElementById('teamAttendanceAddReason').value.trim()
+  const notes = document.getElementById('teamAttendanceAddNotes').value.trim()
+  const submit = document.getElementById('teamAttendanceAddSubmit')
+
+  if (!employeeId || !workDate || !clockIn || !clockOut || reason.length < 3) {
+    setMessage(messageElement, 'Employee, work date, clock times, and a reason are required.', 'error')
+    return
+  }
+
+  if (new Date(clockOut) < new Date(clockIn)) {
+    setMessage(messageElement, 'Clock-out cannot be earlier than clock-in.', 'error')
+    return
+  }
+
+  submit.disabled = true
+  submit.textContent = 'Adding...'
+  setMessage(messageElement, 'Adding attendance record...')
+
+  try {
+    const { error } = await supabase.rpc('workforce_create_manual_attendance', {
+      p_user_id: employeeId,
+      p_work_date: workDate,
+      p_clock_in: new Date(clockIn).toISOString(),
+      p_clock_out: new Date(clockOut).toISOString(),
+      p_schedule_id: scheduleId || null,
+      p_attendance_status: status,
+      p_reason: reason,
+      p_admin_notes: notes || null
+    })
+
+    if (error) throw error
+    await loadAttendance()
+    closeAddModal()
+    setMessage(elements.tableMessage, 'Attendance record added successfully.', 'success')
+  } catch (error) {
+    setMessage(messageElement, errorMessage(error), 'error')
+  } finally {
+    submit.disabled = false
+    submit.textContent = 'Add attendance'
+  }
 }
 
 async function loadAttendance() {
@@ -463,6 +636,9 @@ async function resetFilters() {
 function bindEvents() {
   elements.refreshButton.addEventListener('click', refreshAttendance)
   elements.resetButton.addEventListener('click', resetFilters)
+  elements.addButton?.addEventListener('click', () => {
+    openAddModal().catch(error => setMessage(elements.tableMessage, errorMessage(error), 'error'))
+  })
 
   for (const element of [
     elements.employeeFilter,
@@ -479,6 +655,19 @@ function bindEvents() {
   const correctionForm = document.getElementById('teamAttendanceCorrectionForm')
   const correctionModal = document.getElementById('teamAttendanceCorrectionModal')
   const correctionMessage = document.getElementById('teamAttendanceCorrectionMessage')
+  const addForm = document.getElementById('teamAttendanceAddForm')
+  const addMessage = document.getElementById('teamAttendanceAddMessage')
+
+  addForm?.addEventListener('submit', event => {
+    event.preventDefault()
+    handleAddSubmit(addMessage)
+  })
+  document.getElementById('teamAttendanceAddEmployee')?.addEventListener('change', () => {
+    loadAddSchedules().catch(error => setMessage(addMessage, errorMessage(error), 'error'))
+  })
+  document.getElementById('teamAttendanceAddWorkDate')?.addEventListener('change', () => {
+    loadAddSchedules().catch(error => setMessage(addMessage, errorMessage(error), 'error'))
+  })
 
   if (correctionForm) {
     correctionForm.addEventListener('submit', event => {
@@ -488,7 +677,10 @@ function bindEvents() {
   }
 
   document.querySelectorAll('[data-close]').forEach(button => {
-    button.addEventListener('click', () => closeCorrectionModal())
+    button.addEventListener('click', () => {
+      if (button.dataset.close === 'teamAttendanceAddModal') closeAddModal()
+      else closeCorrectionModal()
+    })
   })
 }
 
@@ -603,6 +795,9 @@ async function initialize() {
   elements.scope.textContent = access.is_admin === true
     ? 'Showing attendance for all employees permitted by your administrator access.'
     : 'Showing only employees assigned to your authorized supervisor scope.'
+  elements.addButton.hidden = !(
+    access.is_admin === true && hasWorkforcePermission(access, 'manage_schedules')
+  )
 
   const range = defaultDateRange()
   elements.startDate.value = range.start
