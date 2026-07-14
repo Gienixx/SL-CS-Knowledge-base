@@ -19,6 +19,7 @@ const REVIEW_STATUS_LABELS = Object.freeze({
   locked: 'Locked'
 })
 const ATTENDANCE_PAGE_SIZE = 5
+const WORKFORCE_TIMEZONE = 'America/New_York'
 
 const elements = {
   workforceLink: document.getElementById('teamAttendanceWorkforceLink'),
@@ -66,7 +67,7 @@ function setMessage(element, text, type = '') {
   element.className = type ? `wf-message ${type}` : 'wf-message'
 }
 
-function localDateKey(date = new Date(), timezone = access?.timezone || 'Asia/Manila') {
+function localDateKey(date = new Date(), timezone = WORKFORCE_TIMEZONE) {
   const parts = new Intl.DateTimeFormat('en-CA', {
     timeZone: timezone,
     year: 'numeric',
@@ -123,7 +124,7 @@ function formatDate(value) {
 function formatDateTime(value, timezone, includeDate = false) {
   if (!value) return '—'
   return new Intl.DateTimeFormat('en-US', {
-    timeZone: timezone || access?.timezone || 'Asia/Manila',
+    timeZone: WORKFORCE_TIMEZONE,
     ...(includeDate ? { month: 'short', day: 'numeric', year: 'numeric' } : {}),
     hour: 'numeric',
     minute: '2-digit'
@@ -132,13 +133,38 @@ function formatDateTime(value, timezone, includeDate = false) {
 
 function toDateTimeLocal(value) {
   if (!value) return ''
-  const date = new Date(value)
-  const year = String(date.getFullYear()).padStart(4, '0')
-  const month = String(date.getMonth() + 1).padStart(2, '0')
-  const day = String(date.getDate()).padStart(2, '0')
-  const hours = String(date.getHours()).padStart(2, '0')
-  const minutes = String(date.getMinutes()).padStart(2, '0')
-  return `${year}-${month}-${day}T${hours}:${minutes}`
+  const parts = new Intl.DateTimeFormat('en-CA', {
+    timeZone: WORKFORCE_TIMEZONE,
+    year: 'numeric', month: '2-digit', day: '2-digit',
+    hour: '2-digit', minute: '2-digit', hourCycle: 'h23'
+  }).formatToParts(new Date(value))
+  const fields = Object.fromEntries(parts.map(part => [part.type, part.value]))
+  return `${fields.year}-${fields.month}-${fields.day}T${fields.hour}:${fields.minute}`
+}
+
+function timezoneOffsetMilliseconds(timestamp) {
+  const parts = new Intl.DateTimeFormat('en-US', {
+    timeZone: WORKFORCE_TIMEZONE,
+    year: 'numeric', month: '2-digit', day: '2-digit',
+    hour: '2-digit', minute: '2-digit', second: '2-digit', hourCycle: 'h23'
+  }).formatToParts(new Date(timestamp))
+  const fields = Object.fromEntries(parts.map(part => [part.type, part.value]))
+  const wallClockAsUtc = Date.UTC(
+    Number(fields.year), Number(fields.month) - 1, Number(fields.day),
+    Number(fields.hour), Number(fields.minute), Number(fields.second)
+  )
+  return wallClockAsUtc - timestamp
+}
+
+function dateTimeLocalToIso(value) {
+  if (!value) return null
+  const match = String(value).match(/^(\d{4})-(\d{2})-(\d{2})T(\d{2}):(\d{2})$/)
+  if (!match) throw new Error('Enter a valid date and time.')
+  const [, year, month, day, hour, minute] = match.map(Number)
+  const wallClockAsUtc = Date.UTC(year, month - 1, day, hour, minute)
+  let timestamp = wallClockAsUtc - timezoneOffsetMilliseconds(wallClockAsUtc)
+  timestamp = wallClockAsUtc - timezoneOffsetMilliseconds(timestamp)
+  return new Date(timestamp).toISOString()
 }
 
 function formatMinutes(value) {
@@ -266,7 +292,7 @@ function createActionCell(row) {
 function formatCorrectionDateTime(value, timezone) {
   if (!value) return '—'
   return new Intl.DateTimeFormat('en-US', {
-    timeZone: timezone || access?.timezone || 'Asia/Manila',
+    timeZone: WORKFORCE_TIMEZONE,
     month: 'short',
     day: 'numeric',
     hour: 'numeric',
@@ -354,7 +380,7 @@ function initials(value) {
 function minutesOfDay(value, timezone) {
   if (!value) return null
   const parts = new Intl.DateTimeFormat('en-US', {
-    timeZone: timezone || access?.timezone || 'Asia/Manila',
+    timeZone: WORKFORCE_TIMEZONE,
     hour: '2-digit', minute: '2-digit', hourCycle: 'h23'
   }).formatToParts(new Date(value))
   const values = Object.fromEntries(parts.map(part => [part.type, part.value]))
@@ -609,7 +635,7 @@ function mergeAttendanceReferences(rows) {
         email: row.employee_email || '',
         employee_id: row.employee_id || '',
         team_id: row.team_id || null,
-        timezone: row.employee_timezone || access?.timezone || 'Asia/Manila'
+        timezone: WORKFORCE_TIMEZONE
       })
       employeeIds.add(row.employee_user_id)
     }
@@ -698,7 +724,7 @@ async function handleAddSubmit(messageElement) {
     return
   }
 
-  if (new Date(clockOut) < new Date(clockIn)) {
+  if (dateTimeLocalToIso(clockOut) < dateTimeLocalToIso(clockIn)) {
     setMessage(messageElement, 'Clock-out cannot be earlier than clock-in.', 'error')
     return
   }
@@ -711,8 +737,8 @@ async function handleAddSubmit(messageElement) {
     const { error } = await supabase.rpc('workforce_create_manual_attendance', {
       p_user_id: employeeId,
       p_work_date: workDate,
-      p_clock_in: new Date(clockIn).toISOString(),
-      p_clock_out: new Date(clockOut).toISOString(),
+      p_clock_in: dateTimeLocalToIso(clockIn),
+      p_clock_out: dateTimeLocalToIso(clockOut),
       p_schedule_id: scheduleId || null,
       p_attendance_status: status,
       p_reason: reason,
@@ -994,12 +1020,10 @@ async function handleCorrectionSubmit(messageElement) {
 
   setMessage(messageElement, 'Submitting correction…')
 
-  const parseInput = value => value ? new Date(value).toISOString() : null
-
   const { data, error } = await supabase.rpc('workforce_correct_attendance', {
     p_attendance_id: attendanceId,
-    p_new_clock_in: parseInput(newClockIn),
-    p_new_clock_out: parseInput(newClockOut),
+    p_new_clock_in: dateTimeLocalToIso(newClockIn),
+    p_new_clock_out: dateTimeLocalToIso(newClockOut),
     p_new_status: newStatus,
     p_schedule_id: scheduleId || null,
     p_admin_notes: adminNotes || null,

@@ -9,6 +9,7 @@ const LIVE_TIMEZONE_FILES = [
   'workforce.html',
   'scripts/attendance.js',
   'scripts/my-schedule-v2.js',
+  'scripts/team-attendance.js',
   'scripts/team-management.js',
   'scripts/workforce-schedules.js',
   'scripts/workforce.js',
@@ -42,4 +43,33 @@ test('timezone verification checks defaults, records, triggers, and audit entry'
   assert.match(verification, /where timezone = 'Asia\/Manila'/)
   assert.match(verification, /information_schema\.triggers/)
   assert.match(verification, /workforce_timezone_changed/)
+})
+
+test('team attendance converts datetime-local values as New York wall-clock time', async () => {
+  const source = await read('scripts/team-attendance.js')
+
+  assert.match(source, /const WORKFORCE_TIMEZONE = 'America\/New_York'/)
+  assert.match(source, /function dateTimeLocalToIso\(value\)/)
+  assert.match(source, /p_clock_in: dateTimeLocalToIso\(clockIn\)/)
+  assert.match(source, /p_new_clock_in: dateTimeLocalToIso\(newClockIn\)/)
+  assert.doesNotMatch(source, /new Date\(clockIn\)\.toISOString\(\)/)
+})
+
+test('sitewide timezone migration normalizes records, functions, defaults, and constraints', async () => {
+  const migration = await read('supabase/migrations/20260714110701_standardize_america_new_york_timezone.sql')
+  const verification = await read('supabase/verification/america_new_york_sitewide_check.sql')
+
+  for (const table of [
+    'profiles',
+    'work_schedules',
+    'work_schedule_templates',
+    'daily_operations_metrics',
+    'google_calendar_connections',
+    'sheet_sync_metadata'
+  ]) {
+    assert.match(migration, new RegExp(`(?:alter table|update) public\\.${table}`))
+  }
+  assert.match(migration, /pg_get_functiondef/)
+  assert.match(migration, /timezone_new_york_check/)
+  assert.match(verification, /where value is distinct from 'America\/New_York'/)
 })
