@@ -1,4 +1,4 @@
-@import url('https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@600&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@600&family=Poppins:wght@400;500;600;700&display=swap');
 
 body:has(.team-attendance-page){background:#eef1f5}
 .team-attendance-page{--ta-ink:#101c3a;--ta-muted:#5e718e;--ta-line:#d9dee7;--ta-paper:#eef1f5;--ta-blue:#315db4;--ta-red:#b3401d;--ta-amber:#a56616;--ta-green:#12735a;width:min(1080px,calc(100% - 20px));padding-top:18px;color:var(--ta-ink)}
@@ -89,6 +89,48 @@ body:has(.team-attendance-page){background:#eef1f5}
 .team-attendance-pagination .wf-row-btn{min-height:30px;padding:0 10px;font-size:.72rem}
 .team-attendance-page #teamAttendanceTableMessage{min-height:0;margin-top:8px;font-size:.72rem}
 
+/* Correction dialog: exact current-to-new comparison layout. */
+#teamAttendanceCorrectionModal{padding:0;font-family:'Poppins',Arial,sans-serif;color:#27334b}
+#teamAttendanceCorrectionModal .wf-backdrop{background:rgba(15,23,42,.48);backdrop-filter:blur(2px)}
+#teamAttendanceCorrectionModal .team-attendance-correction-dialog{display:grid;grid-template-rows:auto minmax(0,1fr);width:min(100%,620px);height:min(100vh,810px);max-height:100vh;padding:0;overflow:hidden;border:1px solid #d9e0e9;border-radius:0;background:#fff;box-shadow:0 24px 70px rgba(15,23,42,.24)}
+#teamAttendanceCorrectionModal .wf-dialog-header{align-items:flex-start;gap:18px;margin:0;padding:17px 14px 20px;border-bottom:1px solid #d9e0e9}
+#teamAttendanceCorrectionModal .wf-dialog-header h2{margin:0;color:#1e293b;font-family:'Poppins',Arial,sans-serif;font-size:21px;font-weight:700;line-height:1.3;letter-spacing:-.015em}
+#teamAttendanceCorrectionModal .wf-dialog-header .wf-message{max-width:445px;min-height:0;margin:9px 0 0;color:#64748b;font-size:13px;font-weight:400;line-height:1.45}
+#teamAttendanceCorrectionModal .wf-close{display:grid;place-items:center;width:34px;height:34px;flex:0 0 34px;padding:0;border:1px solid #d7dee8;border-radius:50%;background:#fff;color:#718096;font-family:Arial,sans-serif;font-size:20px;font-weight:300;line-height:1}
+#teamAttendanceCorrectionModal .wf-form{min-height:0;gap:0;grid-template-rows:minmax(0,1fr) auto}
+#teamAttendanceCorrectionModal .team-attendance-correction-body{min-height:0;padding:23px 13px 22px;overflow-y:auto;scrollbar-color:#808080 transparent;scrollbar-width:auto}
+#teamAttendanceCorrectionModal .team-attendance-correction-summary{display:grid;grid-template-columns:1.05fr .65fr 1.55fr;gap:18px;margin-bottom:23px;padding:14px 15px;border-radius:12px;background:#eef2f6}
+#teamAttendanceCorrectionModal .team-attendance-correction-summary>div,#teamAttendanceCorrectionModal .team-attendance-correction-summary>label{display:grid;align-content:start;min-width:0;margin:0}
+#teamAttendanceCorrectionModal .team-attendance-correction-summary span,#teamAttendanceCorrectionModal .team-attendance-change-row label>span,#teamAttendanceCorrectionModal .team-attendance-current-value>span{color:#71829a;font-size:10.5px;font-weight:700;line-height:1.3;letter-spacing:.025em;text-transform:uppercase}
+#teamAttendanceCorrectionModal .team-attendance-correction-summary strong{margin-top:5px;color:#27334b;font-size:13px;font-weight:600;line-height:1.35}
+#teamAttendanceCorrectionModal .team-attendance-correction-summary small{margin-top:4px;color:#71829a;font-size:11px;line-height:1.35}
+#teamAttendanceCorrectionModal #teamAttendanceCorrectionSchedule{width:100%;margin:2px 0 0;padding:0;border:0;background:transparent;color:#27334b;font:600 13px/1.35 'Poppins',Arial,sans-serif;outline:none;appearance:none;white-space:nowrap;text-overflow:ellipsis}
+#teamAttendanceCorrectionModal #teamAttendanceCorrectionSchedule:focus{box-shadow:0 1px 0 #159980}
+#teamAttendanceCorrectionModal .team-attendance-correction-changes h3,#teamAttendanceCorrectionModal .team-attendance-correction-reason h3{margin:0;padding:0 0 17px;border-bottom:1px solid #d9e0e9;color:#27334b;font-size:12px;font-weight:700;line-height:1.3;letter-spacing:.025em;text-transform:uppercase}
+#teamAttendanceCorrectionModal .team-attendance-change-row{display:grid;grid-template-columns:86px minmax(0,1fr) 20px minmax(0,1fr);align-items:center;gap:14px;min-height:84px;border-bottom:1px solid #d9e0e9}
+#teamAttendanceCorrectionModal .team-attendance-change-row>strong{font-size:12.5px;font-weight:600}
+#teamAttendanceCorrectionModal .team-attendance-current-value{display:grid;gap:5px;min-height:57px;padding:9px 12px;border:1px solid #d9e0e9;border-radius:8px;background:#eef2f6}
+#teamAttendanceCorrectionModal .team-attendance-current-value output{color:#64748b;font:500 13px/1.4 'IBM Plex Mono','Courier New',monospace;white-space:nowrap}
+#teamAttendanceCorrectionModal .team-attendance-change-arrow{color:#94a3b8;font-size:17px;text-align:center}
+#teamAttendanceCorrectionModal .team-attendance-change-row label{display:grid;gap:5px;min-width:0}
+#teamAttendanceCorrectionModal .wf-control{width:100%;min-height:42px;padding:8px 12px;border:1px solid #d9e0e9;border-radius:8px;background:#fff;color:#27334b;font-family:'Poppins',Arial,sans-serif;font-size:13px;font-weight:400;line-height:1.4;box-shadow:none}
+#teamAttendanceCorrectionModal .team-attendance-change-row input.wf-control{font-family:'IBM Plex Mono','Courier New',monospace;font-weight:500}
+#teamAttendanceCorrectionModal .wf-control:focus{border-color:#159980;box-shadow:none}
+#teamAttendanceCorrectionModal .team-attendance-correction-reason{margin-top:25px}
+#teamAttendanceCorrectionModal .team-attendance-correction-reason>div{display:grid;grid-template-columns:1fr 1fr;gap:18px;padding-top:22px}
+#teamAttendanceCorrectionModal .wf-field{gap:7px}
+#teamAttendanceCorrectionModal .wf-field>span{color:#71829a;font-size:10.5px;font-weight:700;line-height:1.3;letter-spacing:.025em;text-transform:uppercase}
+#teamAttendanceCorrectionModal textarea.wf-control{min-height:70px;padding:10px 12px;resize:vertical}
+#teamAttendanceCorrectionModal #teamAttendanceCorrectionMessage{min-height:20px;margin:14px 0 0;color:#64748b;font-size:12px;font-weight:600;line-height:1.45}
+#teamAttendanceCorrectionModal #teamAttendanceCorrectionMessage.error{color:#b4232c}
+#teamAttendanceCorrectionModal #teamAttendanceCorrectionMessage.success{color:#12735a}
+#teamAttendanceCorrectionModal .wf-dialog-actions{gap:10px;margin:0;padding:18px 24px;border-top:1px solid #d9e0e9;background:#fff}
+#teamAttendanceCorrectionModal .wf-dialog-actions .wf-btn{min-height:44px;width:auto;padding:0 19px;border:1px solid #d9e0e9;border-radius:9px;background:#fff;color:#111827;font-family:'Poppins',Arial,sans-serif;font-size:13px;font-weight:600;box-shadow:none;transform:none}
+#teamAttendanceCorrectionModal .wf-dialog-actions #teamAttendanceCorrectionSubmit{border-color:#15203b;background:#15203b;color:#fff}
+#teamAttendanceCorrectionModal .wf-dialog-actions .wf-btn:hover:not(:disabled){box-shadow:none;transform:none}
+#teamAttendanceCorrectionModal .wf-dialog-actions .wf-btn.secondary:hover:not(:disabled){background:#f8fafc}
+#teamAttendanceCorrectionModal .wf-dialog-actions #teamAttendanceCorrectionSubmit:hover:not(:disabled){background:#202d4c}
+
 @media(max-width:980px){
   .team-attendance-filter-grid{grid-template-columns:repeat(3,minmax(0,1fr))}
   .team-attendance-stats{grid-template-columns:repeat(4,minmax(70px,1fr))}
@@ -105,4 +147,12 @@ body:has(.team-attendance-page){background:#eef1f5}
   .team-attendance-record-footer,.team-attendance-pagination{align-items:stretch;flex-direction:column}
   .team-attendance-record .wf-row-actions{width:100%}
   .team-attendance-record .wf-btn.compact{width:100%}
+  #teamAttendanceCorrectionModal .team-attendance-correction-dialog{height:100vh;max-height:100vh}
+  #teamAttendanceCorrectionModal .team-attendance-correction-summary{grid-template-columns:1fr 1fr}
+  #teamAttendanceCorrectionModal .team-attendance-correction-summary>label{grid-column:1/-1}
+  #teamAttendanceCorrectionModal .team-attendance-change-row{grid-template-columns:1fr;gap:9px;padding:12px 0}
+  #teamAttendanceCorrectionModal .team-attendance-change-arrow{display:none}
+  #teamAttendanceCorrectionModal .team-attendance-correction-reason>div{grid-template-columns:1fr}
+  #teamAttendanceCorrectionModal .wf-dialog-actions{width:100%;flex-direction:row;justify-content:flex-end;padding:14px}
+  #teamAttendanceCorrectionModal .wf-dialog-actions .wf-btn{width:auto}
 }

@@ -115,6 +115,9 @@ test('Team Attendance uses the compact card design and paginates five records at
   assert.match(styles, /\.team-attendance-timeline\{/)
   assert.match(styles, /\.team-attendance-filter-grid\{[^}]*repeat\(6/)
   assert.match(styles, /\.team-attendance-record-mid \.team-attendance-meta:nth-child\(n\+2\) strong\{font-family:'IBM Plex Mono','Courier New',monospace/)
+  assert.match(styles, /#teamAttendanceCorrectionModal \.team-attendance-correction-dialog\{[^}]*width:min\(100%,620px\)/)
+  assert.match(styles, /#teamAttendanceCorrectionModal \.wf-dialog-header h2\{[^}]*font-family:'Poppins'/)
+  assert.match(styles, /#teamAttendanceCorrectionModal \.wf-dialog-actions #teamAttendanceCorrectionSubmit\{[^}]*background:#15203b/)
 })
 
 test('Step 10 data service enforces permission and supervisor scope', async () => {
@@ -136,6 +139,9 @@ test('Team Attendance displays correction modal and submits through correction R
   assert.match(page, /id="teamAttendanceCorrectionForm"/)
   assert.match(page, /id="teamAttendanceNewClockIn"/)
   assert.match(page, /id="teamAttendanceCorrectionSchedule"/)
+  assert.match(page, /class="team-attendance-correction-summary"/)
+  assert.match(page, /class="team-attendance-change-row"/)
+  assert.match(page, /id="teamAttendanceCorrectionCurrentStatus"/)
   assert.match(page, /id="teamAttendanceReasonCode"/)
   assert.match(script, /supabase\.rpc\('workforce_correct_attendance'/)
   assert.match(script, /function openCorrectionModal\(/)

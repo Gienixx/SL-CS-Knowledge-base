@@ -263,6 +263,17 @@ function createActionCell(row) {
   return cell
 }
 
+function formatCorrectionDateTime(value, timezone) {
+  if (!value) return '—'
+  return new Intl.DateTimeFormat('en-US', {
+    timeZone: timezone || access?.timezone || 'Asia/Manila',
+    month: 'short',
+    day: 'numeric',
+    hour: 'numeric',
+    minute: '2-digit'
+  }).format(new Date(value))
+}
+
 async function deleteAttendance(row, button) {
   if (!row.attendance_id || busy) return
 
@@ -861,6 +872,7 @@ function bindEvents() {
 
 async function loadCorrectionSchedules(row) {
   const select = document.getElementById('teamAttendanceCorrectionSchedule')
+  const status = document.getElementById('teamAttendanceCorrectionScheduleStatus')
   if (!select) return
 
   select.disabled = true
@@ -886,13 +898,21 @@ async function loadCorrectionSchedules(row) {
     const times = schedule.shift_start && schedule.shift_end
       ? `${formatDateTime(schedule.shift_start, schedule.timezone)} – ${formatDateTime(schedule.shift_end, schedule.timezone)}`
       : 'No shift times'
-    select.appendChild(new Option([times, specialDay, schedule.status].filter(Boolean).join(' · '), schedule.id))
+    const option = new Option(times, schedule.id)
+    option.dataset.status = [specialDay, schedule.status].filter(Boolean).join(' · ')
+    select.appendChild(option)
   }
 
   if (row.schedule_id && ![...select.options].some(option => option.value === row.schedule_id)) {
     select.appendChild(new Option(`Current shift · ${formatShift(row)}`, row.schedule_id))
   }
   select.value = row.schedule_id || ''
+  const updateStatus = () => {
+    const option = select.selectedOptions[0]
+    status.textContent = option?.dataset.status || (select.value ? 'Published' : 'Unscheduled')
+  }
+  select.onchange = updateStatus
+  updateStatus()
   select.disabled = false
 }
 
@@ -904,6 +924,7 @@ async function openCorrectionModal(row) {
   const workDateInput = document.getElementById('teamAttendanceCorrectionWorkDate')
   const currentClockInInput = document.getElementById('teamAttendanceCorrectionCurrentClockIn')
   const currentClockOutInput = document.getElementById('teamAttendanceCorrectionCurrentClockOut')
+  const currentStatusInput = document.getElementById('teamAttendanceCorrectionCurrentStatus')
   const newClockInInput = document.getElementById('teamAttendanceNewClockIn')
   const newClockOutInput = document.getElementById('teamAttendanceNewClockOut')
   const newStatusInput = document.getElementById('teamAttendanceNewStatus')
@@ -912,10 +933,12 @@ async function openCorrectionModal(row) {
   const adminNotesInput = document.getElementById('teamAttendanceAdminNotes')
 
   modal.dataset.attendanceId = row.attendance_id || ''
-  employeeInput.value = row.employee_name || 'Unknown employee'
-  workDateInput.value = formatDate(row.work_date)
-  currentClockInInput.value = formatDateTime(row.clock_in, row.employee_timezone, true)
-  currentClockOutInput.value = formatDateTime(row.clock_out, row.employee_timezone, true)
+  employeeInput.textContent = row.employee_name || 'Unknown employee'
+  document.getElementById('teamAttendanceCorrectionEmployeeDetails').textContent = [row.employee_id, row.team_name].filter(Boolean).join(' · ') || '—'
+  workDateInput.textContent = formatDate(row.work_date)
+  currentClockInInput.textContent = formatCorrectionDateTime(row.clock_in, row.employee_timezone)
+  currentClockOutInput.textContent = formatCorrectionDateTime(row.clock_out, row.employee_timezone)
+  currentStatusInput.textContent = row.is_open ? 'Open session' : ATTENDANCE_STATUS_LABELS[row.attendance_status] || row.attendance_status || '—'
   newClockInInput.value = toDateTimeLocal(row.clock_in)
   newClockOutInput.value = toDateTimeLocal(row.clock_out)
   newStatusInput.value = row.attendance_status || 'present'

@@ -6,7 +6,7 @@
   <title>Team Attendance | SocialLoop CS Base</title>
   <link rel="stylesheet" href="./styles/button-theme.css?v=1">
   <link rel="stylesheet" href="./styles/workforce-admin.css?v=2">
-  <link rel="stylesheet" href="./styles/team-attendance.css?v=3">
+  <link rel="stylesheet" href="./styles/team-attendance.css?v=5">
 </head>
 <body>
   <main class="wf-page team-attendance-page">
@@ -196,7 +196,7 @@
 
   <div class="wf-modal" id="teamAttendanceCorrectionModal" role="dialog" aria-modal="true" aria-labelledby="teamAttendanceCorrectionModalTitle" hidden>
     <button class="wf-backdrop" type="button" data-close="teamAttendanceCorrectionModal" aria-label="Close attendance correction dialog"></button>
-    <section class="wf-dialog compact">
+    <section class="wf-dialog compact team-attendance-correction-dialog">
       <div class="wf-dialog-header">
         <div>
           <h2 id="teamAttendanceCorrectionModalTitle">Correct attendance record</h2>
@@ -206,71 +206,80 @@
       </div>
 
       <form id="teamAttendanceCorrectionForm" class="wf-form">
-        <div class="wf-form-grid">
-          <label class="wf-field">
-            <span>Employee</span>
-            <input id="teamAttendanceCorrectionEmployee" class="wf-control" type="text" readonly>
-          </label>
-          <label class="wf-field">
-            <span>Work date</span>
-            <input id="teamAttendanceCorrectionWorkDate" class="wf-control" type="text" readonly>
-          </label>
-          <label class="wf-field wf-full-width">
-            <span>Assigned shift</span>
-            <select id="teamAttendanceCorrectionSchedule" class="wf-control">
-              <option value="">Unscheduled (RDOT)</option>
-            </select>
-          </label>
-          <label class="wf-field">
-            <span>Current clock-in</span>
-            <input id="teamAttendanceCorrectionCurrentClockIn" class="wf-control" type="text" readonly>
-          </label>
-          <label class="wf-field">
-            <span>Current clock-out</span>
-            <input id="teamAttendanceCorrectionCurrentClockOut" class="wf-control" type="text" readonly>
-          </label>
-          <label class="wf-field">
-            <span>New clock-in</span>
-            <input id="teamAttendanceNewClockIn" class="wf-control" type="datetime-local">
-          </label>
-          <label class="wf-field">
-            <span>New clock-out</span>
-            <input id="teamAttendanceNewClockOut" class="wf-control" type="datetime-local">
-          </label>
-          <label class="wf-field">
-            <span>New status</span>
-            <select id="teamAttendanceNewStatus" class="wf-control">
-              <option value="present">Present</option>
-              <option value="absent">Absent</option>
-              <option value="on_leave">On leave</option>
-              <option value="excused">Excused</option>
-            </select>
-          </label>
-          <label class="wf-field">
-            <span>Correction reason</span>
-            <select id="teamAttendanceReasonCode" class="wf-control" required>
-              <option value="">Select a reason</option>
-              <option value="forgot_clock_in">Forgot clock-in</option>
-              <option value="forgot_clock_out">Forgot clock-out</option>
-              <option value="system_issue">System issue</option>
-              <option value="connection_issue">Connection issue</option>
-              <option value="incorrect_schedule">Incorrect schedule</option>
-              <option value="approved_overtime">Approved overtime</option>
-              <option value="manager_confirmed">Manager confirmed</option>
-              <option value="other">Other</option>
-            </select>
-          </label>
-          <label class="wf-field">
-            <span>Reason notes</span>
-            <textarea id="teamAttendanceReasonNotes" class="wf-control" rows="4" placeholder="Required when reason is Other"></textarea>
-          </label>
-          <label class="wf-field wf-full-width">
-            <span>Admin notes</span>
-            <textarea id="teamAttendanceAdminNotes" class="wf-control" rows="3" placeholder="Optional notes for audit and review"></textarea>
-          </label>
-        </div>
+        <div class="team-attendance-correction-body">
+          <section class="team-attendance-correction-summary" aria-label="Attendance record summary">
+            <div>
+              <span>Employee</span>
+              <strong id="teamAttendanceCorrectionEmployee">Unknown employee</strong>
+              <small id="teamAttendanceCorrectionEmployeeDetails">—</small>
+            </div>
+            <div>
+              <span>Work date</span>
+              <strong id="teamAttendanceCorrectionWorkDate">—</strong>
+            </div>
+            <label>
+              <span>Assigned shift</span>
+              <select id="teamAttendanceCorrectionSchedule" aria-label="Assigned shift">
+                <option value="">Unscheduled (RDOT)</option>
+              </select>
+              <small id="teamAttendanceCorrectionScheduleStatus">Unscheduled</small>
+            </label>
+          </section>
 
-        <p id="teamAttendanceCorrectionMessage" class="wf-message" aria-live="polite"></p>
+          <section class="team-attendance-correction-changes" aria-labelledby="teamAttendanceChangingTitle">
+            <h3 id="teamAttendanceChangingTitle">What’s changing</h3>
+            <div class="team-attendance-change-row">
+              <strong>Clock-in</strong>
+              <div class="team-attendance-current-value"><span>Current</span><output id="teamAttendanceCorrectionCurrentClockIn">—</output></div>
+              <span class="team-attendance-change-arrow" aria-hidden="true">→</span>
+              <label><span>New</span><input id="teamAttendanceNewClockIn" class="wf-control" type="datetime-local"></label>
+            </div>
+            <div class="team-attendance-change-row">
+              <strong>Clock-out</strong>
+              <div class="team-attendance-current-value"><span>Current</span><output id="teamAttendanceCorrectionCurrentClockOut">—</output></div>
+              <span class="team-attendance-change-arrow" aria-hidden="true">→</span>
+              <label><span>New</span><input id="teamAttendanceNewClockOut" class="wf-control" type="datetime-local"></label>
+            </div>
+            <div class="team-attendance-change-row">
+              <strong>Status</strong>
+              <div class="team-attendance-current-value"><span>Current</span><output id="teamAttendanceCorrectionCurrentStatus">—</output></div>
+              <span class="team-attendance-change-arrow" aria-hidden="true">→</span>
+              <label><span>New</span><select id="teamAttendanceNewStatus" class="wf-control">
+                <option value="present">Present</option>
+                <option value="absent">Absent</option>
+                <option value="on_leave">On leave</option>
+                <option value="excused">Excused</option>
+              </select></label>
+            </div>
+          </section>
+
+          <section class="team-attendance-correction-reason" aria-labelledby="teamAttendanceReasonTitle">
+            <h3 id="teamAttendanceReasonTitle">Correction reason</h3>
+            <div>
+              <label class="wf-field">
+                <span>Reason</span>
+                <select id="teamAttendanceReasonCode" class="wf-control" required>
+                  <option value="">Select a reason</option>
+                  <option value="forgot_clock_in">Forgot clock-in</option>
+                  <option value="forgot_clock_out">Forgot clock-out</option>
+                  <option value="system_issue">System issue</option>
+                  <option value="connection_issue">Connection issue</option>
+                  <option value="incorrect_schedule">Incorrect schedule</option>
+                  <option value="approved_overtime">Approved overtime</option>
+                  <option value="manager_confirmed">Manager confirmed</option>
+                  <option value="other">Other</option>
+                </select>
+              </label>
+              <label class="wf-field">
+                <span>Reason notes (optional)</span>
+                <textarea id="teamAttendanceReasonNotes" class="wf-control" rows="3" placeholder="Required when reason is Other"></textarea>
+              </label>
+            </div>
+          </section>
+
+          <input id="teamAttendanceAdminNotes" type="hidden">
+          <p id="teamAttendanceCorrectionMessage" class="wf-message" aria-live="polite"></p>
+        </div>
 
         <div class="wf-dialog-actions">
           <button class="wf-btn secondary" type="button" data-close="teamAttendanceCorrectionModal">Cancel</button>
