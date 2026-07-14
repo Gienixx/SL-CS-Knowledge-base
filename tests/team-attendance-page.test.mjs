@@ -135,12 +135,16 @@ test('Team Attendance displays correction modal and submits through correction R
   assert.match(page, /id="teamAttendanceCorrectionModal"/)
   assert.match(page, /id="teamAttendanceCorrectionForm"/)
   assert.match(page, /id="teamAttendanceNewClockIn"/)
+  assert.match(page, /id="teamAttendanceCorrectionSchedule"/)
   assert.match(page, /id="teamAttendanceReasonCode"/)
   assert.match(script, /supabase\.rpc\('workforce_correct_attendance'/)
   assert.match(script, /function openCorrectionModal\(/)
+  assert.match(script, /function loadCorrectionSchedules\(/)
+  assert.match(script, /\.eq\('shift_date', row\.work_date\)/)
   assert.match(script, /modal\.dataset\.attendanceId = row\.attendance_id \|\| ''/)
   assert.match(script, /function handleCorrectionSubmit\(/)
   assert.match(script, /p_new_clock_in: parseInput\(newClockIn\)/)
+  assert.match(script, /p_schedule_id: scheduleId \|\| null/)
 })
 
 test('Step 10 uses structured calculations and identifies open attendance exceptions', async () => {

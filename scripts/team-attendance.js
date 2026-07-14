@@ -859,7 +859,44 @@ function bindEvents() {
   })
 }
 
-function openCorrectionModal(row) {
+async function loadCorrectionSchedules(row) {
+  const select = document.getElementById('teamAttendanceCorrectionSchedule')
+  if (!select) return
+
+  select.disabled = true
+  select.replaceChildren(new Option('Loading shifts…', ''))
+
+  const { data, error } = await supabase
+    .from('work_schedules')
+    .select('id, shift_start, shift_end, timezone, status, is_rest_day, is_holiday, holiday_name')
+    .eq('user_id', row.employee_user_id)
+    .eq('shift_date', row.work_date)
+    .in('status', ['published', 'changed'])
+    .order('shift_start')
+
+  if (error) throw error
+
+  select.replaceChildren(new Option(row.schedule_id ? 'Keep current assigned shift' : 'Unscheduled (RDOT)', ''))
+  for (const schedule of data || []) {
+    const specialDay = schedule.is_rest_day
+      ? 'Rest day'
+      : schedule.is_holiday
+        ? schedule.holiday_name || 'Holiday'
+        : ''
+    const times = schedule.shift_start && schedule.shift_end
+      ? `${formatDateTime(schedule.shift_start, schedule.timezone)} – ${formatDateTime(schedule.shift_end, schedule.timezone)}`
+      : 'No shift times'
+    select.appendChild(new Option([times, specialDay, schedule.status].filter(Boolean).join(' · '), schedule.id))
+  }
+
+  if (row.schedule_id && ![...select.options].some(option => option.value === row.schedule_id)) {
+    select.appendChild(new Option(`Current shift · ${formatShift(row)}`, row.schedule_id))
+  }
+  select.value = row.schedule_id || ''
+  select.disabled = false
+}
+
+async function openCorrectionModal(row) {
   const modal = document.getElementById('teamAttendanceCorrectionModal')
   if (!modal) return
 
@@ -889,6 +926,11 @@ function openCorrectionModal(row) {
 
   modal.hidden = false
   document.body.classList.add('modal-open')
+  try {
+    await loadCorrectionSchedules(row)
+  } catch (error) {
+    setMessage(document.getElementById('teamAttendanceCorrectionMessage'), `Unable to load assigned shifts: ${errorMessage(error)}`, 'error')
+  }
   newClockInInput.focus()
 }
 
@@ -904,6 +946,7 @@ async function handleCorrectionSubmit(messageElement) {
   if (!modal) return
 
   const attendanceId = modal.dataset.attendanceId
+  const scheduleId = document.getElementById('teamAttendanceCorrectionSchedule').value
   const newClockIn = document.getElementById('teamAttendanceNewClockIn').value
   const newClockOut = document.getElementById('teamAttendanceNewClockOut').value
   const newStatus = document.getElementById('teamAttendanceNewStatus').value
@@ -935,6 +978,7 @@ async function handleCorrectionSubmit(messageElement) {
     p_new_clock_in: parseInput(newClockIn),
     p_new_clock_out: parseInput(newClockOut),
     p_new_status: newStatus,
+    p_schedule_id: scheduleId || null,
     p_admin_notes: adminNotes || null,
     p_reason_code: reasonCode,
     p_reason_notes: reasonNotes || null
