@@ -9,6 +9,8 @@ const manualEntryMigrationPath = 'supabase/migrations/20260714070649_manual_atte
 test('Step 10 page contains every required attendance column and filter', async () => {
   const page = await read('team-attendance.html')
 
+  assert.match(page, /href="\.\/home\.html">← Back to Home<\/a>/)
+
   for (const heading of [
     'Employee',
     'Team',
