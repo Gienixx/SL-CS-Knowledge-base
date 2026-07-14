@@ -18,7 +18,26 @@ test('workforce administration includes the schedule management interface', asyn
   assert.match(script, /hasWorkforcePermission\(access,\s*'manage_schedules'\)/)
   assert.match(script, /from\('work_schedules'\)/)
   assert.match(script, /workforce_admin_save_schedule/)
+  assert.match(script, /workforce_admin_delete_schedule/)
+  assert.match(script, /function deleteSchedule\(schedule, button\)/)
+  assert.match(script, /window\.confirm/)
   assert.match(script, /viewSelect\.value === 'month'/)
+})
+
+test('schedule deletion is admin-only, scoped, audited, and preserves attendance', async () => {
+  const [migration, verification] = await Promise.all([
+    read('supabase/migrations/20260714115839_workforce_schedule_delete.sql'),
+    read('supabase/verification/workforce_schedule_delete_check.sql')
+  ])
+
+  assert.match(migration, /not public\.workforce_is_admin\(\)/)
+  assert.match(migration, /workforce_has_permission\('manage_schedules'\)/)
+  assert.match(migration, /workforce_can_manage_user\(v_schedule\.user_id, 'manage_schedules'\)/)
+  assert.match(migration, /delete from public\.work_schedules/)
+  assert.match(migration, /detached_attendance_records/)
+  assert.match(migration, /revoke all[\s\S]*from anon/)
+  assert.match(migration, /grant execute[\s\S]*to authenticated/)
+  assert.match(verification, /schedule_delete_is_audited/)
 })
 
 test('schedule RPC enforces authorization, validation, and change visibility', async () => {

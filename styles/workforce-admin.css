@@ -81,6 +81,8 @@ textarea.wf-control{min-height:96px;resize:vertical;line-height:1.5}
 .wf-row-actions{display:flex;gap:8px;flex-wrap:wrap}
 .wf-row-btn{min-height:34px;padding:0 12px;border:1px solid var(--wf-border);border-radius:999px;background:#fff;color:var(--wf-navy);font-weight:800}
 .wf-row-btn:hover{background:rgba(255,194,26,.11)}
+.wf-row-btn.danger{border-color:rgba(159,37,37,.32);color:var(--wf-danger)}
+.wf-row-btn.danger:hover{background:rgba(159,37,37,.08)}
 
 .wf-message{min-height:1.4em;margin:12px 2px 0;color:var(--wf-muted);font-weight:650;line-height:1.45}
 .wf-message.error{color:var(--wf-danger)}

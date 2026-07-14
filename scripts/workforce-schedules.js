@@ -330,6 +330,13 @@ if (section) {
       editButton.addEventListener('click', () => openSchedule(schedule.id))
       actionCell.appendChild(editButton)
 
+      const deleteButton = document.createElement('button')
+      deleteButton.type = 'button'
+      deleteButton.className = 'wf-row-btn danger'
+      deleteButton.textContent = 'Delete'
+      deleteButton.addEventListener('click', () => deleteSchedule(schedule, deleteButton))
+      actionCell.appendChild(deleteButton)
+
       row.append(
         textCell(formatDate(schedule.shift_date), `Sequence ${schedule.shift_sequence}`),
         textCell(profile?.full_name || 'Unknown employee', profile?.employee_id || ''),
@@ -569,6 +576,33 @@ if (section) {
       setMessage(formMessage, errorMessage(error), 'error')
     } finally {
       setLoading(saveButton, false, 'Saving...', 'Save Schedule')
+    }
+  }
+
+  async function deleteSchedule(schedule, button) {
+    const profile = profileById(schedule.user_id)
+    const employeeName = profile?.full_name || 'this employee'
+    const confirmed = window.confirm(
+      `Delete ${employeeName}'s schedule for ${formatDate(schedule.shift_date)}? ` +
+      'Linked attendance records will be kept. This cannot be undone.'
+    )
+
+    if (!confirmed) return
+
+    setLoading(button, true, 'Deleting...', 'Delete')
+    setMessage(scheduleMessage, 'Deleting schedule entry...')
+
+    try {
+      const { error } = await supabase.rpc('workforce_admin_delete_schedule', {
+        p_schedule_id: schedule.id
+      })
+      if (error) throw error
+
+      await loadScheduleData()
+      setMessage(scheduleMessage, 'Schedule entry deleted successfully.', 'success')
+    } catch (error) {
+      setMessage(scheduleMessage, errorMessage(error), 'error')
+      setLoading(button, false, 'Deleting...', 'Delete')
     }
   }
 
