@@ -114,6 +114,7 @@ test('Team Attendance uses the compact card design and paginates five records at
   assert.match(styles, /\.team-attendance-record\{/)
   assert.match(styles, /\.team-attendance-timeline\{/)
   assert.match(styles, /\.team-attendance-filter-grid\{[^}]*repeat\(6/)
+  assert.match(styles, /\.team-attendance-record-mid \.team-attendance-meta:nth-child\(n\+2\) strong\{font-family:'IBM Plex Mono','Courier New',monospace/)
 })
 
 test('Step 10 data service enforces permission and supervisor scope', async () => {
