@@ -6,18 +6,18 @@
   <title>Team Attendance | SocialLoop CS Base</title>
   <link rel="stylesheet" href="./styles/button-theme.css?v=1">
   <link rel="stylesheet" href="./styles/workforce-admin.css?v=2">
-  <link rel="stylesheet" href="./styles/team-attendance.css?v=1">
+  <link rel="stylesheet" href="./styles/team-attendance.css?v=2">
 </head>
 <body>
   <main class="wf-page team-attendance-page">
     <header class="wf-topbar">
       <div class="wf-title">
         <h1>Team Attendance</h1>
-        <p>Review authorized employee attendance, structured work-time calculations, overtime, missing clock-outs, and correction status.</p>
+        <p>Clock-in and clock-out times against each assigned shift, at a glance.</p>
       </div>
       <nav class="wf-nav" aria-label="Team attendance navigation">
         <a id="teamAttendanceWorkforceLink" class="wf-link" href="./workforce.html" hidden>Workforce Management</a>
-        <a class="wf-link" href="./home.html">← Back to Home</a>
+        <button id="teamAttendanceAddButton" class="wf-btn" type="button" hidden>Add attendance</button>
       </nav>
     </header>
 
@@ -28,19 +28,22 @@
       <article class="wf-summary"><span>Overtime records</span><strong id="teamAttendanceOvertimeCount">—</strong></article>
     </section>
 
-    <section class="wf-card team-attendance-filter-card" aria-labelledby="teamAttendanceFiltersTitle">
-      <div class="wf-card-header">
-        <div>
-          <h2 id="teamAttendanceFiltersTitle">Attendance Filters</h2>
-          <p id="teamAttendanceScope" class="wf-message team-attendance-scope">Loading your authorized attendance scope...</p>
-        </div>
-        <div class="wf-actions">
-          <button id="teamAttendanceResetButton" class="wf-btn secondary" type="button">Reset</button>
-          <button id="teamAttendanceRefreshButton" class="wf-btn" type="button">Refresh</button>
+    <section class="team-attendance-filter-card" aria-labelledby="teamAttendanceFiltersTitle">
+      <h2 id="teamAttendanceFiltersTitle" class="team-attendance-visually-hidden">Attendance Filters</h2>
+      <div class="team-attendance-quick-filters">
+        <input id="teamAttendanceSearch" class="team-attendance-search" type="search" placeholder="Search by employee name..." aria-label="Search by employee name">
+        <div class="team-attendance-chips" role="group" aria-label="Quick attendance filters">
+          <button class="team-attendance-chip active" type="button" data-attendance-quick-filter="all">All</button>
+          <button class="team-attendance-chip" type="button" data-attendance-quick-filter="open">Open</button>
+          <button class="team-attendance-chip" type="button" data-attendance-quick-filter="missing">Missing clock-out</button>
+          <button class="team-attendance-chip" type="button" data-attendance-quick-filter="overtime">Overtime</button>
+          <button class="team-attendance-chip" type="button" data-attendance-quick-filter="review">Needs review</button>
         </div>
       </div>
-
-      <div class="team-attendance-filter-grid">
+      <details class="team-attendance-advanced-filters">
+        <summary>Advanced filters</summary>
+        <p id="teamAttendanceScope" class="wf-message team-attendance-scope">Loading your authorized attendance scope...</p>
+        <div class="team-attendance-filter-grid">
         <label class="wf-field">
           <span>Start date</span>
           <input id="teamAttendanceStartDate" class="wf-control" type="date" required>
@@ -97,7 +100,12 @@
         </label>
       </fieldset>
 
+      <div class="team-attendance-filter-actions">
+        <button id="teamAttendanceResetButton" class="wf-btn secondary" type="button">Reset</button>
+        <button id="teamAttendanceRefreshButton" class="wf-btn" type="button">Refresh</button>
+      </div>
       <p id="teamAttendanceFilterMessage" class="wf-message" aria-live="polite"></p>
+      </details>
     </section>
 
     <section class="wf-card" aria-labelledby="teamAttendanceTableTitle">
@@ -106,37 +114,19 @@
           <h2 id="teamAttendanceTableTitle">Attendance Records</h2>
           <p class="wf-message team-attendance-table-note">Clock-in and clock-out are effective values. Authorized administrators can correct records or permanently delete invalid test and timing records.</p>
         </div>
-        <button id="teamAttendanceAddButton" class="wf-btn" type="button" hidden>Add attendance</button>
       </div>
 
-      <div class="wf-table-wrap team-attendance-table-wrap">
-        <table class="wf-table team-attendance-table">
-          <thead>
-            <tr>
-              <th>Employee</th>
-              <th>Team</th>
-              <th>Work date</th>
-              <th>Assigned shift</th>
-              <th>Clock-in</th>
-              <th>Clock-out</th>
-              <th>Regular time</th>
-              <th>Pre-shift overtime</th>
-              <th>Post-shift overtime</th>
-              <th>Total overtime</th>
-              <th>Late minutes</th>
-              <th>Undertime</th>
-              <th>Status</th>
-              <th>Correction status</th>
-          <th>Actions</th>
-          <th>Last corrected by</th>
-          <th>Last corrected date</th>
-        </tr>
-      </thead>
-      <tbody id="teamAttendanceTableBody">
-        <tr><td colspan="17" class="wf-empty">Loading team attendance...</td></tr>
-      </tbody>
-    </table>
-  </div>
+      <div class="team-attendance-column-contract" aria-hidden="true"><span>Employee</span><span>Team</span><span>Work date</span><span>Assigned shift</span><span>Clock-in</span><span>Clock-out</span><span>Regular time</span><span>Pre-shift overtime</span><span>Post-shift overtime</span><span>Total overtime</span><span>Late minutes</span><span>Undertime</span><span>Status</span><span>Correction status</span><span>Actions</span><span>Last corrected by</span><span>Last corrected date</span></div>
+      <div id="teamAttendanceTableBody" class="team-attendance-list" aria-live="polite">
+        <div class="wf-empty">Loading team attendance...</div>
+      </div>
+      <nav id="teamAttendancePagination" class="team-attendance-pagination" aria-label="Attendance record pages" hidden>
+        <span id="teamAttendancePageInfo">Page 1 of 1</span>
+        <div class="wf-actions">
+          <button id="teamAttendancePreviousPage" class="wf-row-btn" type="button">← Previous</button>
+          <button id="teamAttendanceNextPage" class="wf-row-btn" type="button">Next →</button>
+        </div>
+      </nav>
   <p id="teamAttendanceTableMessage" class="wf-message" aria-live="polite"></p>
 </section>
 

@@ -18,6 +18,7 @@ const REVIEW_STATUS_LABELS = Object.freeze({
   rejected: 'Rejected',
   locked: 'Locked'
 })
+const ATTENDANCE_PAGE_SIZE = 5
 
 const elements = {
   workforceLink: document.getElementById('teamAttendanceWorkforceLink'),
@@ -26,6 +27,7 @@ const elements = {
   missingCount: document.getElementById('teamAttendanceMissingCount'),
   overtimeCount: document.getElementById('teamAttendanceOvertimeCount'),
   scope: document.getElementById('teamAttendanceScope'),
+  search: document.getElementById('teamAttendanceSearch'),
   startDate: document.getElementById('teamAttendanceStartDate'),
   endDate: document.getElementById('teamAttendanceEndDate'),
   employeeFilter: document.getElementById('teamAttendanceEmployeeFilter'),
@@ -40,7 +42,11 @@ const elements = {
   addButton: document.getElementById('teamAttendanceAddButton'),
   filterMessage: document.getElementById('teamAttendanceFilterMessage'),
   tableBody: document.getElementById('teamAttendanceTableBody'),
-  tableMessage: document.getElementById('teamAttendanceTableMessage')
+  tableMessage: document.getElementById('teamAttendanceTableMessage'),
+  pagination: document.getElementById('teamAttendancePagination'),
+  pageInfo: document.getElementById('teamAttendancePageInfo'),
+  previousPage: document.getElementById('teamAttendancePreviousPage'),
+  nextPage: document.getElementById('teamAttendanceNextPage')
 }
 
 let access = null
@@ -48,6 +54,8 @@ let employees = []
 let teams = []
 let attendanceRows = []
 let busy = false
+let attendancePage = 1
+let attendanceQuickFilter = 'all'
 
 function errorMessage(error) {
   return error?.message || 'An unexpected error occurred.'
@@ -293,6 +301,7 @@ async function deleteAttendance(row, button) {
 }
 
 function filteredRows() {
+  const search = elements.search.value.trim().toLowerCase()
   const employeeId = elements.employeeFilter.value
   const teamId = elements.teamFilter.value
   const status = elements.statusFilter.value
@@ -302,6 +311,12 @@ function filteredRows() {
   const overtimeOnly = elements.overtimeFilter.checked
 
   return attendanceRows.filter(row => {
+    if (search && ![row.employee_name, row.employee_id, row.employee_email]
+      .some(value => String(value || '').toLowerCase().includes(search))) return false
+    if (attendanceQuickFilter === 'open' && !row.is_open) return false
+    if (attendanceQuickFilter === 'missing' && !row.is_missing_clock_out) return false
+    if (attendanceQuickFilter === 'overtime' && Number(row.total_overtime_minutes) <= 0) return false
+    if (attendanceQuickFilter === 'review' && row.review_status !== 'pending' && !row.is_missing_clock_out) return false
     if (employeeId && row.employee_user_id !== employeeId) return false
     if (teamId && row.team_id !== teamId) return false
     if (status && row.attendance_status !== status) return false
@@ -321,67 +336,190 @@ function renderSummary(rows) {
   elements.overtimeCount.textContent = rows.filter(row => Number(row.total_overtime_minutes) > 0).length
 }
 
+function initials(value) {
+  return String(value || '?').trim().split(/\s+/).slice(0, 2).map(part => part[0] || '').join('').toUpperCase()
+}
+
+function minutesOfDay(value, timezone) {
+  if (!value) return null
+  const parts = new Intl.DateTimeFormat('en-US', {
+    timeZone: timezone || access?.timezone || 'Asia/Manila',
+    hour: '2-digit', minute: '2-digit', hourCycle: 'h23'
+  }).formatToParts(new Date(value))
+  const values = Object.fromEntries(parts.map(part => [part.type, part.value]))
+  return Number(values.hour) * 60 + Number(values.minute)
+}
+
+function addMeta(parent, primary, secondary) {
+  const item = document.createElement('div')
+  item.className = 'team-attendance-meta'
+  const strong = document.createElement('strong')
+  strong.textContent = primary || '—'
+  const span = document.createElement('span')
+  span.textContent = secondary
+  item.append(strong, span)
+  parent.appendChild(item)
+}
+
+function addStat(parent, value, label) {
+  const item = document.createElement('div')
+  item.className = 'team-attendance-stat'
+  const strong = document.createElement('strong')
+  strong.textContent = formatMinutes(value)
+  const span = document.createElement('span')
+  span.textContent = label
+  item.append(strong, span)
+  parent.appendChild(item)
+}
+
+function addBadge(parent, label, modifier) {
+  const badge = document.createElement('span')
+  badge.className = `wf-badge ${modifier}`
+  badge.textContent = label
+  parent.appendChild(badge)
+}
+
+function presentationStatus(record) {
+  if (record.is_open) return { label: 'In progress', modifier: 'in-progress' }
+  if (record.is_missing_clock_out) return { label: 'Missing clock-out', modifier: 'needs-review' }
+  if (record.review_status === 'pending') return { label: 'Needs review', modifier: 'needs-review' }
+  if (Number(record.total_worked_minutes) >= 720 && Number(record.regular_minutes) === 0 && record.schedule_id) {
+    return { label: 'Flagged', modifier: 'needs-review' }
+  }
+  if (Number(record.total_overtime_minutes) > 0) return { label: 'Overtime', modifier: 'overtime' }
+  return { label: 'Completed', modifier: 'completed' }
+}
+
+function createTimeline(record) {
+  const timeline = document.createElement('div')
+  timeline.className = 'team-attendance-timeline'
+  const track = document.createElement('div')
+  track.className = 'team-attendance-track'
+  const timezone = record.schedule_timezone || record.employee_timezone
+  const shiftStart = minutesOfDay(record.scheduled_start, timezone)
+  const shiftEnd = minutesOfDay(record.scheduled_end, timezone)
+  const workStart = minutesOfDay(record.clock_in, timezone)
+  const workEnd = minutesOfDay(record.clock_out || (record.is_open ? new Date() : null), timezone)
+
+  const addSegment = (className, start, end) => {
+    if (start === null || end === null) return
+    const adjustedEnd = end < start ? 1440 : end
+    const segment = document.createElement('span')
+    segment.className = className
+    segment.style.left = `${Math.max(0, start) / 14.4}%`
+    segment.style.width = `${Math.max(0.4, (Math.min(1440, adjustedEnd) - start) / 14.4)}%`
+    track.appendChild(segment)
+  }
+  addSegment('team-attendance-shift-segment', shiftStart, shiftEnd)
+  addSegment('team-attendance-work-segment', workStart, workEnd)
+  timeline.appendChild(track)
+
+  const labels = document.createElement('div')
+  labels.className = 'team-attendance-timeline-labels'
+  for (const label of ['12 AM', '6 AM', '12 PM', '6 PM', '12 AM']) {
+    const span = document.createElement('span')
+    span.textContent = label
+    labels.appendChild(span)
+  }
+  timeline.appendChild(labels)
+  return timeline
+}
+
+function createAttendanceCard(record) {
+  const card = document.createElement('article')
+  card.className = 'team-attendance-record'
+  if (record.is_open) card.classList.add('is-open')
+  if (record.is_missing_clock_out) card.classList.add('is-missing-clock-out')
+
+  const top = document.createElement('div')
+  top.className = 'team-attendance-record-top'
+  const person = document.createElement('div')
+  person.className = 'team-attendance-person'
+  const avatar = document.createElement('span')
+  avatar.className = 'team-attendance-avatar'
+  avatar.textContent = initials(record.employee_name)
+  const identity = document.createElement('div')
+  const name = document.createElement('div')
+  name.className = 'team-attendance-person-name'
+  name.textContent = record.employee_name || 'Unknown employee'
+  const sub = document.createElement('div')
+  sub.className = 'team-attendance-person-sub'
+  sub.textContent = record.team_name || 'Unassigned team'
+  identity.append(name, sub)
+  person.append(avatar, identity)
+  const badges = document.createElement('div')
+  badges.className = 'team-attendance-badges'
+  const displayStatus = presentationStatus(record)
+  card.classList.add(`status-${displayStatus.modifier}`)
+  addBadge(badges, displayStatus.label, displayStatus.modifier)
+  const actionMenu = document.createElement('details')
+  actionMenu.className = 'team-attendance-record-actions'
+  const actionSummary = document.createElement('summary')
+  actionSummary.textContent = '•••'
+  actionSummary.setAttribute('aria-label', `Actions for ${record.employee_name || 'attendance record'}`)
+  actionSummary.title = [
+    `Pre-shift OT: ${formatMinutes(record.pre_shift_overtime_minutes)}`,
+    `Post-shift OT: ${formatMinutes(record.post_shift_overtime_minutes)}`,
+    `Worked: ${formatMinutes(record.total_worked_minutes)}`,
+    `Undertime: ${formatMinutes(record.undertime_minutes)}`
+  ].join(' · ')
+  actionMenu.append(actionSummary, createActionCell(record).firstElementChild)
+  badges.appendChild(actionMenu)
+  top.append(person, badges)
+
+  const middle = document.createElement('div')
+  middle.className = 'team-attendance-record-mid'
+  addMeta(middle, formatDate(record.work_date), formatShift(record))
+  addMeta(middle, formatDateTime(record.clock_in, record.employee_timezone), 'Clock-in')
+  addMeta(middle, record.is_open ? 'In progress' : formatDateTime(record.clock_out, record.employee_timezone), 'Clock-out')
+
+  const stats = document.createElement('div')
+  stats.className = 'team-attendance-stats'
+  addStat(stats, record.regular_minutes, 'Regular')
+  addStat(stats, record.total_overtime_minutes, 'Overtime')
+  addStat(stats, record.minutes_late, 'Late')
+
+  const footer = document.createElement('div')
+  footer.className = 'team-attendance-record-footer'
+  const correction = document.createElement('div')
+  correction.className = 'team-attendance-correction'
+  const reviewStatus = REVIEW_STATUS_LABELS[record.review_status || 'pending'] || record.review_status
+  correction.textContent = record.is_corrected
+    ? `${reviewStatus} by ${record.corrected_by_name || 'administrator'}${record.corrected_at ? ` · ${formatDateTime(record.corrected_at, record.employee_timezone, true)}` : ''}${record.correction_reason ? ` · ${record.correction_reason}` : ''}`
+    : `Correction status: ${reviewStatus}`
+  footer.appendChild(correction)
+  card.append(top, middle, createTimeline(record), stats)
+  if (record.is_corrected || record.correction_reason || record.admin_notes) card.appendChild(footer)
+  return card
+}
+
 function renderTable() {
   const rows = filteredRows()
   elements.tableBody.replaceChildren()
+  const pageCount = Math.max(1, Math.ceil(rows.length / ATTENDANCE_PAGE_SIZE))
+  attendancePage = Math.min(Math.max(attendancePage, 1), pageCount)
+  const pageStart = (attendancePage - 1) * ATTENDANCE_PAGE_SIZE
+  const pageRows = rows.slice(pageStart, pageStart + ATTENDANCE_PAGE_SIZE)
 
   if (!rows.length) {
-    const row = document.createElement('tr')
-    const cell = document.createElement('td')
-    cell.colSpan = 16
-    cell.className = 'wf-empty'
-    cell.textContent = 'No attendance records match the selected filters.'
-    row.appendChild(cell)
-    elements.tableBody.appendChild(row)
+    const empty = document.createElement('div')
+    empty.className = 'wf-empty'
+    empty.textContent = 'No attendance records match the selected filters.'
+    elements.tableBody.appendChild(empty)
   } else {
-    rows.forEach(record => {
-      const row = document.createElement('tr')
-      if (record.is_open) row.classList.add('is-open')
-      if (record.is_missing_clock_out) row.classList.add('is-missing-clock-out')
-
-      const scheduleSecondary = [
-        record.schedule_status === 'changed' ? 'Changed schedule' : '',
-        record.shift_sequence ? `Shift ${record.shift_sequence}` : ''
-      ].filter(Boolean).join(' · ')
-
-      const clockOutSecondary = record.is_missing_clock_out
-        ? 'Required review'
-        : record.is_open
-          ? 'Session in progress'
-          : ''
-
-      const correctionSecondary = [record.correction_reason, record.admin_notes]
-        .filter(Boolean)
-        .join(' · ')
-
-      row.append(
-        createEmployeeCell(record),
-        createCell(record.team_name || 'Unassigned'),
-        createCell(formatDate(record.work_date), '', 'compact'),
-        createCell(formatShift(record), scheduleSecondary),
-        createCell(formatDateTime(record.clock_in, record.employee_timezone)),
-        createCell(formatDateTime(record.clock_out, record.employee_timezone), clockOutSecondary),
-        createMinutesCell(record.regular_minutes, `Worked ${formatMinutes(record.total_worked_minutes)}`),
-        createMinutesCell(record.pre_shift_overtime_minutes),
-        createMinutesCell(record.post_shift_overtime_minutes),
-        createMinutesCell(record.total_overtime_minutes),
-        createMinutesCell(record.minutes_late),
-        createMinutesCell(record.undertime_minutes),
-        createAttendanceStatusCell(record),
-        createCorrectionStatusCell(record),
-        createActionCell(record),
-        createCell(record.corrected_by_name || '—', correctionSecondary),
-        createCell(formatDateTime(record.corrected_at, record.employee_timezone, true))
-      )
-
-      elements.tableBody.appendChild(row)
-    })
+    pageRows.forEach(record => elements.tableBody.appendChild(createAttendanceCard(record)))
   }
 
   renderSummary(rows)
+  elements.pagination.hidden = rows.length <= ATTENDANCE_PAGE_SIZE
+  elements.pageInfo.textContent = `Page ${attendancePage} of ${pageCount}`
+  elements.previousPage.disabled = attendancePage === 1
+  elements.nextPage.disabled = attendancePage === pageCount
   setMessage(
     elements.tableMessage,
-    `${rows.length} of ${attendanceRows.length} attendance record${attendanceRows.length === 1 ? '' : 's'} shown.`
+    rows.length
+      ? `Showing ${pageStart + 1}–${pageStart + pageRows.length} of ${rows.length} filtered attendance records · ${attendanceRows.length} total loaded.`
+      : `0 of ${attendanceRows.length} attendance records shown.`
   )
 }
 
@@ -630,6 +768,12 @@ async function resetFilters() {
   elements.openFilter.checked = false
   elements.missingFilter.checked = false
   elements.overtimeFilter.checked = false
+  elements.search.value = ''
+  attendanceQuickFilter = 'all'
+  document.querySelectorAll('[data-attendance-quick-filter]').forEach(button => {
+    button.classList.toggle('active', button.dataset.attendanceQuickFilter === 'all')
+  })
+  attendancePage = 1
   await refreshAttendance()
 }
 
@@ -638,6 +782,20 @@ function bindEvents() {
   elements.resetButton.addEventListener('click', resetFilters)
   elements.addButton?.addEventListener('click', () => {
     openAddModal().catch(error => setMessage(elements.tableMessage, errorMessage(error), 'error'))
+  })
+  elements.search.addEventListener('input', () => {
+    attendancePage = 1
+    renderTable()
+  })
+  document.querySelectorAll('[data-attendance-quick-filter]').forEach(button => {
+    button.addEventListener('click', () => {
+      attendanceQuickFilter = button.dataset.attendanceQuickFilter
+      document.querySelectorAll('[data-attendance-quick-filter]').forEach(candidate => {
+        candidate.classList.toggle('active', candidate === button)
+      })
+      attendancePage = 1
+      renderTable()
+    })
   })
 
   for (const element of [
@@ -649,8 +807,25 @@ function bindEvents() {
     elements.missingFilter,
     elements.overtimeFilter
   ]) {
-    element.addEventListener('change', renderTable)
+    element.addEventListener('change', () => {
+      attendancePage = 1
+      renderTable()
+    })
   }
+
+  elements.previousPage.addEventListener('click', () => {
+    if (attendancePage <= 1) return
+    attendancePage -= 1
+    renderTable()
+    elements.tableBody.scrollIntoView({ behavior: 'smooth', block: 'start' })
+  })
+  elements.nextPage.addEventListener('click', () => {
+    const pageCount = Math.ceil(filteredRows().length / ATTENDANCE_PAGE_SIZE)
+    if (attendancePage >= pageCount) return
+    attendancePage += 1
+    renderTable()
+    elements.tableBody.scrollIntoView({ behavior: 'smooth', block: 'start' })
+  })
 
   const correctionForm = document.getElementById('teamAttendanceCorrectionForm')
   const correctionModal = document.getElementById('teamAttendanceCorrectionModal')

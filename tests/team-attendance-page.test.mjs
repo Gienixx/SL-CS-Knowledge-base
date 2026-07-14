@@ -99,6 +99,23 @@ test('Team Attendance lets schedule administrators add an audited manual record'
   assert.match(migration, /grant execute on function public\.workforce_create_manual_attendance[\s\S]*to authenticated/)
 })
 
+test('Team Attendance uses the compact card design and paginates five records at a time', async () => {
+  const page = await read('team-attendance.html')
+  const script = await read('scripts/team-attendance.js')
+  const styles = await read('styles/team-attendance.css')
+
+  assert.match(page, /id="teamAttendancePagination"/)
+  assert.match(page, /id="teamAttendancePreviousPage"/)
+  assert.match(page, /id="teamAttendanceNextPage"/)
+  assert.match(script, /const ATTENDANCE_PAGE_SIZE = 5/)
+  assert.match(script, /rows\.slice\(pageStart, pageStart \+ ATTENDANCE_PAGE_SIZE\)/)
+  assert.match(script, /function createAttendanceCard\(/)
+  assert.match(script, /function createTimeline\(/)
+  assert.match(styles, /\.team-attendance-record\{/)
+  assert.match(styles, /\.team-attendance-timeline\{/)
+  assert.match(styles, /\.team-attendance-filter-grid\{[^}]*repeat\(6/)
+})
+
 test('Step 10 data service enforces permission and supervisor scope', async () => {
   const migration = await read(migrationPath)
 
