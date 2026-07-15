@@ -31,7 +31,7 @@ test('invited employees show lifecycle state, SL ID, and server-owned resend', a
     read('functions/_middleware.js')
   ])
 
-  assert.match(html, /<th>Employee ID<\/th>/)
+  assert.match(html, /<th>User ID<\/th>/)
   assert.doesNotMatch(html, /<th>.*UUID.*<\/th>/i)
   assert.match(script, /onboarding_status/)
   assert.match(script, /badge\('Invited', 'warning'\)/)

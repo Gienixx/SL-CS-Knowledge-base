@@ -6,7 +6,7 @@ const page = await readFile(new URL('../workforce.html', import.meta.url), 'utf8
 const script = await readFile(new URL('../scripts/workforce.js', import.meta.url), 'utf8')
 
 test('Employee Profiles provides accessible pagination controls', () => {
-  assert.match(page, /id="employeeTablePagination"[^>]*aria-label="Employee profile pages"[^>]*hidden/)
+  assert.match(page, /id="employeeTablePagination"[^>]*aria-label="User profile pages"[^>]*hidden/)
   assert.match(page, /id="employeeTablePageInfo"/)
   assert.match(page, /id="previousEmployeeTablePage"/)
   assert.match(page, /id="nextEmployeeTablePage"/)

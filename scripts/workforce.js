@@ -225,7 +225,7 @@ function renderEmployees() {
     const cell = document.createElement('td')
     cell.colSpan = 8
     cell.className = 'wf-empty'
-    cell.textContent = 'No employee profiles match the selected filters.'
+    cell.textContent = 'No user profiles match the selected filters.'
     row.appendChild(cell)
     tableBody.appendChild(row)
     return
@@ -409,7 +409,7 @@ async function sendEmployeeInvitation(event) {
   const email = normalizeText(document.getElementById('inviteEmployeeEmail').value).toLowerCase()
 
   setLoading(sendInviteButton, true, 'Sending...', 'Send Invitation')
-  setMessage(inviteMessage, 'Creating the employee profile and sending the invitation...')
+  setMessage(inviteMessage, 'Creating the user profile and sending the invitation...')
   try {
     const result = await authenticatedRequest('/create-user', {
       method: 'POST',
@@ -424,7 +424,7 @@ async function sendEmployeeInvitation(event) {
     })
     setMessage(
       inviteMessage,
-      `Invitation sent. Employee ${result.employee?.employee_id || ''} was created.`,
+      `Invitation sent. User ${result.employee?.employee_id || ''} was created.`,
       'success'
     )
     await loadWorkforceData()
@@ -463,7 +463,7 @@ function lifecycleButton(profile, label, action, destructive = false) {
 }
 
 async function changeEmployeeLifecycle(profile, action, button) {
-  const verb = action === 'delete' ? 'delete this account' : `${action} this employee`
+  const verb = action === 'delete' ? 'delete this account' : `${action} this user`
   if (!window.confirm(`Are you sure you want to ${verb}? Workforce history will be preserved.`)) return
 
   let confirmation
@@ -538,7 +538,7 @@ function openEmployee(userId) {
 async function loadWorkforceData() {
   employeePage = 1
   setLoading(refreshButton, true, 'Refreshing...', 'Refresh')
-  setMessage(pageMessage, 'Loading employee profiles...')
+  setMessage(pageMessage, 'Loading user profiles...')
 
   try {
     const [profileResult, teamResult] = await Promise.all([
@@ -588,7 +588,7 @@ async function loadWorkforceData() {
     populateInviteSupervisorOptions()
     renderSummary()
     renderEmployees()
-    setMessage(pageMessage, `${profiles.length} employee profile${profiles.length === 1 ? '' : 's'} loaded.`)
+    setMessage(pageMessage, `${profiles.length} user profile${profiles.length === 1 ? '' : 's'} loaded.`)
   } catch (error) {
     profiles = []
     teams = []
@@ -617,7 +617,7 @@ async function saveEmployee(event) {
   const profile = profiles.find(item => item.user_id === userId)
 
   if (!userId || !fullName || !email || !employeeId) {
-    setMessage(formMessage, 'Full name, email, and employee ID are required.', 'error')
+    setMessage(formMessage, 'Full name, email, and user ID are required.', 'error')
     return
   }
 
@@ -627,8 +627,8 @@ async function saveEmployee(event) {
     })
   }
 
-  setLoading(saveButton, true, 'Saving...', 'Save Employee')
-  setMessage(formMessage, 'Saving employee profile and permissions...')
+  setLoading(saveButton, true, 'Saving...', 'Save User')
+  setMessage(formMessage, 'Saving user profile and permissions...')
 
   try {
     await authenticatedRequest('/update-employee', {
@@ -648,13 +648,13 @@ async function saveEmployee(event) {
       })
     })
 
-    setMessage(formMessage, 'Employee profile updated successfully.', 'success')
+    setMessage(formMessage, 'User profile updated successfully.', 'success')
     await loadWorkforceData()
     window.setTimeout(() => closeModal('employeeModal'), 650)
   } catch (error) {
     setMessage(formMessage, errorMessage(error), 'error')
   } finally {
-    setLoading(saveButton, false, 'Saving...', 'Save Employee')
+    setLoading(saveButton, false, 'Saving...', 'Save User')
   }
 }
 
@@ -663,13 +663,13 @@ async function initialize() {
 
   access = await requireWorkforcePermission(supabase, 'manage_employees', {
     returnTo: './workforce.html',
-    deniedMessage: 'You do not have permission to manage workforce employees.'
+    deniedMessage: 'You do not have permission to manage workforce users.'
   })
 
   if (!access) return
 
   if (access.is_admin !== true) {
-    window.alert('Employee administration is restricted to authorized administrators.')
+    window.alert('User administration is restricted to authorized administrators.')
     window.location.replace('./dashboard.html')
     return
   }

@@ -28,7 +28,7 @@ test('employee and team pages require authorized workforce administration', asyn
     read('scripts/team-management.js')
   ])
 
-  assert.match(employeeHtml, /Employee Profiles/)
+  assert.match(employeeHtml, /User Profiles/)
   assert.match(employeeHtml, /Effective permissions/)
   assert.match(employeeScript, /requireWorkforcePermission\(supabase,\s*'manage_employees'/)
   assert.match(employeeScript, /access\.is_admin\s*!==\s*true/)
