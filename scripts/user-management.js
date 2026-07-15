@@ -171,18 +171,6 @@ async function request(endpoint, options = {}) {
   return result
 }
 
-function createTemporaryCredential() {
-  const bytes = new Uint8Array(32)
-  crypto.getRandomValues(bytes)
-
-  const randomPart = Array.from(
-    bytes,
-    value => value.toString(16).padStart(2, '0')
-  ).join('')
-
-  return `Sl!${randomPart}aA1`
-}
-
 function selectedUser() {
   return users.find(user => userKey(user) === selectedKey) || null
 }
@@ -306,34 +294,6 @@ async function loadUsers() {
   }
 }
 
-async function rollbackCreatedUser(createdUser, email) {
-  try {
-    await request('/delete-user', {
-      method: 'POST',
-      body: JSON.stringify({
-        userId: createdUser?.id || '',
-        email
-      })
-    })
-  } catch (error) {
-    console.error('Invite rollback failed:', error)
-  }
-}
-
-async function sendInvitationEmail(email) {
-  const redirectTo = new URL(
-    './change-password.html?invite=1',
-    window.location.href
-  ).href
-
-  const { error } = await supabase.auth.resetPasswordForEmail(
-    email,
-    { redirectTo }
-  )
-
-  if (error) throw error
-}
-
 function initializeInvitation() {
   openInviteButton.addEventListener('click', () => {
     inviteForm.reset()
@@ -362,30 +322,22 @@ function initializeInvitation() {
       'Creating the approved account and sending the invitation email...'
     )
 
-    let result
-
     try {
-      result = await request('/create-user', {
+      await request('/create-user', {
         method: 'POST',
         body: JSON.stringify({
           name,
           email,
-          password: createTemporaryCredential(),
           isAdmin,
           canEditArticles
         })
       })
-
-      await sendInvitationEmail(email)
       inviteForm.reset()
       setMessage(inviteMessage, 'Invitation email sent successfully.', 'success')
       clearSelection()
       await loadUsers()
       window.setTimeout(() => closeModal('inviteModal'), 700)
     } catch (error) {
-      if (result?.user) {
-        await rollbackCreatedUser(result.user, email)
-      }
       setMessage(
         inviteMessage,
         `Unable to send invitation: ${errorMessage(error)}`,
