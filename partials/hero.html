@@ -1,25 +1,31 @@
-<!-- Hero Section -->
-<section class="hero">
-    <div class="hero-text">
-        <span class="hero-kicker">SocialLoop CS Base</span>
-        <h1>Support resources built around the SocialLoop brand.</h1>
-        <p>Access the login portal, support tools, and internal resources from a cleaner landing page that now matches the SocialLoop visual identity.</p>
-        <button class="btn btn-secondary" onclick="window.location.href='login.html'">Login</button>
-        <button class="btn btn-secondary" onclick="window.location.href='contact.html'">Contact Admin</button>
+<div class="landing-shell">
+  <nav class="landing-nav" aria-label="Primary navigation">
+    <a class="landing-wordmark" href="./index.html" aria-label="SocialLoop CS Base home">Social<span class="landing-dot" aria-hidden="true"></span>Loop</a>
+    <span class="landing-tag">CS BASE</span>
+  </nav>
+
+  <main class="landing-hero">
+    <div class="landing-copy">
+      <span class="landing-eyebrow">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" aria-hidden="true"><path d="M12 2 14 9h7l-5.5 4.5 2 7.5-5.5-4.5L6.5 21l2-7.5L3 9h7Z"/></svg>
+        SOCIALLOOP · SUPPORT
+      </span>
+      <h1>One quiet base<br>for everything<br>support needs<em>.</em></h1>
+      <p class="landing-lede">The login portal, support tools, and internal docs — gathered in one place, styled to match SocialLoop.</p>
+      <div class="landing-actions">
+        <a class="landing-primary" href="./login.html">Log in
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" aria-hidden="true"><path d="M5 12h14M13 6l6 6-6 6"/></svg>
+        </a>
+        <a class="landing-secondary" href="./contact.html">Contact admin</a>
+      </div>
     </div>
-    <div class="hero-image hero-logo-stage">
-        <div class="socialloop-logo" aria-label="Social Loop logo illustration">
-            <div class="logo-mark">
-                <div class="logo-word logo-word-top">
-                    Social
-                    <span class="logo-spark" aria-hidden="true">
-                        <span class="spark spark-one"></span>
-                        <span class="spark spark-two"></span>
-                        <span class="spark spark-three"></span>
-                    </span>
-                </div>
-                <div class="logo-word logo-word-bottom">Loop</div>
-            </div>
-        </div>
+
+    <div class="landing-loop" aria-hidden="true">
+      <svg viewBox="0 0 400 300">
+        <path class="landing-loop-a" d="M120 150c0-60 80-60 80 0s80 60 80 0-80-60-80 0-80 60-80 0Z"/>
+        <path class="landing-loop-b" d="M130 150c0-50 65-50 65 0s80 50 80 0-70-50-70 0-75 50-75 0Z" transform="translate(0 4)"/>
+        <text x="200" y="270" text-anchor="middle">— always in the loop</text>
+      </svg>
     </div>
-</section>
+  </main>
+</div>
