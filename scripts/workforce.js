@@ -277,6 +277,14 @@ function renderEmployees() {
       resendButton.addEventListener('click', () => resendInvitation(profile, resendButton))
       actionCell.appendChild(resendButton)
     }
+    if (profile.employment_status === 'inactive') {
+      actionCell.appendChild(lifecycleButton(profile, 'Reactivate', 'reactivate'))
+    } else if (profile.employment_status !== 'terminated') {
+      actionCell.appendChild(lifecycleButton(profile, 'Deactivate', 'deactivate'))
+    }
+    if (!profile.account_deleted_at) {
+      actionCell.appendChild(lifecycleButton(profile, 'Delete account', 'delete', true))
+    }
 
     row.append(
       textCell(profile.full_name, profile.email),
@@ -445,6 +453,44 @@ async function resendInvitation(profile, button) {
   }
 }
 
+function lifecycleButton(profile, label, action, destructive = false) {
+  const button = document.createElement('button')
+  button.type = 'button'
+  button.className = `wf-row-btn${destructive ? ' danger' : ''}`
+  button.textContent = label
+  button.addEventListener('click', () => changeEmployeeLifecycle(profile, action, button))
+  return button
+}
+
+async function changeEmployeeLifecycle(profile, action, button) {
+  const verb = action === 'delete' ? 'delete this account' : `${action} this employee`
+  if (!window.confirm(`Are you sure you want to ${verb}? Workforce history will be preserved.`)) return
+
+  let confirmation
+  if (action === 'delete') {
+    confirmation = window.prompt(`Type DELETE to remove ${profile.email}'s sign-in account. Attendance, schedules, and audit history will remain.`)
+    if (confirmation !== 'DELETE') {
+      setMessage(pageMessage, 'Account deletion cancelled.', 'error')
+      return
+    }
+  }
+
+  const originalLabel = button.textContent
+  setLoading(button, true, 'Working...', originalLabel)
+  try {
+    await authenticatedRequest('/employee-lifecycle', {
+      method: 'POST',
+      body: JSON.stringify({ userId: profile.user_id, action, confirmation })
+    })
+    setMessage(pageMessage, `${profile.full_name} was ${action === 'delete' ? 'deleted' : `${action}d`} successfully.`, 'success')
+    await loadWorkforceData()
+  } catch (error) {
+    setMessage(pageMessage, errorMessage(error), 'error')
+  } finally {
+    setLoading(button, false, 'Working...', originalLabel)
+  }
+}
+
 function applyAccessTypeRules() {
   const permissionInputs = [
     ...document.querySelectorAll('#permissionGrid input[type="checkbox"]')
@@ -498,7 +544,7 @@ async function loadWorkforceData() {
     const [profileResult, teamResult] = await Promise.all([
       supabase
         .from('profiles')
-        .select('user_id, full_name, email, employee_id, employment_status, onboarding_status, invited_at, invitation_last_sent_at, base_role, is_agent, is_system_admin, team_id, supervisor_id, can_edit_articles, can_manage_payroll, timezone, updated_at')
+        .select('user_id, full_name, email, employee_id, employment_status, onboarding_status, invited_at, invitation_last_sent_at, account_deleted_at, base_role, is_agent, is_system_admin, team_id, supervisor_id, can_edit_articles, can_manage_payroll, timezone, updated_at')
         .eq('is_system_admin', false)
         .order('full_name'),
       supabase

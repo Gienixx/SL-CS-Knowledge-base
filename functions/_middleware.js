@@ -24,6 +24,11 @@ const PROTECTED_ROUTES = Object.freeze({
     permission: 'manage_employees',
     requireAdmin: true
   },
+  '/employee-lifecycle': {
+    methods: ['POST'],
+    permission: 'manage_employees',
+    requireAdmin: true
+  },
   '/user-settings': {
     methods: ['POST'],
     permission: 'manage_employees',

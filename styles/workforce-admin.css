@@ -126,3 +126,4 @@ body.modal-open{overflow:hidden}
   .wf-range-bar strong{text-align:center}
   .wf-dialog{padding:20px}
 }
+.wf-row-btn.danger{border-color:#b42318;color:#b42318}.wf-row-btn.danger:hover{background:#fff1f0}
