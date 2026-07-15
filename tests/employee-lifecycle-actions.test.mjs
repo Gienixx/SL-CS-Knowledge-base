@@ -26,3 +26,10 @@ test('Step 7 adds protected employee lifecycle actions without deleting workforc
   assert.match(middleware, /'\/employee-lifecycle'/)
   assert.match(verification, /deleted_system_owners/)
 })
+
+test('lifecycle cleanup cannot indirectly update the protected owner', async () => {
+  const fix = await read('supabase/migrations/20260715142832_fix_lifecycle_owner_supervisor_cleanup.sql')
+  assert.match(fix, /where is_system_admin is true[\s\S]*supervisor_id is not null/)
+  assert.match(fix, /where supervisor_id = p_user_id[\s\S]*is_system_admin is false/)
+  assert.match(fix, /system_owner_reporting_hierarchy_corrected/)
+})
