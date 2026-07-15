@@ -546,6 +546,7 @@ async function loadWorkforceData() {
         .from('profiles')
         .select('user_id, full_name, email, employee_id, employment_status, onboarding_status, invited_at, invitation_last_sent_at, account_deleted_at, base_role, is_agent, is_system_admin, team_id, supervisor_id, can_edit_articles, can_manage_payroll, timezone, updated_at')
         .eq('is_system_admin', false)
+        .is('account_deleted_at', null)
         .order('full_name'),
       supabase
         .from('teams')

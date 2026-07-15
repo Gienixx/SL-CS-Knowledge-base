@@ -29,7 +29,9 @@ async function request(url, key, options = {}) {
     headers: { apikey: key, Authorization: `Bearer ${options.accessToken || key}`, ...(options.headers || {}) }
   })
   const data = await readResponse(response)
-  if (!response.ok) throw new LifecycleError(data?.message || data?.error || 'Supabase request failed.', response.status)
+  if (!response.ok && !(options.allowNotFound && response.status === 404)) {
+    throw new LifecycleError(data?.message || data?.error || 'Supabase request failed.', response.status)
+  }
   return data
 }
 
@@ -80,7 +82,7 @@ export async function onRequestPost(context) {
       await request(
         `${authorization.supabaseUrl}/auth/v1/admin/users/${encodeURIComponent(userId)}?should_soft_delete=true`,
         authorization.serviceRoleKey,
-        { method: 'DELETE' }
+        { method: 'DELETE', allowNotFound: true }
       )
     } else {
       await updateAuth(authorization, userId, {
