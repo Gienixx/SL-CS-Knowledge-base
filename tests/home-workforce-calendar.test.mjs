@@ -8,6 +8,8 @@ const read = path => readFile(new URL(`../${path}`, import.meta.url), 'utf8')
 test('Home loads the workforce schedule calendar integration', async () => {
   const page = await read('home.html')
 
+  assert.match(page, /class="sidebar-link" href="\.\/dashboard\.html" title="Analytics"/)
+  assert.doesNotMatch(page, /Open full analytics|analytics-cta/)
   assert.match(page, /home-workforce-calendar\.css\?v=3/)
   assert.match(page, /home-workforce-calendar\.js\?v=4/)
   assert.match(page, /<h2 id="homeUpcomingTitle">Upcoming Events<\/h2>/)
