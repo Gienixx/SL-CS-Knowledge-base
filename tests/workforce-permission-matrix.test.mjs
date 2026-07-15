@@ -159,7 +159,7 @@ async function runProtectedRoute(payload, {
 test('all supported workforce user types map to the intended visible access type', () => {
   assert.equal(getWorkforceAccessType(normalized(fixtures.adminAgent)), 'admin_agent')
   assert.equal(getWorkforceAccessType(normalized(fixtures.adminOnly)), 'admin')
-  assert.equal(getWorkforceAccessType(normalized(fixtures.agentEditor)), 'agent_editor')
+  assert.equal(getWorkforceAccessType(normalized(fixtures.agentEditor)), 'regular_agent')
   assert.equal(getWorkforceAccessType(normalized(fixtures.regularAgent)), 'regular_agent')
   assert.equal(getWorkforceAccessType(normalized(fixtures.supervisor)), 'regular_agent')
 })

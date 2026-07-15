@@ -42,7 +42,6 @@ const STATUS_LABELS = Object.freeze({
 const ACCESS_LABELS = Object.freeze({
   admin_agent: 'Admin and Agent',
   admin: 'Admin',
-  agent_editor: 'Agent with Article Editor access',
   regular_agent: 'Regular Agent'
 })
 
@@ -306,8 +305,6 @@ function applyAccessTypeRules() {
   const permissionInputs = [
     ...document.querySelectorAll('#permissionGrid input[type="checkbox"]')
   ]
-  const editArticles = permissionInputs.find(input => input.value === 'edit_articles')
-
   if (editingSystemAdmin) {
     accessTypeSelect.disabled = true
     permissionInputs.forEach(input => {
@@ -322,17 +319,6 @@ function applyAccessTypeRules() {
     input.disabled = false
   })
 
-  if (!editArticles) return
-
-  const selected = accessTypeSelect.value
-
-  if (selected === 'agent_editor') {
-    editArticles.checked = true
-    editArticles.disabled = true
-  } else if (selected === 'regular_agent') {
-    editArticles.checked = false
-    editArticles.disabled = true
-  }
 }
 
 function openEmployee(userId) {
@@ -446,9 +432,6 @@ async function saveEmployee(event) {
     WORKFORCE_PERMISSION_KEYS.forEach(key => {
       permissions[key] = true
     })
-  } else {
-    if (accessType === 'agent_editor') permissions.edit_articles = true
-    if (accessType === 'regular_agent') permissions.edit_articles = false
   }
 
   setLoading(saveButton, true, 'Saving...', 'Save Employee')

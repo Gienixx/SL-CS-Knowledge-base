@@ -120,7 +120,7 @@ test('dashboard and protected endpoints use the central workforce permission ser
   assert.match(correctiveMigration, /grant execute[^;]+authenticated/is)
 })
 
-test('the four supported access types are mapped consistently', () => {
+test('the three canonical access types are mapped consistently', () => {
   assert.equal(getWorkforceAccessType({
     is_admin: true,
     is_agent: true,
@@ -137,7 +137,7 @@ test('the four supported access types are mapped consistently', () => {
     is_admin: false,
     is_agent: true,
     permissions: { edit_articles: true }
-  }), 'agent_editor')
+  }), 'regular_agent')
 
   assert.equal(getWorkforceAccessType({
     is_admin: false,

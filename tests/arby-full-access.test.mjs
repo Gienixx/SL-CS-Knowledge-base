@@ -56,9 +56,9 @@ test('verification checks profile, permissions, login compatibility, and audit e
   assert.match(verification, /arby_full_access_assignment/)
 })
 
-test('frontend access normalization keeps system administrator visibly Regular Agent while effective admin remains true', async () => {
+test('frontend access normalization derives the visible type from canonical role and agent fields', async () => {
   const accessModule = await read('shared/workforce-access.js')
 
-  assert.match(accessModule, /if \(isSystemAdmin\) \{\s*return 'regular_agent'/)
+  assert.doesNotMatch(accessModule, /if \(isSystemAdmin\) \{\s*return 'regular_agent'/)
   assert.match(accessModule, /const isAdmin = isActive && \([\s\S]*isSystemAdmin/)
 })

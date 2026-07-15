@@ -59,13 +59,13 @@ test('Arez and Gen are explicit article editors and Jean remains regular', async
   )
 })
 
-test('visible access helpers hide the system administrator role', async () => {
+test('visible access helpers use canonical role fields while retaining owner protections', async () => {
   const [sharedAccess, workforceScript] = await Promise.all([
     read('shared/workforce-access.js'),
     read('scripts/workforce.js')
   ])
 
-  assert.match(sharedAccess, /if \(isSystemAdmin\) \{\s*return 'regular_agent'/)
+  assert.doesNotMatch(sharedAccess, /if \(isSystemAdmin\) \{\s*return 'regular_agent'/)
   assert.match(sharedAccess, /is_system_admin: isSystemAdmin/)
   assert.match(sharedAccess, /is_admin: baseRole === 'admin'/)
 

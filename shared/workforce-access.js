@@ -48,23 +48,15 @@ export function createPermissionMap(source = {}) {
 export function getWorkforceAccessType({
   is_admin: isAdmin = false,
   is_agent: isAgent = false,
-  is_system_admin: isSystemAdmin = false,
-  permissions = {}
+  is_system_admin: _isSystemAdmin = false,
+  permissions: _permissions = {}
 } = {}) {
-  if (isSystemAdmin) {
-    return 'regular_agent'
-  }
-
   if (isAdmin && isAgent) {
     return 'admin_agent'
   }
 
   if (isAdmin) {
     return 'admin'
-  }
-
-  if (isAgent && permissions.edit_articles === true) {
-    return 'agent_editor'
   }
 
   return 'regular_agent'
