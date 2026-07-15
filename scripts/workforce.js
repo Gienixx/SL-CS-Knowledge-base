@@ -21,6 +21,11 @@ const tablePagination = document.getElementById('employeeTablePagination')
 const tablePageInfo = document.getElementById('employeeTablePageInfo')
 const tablePreviousButton = document.getElementById('previousEmployeeTablePage')
 const tableNextButton = document.getElementById('nextEmployeeTablePage')
+const openInviteButton = document.getElementById('openEmployeeInviteButton')
+const inviteForm = document.getElementById('employeeInviteForm')
+const inviteMessage = document.getElementById('employeeInviteMessage')
+const sendInviteButton = document.getElementById('sendEmployeeInviteButton')
+const inviteAccessType = document.getElementById('inviteEmployeeAccessType')
 
 let access = null
 let profiles = []
@@ -51,6 +56,25 @@ function normalizeText(value) {
 
 function errorMessage(error) {
   return error?.message || 'An unexpected error occurred.'
+}
+
+async function authenticatedRequest(endpoint, options = {}) {
+  const { data: sessionData, error: sessionError } = await supabase.auth.getSession()
+  if (sessionError) throw sessionError
+  const accessToken = sessionData.session?.access_token
+  if (!accessToken) throw new Error('Your session has expired. Sign in again.')
+
+  const response = await fetch(endpoint, {
+    ...options,
+    headers: {
+      'Content-Type': 'application/json',
+      Authorization: `Bearer ${accessToken}`,
+      ...(options.headers || {})
+    }
+  })
+  const data = await response.json().catch(() => ({}))
+  if (!response.ok) throw new Error(data.error || 'The request could not be completed.')
+  return data
 }
 
 function setMessage(element, text, type = '') {
@@ -88,7 +112,10 @@ function initializeModalControls() {
   })
 
   document.addEventListener('keydown', event => {
-    if (event.key === 'Escape') closeModal('employeeModal')
+    if (event.key === 'Escape') {
+      closeModal('employeeModal')
+      closeModal('employeeInviteModal')
+    }
   })
 }
 
@@ -142,10 +169,14 @@ function textCell(primary, secondary = '') {
 function renderSummary() {
   document.getElementById('totalProfiles').textContent = profiles.length
   document.getElementById('activeAgents').textContent = profiles.filter(profile =>
-    profile.is_agent === true && ['active', 'on_leave'].includes(profile.employment_status)
+    profile.is_agent === true &&
+    profile.onboarding_status === 'active' &&
+    ['active', 'on_leave'].includes(profile.employment_status)
   ).length
   document.getElementById('administratorCount').textContent = profiles.filter(profile =>
-    profile.base_role === 'admin' && ['active', 'on_leave'].includes(profile.employment_status)
+    profile.base_role === 'admin' &&
+    profile.onboarding_status === 'active' &&
+    ['active', 'on_leave'].includes(profile.employment_status)
   ).length
   document.getElementById('unassignedCount').textContent = profiles.filter(profile => !profile.team_id).length
 }
@@ -162,7 +193,11 @@ function filteredProfiles() {
       profile.employee_id
     ].some(value => normalizeText(value).toLowerCase().includes(search))
 
-    const matchesStatus = !status || profile.employment_status === status
+    const matchesStatus = !status || (
+      status === 'invited'
+        ? profile.onboarding_status === 'invited'
+        : profile.employment_status === status
+    )
     const matchesTeam = !selectedTeam || (
       selectedTeam === 'unassigned'
         ? !profile.team_id
@@ -215,6 +250,9 @@ function renderEmployees() {
     accessCell.appendChild(badge(ACCESS_LABELS[accessTypeFor(profile)] || 'Regular Agent'))
 
     const statusCell = document.createElement('td')
+    if (profile.onboarding_status === 'invited') {
+      statusCell.appendChild(badge('Invited', 'warning'))
+    }
     statusCell.appendChild(badge(
       STATUS_LABELS[profile.employment_status] || profile.employment_status,
       statusModifier(profile.employment_status)
@@ -231,6 +269,14 @@ function renderEmployees() {
     editButton.textContent = 'Edit'
     editButton.addEventListener('click', () => openEmployee(profile.user_id))
     actionCell.appendChild(editButton)
+    if (profile.onboarding_status === 'invited') {
+      const resendButton = document.createElement('button')
+      resendButton.type = 'button'
+      resendButton.className = 'wf-row-btn'
+      resendButton.textContent = 'Resend invite'
+      resendButton.addEventListener('click', () => resendInvitation(profile, resendButton))
+      actionCell.appendChild(resendButton)
+    }
 
     row.append(
       textCell(profile.full_name, profile.email),
@@ -253,6 +299,8 @@ function populateTeamOptions() {
 
   const employeeTeam = document.getElementById('employeeTeam')
   employeeTeam.replaceChildren(new Option('No team', ''))
+  const inviteTeam = document.getElementById('inviteEmployeeTeam')
+  inviteTeam.replaceChildren(new Option('No team', ''))
 
   teams
     .slice()
@@ -263,6 +311,7 @@ function populateTeamOptions() {
         team.is_active ? team.name : `${team.name} (Inactive)`,
         team.id
       ))
+      if (team.is_active) inviteTeam.appendChild(new Option(team.name, team.id))
     })
 
   if ([...teamFilter.options].some(option => option.value === currentFilter)) {
@@ -288,6 +337,23 @@ function populateSupervisorOptions(excludedUserId = '') {
     })
 }
 
+function populateInviteSupervisorOptions() {
+  const select = document.getElementById('inviteEmployeeSupervisor')
+  select.replaceChildren(new Option('No direct supervisor', ''))
+  profiles
+    .filter(profile =>
+      profile.onboarding_status === 'active' &&
+      ['active', 'on_leave'].includes(profile.employment_status)
+    )
+    .sort((a, b) => a.full_name.localeCompare(b.full_name))
+    .forEach(profile => {
+      select.appendChild(new Option(
+        `${profile.full_name} — ${profile.employee_id}`,
+        profile.user_id
+      ))
+    })
+}
+
 function setPermissionCheckboxes(permissionMap) {
   document.querySelectorAll('#permissionGrid input[type="checkbox"]').forEach(input => {
     input.checked = permissionMap[input.value] === true
@@ -299,6 +365,84 @@ function readPermissionCheckboxes() {
     [...document.querySelectorAll('#permissionGrid input[type="checkbox"]')]
       .map(input => [input.value, input.checked])
   )
+}
+
+function readInvitePermissions() {
+  return Object.fromEntries(
+    [...document.querySelectorAll('#invitePermissionGrid input[type="checkbox"]')]
+      .map(input => [input.value, input.checked])
+  )
+}
+
+function applyInviteAccessTypeRules() {
+  const isAdmin = ['admin', 'admin_agent'].includes(inviteAccessType.value)
+  const adminPermissions = new Set([
+    'manage_employees', 'manage_schedules', 'view_team_attendance',
+    'correct_attendance', 'approve_attendance', 'approve_leave',
+    'view_workforce_reports', 'manage_payroll'
+  ])
+  document.querySelectorAll('#invitePermissionGrid input[type="checkbox"]').forEach(input => {
+    if (adminPermissions.has(input.value)) input.checked = isAdmin
+  })
+}
+
+function openEmployeeInvitation() {
+  inviteForm.reset()
+  inviteAccessType.value = 'regular_agent'
+  applyInviteAccessTypeRules()
+  populateInviteSupervisorOptions()
+  setMessage(inviteMessage, '')
+  openModal('employeeInviteModal', document.getElementById('inviteEmployeeName'))
+}
+
+async function sendEmployeeInvitation(event) {
+  event.preventDefault()
+  const name = normalizeText(document.getElementById('inviteEmployeeName').value)
+  const email = normalizeText(document.getElementById('inviteEmployeeEmail').value).toLowerCase()
+
+  setLoading(sendInviteButton, true, 'Sending...', 'Send Invitation')
+  setMessage(inviteMessage, 'Creating the employee profile and sending the invitation...')
+  try {
+    const result = await authenticatedRequest('/create-user', {
+      method: 'POST',
+      body: JSON.stringify({
+        name,
+        email,
+        accessType: inviteAccessType.value,
+        permissions: readInvitePermissions(),
+        teamId: document.getElementById('inviteEmployeeTeam').value || null,
+        supervisorId: document.getElementById('inviteEmployeeSupervisor').value || null
+      })
+    })
+    setMessage(
+      inviteMessage,
+      `Invitation sent. Employee ${result.employee?.employee_id || ''} was created.`,
+      'success'
+    )
+    await loadWorkforceData()
+    window.setTimeout(() => closeModal('employeeInviteModal'), 900)
+  } catch (error) {
+    setMessage(inviteMessage, errorMessage(error), 'error')
+  } finally {
+    setLoading(sendInviteButton, false, 'Sending...', 'Send Invitation')
+  }
+}
+
+async function resendInvitation(profile, button) {
+  setLoading(button, true, 'Sending...', 'Resend invite')
+  setMessage(pageMessage, `Sending a new invitation to ${profile.email}...`)
+  try {
+    await authenticatedRequest('/resend-invite', {
+      method: 'POST',
+      body: JSON.stringify({ userId: profile.user_id })
+    })
+    setMessage(pageMessage, `Invitation resent to ${profile.email}.`, 'success')
+    await loadWorkforceData()
+  } catch (error) {
+    setMessage(pageMessage, errorMessage(error), 'error')
+  } finally {
+    setLoading(button, false, 'Sending...', 'Resend invite')
+  }
 }
 
 function applyAccessTypeRules() {
@@ -354,7 +498,7 @@ async function loadWorkforceData() {
     const [profileResult, teamResult] = await Promise.all([
       supabase
         .from('profiles')
-        .select('user_id, full_name, email, employee_id, employment_status, base_role, is_agent, is_system_admin, team_id, supervisor_id, can_edit_articles, can_manage_payroll, timezone, updated_at')
+        .select('user_id, full_name, email, employee_id, employment_status, onboarding_status, invited_at, invitation_last_sent_at, base_role, is_agent, is_system_admin, team_id, supervisor_id, can_edit_articles, can_manage_payroll, timezone, updated_at')
         .eq('is_system_admin', false)
         .order('full_name'),
       supabase
@@ -394,6 +538,7 @@ async function loadWorkforceData() {
     }
 
     populateTeamOptions()
+    populateInviteSupervisorOptions()
     renderSummary()
     renderEmployees()
     setMessage(pageMessage, `${profiles.length} employee profile${profiles.length === 1 ? '' : 's'} loaded.`)
@@ -503,6 +648,9 @@ async function initialize() {
   })
   accessTypeSelect.addEventListener('change', applyAccessTypeRules)
   employeeForm.addEventListener('submit', saveEmployee)
+  openInviteButton.addEventListener('click', openEmployeeInvitation)
+  inviteAccessType.addEventListener('change', applyInviteAccessTypeRules)
+  inviteForm.addEventListener('submit', sendEmployeeInvitation)
 
   await loadWorkforceData()
 }

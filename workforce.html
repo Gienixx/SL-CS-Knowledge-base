@@ -31,10 +31,10 @@
       <div class="wf-card-header">
         <div>
           <h2>Employee Profiles</h2>
-          <p class="wf-message" style="margin-top:5px;">Only existing approved users are listed. Add new accounts through User Management first.</p>
+          <p class="wf-message" style="margin-top:5px;">Invite employees and manage their workforce access from one place.</p>
         </div>
         <div class="wf-actions">
-          <a class="wf-btn secondary" href="./user-management.html">Open User Management</a>
+          <button class="wf-btn" id="openEmployeeInviteButton" type="button">Invite Employee</button>
           <button class="wf-btn" id="refreshEmployeesButton" type="button">Refresh</button>
         </div>
       </div>
@@ -48,6 +48,7 @@
           <span>Status</span>
           <select class="wf-control" id="statusFilter">
             <option value="">All statuses</option>
+            <option value="invited">Invited</option>
             <option value="active">Active</option>
             <option value="on_leave">On leave</option>
             <option value="inactive">Inactive</option>
@@ -178,6 +179,67 @@
       <p id="scheduleMessage" class="wf-message" aria-live="polite"></p>
     </section>
   </main>
+
+  <div class="wf-modal" id="employeeInviteModal" role="dialog" aria-modal="true" aria-labelledby="employeeInviteModalTitle" hidden>
+    <button class="wf-backdrop" type="button" data-close="employeeInviteModal" aria-label="Close employee invitation dialog"></button>
+    <section class="wf-dialog">
+      <div class="wf-dialog-header">
+        <h2 id="employeeInviteModalTitle">Invite Employee</h2>
+        <button class="wf-close" type="button" data-close="employeeInviteModal" aria-label="Close">×</button>
+      </div>
+
+      <form id="employeeInviteForm" class="wf-form">
+        <div class="wf-form-grid">
+          <label class="wf-field">
+            <span>Full name</span>
+            <input class="wf-control" id="inviteEmployeeName" autocomplete="name" required>
+          </label>
+          <label class="wf-field">
+            <span>Email</span>
+            <input class="wf-control" id="inviteEmployeeEmail" type="email" autocomplete="email" required>
+          </label>
+          <label class="wf-field">
+            <span>Initial access type</span>
+            <select class="wf-control" id="inviteEmployeeAccessType" required>
+              <option value="regular_agent">Regular Agent</option>
+              <option value="admin_agent">Admin and Agent</option>
+              <option value="admin">Admin</option>
+            </select>
+          </label>
+          <label class="wf-field">
+            <span>Team assignment</span>
+            <select class="wf-control" id="inviteEmployeeTeam"><option value="">No team</option></select>
+          </label>
+          <label class="wf-field full">
+            <span>Supervisor</span>
+            <select class="wf-control" id="inviteEmployeeSupervisor"><option value="">No direct supervisor</option></select>
+          </label>
+        </div>
+
+        <div>
+          <p class="wf-field-label">Initial permissions</p>
+          <div class="wf-check-grid" id="invitePermissionGrid">
+            <label class="wf-check"><input type="checkbox" value="manage_employees"><span>Manage employees</span></label>
+            <label class="wf-check"><input type="checkbox" value="manage_schedules"><span>Manage schedules</span></label>
+            <label class="wf-check"><input type="checkbox" value="view_team_attendance"><span>View team attendance</span></label>
+            <label class="wf-check"><input type="checkbox" value="correct_attendance"><span>Correct attendance</span></label>
+            <label class="wf-check"><input type="checkbox" value="approve_attendance"><span>Approve attendance</span></label>
+            <label class="wf-check"><input type="checkbox" value="approve_leave"><span>Approve leave</span></label>
+            <label class="wf-check"><input type="checkbox" value="view_workforce_reports"><span>View workforce reports</span></label>
+            <label class="wf-check"><input type="checkbox" value="edit_articles"><span>Edit articles</span></label>
+            <label class="wf-check"><input type="checkbox" value="manage_payroll"><span>Manage payroll</span></label>
+          </div>
+        </div>
+
+        <p class="wf-note">The employee receives a secure invitation link and appears immediately with an Invited badge and generated SL- ID. No temporary password is shown.</p>
+        <div class="wf-dialog-actions">
+          <button class="wf-btn secondary" type="button" data-close="employeeInviteModal">Cancel</button>
+          <button class="wf-btn" id="sendEmployeeInviteButton" type="submit">Send Invitation</button>
+        </div>
+      </form>
+      <p id="employeeInviteMessage" class="wf-message" aria-live="polite"></p>
+    </section>
+  </div>
 
   <div class="wf-modal" id="employeeModal" role="dialog" aria-modal="true" aria-labelledby="employeeModalTitle" hidden>
     <button class="wf-backdrop" type="button" data-close="employeeModal" aria-label="Close employee dialog"></button>

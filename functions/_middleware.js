@@ -14,6 +14,11 @@ const PROTECTED_ROUTES = Object.freeze({
     permission: 'manage_employees',
     requireAdmin: true
   },
+  '/resend-invite': {
+    methods: ['POST'],
+    permission: 'manage_employees',
+    requireAdmin: true
+  },
   '/user-settings': {
     methods: ['POST'],
     permission: 'manage_employees',
