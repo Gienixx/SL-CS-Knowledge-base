@@ -104,8 +104,8 @@ function responseJson(data, status = 200) {
 }
 
 async function runProtectedRoute(payload, {
-  pathname = '/list-users',
-  method = 'GET',
+  pathname = '/create-user',
+  method = 'POST',
   includeToken = true
 } = {}) {
   const originalFetch = globalThis.fetch

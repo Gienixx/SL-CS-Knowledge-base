@@ -117,7 +117,7 @@ Record the result of every row as Pass or Fail. Use a private/incognito session 
 | View unrelated-team attendance | Allow when granted as global admin | Allow when granted as global admin | Deny | Deny | Deny | Deny |
 | Directly set overtime, undertime, correction notes, or reviewer fields | Deny through agent session | Administrative interface only | Deny | Deny | Only authorized correction/review workflow | Deny |
 | Open article editor | Only with `edit_articles` | Only with `edit_articles` | Allow | Deny | Only with `edit_articles` | Deny |
-| Call `/list-users` directly | Allow with admin + `manage_employees` | Allow with admin + `manage_employees` | Deny | Deny | Deny even if manually granted `manage_employees` without admin scope | Deny |
+| Call `/create-user` directly | Allow with admin + `manage_employees` | Allow with admin + `manage_employees` | Deny | Deny | Deny even if manually granted `manage_employees` without admin scope | Deny |
 | Call `/create-user` directly | Allow with admin + `manage_employees` | Allow with admin + `manage_employees` | Deny | Deny | Deny | Deny |
 
 ## Required negative tests
@@ -130,7 +130,7 @@ For each denied identity:
 2. Change or add local/session storage values that appear to grant a role.
 3. Navigate directly to the protected page URL.
 4. Call the protected Supabase table or RPC from the browser console.
-5. Call `/list-users` or `/create-user` directly where applicable.
+5. Call `/create-user`, `/update-employee`, or `/employee-lifecycle` directly where applicable.
 
 Expected result: the database or server returns a permission error. A visible button appearing because of client tampering must not grant data or write access.
 

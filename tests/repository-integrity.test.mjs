@@ -132,6 +132,9 @@ test('retired disconnected entry points and integrations are absent', async () =
     'admin.html', 'invite-user.html', 'data-details.html',
     'scripts/admin.js', 'scripts/invite-user.js', 'scripts/data-details.js',
     'scripts/data-details-utils.js',
+    'scripts/user-management.js', 'styles/user-management.css',
+    'functions/list-users.js', 'functions/user-settings.js',
+    'functions/remove-account.js', 'functions/delete-user.js',
     'functions/api/sync-dashboard-v3.js', 'functions/api/sync-zendesk.js',
     'functions/api/sync-zendesk-events.js', 'functions/api/sync-zendesk-sla.js',
     'functions/api/zendesk-test.js', 'workers/zendesk-health/index.js'
@@ -142,7 +145,7 @@ test('retired disconnected entry points and integrations are absent', async () =
 test('current site and operational entry points remain available', async () => {
   const required = [
     'index.html', 'login.html', 'home.html', 'KB.html', 'article.html',
-    'user-management.html', 'dashboard.html', 'report-details.html',
+    'user-management.html', 'workforce.html', 'dashboard.html', 'report-details.html',
     'agent-analytics.html', 'response-times.html', 'reporting-operations.html',
     'functions/api/sync-dashboard.js', 'apps-script/dashboard-sync.gs',
     'supabase/migrations-legacy/2026070402_reporting_operations.sql',

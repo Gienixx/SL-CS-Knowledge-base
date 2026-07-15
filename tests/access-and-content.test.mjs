@@ -13,21 +13,15 @@ import {
 
 const read = path => readFile(new URL(`../${path}`, import.meta.url), 'utf8')
 
-test('the read-only user management comparison remains connected', async () => {
-  const [html, script, client, onboarding] = await Promise.all([
+test('retired User Management redirects to Employee Profiles', async () => {
+  const [html, client] = await Promise.all([
     read('user-management.html'),
-    read('scripts/user-management.js'),
-    read('scripts/supabaseClient.js'),
-    read('docs/README-first-login.md')
+    read('scripts/supabaseClient.js')
   ])
-  assert.match(html, /scripts\/user-management\.js/)
-  assert.match(html, /Read-only compatibility view/)
-  assert.match(html, /Open Employee Profiles/)
-  assert.doesNotMatch(html, /inviteUserForm|editUserForm|deleteUserButton|changePasswordForm/)
-  assert.match(script, /requireAdmin/)
-  assert.doesNotMatch(script, /\/create-user|\/user-settings|\/delete-user|\/change-password/)
+  assert.match(html, /window\.location\.replace\('\.\/workforce\.html'\)/)
+  assert.match(html, /http-equiv="refresh" content="0; url=\.\/workforce\.html"/)
+  assert.doesNotMatch(html, /scripts\/user-management\.js|list-users|Read-only compatibility view/)
   assert.doesNotMatch(client, /admin\.html|admin-invite-protocol/)
-  assert.match(onboarding, /user-management\.html/)
 })
 
 test('knowledge-base authoring and published article rendering remain connected', async () => {

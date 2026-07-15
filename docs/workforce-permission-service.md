@@ -18,14 +18,14 @@ Step 2 centralizes workforce authorization so browser interfaces, Cloudflare Pag
 | --- | --- | --- |
 | Admin and Agent | `base_role = 'admin'`, `is_agent = true` | Global administrator scope plus agent workflows, subject to each explicit permission |
 | Admin | `base_role = 'admin'`, `is_agent = false` | Global administrator scope without clock, schedule, or leave self-service, subject to each explicit permission |
-| Agent with Article Editor access | `base_role = 'agent'`, `is_agent = true`, `edit_articles = true` | Regular agent workflows plus article management |
+| Regular Agent with Edit articles | `base_role = 'agent'`, `is_agent = true`, `edit_articles = true` | Regular agent workflows plus article management |
 | Regular Agent | `base_role = 'agent'`, `is_agent = true` | No elevated workforce, article, or payroll permission |
 
 Administrator status determines scope. It does not automatically grant a workforce permission. Revoking `manage_employees`, for example, prevents an administrator from using protected employee-management endpoints even while `base_role` remains `admin`.
 
 ## Compatibility behavior
 
-`public.login.is_admin` and `public.login.can_edit_articles` remain in place for existing pages. The Step 1 synchronization trigger continues to update `profiles` and `user_permissions` when those legacy fields change.
+`public.login.is_admin` and `public.login.can_edit_articles` remain temporarily as compatibility mirrors. Canonical interfaces authorize through `profiles` and `user_permissions`.
 
 The browser and server adapters fall back to the legacy record only when `workforce_get_current_access()` is unavailable because the migration has not yet been applied. Other RPC errors are not silently ignored.
 
@@ -33,23 +33,22 @@ The browser and server adapters fall back to the legacy record only when `workfo
 
 The root Pages Function middleware requires both `base_role = 'admin'` and `manage_employees` for:
 
-- `/list-users`
 - `/create-user`
-- `/user-settings`
-- `/remove-account`
-- `/delete-user`
+- `/resend-invite`
+- `/update-employee`
+- `/employee-lifecycle`
 - `/change-password`
 
-The existing endpoint-level checks remain as defense in depth during the compatibility period.
+Endpoint-level checks remain as defense in depth.
 
 ## Deployment order
 
 1. Apply `supabase/migrations-legacy/2026070605_workforce_permission_service.sql` in the internal Supabase environment.
 2. Run `supabase/verification/workforce_permission_service_check.sql`.
 3. Deploy the site and Pages Functions from the same tested commit.
-4. Confirm the dashboard behavior for Admin and Agent, Admin, Agent with Article Editor access, and Regular Agent.
+4. Confirm the dashboard behavior for Admin and Agent, Admin, Regular Agent with Edit articles, and Regular Agent.
 5. Confirm a revoked `manage_employees` permission receives HTTP 403 when calling a protected endpoint directly.
-6. Confirm existing user management and article management behavior is unchanged.
+6. Confirm Employee Profiles and canonical article management behavior is unchanged.
 
 ## Rollback boundary
 

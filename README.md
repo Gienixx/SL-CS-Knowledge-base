@@ -6,7 +6,7 @@ SocialLoop CS Base is a Cloudflare Pages site backed by Supabase. It provides au
 
 - Landing and authentication: `index.html`, `login.html`, `change-password.html`
 - Knowledge base: `KB.html`, `article.html`, `add-article.html`, `article-management.html`
-- Administration: `user-management.html`
+- Employee administration: `workforce.html` (`user-management.html` redirects here)
 - Reporting: `dashboard.html`, `report-details.html`, `agent-analytics.html`, `response-times.html`, `reporting-operations.html`
 - Google Sheet ingestion: `functions/api/sync-dashboard.js` and `apps-script/dashboard-sync.gs`
 

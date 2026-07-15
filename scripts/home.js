@@ -124,15 +124,10 @@ function configureUserInterface(user, access) {
   setText('homeUserAvatar', initials)
 
   const articleButton = document.getElementById('homeArticleManagementBtn')
-  const userManagementButton = document.getElementById('homeUserManagementBtn')
   const changePasswordButton = document.getElementById('homeChangePasswordBtn')
 
   if (articleButton) {
     articleButton.hidden = !hasWorkforcePermission(access, 'edit_articles')
-  }
-
-  if (userManagementButton) {
-    userManagementButton.hidden = access.is_admin !== true
   }
 
   if (changePasswordButton) {

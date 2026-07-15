@@ -13,24 +13,16 @@ test('Employee Profiles requests only non-owner profiles and permissions', async
   assert.doesNotMatch(script, /select\('id, name, description, supervisor_id/)
 })
 
-test('User Management omits the protected owner on the server', async () => {
-  const listUsers = await read('functions/list-users.js')
-
-  assert.match(listUsers, /function getSystemOwnerEmail/)
-  assert.match(listUsers, /is_system_admin', 'eq\.true'/)
-  assert.match(listUsers, /filter\(loginUser => normalizeEmail\(loginUser\.email\) !== systemOwnerEmail\)/)
-})
-
-test('legacy account mutation endpoints reject the protected owner', async () => {
-  const [settings, remove] = await Promise.all([
-    read('functions/user-settings.js'),
-    read('functions/remove-account.js')
+test('canonical account mutation endpoints delegate owner protection to guarded database services', async () => {
+  const [update, lifecycle, ownerGuard] = await Promise.all([
+    read('functions/update-employee.js'),
+    read('functions/employee-lifecycle.js'),
+    read('supabase/migrations/20260714172911_protect_hidden_system_owner.sql')
   ])
 
-  assert.match(settings, /function isProtectedSystemOwner/)
-  assert.match(settings, /protected system owner cannot be viewed or changed/)
-  assert.match(remove, /function isProtectedSystemOwner/)
-  assert.match(remove, /protected system owner cannot be deleted/)
+  assert.match(update, /protected system owner/i)
+  assert.match(lifecycle, /workforce_admin_change_employee_lifecycle/)
+  assert.match(ownerGuard, /before update or delete on public\.profiles/)
 })
 
 test('database trigger protects the owner without removing permissions', async () => {

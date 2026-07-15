@@ -4,11 +4,6 @@ import {
 } from './_shared/workforce-auth.js'
 
 const PROTECTED_ROUTES = Object.freeze({
-  '/list-users': {
-    methods: ['GET'],
-    permission: 'manage_employees',
-    requireAdmin: true
-  },
   '/create-user': {
     methods: ['POST'],
     permission: 'manage_employees',
@@ -25,21 +20,6 @@ const PROTECTED_ROUTES = Object.freeze({
     requireAdmin: true
   },
   '/employee-lifecycle': {
-    methods: ['POST'],
-    permission: 'manage_employees',
-    requireAdmin: true
-  },
-  '/user-settings': {
-    methods: ['POST'],
-    permission: 'manage_employees',
-    requireAdmin: true
-  },
-  '/remove-account': {
-    methods: ['POST'],
-    permission: 'manage_employees',
-    requireAdmin: true
-  },
-  '/delete-user': {
     methods: ['POST'],
     permission: 'manage_employees',
     requireAdmin: true

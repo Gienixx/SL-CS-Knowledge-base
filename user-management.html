@@ -3,42 +3,14 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>User Management Comparison | SocialLoop CS Base</title>
-  <link rel="stylesheet" href="./styles/button-theme.css?v=1">
-  <link rel="stylesheet" href="./styles/user-management.css?v=2">
+  <title>Employee Profiles | SocialLoop CS Base</title>
+  <meta http-equiv="refresh" content="0; url=./workforce.html">
+  <link rel="canonical" href="./workforce.html">
+  <script>window.location.replace('./workforce.html')</script>
 </head>
 <body>
-  <main class="um-page">
-    <header class="um-topbar">
-      <div class="um-title">
-        <h1>User Management</h1>
-        <p>Read-only compatibility view for the Employee Profiles transition.</p>
-      </div>
-      <a class="um-link" href="./home.html">← Back to Home</a>
-    </header>
-
-    <aside class="um-notice" role="status">
-      <div>
-        <strong>Account management has moved to Employee Profiles.</strong>
-        <p>Invitations, edits, lifecycle actions, and invitation resends are no longer available here. This page remains temporarily for parity comparison only.</p>
-      </div>
-      <a class="um-btn" href="./workforce.html">Open Employee Profiles</a>
-    </aside>
-
-    <section class="um-card">
-      <div class="um-card-header">
-        <div><h2>Read-only user comparison</h2><p class="um-note">No raw Auth UUIDs are displayed.</p></div>
-        <button class="um-btn secondary" id="refreshUsersButton" type="button">Refresh</button>
-      </div>
-      <div class="um-table-wrap">
-        <table class="um-table">
-          <thead><tr><th>Employee ID</th><th>Name</th><th>Email</th><th>Admin</th><th>Editor</th><th>Parity</th></tr></thead>
-          <tbody id="usersTableBody"><tr><td colspan="6" class="um-empty">Loading users...</td></tr></tbody>
-        </table>
-      </div>
-      <p id="usersMessage" class="um-message" aria-live="polite"></p>
-    </section>
+  <main>
+    <p>User Management has moved to <a href="./workforce.html">Employee Profiles</a>.</p>
   </main>
-  <script type="module" src="./scripts/user-management.js?v=2"></script>
 </body>
 </html>

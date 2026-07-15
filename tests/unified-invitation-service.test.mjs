@@ -7,7 +7,7 @@ const read = path => readFile(new URL(`../${path}`, import.meta.url), 'utf8')
 test('invitation is server-owned and hides temporary credentials', async () => {
   const [endpoint, browser] = await Promise.all([
     read('functions/create-user.js'),
-    read('scripts/user-management.js')
+    read('scripts/workforce.js')
   ])
 
   assert.match(endpoint, /requireWorkforcePermission/)
