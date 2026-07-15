@@ -1,3 +1,8 @@
+import {
+  loadCurrentWorkforceAccess,
+  hasWorkforcePermission
+} from './workforce-permissions.js'
+
 function getSupabaseClient() {
   const client = window.__slSupabase
 
@@ -137,22 +142,12 @@ export async function getCurrentArticleManager() {
   }
 
   const email = user.email.trim().toLowerCase()
-  const { data: permission, error: permissionError } = await supabase
-    .from('login')
-    .select('name, is_admin, can_edit_articles')
-    .ilike('email', email)
-    .maybeSingle()
-
-  if (permissionError) {
-    throw permissionError
-  }
-
-  const canManageArticles = Boolean(
-    permission?.is_admin === true ||
-    permission?.can_edit_articles === true
-  )
+  const access = await loadCurrentWorkforceAccess(supabase, {
+    allowLegacyFallback: false
+  })
+  const canManageArticles = hasWorkforcePermission(access, 'edit_articles')
   const displayName =
-    normalizeText(permission?.name) ||
+    normalizeText(access.full_name) ||
     normalizeText(user.user_metadata?.full_name) ||
     normalizeText(user.user_metadata?.name) ||
     email

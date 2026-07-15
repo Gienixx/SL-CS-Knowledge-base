@@ -6,6 +6,7 @@ import {
 import {
   removeArticleImage
 } from './article-image-upload.js?v=1'
+import { requireWorkforcePermission } from './workforce-permissions.js'
 import './article-nesting-styles.js?v=1'
 import './article-preview-parser-styles.js?v=1'
 
@@ -445,50 +446,10 @@ function renderArticles(articles) {
 }
 
 async function requireArticleEditorAccess() {
-  const {
-    data: { user },
-    error: userError
-  } = await supabase.auth.getUser()
-
-  if (userError) {
-    throw userError
-  }
-
-  if (!user) {
-    window.location.replace(
-      './login.html?returnTo=/article-management.html'
-    )
-    return false
-  }
-
-  const email = normalizeEmail(user.email)
-
-  if (!email) {
-    await supabase.auth.signOut()
-    window.location.replace('./login.html')
-    return false
-  }
-
-  const {
-    data: allowedUser,
-    error: permissionError
-  } = await supabase
-    .from('login')
-    .select('can_edit_articles')
-    .ilike('email', email)
-    .maybeSingle()
-
-  if (permissionError) {
-    throw permissionError
-  }
-
-  if (!allowedUser || allowedUser.can_edit_articles !== true) {
-    alert('Article editor access only.')
-    window.location.replace('./dashboard.html')
-    return false
-  }
-
-  return true
+  return Boolean(await requireWorkforcePermission(supabase, 'edit_articles', {
+    returnTo: './article-management.html',
+    deniedMessage: 'Article editor access only.'
+  }))
 }
 
 async function fetchArticles() {

@@ -4,6 +4,7 @@ import {
   removeArticleImage,
   uploadArticleImage
 } from './article-image-upload.js?v=1'
+import { requireWorkforcePermission } from './workforce-permissions.js'
 
 const editArticleId = new URLSearchParams(
   window.location.search
@@ -139,50 +140,11 @@ async function waitForDynamicEditorFields() {
 }
 
 async function requireArticleEditorAccess() {
-  const {
-    data: { user },
-    error: userError
-  } = await supabase.auth.getUser()
-
-  if (userError) {
-    throw userError
-  }
-
-  if (!user) {
-    window.location.replace(
-      `./login.html?returnTo=${encodeURIComponent(window.location.pathname + window.location.search)}`
-    )
-    return null
-  }
-
-  const email = normalizeEmail(user.email)
-
-  if (!email) {
-    await supabase.auth.signOut()
-    window.location.replace('./login.html')
-    return null
-  }
-
-  const {
-    data: allowedUser,
-    error: permissionError
-  } = await supabase
-    .from('login')
-    .select('can_edit_articles')
-    .ilike('email', email)
-    .maybeSingle()
-
-  if (permissionError) {
-    throw permissionError
-  }
-
-  if (!allowedUser || allowedUser.can_edit_articles !== true) {
-    alert('Article editor access only.')
-    window.location.replace('./dashboard.html')
-    return null
-  }
-
-  return user
+  const access = await requireWorkforcePermission(supabase, 'edit_articles', {
+    returnTo: window.location.pathname + window.location.search,
+    deniedMessage: 'Article editor access only.'
+  })
+  return access?.user || null
 }
 
 async function fetchArticle() {

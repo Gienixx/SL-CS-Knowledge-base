@@ -5,6 +5,7 @@ import {
 import {
   setupGroupedArticleToolbar
 } from './article-editor-toolbar.js?v=1'
+import { requireWorkforcePermission } from './workforce-permissions.js'
 
 const form = document.getElementById('articleForm')
 const message = document.getElementById('message')
@@ -527,34 +528,17 @@ async function initializeArticleEditor() {
       return
     }
 
-    const email = user.email?.trim().toLowerCase()
+    const access = await requireWorkforcePermission(supabase, 'edit_articles', {
+      session: { user },
+      returnTo: './add-article.html',
+      deniedMessage: 'Article editor access only.'
+    })
+    if (!access) return
 
-    if (!email) {
-      window.location.replace('./login.html')
-      return
-    }
-
-    const {
-      data: allowedUser,
-      error: permissionError
-    } = await supabase
-      .from('login')
-      .select('name, can_edit_articles')
-      .ilike('email', email)
-      .maybeSingle()
-
-    if (permissionError) {
-      throw permissionError
-    }
-
-    if (!allowedUser || allowedUser.can_edit_articles !== true) {
-      alert('Article editor access only.')
-      window.location.replace('./dashboard.html')
-      return
-    }
+    const email = user.email?.trim().toLowerCase() || ''
 
     const defaultAuthorName =
-      allowedUser.name?.trim() ||
+      access.full_name?.trim() ||
       user.user_metadata?.full_name?.trim() ||
       user.user_metadata?.name?.trim() ||
       email

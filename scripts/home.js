@@ -6,6 +6,10 @@ import {
   recurringTeamEventsForMonth,
   upcomingRecurringTeamEvents
 } from './home-recurring-events.js?v=1'
+import {
+  loadCurrentWorkforceAccess,
+  hasWorkforcePermission
+} from './workforce-permissions.js'
 
 const SVG_NAMESPACE = 'http://www.w3.org/2000/svg'
 const HOME_HISTORY_LIMIT = 14
@@ -73,25 +77,17 @@ async function initializeHome() {
       return
     }
 
-    const { data: rows, error: accessError } = await supabase
-      .from('login')
-      .select('email, is_admin, can_edit_articles')
+    const access = await loadCurrentWorkforceAccess(supabase, {
+      allowLegacyFallback: false
+    })
 
-    if (accessError) {
-      throw accessError
-    }
-
-    const allowedUser = rows?.find(
-      row => row.email?.trim().toLowerCase() === email
-    )
-
-    if (!allowedUser) {
+    if (!access.allowed) {
       await supabase.auth.signOut()
       window.location.replace('./login.html')
       return
     }
 
-    configureUserInterface(currentUser, allowedUser)
+    configureUserInterface(currentUser, access)
     await loadHomeMetrics()
   } catch (error) {
     if (isMissingAuthSession(error)) {
@@ -104,7 +100,7 @@ async function initializeHome() {
   }
 }
 
-function configureUserInterface(user, allowedUser) {
+function configureUserInterface(user, access) {
   const email = user.email || 'Support Team'
   const emailName = email.split('@')[0] || 'Team'
   const friendlyName = toFriendlyName(emailName)
@@ -119,9 +115,9 @@ function configureUserInterface(user, allowedUser) {
   setText('homeUserName', friendlyName)
   setText(
     'homeUserRole',
-    allowedUser.is_admin === true
+    access.is_admin === true
       ? 'Administrator'
-      : allowedUser.can_edit_articles === true
+      : hasWorkforcePermission(access, 'edit_articles')
         ? 'Editor'
         : 'Team member'
   )
@@ -132,15 +128,15 @@ function configureUserInterface(user, allowedUser) {
   const changePasswordButton = document.getElementById('homeChangePasswordBtn')
 
   if (articleButton) {
-    articleButton.hidden = allowedUser.can_edit_articles !== true
+    articleButton.hidden = !hasWorkforcePermission(access, 'edit_articles')
   }
 
   if (userManagementButton) {
-    userManagementButton.hidden = allowedUser.is_admin !== true
+    userManagementButton.hidden = access.is_admin !== true
   }
 
   if (changePasswordButton) {
-    changePasswordButton.hidden = allowedUser.is_admin === true
+    changePasswordButton.hidden = access.is_admin === true
   }
 }
 
