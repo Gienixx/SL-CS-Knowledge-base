@@ -3,134 +3,42 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>User Management | SocialLoop CS Base</title>
+  <title>User Management Comparison | SocialLoop CS Base</title>
   <link rel="stylesheet" href="./styles/button-theme.css?v=1">
-  <link rel="stylesheet" href="./styles/user-management.css?v=1">
+  <link rel="stylesheet" href="./styles/user-management.css?v=2">
 </head>
 <body>
   <main class="um-page">
     <header class="um-topbar">
       <div class="um-title">
         <h1>User Management</h1>
-        <p>Invite users, update account access, and manage passwords for SocialLoop CS Base.</p>
+        <p>Read-only compatibility view for the Employee Profiles transition.</p>
       </div>
       <a class="um-link" href="./home.html">← Back to Home</a>
     </header>
 
+    <aside class="um-notice" role="status">
+      <div>
+        <strong>Account management has moved to Employee Profiles.</strong>
+        <p>Invitations, edits, lifecycle actions, and invitation resends are no longer available here. This page remains temporarily for parity comparison only.</p>
+      </div>
+      <a class="um-btn" href="./workforce.html">Open Employee Profiles</a>
+    </aside>
+
     <section class="um-card">
       <div class="um-card-header">
-        <h2>Available Users</h2>
-        <div class="um-actions">
-          <button class="um-btn secondary" id="refreshUsersButton" type="button">Refresh</button>
-          <button class="um-btn" id="openInviteButton" type="button">Invite User</button>
-        </div>
+        <div><h2>Read-only user comparison</h2><p class="um-note">No raw Auth UUIDs are displayed.</p></div>
+        <button class="um-btn secondary" id="refreshUsersButton" type="button">Refresh</button>
       </div>
-
       <div class="um-table-wrap">
         <table class="um-table">
-          <thead>
-            <tr>
-              <th class="um-select-cell">Select</th>
-              <th>User ID</th>
-              <th>Name</th>
-              <th>Email</th>
-              <th>Admin</th>
-              <th>Editor</th>
-            </tr>
-          </thead>
-          <tbody id="usersTableBody">
-            <tr><td colspan="6" class="um-empty">Loading users...</td></tr>
-          </tbody>
+          <thead><tr><th>Employee ID</th><th>Name</th><th>Email</th><th>Admin</th><th>Editor</th><th>Parity</th></tr></thead>
+          <tbody id="usersTableBody"><tr><td colspan="6" class="um-empty">Loading users...</td></tr></tbody>
         </table>
       </div>
-
       <p id="usersMessage" class="um-message" aria-live="polite"></p>
-
-      <div class="um-actions" style="justify-content:flex-end;margin-top:16px;">
-        <button class="um-btn secondary" id="resendInviteButton" type="button" disabled>Resend Invite</button>
-        <button class="um-btn secondary" id="editUserButton" type="button" disabled>Edit</button>
-        <button class="um-btn danger" id="deleteUserButton" type="button" disabled>Delete</button>
-      </div>
-    </section>
-
-    <section class="um-card">
-      <h2 style="margin-bottom:16px;">Change Password</h2>
-      <form id="changePasswordForm" class="um-form">
-        <input type="email" id="changeEmail" placeholder="User email" autocomplete="email" required>
-        <input type="password" id="newPassword" placeholder="New password" autocomplete="new-password" minlength="8" required>
-        <button class="um-btn" type="submit">Change Password</button>
-      </form>
-      <p id="changePasswordMessage" class="um-message" aria-live="polite"></p>
     </section>
   </main>
-
-  <div class="um-modal" id="inviteModal" role="dialog" aria-modal="true" aria-labelledby="inviteModalTitle" hidden>
-    <button class="um-backdrop" type="button" data-close="inviteModal" aria-label="Close invitation dialog"></button>
-    <section class="um-dialog">
-      <div class="um-dialog-header">
-        <h2 id="inviteModalTitle">Invite User</h2>
-        <button class="um-close" type="button" data-close="inviteModal" aria-label="Close">×</button>
-      </div>
-
-      <form id="inviteUserForm" class="um-form">
-        <input type="text" id="inviteName" placeholder="User name" autocomplete="name" required>
-        <input type="email" id="inviteEmail" placeholder="User email" autocomplete="email" required>
-
-        <div class="um-permissions">
-          <label class="um-check"><input type="checkbox" id="inviteIsAdmin"><span>Administrator account</span></label>
-          <label class="um-check"><input type="checkbox" id="inviteCanEdit"><span>Editor access</span></label>
-        </div>
-
-        <p class="um-note">The user will receive an email link to create their own password. No temporary password is displayed or shared.</p>
-
-        <div class="um-dialog-actions">
-          <button class="um-btn secondary" type="button" data-close="inviteModal">Cancel</button>
-          <button class="um-btn" id="sendInviteButton" type="submit">Send Invite</button>
-        </div>
-      </form>
-      <p id="inviteMessage" class="um-message" aria-live="polite"></p>
-    </section>
-  </div>
-
-  <div class="um-modal" id="editModal" role="dialog" aria-modal="true" aria-labelledby="editModalTitle" hidden>
-    <button class="um-backdrop" type="button" data-close="editModal" aria-label="Close edit dialog"></button>
-    <section class="um-dialog">
-      <div class="um-dialog-header">
-        <h2 id="editModalTitle">Edit User</h2>
-        <button class="um-close" type="button" data-close="editModal" aria-label="Close">×</button>
-      </div>
-
-      <form id="editUserForm" class="um-form">
-        <input type="text" id="editUserId" placeholder="User ID" readonly>
-        <input type="text" id="editName" placeholder="User name" required>
-        <input type="email" id="editEmail" placeholder="User email" required>
-        <div class="um-permissions">
-          <label class="um-check"><input type="checkbox" id="editIsAdmin"><span>Administrator account</span></label>
-          <label class="um-check"><input type="checkbox" id="editCanEdit"><span>Editor access</span></label>
-        </div>
-        <div class="um-dialog-actions">
-          <button class="um-btn secondary" type="button" data-close="editModal">Cancel</button>
-          <button class="um-btn" type="submit">Save Changes</button>
-        </div>
-      </form>
-      <p id="editMessage" class="um-message" aria-live="polite"></p>
-    </section>
-  </div>
-
-  <div class="um-modal" id="deleteModal" role="alertdialog" aria-modal="true" aria-labelledby="deleteModalTitle" hidden>
-    <button class="um-backdrop" type="button" data-close="deleteModal" aria-label="Close delete confirmation"></button>
-    <section class="um-dialog">
-      <div class="um-dialog-header"><h2 id="deleteModalTitle">Delete User</h2></div>
-      <p id="deleteSummary" class="um-note"></p>
-      <div class="um-dialog-actions" style="margin-top:18px;">
-        <button class="um-btn secondary" type="button" data-close="deleteModal">Cancel</button>
-        <button class="um-btn danger" id="confirmDeleteButton" type="button">Delete User</button>
-      </div>
-      <p id="deleteMessage" class="um-message" aria-live="polite"></p>
-    </section>
-  </div>
-
-  <script type="module" src="./scripts/user-management.js?v=1"></script>
-  <script type="module" src="./scripts/user-management-resend-invite.js?v=1"></script>
+  <script type="module" src="./scripts/user-management.js?v=2"></script>
 </body>
 </html>

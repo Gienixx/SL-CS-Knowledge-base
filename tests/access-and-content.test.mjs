@@ -13,7 +13,7 @@ import {
 
 const read = path => readFile(new URL(`../${path}`, import.meta.url), 'utf8')
 
-test('the supported user management page and module remain connected', async () => {
+test('the read-only user management comparison remains connected', async () => {
   const [html, script, client, onboarding] = await Promise.all([
     read('user-management.html'),
     read('scripts/user-management.js'),
@@ -21,8 +21,11 @@ test('the supported user management page and module remain connected', async () 
     read('docs/README-first-login.md')
   ])
   assert.match(html, /scripts\/user-management\.js/)
-  assert.match(html, /id="inviteUserForm"/)
+  assert.match(html, /Read-only compatibility view/)
+  assert.match(html, /Open Employee Profiles/)
+  assert.doesNotMatch(html, /inviteUserForm|editUserForm|deleteUserButton|changePasswordForm/)
   assert.match(script, /requireAdmin/)
+  assert.doesNotMatch(script, /\/create-user|\/user-settings|\/delete-user|\/change-password/)
   assert.doesNotMatch(client, /admin\.html|admin-invite-protocol/)
   assert.match(onboarding, /user-management\.html/)
 })

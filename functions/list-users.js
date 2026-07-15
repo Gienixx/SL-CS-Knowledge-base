@@ -309,6 +309,22 @@ async function getSystemOwnerEmail(
   return normalizeEmail(Array.isArray(owners) ? owners[0]?.email : '')
 }
 
+async function getWorkforceProfiles(supabaseUrl, serviceRoleKey) {
+  const url = new URL(`${supabaseUrl}/rest/v1/profiles`)
+  url.searchParams.set('select', 'user_id,employee_id,email,base_role,account_deleted_at')
+  url.searchParams.set('account_deleted_at', 'is.null')
+  const rows = await serviceRequest(url.toString(), serviceRoleKey)
+  return Array.isArray(rows) ? rows : []
+}
+
+async function getArticlePermissions(supabaseUrl, serviceRoleKey) {
+  const url = new URL(`${supabaseUrl}/rest/v1/user_permissions`)
+  url.searchParams.set('select', 'user_id,is_granted')
+  url.searchParams.set('permission_key', 'eq.edit_articles')
+  const rows = await serviceRequest(url.toString(), serviceRoleKey)
+  return new Map((Array.isArray(rows) ? rows : []).map(row => [row.user_id, row.is_granted === true]))
+}
+
 async function getAuthUsers(
   supabaseUrl,
   serviceRoleKey
@@ -389,7 +405,9 @@ export async function onRequestGet(
     const [
       loginUsers,
       authUsers,
-      systemOwnerEmail
+      systemOwnerEmail,
+      profiles,
+      articlePermissions
     ] = await Promise.all([
       getLoginUsers(
         supabaseUrl,
@@ -404,11 +422,17 @@ export async function onRequestGet(
       getSystemOwnerEmail(
         supabaseUrl,
         serviceRoleKey
-      )
+      ),
+      getWorkforceProfiles(supabaseUrl, serviceRoleKey),
+      getArticlePermissions(supabaseUrl, serviceRoleKey)
     ])
 
     const authUsersByEmail =
       new Map()
+
+    const profilesByEmail = new Map(
+      profiles.map(profile => [normalizeEmail(profile.email), profile])
+    )
 
     authUsers.forEach(authUser => {
       const email =
@@ -438,9 +462,19 @@ export async function onRequestGet(
             email
           )
 
+        const profile = profilesByEmail.get(email)
+        const canonicalAdmin = profile?.base_role === 'admin'
+        const canonicalEditor = profile
+          ? articlePermissions.get(profile.user_id) === true
+          : false
+        const parityIssues = []
+        if (!profile) parityIssues.push('Missing profile')
+        if (!authUser) parityIssues.push('Missing Auth')
+        if (profile && loginUser.is_admin === true !== canonicalAdmin) parityIssues.push('Admin mismatch')
+        if (profile && loginUser.can_edit_articles === true !== canonicalEditor) parityIssues.push('Editor mismatch')
+
         return {
-          user_id:
-            authUser?.id || '',
+          employee_id: profile?.employee_id || 'Missing profile',
 
           name:
             getDisplayName(
@@ -457,7 +491,10 @@ export async function onRequestGet(
           can_edit_articles:
             loginUser
               .can_edit_articles ===
-            true
+            true,
+
+          parity_ok: parityIssues.length === 0,
+          parity_issue: parityIssues.join(', ')
         }
       })
 

@@ -77,3 +77,5 @@ body.modal-open{overflow:hidden}
   .um-link,.um-btn{width:100%}
   .um-actions,.um-dialog-actions{width:100%}
 }
+.um-notice{display:flex;align-items:center;justify-content:space-between;gap:24px;margin-bottom:22px;padding:20px 22px;border:1px solid #d8d5ff;border-radius:16px;background:#f4f3ff}.um-notice strong{font-size:16px}.um-notice p{margin:6px 0 0;color:#5f5a78;line-height:1.5}.um-notice .um-btn{flex:none;text-decoration:none}
+@media(max-width:700px){.um-notice{align-items:flex-start;flex-direction:column}}

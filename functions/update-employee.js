@@ -174,14 +174,14 @@ async function verifyIdentity(
   employmentStatus
 ) {
   const profileUrl = new URL(`${authorization.supabaseUrl}/rest/v1/profiles`)
-  profileUrl.searchParams.set('select', 'user_id,email,employment_status')
+  profileUrl.searchParams.set('select', 'user_id,email,employment_status,base_role')
   profileUrl.searchParams.set('user_id', `eq.${userId}`)
   profileUrl.searchParams.set('email', `eq.${email}`)
   profileUrl.searchParams.set('employment_status', `eq.${employmentStatus}`)
   profileUrl.searchParams.set('limit', '1')
 
   const loginUrl = new URL(`${authorization.supabaseUrl}/rest/v1/login`)
-  loginUrl.searchParams.set('select', 'email')
+  loginUrl.searchParams.set('select', 'email,is_admin,can_edit_articles')
   loginUrl.searchParams.set('email', `eq.${email}`)
   loginUrl.searchParams.set('limit', '1')
 
@@ -192,14 +192,32 @@ async function verifyIdentity(
   linkUrl.searchParams.set('is_active', 'eq.true')
   linkUrl.searchParams.set('limit', '1')
 
-  const [profiles, logins, links] = await Promise.all([
+  const permissionUrl = new URL(`${authorization.supabaseUrl}/rest/v1/user_permissions`)
+  permissionUrl.searchParams.set('select', 'is_granted')
+  permissionUrl.searchParams.set('user_id', `eq.${userId}`)
+  permissionUrl.searchParams.set('permission_key', 'eq.edit_articles')
+  permissionUrl.searchParams.set('limit', '1')
+
+  const [profiles, logins, links, articlePermissions] = await Promise.all([
     supabaseRequest(profileUrl, authorization.serviceRoleKey),
     supabaseRequest(loginUrl, authorization.serviceRoleKey),
-    supabaseRequest(linkUrl, authorization.serviceRoleKey)
+    supabaseRequest(linkUrl, authorization.serviceRoleKey),
+    supabaseRequest(permissionUrl, authorization.serviceRoleKey)
   ])
   if (!profiles?.length || !logins?.length || !links?.length) {
     throw new EmployeeUpdateError(
       'Identity synchronization verification failed; previous values will be restored.',
+      500
+    )
+  }
+  const canonicalAdmin = profiles[0].base_role === 'admin'
+  const canonicalEditor = articlePermissions?.[0]?.is_granted === true
+  if (
+    logins[0].is_admin !== canonicalAdmin ||
+    logins[0].can_edit_articles !== canonicalEditor
+  ) {
+    throw new EmployeeUpdateError(
+      'Compatibility parity verification failed; previous values will be restored.',
       500
     )
   }
