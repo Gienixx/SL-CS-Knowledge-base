@@ -32,7 +32,7 @@ test('employee and team pages require authorized workforce administration', asyn
   assert.match(employeeHtml, /Effective permissions/)
   assert.match(employeeScript, /requireWorkforcePermission\(supabase,\s*'manage_employees'/)
   assert.match(employeeScript, /access\.is_admin\s*!==\s*true/)
-  assert.match(employeeScript, /workforce_admin_save_employee/)
+  assert.match(employeeScript, /authenticatedRequest\('\/update-employee'/)
 
   assert.match(teamHtml, /Team Management/)
   assert.match(teamScript, /requireWorkforcePermission\(supabase,\s*'manage_employees'/)

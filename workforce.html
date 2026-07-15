@@ -258,7 +258,7 @@
           </label>
           <label class="wf-field">
             <span>Email</span>
-            <input class="wf-control" id="employeeEmail" type="email" readonly>
+            <input class="wf-control" id="employeeEmail" type="email" autocomplete="email" required>
           </label>
           <label class="wf-field">
             <span>Employee ID</span>
@@ -314,7 +314,7 @@
           </div>
         </div>
 
-        <p class="wf-note">Attendance correction and approval permissions apply only to administrators. Payroll access does not include either permission. Access changes are applied transactionally and recorded in the workforce audit log.</p>
+        <p class="wf-note">Name and email changes are synchronized across Supabase Auth, the employee profile, compatibility login, and identity link. If synchronization fails, the previous values are restored. Attendance correction and approval permissions apply only to administrators. Payroll access does not include either permission.</p>
         <div class="wf-dialog-actions">
           <button class="wf-btn secondary" type="button" data-close="employeeModal">Cancel</button>
           <button class="wf-btn" id="saveEmployeeButton" type="submit">Save Employee</button>

@@ -558,6 +558,7 @@ async function saveEmployee(event) {
 
   const userId = document.getElementById('employeeUserId').value
   const fullName = normalizeText(document.getElementById('employeeFullName').value)
+  const email = normalizeText(document.getElementById('employeeEmail').value).toLowerCase()
   const employeeId = normalizeText(document.getElementById('employeeId').value)
   const employmentStatus = document.getElementById('employmentStatus').value
   const accessType = accessTypeSelect.value
@@ -568,8 +569,8 @@ async function saveEmployee(event) {
   const permissions = readPermissionCheckboxes()
   const profile = profiles.find(item => item.user_id === userId)
 
-  if (!userId || !fullName || !employeeId) {
-    setMessage(formMessage, 'Full name and employee ID are required.', 'error')
+  if (!userId || !fullName || !email || !employeeId) {
+    setMessage(formMessage, 'Full name, email, and employee ID are required.', 'error')
     return
   }
 
@@ -583,20 +584,22 @@ async function saveEmployee(event) {
   setMessage(formMessage, 'Saving employee profile and permissions...')
 
   try {
-    const { error } = await supabase.rpc('workforce_admin_save_employee', {
-      p_user_id: userId,
-      p_full_name: fullName,
-      p_employee_id: employeeId,
-      p_employment_status: employmentStatus,
-      p_access_type: accessType,
-      p_team_id: teamId,
-      p_supervisor_id: supervisorId,
-      p_timezone: timezone,
-      p_permissions: permissions,
-      p_reason: reason
+    await authenticatedRequest('/update-employee', {
+      method: 'POST',
+      body: JSON.stringify({
+        userId,
+        fullName,
+        email,
+        employeeId,
+        employmentStatus,
+        accessType,
+        teamId,
+        supervisorId,
+        timezone,
+        permissions,
+        reason
+      })
     })
-
-    if (error) throw error
 
     setMessage(formMessage, 'Employee profile updated successfully.', 'success')
     await loadWorkforceData()
