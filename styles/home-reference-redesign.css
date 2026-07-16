@@ -69,23 +69,25 @@ body {
 .sidebar-link:hover { color: #fff; background: rgba(255,255,255,.06); transform: none; }
 .sidebar-link.active { color: #fff; background: rgba(255,255,255,.1); }
 .sidebar-icon {
-  width: 6px;
-  min-width: 6px;
-  max-width: 6px;
-  height: 6px;
-  min-height: 6px;
-  max-height: 6px;
-  flex: 0 0 6px;
-  display: block;
+  width: 16px;
+  min-width: 16px;
+  max-width: 16px;
+  height: 16px;
+  min-height: 16px;
+  max-height: 16px;
+  flex: 0 0 16px;
+  display: grid;
+  place-items: center;
   padding: 0;
   overflow: hidden;
-  border-radius: 50%;
-  color: transparent;
-  background: #6f7896;
+  border-radius: 0;
+  color: #a9b1c9;
+  background: transparent;
   font-size: 0;
   line-height: 0;
 }
-.sidebar-link.active .sidebar-icon { background: var(--home-gold); }
+.sidebar-icon svg { width: 16px; height: 16px; fill: none; stroke: currentColor; stroke-width: 1.7; stroke-linecap: round; stroke-linejoin: round; }
+.sidebar-link.active .sidebar-icon { color: var(--home-gold); background: transparent; }
 
 .sidebar-group-label {
   margin: 13px 0 5px;
