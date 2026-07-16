@@ -11,12 +11,13 @@
   <link rel="stylesheet" href="./styles/home-sidebar-collapse.css?v=2" />
   <link rel="stylesheet" href="./styles/home-workforce-calendar.css?v=3" />
   <link rel="stylesheet" href="./styles/home-google-calendar.css?v=1" />
+  <link rel="stylesheet" href="./styles/home-reference-redesign.css?v=2" />
 </head>
 <body>
   <div class="home-layout">
     <aside id="homeSidebar" class="home-sidebar" aria-label="Primary navigation">
       <button id="sidebarCollapseToggle" class="sidebar-brand sidebar-collapse-toggle" type="button" aria-label="Minimize sidebar" aria-expanded="true">
-        <span class="sidebar-hamburger" aria-hidden="true"><i></i><i></i><i></i></span>
+        <span class="sidebar-hamburger" aria-hidden="true">S</span>
         <span class="sidebar-brand-copy">
           <strong>SocialLoop</strong>
           <small>CS Workspace</small>
@@ -32,6 +33,7 @@
           <span class="sidebar-icon" aria-hidden="true">▦</span>
           <span>Analytics</span>
         </a>
+        <p class="sidebar-group-label">Resources</p>
         <a class="sidebar-link" href="./KB.html" title="Knowledge Base">
           <span class="sidebar-icon" aria-hidden="true">▤</span>
           <span>Knowledge Base</span>
@@ -40,6 +42,7 @@
           <span class="sidebar-icon" aria-hidden="true">⌘</span>
           <span>Organizational Chart</span>
         </a>
+        <p class="sidebar-group-label">My work</p>
         <a id="homeMyScheduleBtn" class="sidebar-link" href="./my-schedule.html" title="My Schedule" hidden>
           <span class="sidebar-icon" aria-hidden="true">◫</span>
           <span>My Schedule</span>
@@ -52,6 +55,7 @@
           <span class="sidebar-icon" aria-hidden="true">🗓</span>
           <span>Leave Requests</span>
         </a>
+        <div class="sidebar-admin-links">
         <a id="homeTeamAttendanceBtn" class="sidebar-link" href="./team-attendance.html" title="Team Attendance" hidden>
           <span class="sidebar-icon" aria-hidden="true">◉</span>
           <span>Team Attendance</span>
@@ -64,13 +68,14 @@
           <span class="sidebar-icon" aria-hidden="true">✎</span>
           <span>Article Management</span>
         </a>
-        <a id="homeChangePasswordBtn" class="sidebar-link" href="./change-password.html" title="Change Password" hidden>
-          <span class="sidebar-icon" aria-hidden="true">●</span>
-          <span>Change Password</span>
-        </a>
+        </div>
       </nav>
 
       <div class="sidebar-footer">
+        <a id="homeChangePasswordBtn" class="sidebar-link sidebar-password" href="./change-password.html" title="Change Password" hidden>
+          <span class="sidebar-icon" aria-hidden="true">●</span>
+          <span>Change Password</span>
+        </a>
         <div class="sidebar-user">
           <span id="homeUserAvatar" class="user-avatar" aria-hidden="true">CS</span>
           <span class="sidebar-user-copy">
@@ -91,7 +96,7 @@
           <div>
             <p id="homeCurrentDate" class="home-date">Loading date...</p>
             <h1>Welcome back, <span id="homeFirstName">Team</span></h1>
-            <p class="home-subtitle">Your CS and Support Team overview for the latest reporting day.</p>
+            <p class="home-subtitle">Here's where the CS team stands as of the latest reporting day.</p>
           </div>
         </div>
       </header>
@@ -99,53 +104,49 @@
       <section class="latest-summary" aria-labelledby="latestSummaryTitle">
         <div class="section-heading summary-heading">
           <div>
-            <p class="section-eyebrow">Latest day</p>
             <h2 id="latestSummaryTitle">Support snapshot</h2>
+            <p class="snapshot-subtitle">The backlog is what needs attention — everything else is context.</p>
           </div>
           <span id="homeLatestDate" class="data-status">Loading data...</span>
         </div>
 
         <div class="metric-grid">
+          <article class="metric-card backlog-card">
+            <div>
+              <p>Unsolved backlog</p>
+              <strong id="homeUnsolvedTickets">—</strong>
+              <small>Open tickets carrying over</small>
+            </div>
+          </article>
           <article class="metric-card">
-            <span class="metric-symbol purple" aria-hidden="true">+</span>
             <div>
               <p>New tickets</p>
               <strong id="homeNewTickets">—</strong>
-              <small>Received on the latest reporting date</small>
+              <small>Received on the reporting day</small>
             </div>
           </article>
           <article class="metric-card">
-            <span class="metric-symbol gold" aria-hidden="true">✓</span>
             <div>
-              <p>Solved tickets</p>
+              <p>Solved</p>
               <strong id="homeSolvedTickets">—</strong>
-              <small>Closed on the latest reporting date</small>
+              <small>Closed the same day</small>
             </div>
           </article>
           <article class="metric-card">
-            <span class="metric-symbol red" aria-hidden="true">!</span>
             <div>
-              <p>Unsolved tickets</p>
-              <strong id="homeUnsolvedTickets">—</strong>
-              <small>Current open-ticket backlog</small>
-            </div>
-          </article>
-          <article class="metric-card">
-            <span class="metric-symbol green" aria-hidden="true">1</span>
-            <div>
-              <p>One-touch resolution</p>
+              <p>One-touch rate</p>
               <strong id="homeOneTouch">—</strong>
               <small>Resolved in one interaction</small>
             </div>
           </article>
         </div>
+        <p id="homeBacklogDelta" class="snapshot-note">Comparing solved and received tickets…</p>
       </section>
 
       <section class="home-grid">
         <article class="home-panel trend-panel announcements-panel">
           <div class="section-heading">
             <div>
-              <p class="section-eyebrow">Team announcements and updates</p>
               <h2>Latest team updates</h2>
             </div>
           </div>
@@ -167,7 +168,6 @@
         <article class="home-panel calendar-panel">
           <div class="section-heading">
             <div>
-              <p class="section-eyebrow">Team calendar</p>
               <h2 id="calendarMonthLabel">Calendar</h2>
             </div>
             <div class="calendar-controls">

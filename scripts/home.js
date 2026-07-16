@@ -150,6 +150,7 @@ async function loadHomeMetrics() {
 
   if (!Array.isArray(data) || data.length === 0) {
     setText('homeLatestDate', 'No imported data')
+    setText('homeBacklogDelta', 'Import ticket data to compare solved and received volume.')
     setText('homeChartPeriod', 'No data')
     renderTicketChart([])
     return
@@ -163,6 +164,7 @@ async function loadHomeMetrics() {
   setText('homeSolvedTickets', formatCount(latestRow.solved_tickets))
   setText('homeUnsolvedTickets', formatCount(latestRow.unsolved_tickets))
   setText('homeOneTouch', formatPercentage(latestRow.one_touch_resolution))
+  renderBacklogDelta(latestRow)
   setText(
     'homeChartPeriod',
     `${chronologicalRows.length} day${chronologicalRows.length === 1 ? '' : 's'}`
@@ -173,6 +175,7 @@ async function loadHomeMetrics() {
 
 function setMetricStateUnavailable() {
   setText('homeLatestDate', 'Data unavailable')
+  setText('homeBacklogDelta', 'Ticket volume comparison is currently unavailable.')
   setText('homeChartPeriod', 'Unavailable')
   renderTicketChart([])
 
@@ -182,6 +185,22 @@ function setMetricStateUnavailable() {
     chartState.textContent =
       'The latest ticket data could not be loaded. Open Analytics or contact an administrator.'
   }
+}
+
+function renderBacklogDelta(row) {
+  const solved = Number(row?.solved_tickets)
+  const received = Number(row?.new_tickets)
+  const target = document.getElementById('homeBacklogDelta')
+
+  if (!target || !Number.isFinite(solved) || !Number.isFinite(received)) return
+
+  const difference = solved - received
+  if (difference >= 0) {
+    target.innerHTML = `Team closed <strong>${formatCount(difference)} more</strong> tickets than came in — backlog is shrinking.`
+    return
+  }
+
+  target.innerHTML = `<strong>${formatCount(Math.abs(difference))} more</strong> tickets came in than were solved — backlog increased.`
 }
 
 function renderCurrentDate() {
