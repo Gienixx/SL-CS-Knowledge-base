@@ -3,33 +3,25 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Login | SocialLoop CS Base</title>
-  
-  <link
-    rel="stylesheet"
-    href="./styles/button-theme.css?v=1"
-  >
-  
+  <title>SocialLoop — Login</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,400;0,9..144,500;0,9..144,600;1,9..144,500&family=Manrope:wght@400;500;600;700;800&display=swap" rel="stylesheet">
   <style>
     :root {
-      --bg: #fbf8f1;
-      --bg-alt: #f4eee1;
-      --panel: rgba(255, 255, 255, 0.94);
-      --line: rgba(36, 27, 93, 0.08);
-      --line-strong: rgba(255, 194, 26, 0.42);
-      --text: #2b2459;
-      --muted: #6f678f;
-      --cyan: #241b5d;
-      --amber: #ffc21a;
-      --cyan-soft: rgba(255, 194, 26, 0.12);
-      --radius: 18px;
-      --shadow: 0 28px 80px rgba(36, 27, 93, 0.12);
-      font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      --paper: #f6f8f2;
+      --ink: #1e2233;
+      --ink-soft: #454b5e;
+      --slate: #6b7280;
+      --coral: #ff6b4a;
+      --gold: #e7a800;
+      --sage: #e8eedd;
+      --sage-deep: #d7e3c6;
+      --line: rgba(30, 34, 51, 0.1);
+      --radius-lg: 22px;
     }
 
-    * {
-      box-sizing: border-box;
-    }
+    * { box-sizing: border-box; }
 
     html,
     body {
@@ -38,351 +30,315 @@
     }
 
     body {
-      color: var(--text);
-      background:
-        radial-gradient(circle at 10% 12%, rgba(255, 194, 26, 0.24), transparent 24rem),
-        radial-gradient(circle at 88% 16%, rgba(36, 27, 93, 0.12), transparent 26rem),
-        linear-gradient(180deg, var(--bg) 0%, var(--bg-alt) 100%);
-      overflow-x: hidden;
-    }
-
-    body::before {
-      content: "";
-      position: fixed;
-      inset: 0;
-      pointer-events: none;
-      opacity: 0.16;
-      background-image:
-        linear-gradient(rgba(36, 27, 93, 0.05) 1px, transparent 1px),
-        linear-gradient(90deg, rgba(36, 27, 93, 0.05) 1px, transparent 1px);
-      background-size: 72px 72px, 72px 72px;
-      mask-image: linear-gradient(to bottom, rgba(0, 0, 0, 1), rgba(0, 0, 0, 0.16));
-    }
-
-    .page {
-      position: relative;
       min-height: 100vh;
-      display: grid;
-      place-items: center;
-      padding: 32px 18px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 56px 24px;
+      color: var(--ink);
+      background:
+        radial-gradient(1100px 600px at 8% -10%, #fdefc9 0%, rgba(253, 239, 201, 0) 55%),
+        radial-gradient(900px 600px at 100% 0%, #e3e7f0 0%, rgba(227, 231, 240, 0) 55%),
+        var(--paper);
+      font-family: "Manrope", -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      -webkit-font-smoothing: antialiased;
     }
 
-    .login-shell {
+    .shell {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
       width: min(980px, 100%);
-      display: grid;
-      grid-template-columns: 1.05fr 0.95fr;
-      gap: 24px;
-      align-items: stretch;
+      gap: 22px;
     }
 
-    .hero-panel,
-    .form-panel {
-      border: 1px solid var(--line);
-      border-radius: var(--radius);
-      box-shadow: var(--shadow);
-      overflow: hidden;
-      background: linear-gradient(180deg, rgba(255, 255, 255, 0.96), rgba(250, 246, 238, 0.96));
+    .panel {
+      padding: 44px 40px;
+      border: 1px solid rgba(255, 255, 255, 0.6);
+      border-radius: var(--radius-lg);
+      background: rgba(255, 255, 255, 0.72);
+      box-shadow: 0 24px 50px -30px rgba(30, 34, 51, 0.25);
+      backdrop-filter: blur(6px);
     }
 
-    .hero-panel {
-      padding: 42px;
+    .left {
       display: flex;
       flex-direction: column;
       justify-content: space-between;
-      position: relative;
+      min-height: 560px;
     }
 
-    .brand {
-      display: inline-flex;
+    .wordmark {
+      display: flex;
       align-items: center;
-      gap: 12px;
+      gap: 10px;
+      color: var(--ink);
+      font-family: "Fraunces", serif;
+      font-size: 13px;
+      font-weight: 600;
+      letter-spacing: 0.08em;
       text-decoration: none;
-      color: var(--text);
-      font-weight: 800;
-      letter-spacing: 0.14em;
       text-transform: uppercase;
-      font-size: 0.95rem;
     }
 
-    .brand-mark {
-      width: 28px;
-      height: 22px;
-      display: grid;
-      grid-template-columns: repeat(3, 7px);
-      gap: 4px;
-      align-items: end;
+    .mark {
+      width: 20px;
+      height: 20px;
+      flex: 0 0 auto;
     }
 
-    .brand-mark span {
-      display: block;
-      background: var(--amber, #ffc21a);
-      border-radius: 1px;
-      box-shadow: 0 0 18px rgba(255, 194, 26, 0.42);
+    .left-mid { margin: auto 0 0; }
+
+    .left h1 {
+      margin: 0 0 18px;
+      font-family: "Fraunces", serif;
+      font-size: clamp(38px, 5vw, 46px);
+      font-weight: 500;
+      line-height: 1.05;
+      letter-spacing: -0.015em;
     }
 
-    .brand-mark span:nth-child(1) { height: 7px; }
-    .brand-mark span:nth-child(2) { height: 22px; }
-    .brand-mark span:nth-child(3) { height: 13px; }
-
-    .hero-copy {
-      margin-top: 44px;
-      max-width: 420px;
+    .left h1 em {
+      color: var(--coral);
+      font-style: italic;
     }
 
-    .hero-copy h1 {
-      margin: 0 0 16px;
-      font-size: clamp(2.4rem, 4vw, 4.3rem);
-      line-height: 0.98;
-      letter-spacing: 0.03em;
+    .left p {
+      max-width: 360px;
+      margin: 0 0 26px;
+      color: var(--ink-soft);
+      font-size: 15.5px;
+      line-height: 1.6;
     }
 
-    .hero-copy p {
-      margin: 0;
-      color: var(--muted);
-      font-size: 1.02rem;
-      line-height: 1.72;
-    }
-
-    .login-meta {
-      margin-top: 28px;
+    .pills {
       display: flex;
       flex-wrap: wrap;
-      gap: 10px;
+      gap: 9px;
     }
 
     .pill {
-      border: 1px solid rgba(255, 194, 26, 0.22);
-      background: rgba(255, 194, 26, 0.12);
-      color: var(--cyan);
+      padding: 8px 14px;
+      border: 1px solid var(--sage-deep);
       border-radius: 999px;
-      padding: 8px 12px;
-      font-size: 0.84rem;
+      color: #4e6339;
+      background: var(--sage);
+      font-size: 12.5px;
       font-weight: 700;
     }
 
-    .form-panel {
-      padding: 42px;
-      background:
-        linear-gradient(180deg, rgba(255, 255, 255, 0.98), rgba(248, 243, 233, 0.94));
+    .right h2 {
+      margin: 0 0 8px;
+      font-family: "Fraunces", serif;
+      font-size: 30px;
+      font-weight: 500;
     }
 
-    .form-panel h2 {
-      margin: 0 0 10px;
-      font-size: 1.9rem;
-    }
-
-    .form-panel .subtext {
+    .sub {
       margin: 0 0 28px;
-      color: var(--muted);
-      line-height: 1.65;
+      color: var(--slate);
+      font-size: 14.5px;
     }
 
-    form {
-      display: grid;
-      gap: 18px;
-    }
+    form { display: block; }
+
+    .field { margin-bottom: 20px; }
 
     label {
       display: block;
       margin: 0 0 8px;
-      font-size: 0.92rem;
+      color: var(--ink);
+      font-size: 13px;
       font-weight: 700;
-      color: var(--text);
     }
 
-    input {
+    input[type="email"],
+    input[type="password"] {
       width: 100%;
+      padding: 13px 15px;
       border: 1px solid var(--line);
-      background: rgba(255, 255, 255, 0.96);
-      color: var(--text);
       border-radius: 12px;
-      padding: 14px 16px;
-      font-size: 1rem;
       outline: none;
-      transition: border-color 180ms ease, box-shadow 180ms ease, background 180ms ease;
+      color: var(--ink);
+      background: #fff;
+      font: 14.5px "Manrope", sans-serif;
+      transition: border-color 150ms ease, box-shadow 150ms ease;
     }
+
+    input::placeholder { color: #a6abb8; }
 
     input:focus {
-      border-color: var(--line-strong);
-      box-shadow: 0 0 0 4px var(--cyan-soft);
-      background: #ffffff;
+      border-color: var(--coral);
+      box-shadow: 0 0 0 3px rgba(255, 107, 74, 0.14);
     }
 
-    .form-row {
-      display: grid;
-      gap: 8px;
-    }
-
-    .form-tools {
+    .row-between {
       display: flex;
       align-items: center;
       justify-content: space-between;
-      gap: 12px;
-      flex-wrap: wrap;
-      font-size: 0.92rem;
-      color: var(--muted);
+      gap: 16px;
+      margin: 2px 0 26px;
     }
 
     .remember {
-      display: inline-flex;
+      display: flex;
       align-items: center;
-      gap: 8px;
+      gap: 9px;
+      margin: 0;
+      color: var(--ink-soft);
+      font-size: 13.5px;
+      font-weight: 600;
+      cursor: pointer;
     }
 
     .remember input {
       width: 16px;
       height: 16px;
       margin: 0;
-      accent-color: var(--cyan);
+      accent-color: var(--coral);
     }
 
-    .forgot {
-      color: var(--cyan);
+    .need-help {
+      color: var(--coral);
+      font-size: 13.5px;
+      font-weight: 700;
       text-decoration: none;
     }
 
-    .forgot:hover {
-      text-decoration: underline;
-    }
+    .need-help:hover { text-decoration: underline; }
 
-    .actions {
-      display: grid;
-      gap: 12px;
-      margin-top: 6px;
-    }
-
-    .btn {
-      border: 0;
-      border-radius: 12px;
-      padding: 14px 16px;
-      font-size: 1rem;
-      font-weight: 800;
+    .btn-primary,
+    .btn-outline {
+      width: 100%;
+      display: block;
+      border-radius: 999px;
+      font-family: "Manrope", sans-serif;
+      font-weight: 700;
       cursor: pointer;
-      transition: transform 160ms ease, box-shadow 160ms ease, background 160ms ease;
-    }
-
-    .btn:hover {
-      transform: translateY(-1px);
+      transition: transform 180ms ease, border-color 180ms ease, background 180ms ease;
     }
 
     .btn-primary {
-      background: linear-gradient(135deg, #ffc21a, #ffe08a);
-      color: var(--text);
-      box-shadow: 0 14px 28px rgba(255, 194, 26, 0.18);
+      margin: 0 0 12px;
+      padding: 15px 20px;
+      border: 0;
+      color: #fff;
+      background: var(--ink);
+      font-size: 15px;
     }
 
-    .btn-secondary {
-      background: rgba(255, 255, 255, 0.9);
-      color: var(--text);
-      border: 1px solid var(--line);
-      text-decoration: none;
+    .btn-primary:hover:not(:disabled) {
+      background: #33384f;
+      transform: translateY(-1px);
+    }
+
+    .btn-primary:disabled {
+      cursor: wait;
+      opacity: 0.72;
+    }
+
+    .btn-outline {
+      padding: 13.5px 20px;
+      border: 1.5px solid var(--line);
+      color: var(--ink);
+      background: #fff;
+      font-size: 14.5px;
       text-align: center;
+      text-decoration: none;
     }
 
-    .footer-note {
-      margin-top: 18px;
-      color: var(--muted);
-      font-size: 0.88rem;
+    .btn-outline:hover {
+      border-color: var(--ink);
+      background: #fafaf8;
+    }
+
+    .status {
+      min-height: 1.4em;
+      margin: 16px 0 0;
+      color: var(--slate);
+      font-size: 13px;
       line-height: 1.5;
       text-align: center;
     }
 
-    .status {
-      min-height: 1.25em;
-      margin: -2px 0 0;
-      color: var(--muted);
-      font-size: 0.92rem;
+    .status.error { color: #b33d2c; }
+    .status.success { color: #4e6339; }
+
+    .foot-note {
+      margin: 8px 0 0;
+      color: var(--slate);
+      font-size: 12.5px;
+      line-height: 1.55;
+      text-align: center;
     }
 
-    .status.error {
-      color: #9b5560;
-    }
-
-    .status.success {
-      color: #6f678f;
-    }
-
-    @media (max-width: 860px) {
-      .login-shell {
-        grid-template-columns: 1fr;
-      }
-
-      .hero-panel,
-      .form-panel {
-        padding: 28px;
-      }
+    @media (max-width: 820px) {
+      body { padding: 28px 18px; }
+      .shell { grid-template-columns: 1fr; }
+      .left { min-height: 360px; }
     }
 
     @media (max-width: 520px) {
-      .page {
-        padding: 18px 12px;
-      }
-
-      .hero-copy h1 {
-        font-size: 2.3rem;
-      }
-
-      .form-panel h2 {
-        font-size: 1.6rem;
-      }
+      body { padding: 14px 10px; }
+      .panel { padding: 30px 24px; }
+      .left { min-height: 330px; }
+      .row-between { align-items: flex-start; }
     }
   </style>
 </head>
 <body>
-  <main class="page">
-    <section class="login-shell" aria-labelledby="login-title">
-      <div class="hero-panel">
-        <a class="brand" href="index-modular.html" aria-label="Back to home">
-          <span class="brand-mark" aria-hidden="true"><span></span><span></span><span></span></span>
-          SocialLoop CS Base
-        </a>
+  <main class="shell" aria-labelledby="login-title">
+    <section class="panel left">
+      <a class="wordmark" href="index-modular.html" aria-label="SocialLoop CS Base home">
+        <svg class="mark" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+          <path d="M12 3.5C7 3.5 3.5 6.6 3.5 12S7 20.5 12 20.5 20.5 17.4 20.5 12" stroke="#FF6B4A" stroke-width="2.6" stroke-linecap="round"/>
+          <path d="M20.5 12c0-5.4-3.5-8.5-8.5-8.5" stroke="#E7A800" stroke-width="2.6" stroke-linecap="round" stroke-dasharray="0.5 6"/>
+        </svg>
+        SocialLoop CS Base
+      </a>
 
-        <div class="hero-copy">
-          <h1 id="login-title">Welcome back</h1>
-          <p>Sign in to access the knowledge base, support pages, and internal resources.</p>
-          <div class="login-meta" aria-label="Login highlights">
-            <span class="pill">Secure access</span>
-            <span class="pill">Team resources</span>
-            <span class="pill">Fast entry</span>
-          </div>
+      <div class="left-mid">
+        <h1 id="login-title">Welcome<br><em>back.</em></h1>
+        <p>Sign in to reach the knowledge base, support pages, and internal resources.</p>
+        <div class="pills" aria-label="Login highlights">
+          <span class="pill">Secure access</span>
+          <span class="pill">Team resources</span>
+          <span class="pill">Fast entry</span>
         </div>
       </div>
+    </section>
 
-      <div class="form-panel">
-        <h2>Login</h2>
-        <p class="subtext">Use your team credentials to continue.</p>
+    <section class="panel right" aria-labelledby="form-title">
+      <h2 id="form-title">Log in</h2>
+      <p class="sub">Use your team credentials to continue.</p>
 
-        <form id="loginForm" action="#" method="post">
-          <div class="form-row">
-            <label for="email">Email</label>
-            <input type="email" id="email" name="email" placeholder="you@example.com" autocomplete="email" required />
-          </div>
+      <form id="loginForm" action="#" method="post">
+        <div class="field">
+          <label for="email">Email</label>
+          <input id="email" name="email" type="email" placeholder="you@example.com" autocomplete="email" required>
+        </div>
 
-          <div class="form-row">
-            <label for="password">Password</label>
-            <input type="password" id="password" name="password" placeholder="Your password" autocomplete="current-password" required />
-          </div>
+        <div class="field">
+          <label for="password">Password</label>
+          <input id="password" name="password" type="password" placeholder="Your password" autocomplete="current-password" required>
+        </div>
 
-          <div class="form-tools">
-            <label class="remember" for="remember">
-              <input type="checkbox" id="remember" name="remember" />
-              Remember me
-            </label>
-            <a class="forgot" href="contact.html">Need help?</a>
-          </div>
+        <div class="row-between">
+          <label class="remember" for="remember">
+            <input id="remember" name="remember" type="checkbox">
+            Remember me
+          </label>
+          <a href="contact.html" class="need-help">Need help?</a>
+        </div>
 
-          <div class="actions">
-            <button class="btn btn-primary" type="submit">Sign In</button>
-            <a class="btn btn-secondary" href="index-modular.html">Back to Home</a>
-          </div>
-        </form>
+        <button class="btn-primary" type="submit">Sign in</button>
+        <a href="index-modular.html" class="btn-outline">Back to home</a>
+      </form>
 
-        <p class="status" id="loginStatus" aria-live="polite"></p>
-
-        <p class="footer-note">This is a basic front-end login shell. Connect it to your auth flow when you're ready.</p>
-      </div>
+      <p class="status" id="loginStatus" aria-live="polite"></p>
+      <p class="foot-note">Secure access for SocialLoop team members.</p>
     </section>
   </main>
- <script type="module" src="./scripts/login.js?v=1"></script>
+
+  <script type="module" src="./scripts/login.js?v=1"></script>
 </body>
 </html>
