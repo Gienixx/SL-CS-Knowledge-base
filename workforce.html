@@ -182,7 +182,7 @@
 
   <div class="wf-modal" id="employeeInviteModal" role="dialog" aria-modal="true" aria-labelledby="employeeInviteModalTitle" hidden>
     <button class="wf-backdrop" type="button" data-close="employeeInviteModal" aria-label="Close user invitation dialog"></button>
-    <section class="wf-dialog">
+    <section class="wf-dialog wf-schedule-dialog">
       <div class="wf-dialog-header">
         <h2 id="employeeInviteModalTitle">Invite User</h2>
         <button class="wf-close" type="button" data-close="employeeInviteModal" aria-label="Close">×</button>
@@ -324,29 +324,6 @@
     </section>
   </div>
 
-  <div class="wf-modal" id="scheduleTypeModal" role="dialog" aria-modal="true" aria-labelledby="scheduleTypeModalTitle" hidden>
-    <button class="wf-backdrop" type="button" data-schedule-type-close aria-label="Close schedule type dialog"></button>
-    <section class="wf-dialog compact">
-      <div class="wf-dialog-header">
-        <div>
-          <h2 id="scheduleTypeModalTitle">Create Schedule</h2>
-          <p class="wf-subtext">Choose how many days you want to load.</p>
-        </div>
-        <button class="wf-close" type="button" data-schedule-type-close aria-label="Close">×</button>
-      </div>
-      <div class="wf-schedule-type-options">
-        <button class="wf-schedule-type-card" type="button" data-schedule-type="day">
-          <strong>1 Day Schedule</strong>
-          <span>Load a schedule for one selected date.</span>
-        </button>
-        <button class="wf-schedule-type-card" type="button" data-schedule-type="week">
-          <strong>1 Week Schedule</strong>
-          <span>Load the schedule across a From and To date range.</span>
-        </button>
-      </div>
-    </section>
-  </div>
-
   <div class="wf-modal" id="scheduleModal" role="dialog" aria-modal="true" aria-labelledby="scheduleModalTitle" hidden>
     <button class="wf-backdrop" type="button" data-schedule-close aria-label="Close schedule dialog"></button>
     <section class="wf-dialog">
@@ -357,51 +334,79 @@
 
       <form id="scheduleForm" class="wf-form">
         <input id="scheduleId" type="hidden">
-        <div class="wf-form-grid">
-          <label class="wf-field full">
+        <div class="wf-form-grid wf-schedule-form-grid">
+          <label class="wf-field full wf-schedule-user-field">
             <span>User</span>
             <select class="wf-control" id="scheduleEmployee" required><option value="">Select user</option></select>
           </label>
-          <label class="wf-field" id="scheduleDateField">
-            <span>Shift date</span>
-            <input class="wf-control" id="scheduleDate" type="date" required>
-          </label>
-          <div class="wf-form-grid full" id="scheduleRangeFields" hidden>
-            <label class="wf-field">
-              <span>From</span>
-              <input class="wf-control" id="scheduleFromDate" type="date">
-            </label>
-            <label class="wf-field">
-              <span>To</span>
-              <input class="wf-control" id="scheduleToDate" type="date">
-            </label>
-          </div>
-          <label class="wf-field">
-            <span>Shift sequence</span>
-            <input class="wf-control" id="scheduleSequence" type="number" min="1" max="99" value="1" required>
-          </label>
-          <label class="wf-field">
-            <span>Timezone</span>
-            <input class="wf-control" id="scheduleTimezone" value="America/New_York" required>
-          </label>
-          <label class="wf-field">
-            <span>Status</span>
-            <select class="wf-control" id="scheduleStatus" required>
-              <option value="scheduled">Scheduled (draft — hidden from agents)</option>
-              <option value="published" selected>Published (visible to agent)</option>
-              <option value="changed">Changed</option>
-              <option value="cancelled">Cancelled</option>
-              <option value="completed">Completed</option>
+          <label class="wf-field full">
+            <span>Schedule Frequency</span>
+            <select class="wf-control" id="scheduleFrequency" required>
+              <option value="one">One day</option>
+              <option value="range">Multiple days (range)</option>
+              <option value="weekdays">Weekdays (Mon–Fri)</option>
+              <option value="custom">Custom days</option>
             </select>
           </label>
           <label class="wf-field">
-            <span>Shift start</span>
+            <span>Start Date</span>
+            <input class="wf-control" id="scheduleDate" type="date" required>
+          </label>
+          <label class="wf-field">
+            <span>Start Time</span>
             <input class="wf-control" id="scheduleStart" type="time" required>
           </label>
           <label class="wf-field">
-            <span>Shift end</span>
+            <span id="scheduleEndDateLabel">End Date (same as start)</span>
+            <input class="wf-control" id="scheduleToDate" type="date" required>
+          </label>
+          <label class="wf-field">
+            <span>End Time</span>
             <input class="wf-control" id="scheduleEnd" type="time" required>
           </label>
+          <fieldset class="wf-schedule-day-picker full" id="scheduleDayPicker" hidden>
+            <legend>Repeats on</legend>
+            <div class="wf-schedule-day-toggles">
+              <label><input type="checkbox" name="scheduleDay" value="0"><span>Su</span></label>
+              <label><input type="checkbox" name="scheduleDay" value="1"><span>Mo</span></label>
+              <label><input type="checkbox" name="scheduleDay" value="2"><span>Tu</span></label>
+              <label><input type="checkbox" name="scheduleDay" value="3"><span>We</span></label>
+              <label><input type="checkbox" name="scheduleDay" value="4"><span>Th</span></label>
+              <label><input type="checkbox" name="scheduleDay" value="5"><span>Fr</span></label>
+              <label><input type="checkbox" name="scheduleDay" value="6"><span>Sa</span></label>
+            </div>
+          </fieldset>
+          <div class="wf-schedule-summary full" id="scheduleCreationSummary" aria-live="polite">
+            <span class="wf-schedule-summary-dot" aria-hidden="true"></span>
+            <span id="scheduleCreationSummaryText">Creates 1 schedule on the selected date.</span>
+          </div>
+          <label class="wf-field full">
+            <span>Description</span>
+            <textarea class="wf-control" id="scheduleNotes" placeholder="Add schedule details visible to authorized workforce users"></textarea>
+          </label>
+          <details class="wf-advanced full">
+            <summary>Schedule settings</summary>
+            <div class="wf-form-grid">
+              <label class="wf-field">
+                <span>Shift sequence</span>
+                <input class="wf-control" id="scheduleSequence" type="number" min="1" max="99" value="1" required>
+              </label>
+              <label class="wf-field">
+                <span>Timezone</span>
+                <input class="wf-control" id="scheduleTimezone" value="America/New_York" required>
+              </label>
+              <label class="wf-field full">
+                <span>Status</span>
+                <select class="wf-control" id="scheduleStatus" required>
+                  <option value="scheduled">Scheduled (draft — hidden from agents)</option>
+                  <option value="published" selected>Published (visible to agent)</option>
+                  <option value="changed">Changed</option>
+                  <option value="cancelled">Cancelled</option>
+                  <option value="completed">Completed</option>
+                </select>
+              </label>
+            </div>
+          </details>
           <label class="wf-check wf-check-card">
             <input id="scheduleIsRestDay" type="checkbox">
             <span>Mark as rest day</span>
@@ -413,10 +418,6 @@
           <label class="wf-field full">
             <span>Holiday name</span>
             <input class="wf-control" id="scheduleHolidayName" disabled placeholder="Required when marked as a holiday">
-          </label>
-          <label class="wf-field full">
-            <span>Notes</span>
-            <textarea class="wf-control" id="scheduleNotes" placeholder="Optional schedule note visible to authorized workforce users"></textarea>
           </label>
           <label class="wf-check full">
             <input id="scheduleRepeatWeekly" type="checkbox">
@@ -435,6 +436,6 @@
   </div>
 
   <script type="module" src="./scripts/workforce.js?v=4"></script>
-  <script type="module" src="./scripts/workforce-schedules-entry.js?v=4"></script>
+  <script type="module" src="./scripts/workforce-schedules-entry.js?v=6"></script>
 </body>
 </html>

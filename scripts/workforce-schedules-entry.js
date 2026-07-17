@@ -36,4 +36,4 @@ if (scheduleModal) {
   })
 }
 
-await import('./workforce-schedules.js?v=4')
+await import('./workforce-schedules.js?v=6')
