@@ -420,10 +420,15 @@ function presentationStatus(record) {
   if (record.is_open) return { label: 'In progress', modifier: 'in-progress' }
   if (record.is_missing_clock_out) return { label: 'Missing clock-out', modifier: 'needs-review' }
   if (record.review_status === 'pending') return { label: 'Needs review', modifier: 'needs-review' }
-  if (Number(record.total_worked_minutes) >= 720 && Number(record.regular_minutes) === 0 && record.schedule_id) {
+  const workedMinutes = Number(record.total_worked_minutes) || 0
+  const regularMinutes = Number(record.regular_minutes) || 0
+  const overtimeMinutes = Number(record.total_overtime_minutes) || 0
+  const hasUnclassifiedWorkedMinutes = workedMinutes > regularMinutes + overtimeMinutes
+
+  if (workedMinutes >= 720 && regularMinutes === 0 && record.schedule_id && hasUnclassifiedWorkedMinutes) {
     return { label: 'Flagged', modifier: 'needs-review' }
   }
-  if (Number(record.total_overtime_minutes) > 0) return { label: 'Overtime', modifier: 'overtime' }
+  if (overtimeMinutes > 0) return { label: 'Overtime', modifier: 'overtime' }
   return { label: 'Completed', modifier: 'completed' }
 }
 

@@ -122,6 +122,16 @@ test('Team Attendance uses the compact card design and paginates five records at
   assert.match(styles, /#teamAttendanceCorrectionModal \.wf-dialog-actions #teamAttendanceCorrectionSubmit\{[^}]*background:#15203b/)
 })
 
+test('Team Attendance does not flag fully classified long overtime records', async () => {
+  const page = await read('team-attendance.html')
+  const script = await read('scripts/team-attendance.js')
+
+  assert.match(page, /scripts\/team-attendance\.js\?v=3/)
+  assert.match(script, /const hasUnclassifiedWorkedMinutes = workedMinutes > regularMinutes \+ overtimeMinutes/)
+  assert.match(script, /record\.schedule_id && hasUnclassifiedWorkedMinutes/)
+  assert.match(script, /if \(overtimeMinutes > 0\) return \{ label: 'Overtime'/)
+})
+
 test('Step 10 data service enforces permission and supervisor scope', async () => {
   const migration = await read(migrationPath)
 
