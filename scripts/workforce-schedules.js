@@ -25,8 +25,10 @@ if (section) {
   const restDayInput = document.getElementById('scheduleIsRestDay')
   const holidayInput = document.getElementById('scheduleIsHoliday')
   const repeatWeeklyInput = document.getElementById('scheduleRepeatWeekly')
-  const scheduleDaysFieldset = document.getElementById('scheduleDaysFieldset')
-  const scheduleDayInputs = [...document.querySelectorAll('input[name="scheduleDay"]')]
+  const scheduleDateField = document.getElementById('scheduleDateField')
+  const scheduleRangeFields = document.getElementById('scheduleRangeFields')
+  const scheduleFromDate = document.getElementById('scheduleFromDate')
+  const scheduleToDate = document.getElementById('scheduleToDate')
   const tablePagination = document.getElementById('scheduleTablePagination')
   const tablePageInfo = document.getElementById('scheduleTablePageInfo')
   const tablePreviousButton = document.getElementById('previousScheduleTablePage')
@@ -84,31 +86,12 @@ if (section) {
     return dateKey(date)
   }
 
-  function selectShiftDateDay() {
-    const shiftDate = document.getElementById('scheduleDate').value
-    if (!shiftDate || !scheduleDayInputs.length) return
-    const weekday = parseDateKey(shiftDate).getUTCDay()
-    if (!scheduleDayInputs.some(input => input.checked)) {
-      const matchingInput = scheduleDayInputs.find(input => Number(input.value) === weekday)
-      if (matchingInput) matchingInput.checked = true
+  function datesInRange(fromDate, toDate) {
+    const dates = []
+    for (let date = fromDate; date <= toDate; date = addDays(date, 1)) {
+      dates.push(date)
     }
-  }
-
-  function selectedScheduleDates(shiftDate) {
-    if (!scheduleDayInputs.length) return [shiftDate]
-    const selectedDays = scheduleDayInputs
-      .filter(input => input.checked)
-      .map(input => Number(input.value))
-      .sort((a, b) => a - b)
-    const shiftWeekday = parseDateKey(shiftDate).getUTCDay()
-    const weekSunday = addDays(shiftDate, -shiftWeekday)
-    return selectedDays.map(day => addDays(weekSunday, day))
-  }
-
-  function moveLocalDateTime(localValue, targetDate, sourceDate) {
-    if (!localValue) return localValue
-    const dayOffset = Math.round((parseDateKey(localValue.slice(0, 10)) - parseDateKey(sourceDate)) / 86400000)
-    return `${addDays(targetDate, dayOffset)}${localValue.slice(10)}`
+    return dates
   }
 
   function addMonths(value, amount) {
@@ -194,7 +177,7 @@ if (section) {
     return `${formatter.format(new Date(schedule.shift_start))} – ${formatter.format(new Date(schedule.shift_end))}`
   }
 
-  function localInputValue(value, timeZone) {
+  function localTimeInputValue(value, timeZone) {
     if (!value) return ''
     const parts = new Intl.DateTimeFormat('en-CA', {
       timeZone,
@@ -206,7 +189,7 @@ if (section) {
       hourCycle: 'h23'
     }).formatToParts(new Date(value))
     const map = Object.fromEntries(parts.map(part => [part.type, part.value]))
-    return `${map.year}-${map.month}-${map.day}T${map.hour}:${map.minute}`
+    return `${map.hour}:${map.minute}`
   }
 
   function zoneParts(timestamp, timeZone) {
@@ -417,6 +400,21 @@ if (section) {
     requestAnimationFrame(() => document.getElementById('scheduleEmployee').focus())
   }
 
+  function openScheduleTypeModal() {
+    const modal = document.getElementById('scheduleTypeModal')
+    lastFocusedElement = document.activeElement
+    modal.hidden = false
+    document.body.classList.add('modal-open')
+    requestAnimationFrame(() => modal.querySelector('[data-schedule-type]')?.focus())
+  }
+
+  function closeScheduleTypeModal({ restoreFocus = true } = {}) {
+    const modal = document.getElementById('scheduleTypeModal')
+    modal.hidden = true
+    document.body.classList.remove('modal-open')
+    if (restoreFocus && lastFocusedElement instanceof HTMLElement) lastFocusedElement.focus()
+  }
+
   function closeModal() {
     const modal = document.getElementById('scheduleModal')
     modal.hidden = true
@@ -445,24 +443,30 @@ if (section) {
     if (!isHoliday) holidayName.value = ''
   }
 
-  function resetScheduleForm() {
+  function resetScheduleForm(scheduleType = 'day') {
     scheduleForm.reset()
     document.getElementById('scheduleId').value = ''
-    document.getElementById('scheduleModalTitle').textContent = 'Create Schedule Entry'
+    document.getElementById('scheduleModalTitle').textContent = scheduleType === 'week'
+      ? 'Create 1-Week Schedule'
+      : 'Create 1-Day Schedule'
     document.getElementById('scheduleDate').value = anchorDate
+    scheduleFromDate.value = anchorDate
+    scheduleToDate.value = addDays(anchorDate, 6)
     document.getElementById('scheduleSequence').value = '1'
     document.getElementById('scheduleTimezone').value = 'America/New_York'
     document.getElementById('scheduleStatus').value = 'published'
     document.getElementById('scheduleEmployee').value = employeeFilter.value || ''
-    scheduleDaysFieldset.hidden = false
-    scheduleDayInputs.forEach(input => { input.checked = false })
-    selectShiftDateDay()
+    scheduleDateField.hidden = scheduleType === 'week'
+    scheduleRangeFields.hidden = scheduleType !== 'week'
+    document.getElementById('scheduleDate').required = scheduleType !== 'week'
+    scheduleFromDate.required = scheduleType === 'week'
+    scheduleToDate.required = scheduleType === 'week'
     setMessage(formMessage, '')
     updateScheduleFormState()
   }
 
-  function openSchedule(scheduleId = '') {
-    resetScheduleForm()
+  function openSchedule(scheduleId = '', scheduleType = 'day') {
+    resetScheduleForm(scheduleType)
     const schedule = schedules.find(item => item.id === scheduleId)
 
     if (schedule) {
@@ -477,13 +481,24 @@ if (section) {
       holidayInput.checked = schedule.is_holiday === true
       document.getElementById('scheduleHolidayName').value = schedule.holiday_name || ''
       document.getElementById('scheduleNotes').value = schedule.notes || ''
-      document.getElementById('scheduleStart').value = localInputValue(schedule.shift_start, schedule.timezone)
-      document.getElementById('scheduleEnd').value = localInputValue(schedule.shift_end, schedule.timezone)
-      scheduleDaysFieldset.hidden = true
+      document.getElementById('scheduleStart').value = localTimeInputValue(schedule.shift_start, schedule.timezone)
+      document.getElementById('scheduleEnd').value = localTimeInputValue(schedule.shift_end, schedule.timezone)
+      scheduleDateField.hidden = false
+      scheduleRangeFields.hidden = true
+      document.getElementById('scheduleDate').required = true
+      scheduleFromDate.required = false
+      scheduleToDate.required = false
       updateScheduleFormState()
     }
 
     openModal()
+  }
+
+  function chooseScheduleType(scheduleType) {
+    const returnFocus = lastFocusedElement
+    closeScheduleTypeModal({ restoreFocus: false })
+    openSchedule('', scheduleType)
+    lastFocusedElement = returnFocus
   }
 
   async function loadScheduleData() {
@@ -537,6 +552,8 @@ if (section) {
     const scheduleId = document.getElementById('scheduleId').value || null
     const userId = document.getElementById('scheduleEmployee').value
     const shiftDate = document.getElementById('scheduleDate').value
+    const fromDate = scheduleFromDate.value
+    const toDate = scheduleToDate.value
     const sequence = Number(document.getElementById('scheduleSequence').value)
     const timezone = normalizeText(document.getElementById('scheduleTimezone').value) || 'America/New_York'
     const status = document.getElementById('scheduleStatus').value
@@ -545,15 +562,26 @@ if (section) {
     const holidayName = normalizeText(document.getElementById('scheduleHolidayName').value) || null
     const notes = normalizeText(document.getElementById('scheduleNotes').value) || null
     const repeatWeekly = repeatWeeklyInput.checked
-    const scheduleDates = scheduleId ? [shiftDate] : selectedScheduleDates(shiftDate)
+    const isWeekSchedule = !scheduleId && !scheduleRangeFields.hidden
+    const sourceDate = isWeekSchedule ? fromDate : shiftDate
+    const scheduleDates = scheduleId
+      ? [shiftDate]
+      : isWeekSchedule
+        ? datesInRange(fromDate, toDate)
+        : [shiftDate]
 
-    if (!userId || !shiftDate || !Number.isInteger(sequence) || sequence < 1 || sequence > 99) {
+    if (!userId || !sourceDate || !Number.isInteger(sequence) || sequence < 1 || sequence > 99) {
       setMessage(formMessage, 'Employee, date, and a shift sequence from 1 to 99 are required.', 'error')
       return
     }
 
-    if (!scheduleDates.length) {
-      setMessage(formMessage, 'Select at least one day to load the schedule.', 'error')
+    if (isWeekSchedule && (!toDate || toDate < fromDate)) {
+      setMessage(formMessage, 'Select a To date that is on or after the From date.', 'error')
+      return
+    }
+
+    if (isWeekSchedule && (parseDateKey(toDate) - parseDateKey(fromDate)) / 86400000 > 6) {
+      setMessage(formMessage, 'A 1-week schedule can cover a maximum of 7 days.', 'error')
       return
     }
 
@@ -567,20 +595,10 @@ if (section) {
       return
     }
 
-    let shiftStart = null
-    let shiftEnd = null
-
-    try {
-      if (!isRestDay) {
-        shiftStart = zonedDateTimeToIso(document.getElementById('scheduleStart').value, timezone)
-        shiftEnd = zonedDateTimeToIso(document.getElementById('scheduleEnd').value, timezone)
-
-        if (new Date(shiftEnd) <= new Date(shiftStart)) {
-          throw new Error('Shift end must be later than shift start.')
-        }
-      }
-    } catch (error) {
-      setMessage(formMessage, errorMessage(error), 'error')
+    const startTime = document.getElementById('scheduleStart').value
+    const endTime = document.getElementById('scheduleEnd').value
+    if (!isRestDay && (!startTime || !endTime)) {
+      setMessage(formMessage, 'Shift start and end times are required.', 'error')
       return
     }
 
@@ -591,10 +609,11 @@ if (section) {
       for (const targetDate of scheduleDates) {
         const targetStart = isRestDay
           ? null
-          : zonedDateTimeToIso(moveLocalDateTime(document.getElementById('scheduleStart').value, targetDate, shiftDate), timezone)
+          : zonedDateTimeToIso(`${targetDate}T${startTime}`, timezone)
+        const targetEndDate = endTime <= startTime ? addDays(targetDate, 1) : targetDate
         const targetEnd = isRestDay
           ? null
-          : zonedDateTimeToIso(moveLocalDateTime(document.getElementById('scheduleEnd').value, targetDate, shiftDate), timezone)
+          : zonedDateTimeToIso(`${targetEndDate}T${endTime}`, timezone)
         const { error } = await supabase.rpc('workforce_admin_save_schedule_and_repeat', {
           p_schedule_id: scheduleId,
           p_user_id: userId,
@@ -620,7 +639,7 @@ if (section) {
           : `${scheduleDates.length} schedule entr${scheduleDates.length === 1 ? 'y' : 'ies'} saved successfully.`,
         'success'
       )
-      anchorDate = shiftDate
+      anchorDate = sourceDate
       await loadScheduleData()
       window.setTimeout(closeModal, 600)
     } catch (error) {
@@ -668,8 +687,17 @@ if (section) {
     document.querySelectorAll('[data-schedule-close]').forEach(button => {
       button.addEventListener('click', closeModal)
     })
+    document.querySelectorAll('[data-schedule-type-close]').forEach(button => {
+      button.addEventListener('click', () => closeScheduleTypeModal())
+    })
+    document.querySelectorAll('[data-schedule-type]').forEach(button => {
+      button.addEventListener('click', () => chooseScheduleType(button.dataset.scheduleType))
+    })
     document.addEventListener('keydown', event => {
-      if (event.key === 'Escape') closeModal()
+      if (event.key !== 'Escape') return
+      const scheduleTypeModal = document.getElementById('scheduleTypeModal')
+      if (!scheduleTypeModal.hidden) closeScheduleTypeModal()
+      else closeModal()
     })
 
     previousButton.addEventListener('click', async () => {
@@ -685,7 +713,7 @@ if (section) {
       await loadScheduleData()
     })
     refreshButton.addEventListener('click', loadScheduleData)
-    createButton.addEventListener('click', () => openSchedule())
+    createButton.addEventListener('click', openScheduleTypeModal)
     viewSelect.addEventListener('change', loadScheduleData)
     teamFilter.addEventListener('change', () => {
       schedulePage = 1

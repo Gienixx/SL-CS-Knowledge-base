@@ -12,7 +12,7 @@ test('Schedule Management provides accessible pagination controls', () => {
   assert.match(page, /id="previousScheduleTablePage"/)
   assert.match(page, /id="nextScheduleTablePage"/)
   assert.match(page, /workforce-admin\.css\?v=4/)
-  assert.match(page, /workforce-schedules-entry\.js\?v=3/)
+  assert.match(page, /workforce-schedules-entry\.js\?v=4/)
   assert.match(styles, /\.wf-table-pagination\{/)
   assert.match(styles, /\.wf-table-pagination\[hidden\]\{display:none\}/)
 })

@@ -324,6 +324,29 @@
     </section>
   </div>
 
+  <div class="wf-modal" id="scheduleTypeModal" role="dialog" aria-modal="true" aria-labelledby="scheduleTypeModalTitle" hidden>
+    <button class="wf-backdrop" type="button" data-schedule-type-close aria-label="Close schedule type dialog"></button>
+    <section class="wf-dialog compact">
+      <div class="wf-dialog-header">
+        <div>
+          <h2 id="scheduleTypeModalTitle">Create Schedule</h2>
+          <p class="wf-subtext">Choose how many days you want to load.</p>
+        </div>
+        <button class="wf-close" type="button" data-schedule-type-close aria-label="Close">×</button>
+      </div>
+      <div class="wf-schedule-type-options">
+        <button class="wf-schedule-type-card" type="button" data-schedule-type="day">
+          <strong>1 Day Schedule</strong>
+          <span>Load a schedule for one selected date.</span>
+        </button>
+        <button class="wf-schedule-type-card" type="button" data-schedule-type="week">
+          <strong>1 Week Schedule</strong>
+          <span>Load the schedule across a From and To date range.</span>
+        </button>
+      </div>
+    </section>
+  </div>
+
   <div class="wf-modal" id="scheduleModal" role="dialog" aria-modal="true" aria-labelledby="scheduleModalTitle" hidden>
     <button class="wf-backdrop" type="button" data-schedule-close aria-label="Close schedule dialog"></button>
     <section class="wf-dialog">
@@ -339,23 +362,20 @@
             <span>User</span>
             <select class="wf-control" id="scheduleEmployee" required><option value="">Select user</option></select>
           </label>
-          <label class="wf-field">
+          <label class="wf-field" id="scheduleDateField">
             <span>Shift date</span>
             <input class="wf-control" id="scheduleDate" type="date" required>
           </label>
-          <fieldset class="wf-field full wf-day-picker" id="scheduleDaysFieldset">
-            <legend>Days to load schedule</legend>
-            <p>Select one or more days in the week containing the shift date.</p>
-            <div class="wf-day-options">
-              <label><input type="checkbox" name="scheduleDay" value="0"><span>Sun</span></label>
-              <label><input type="checkbox" name="scheduleDay" value="1"><span>Mon</span></label>
-              <label><input type="checkbox" name="scheduleDay" value="2"><span>Tue</span></label>
-              <label><input type="checkbox" name="scheduleDay" value="3"><span>Wed</span></label>
-              <label><input type="checkbox" name="scheduleDay" value="4"><span>Thu</span></label>
-              <label><input type="checkbox" name="scheduleDay" value="5"><span>Fri</span></label>
-              <label><input type="checkbox" name="scheduleDay" value="6"><span>Sat</span></label>
-            </div>
-          </fieldset>
+          <div class="wf-form-grid full" id="scheduleRangeFields" hidden>
+            <label class="wf-field">
+              <span>From</span>
+              <input class="wf-control" id="scheduleFromDate" type="date">
+            </label>
+            <label class="wf-field">
+              <span>To</span>
+              <input class="wf-control" id="scheduleToDate" type="date">
+            </label>
+          </div>
           <label class="wf-field">
             <span>Shift sequence</span>
             <input class="wf-control" id="scheduleSequence" type="number" min="1" max="99" value="1" required>
@@ -376,11 +396,11 @@
           </label>
           <label class="wf-field">
             <span>Shift start</span>
-            <input class="wf-control" id="scheduleStart" type="datetime-local" required>
+            <input class="wf-control" id="scheduleStart" type="time" required>
           </label>
           <label class="wf-field">
             <span>Shift end</span>
-            <input class="wf-control" id="scheduleEnd" type="datetime-local" required>
+            <input class="wf-control" id="scheduleEnd" type="time" required>
           </label>
           <label class="wf-check wf-check-card">
             <input id="scheduleIsRestDay" type="checkbox">
@@ -415,6 +435,6 @@
   </div>
 
   <script type="module" src="./scripts/workforce.js?v=4"></script>
-  <script type="module" src="./scripts/workforce-schedules-entry.js?v=3"></script>
+  <script type="module" src="./scripts/workforce-schedules-entry.js?v=4"></script>
 </body>
 </html>

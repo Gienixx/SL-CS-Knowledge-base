@@ -105,12 +105,12 @@ textarea.wf-control{min-height:96px;resize:vertical;line-height:1.5}
 .wf-check input{width:18px;height:18px;margin-top:1px;accent-color:var(--wf-navy);flex:none}
 .wf-check-card{min-height:48px;padding:13px;border:1px solid var(--wf-border);border-radius:13px;background:#fff;align-items:center}
 .wf-check-card input{margin-top:0}
-.wf-day-picker{margin:0;padding:13px;border:1px solid var(--wf-border);border-radius:13px;background:rgba(255,255,255,.72)}
-.wf-day-picker legend{padding:0 5px;color:var(--wf-navy);font-size:.8rem;font-weight:800;text-transform:uppercase;letter-spacing:.035em}
-.wf-day-picker p{margin:0 0 10px;color:var(--wf-muted);font-size:.82rem}
-.wf-day-options{display:grid;grid-template-columns:repeat(7,minmax(0,1fr));gap:8px}
-.wf-day-options label{display:grid;place-items:center;gap:6px;min-height:58px;padding:8px 4px;border:1px solid var(--wf-border);border-radius:11px;background:#fff;color:var(--wf-navy);font-size:.78rem;font-weight:800;cursor:pointer}
-.wf-day-options input{width:18px;height:18px;margin:0;accent-color:var(--wf-navy)}
+#scheduleDateField[hidden],#scheduleRangeFields[hidden]{display:none}
+.wf-schedule-type-options{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:14px}
+.wf-schedule-type-card{display:grid;gap:8px;min-height:150px;padding:22px;border:1px solid var(--wf-border);border-radius:18px;background:#fff;color:var(--wf-text);text-align:left;transition:transform .15s ease,border-color .15s ease,box-shadow .15s ease}
+.wf-schedule-type-card strong{color:var(--wf-navy);font-size:1.15rem}
+.wf-schedule-type-card span{color:var(--wf-muted);line-height:1.5}
+.wf-schedule-type-card:hover,.wf-schedule-type-card:focus-visible{transform:translateY(-2px);border-color:rgba(255,194,26,.85);box-shadow:0 12px 28px rgba(36,27,93,.12);outline:none}
 .wf-dialog-actions{display:flex;justify-content:flex-end;gap:10px;flex-wrap:wrap}
 body.modal-open{overflow:hidden}
 
@@ -131,6 +131,6 @@ body.modal-open{overflow:hidden}
   .wf-range-bar{align-items:stretch}
   .wf-range-bar strong{text-align:center}
   .wf-dialog{padding:20px}
-  .wf-day-options{grid-template-columns:repeat(4,minmax(0,1fr))}
+  .wf-schedule-type-options{grid-template-columns:1fr}
 }
 .wf-row-btn.danger{border-color:#b42318;color:#b42318}.wf-row-btn.danger:hover{background:#fff1f0}

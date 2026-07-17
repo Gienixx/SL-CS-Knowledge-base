@@ -5,23 +5,39 @@ import test from 'node:test'
 const html = await readFile(new URL('../workforce.html', import.meta.url), 'utf8')
 const client = await readFile(new URL('../scripts/workforce-schedules.js', import.meta.url), 'utf8')
 
-test('create schedule offers all seven selectable weekdays', () => {
-  assert.match(html, /id="scheduleDaysFieldset"/)
-  assert.equal((html.match(/name="scheduleDay"/g) || []).length, 7)
-  for (let day = 0; day <= 6; day += 1) {
-    assert.match(html, new RegExp(`name="scheduleDay" value="${day}"`))
-  }
+test('create schedule first asks for a one-day or one-week schedule', () => {
+  assert.match(html, /id="scheduleTypeModal"/)
+  assert.match(html, /data-schedule-type="day"[\s\S]*1 Day Schedule/)
+  assert.match(html, /data-schedule-type="week"[\s\S]*1 Week Schedule/)
+  assert.match(client, /createButton\.addEventListener\('click', openScheduleTypeModal\)/)
+  assert.match(client, /function chooseScheduleType\(scheduleType\)/)
 })
 
-test('new schedules are saved for each selected day in the shift-date week', () => {
-  assert.match(client, /function selectedScheduleDates\(shiftDate\)/)
-  assert.match(client, /const weekSunday = addDays\(shiftDate, -shiftWeekday\)/)
+test('one-day mode uses one date and one-week mode uses a date range', () => {
+  assert.match(client, /scheduleDateField\.hidden = scheduleType === 'week'/)
+  assert.match(client, /scheduleRangeFields\.hidden = scheduleType !== 'week'/)
+  assert.doesNotMatch(html, /scheduleDaysFieldset|name="scheduleDay"/)
+})
+
+test('one-week mode provides a bounded From and To date range', () => {
+  assert.match(html, /id="scheduleFromDate" type="date"/)
+  assert.match(html, /id="scheduleToDate" type="date"/)
+  assert.match(client, /scheduleToDate\.value = addDays\(anchorDate, 6\)/)
+  assert.match(client, /datesInRange\(fromDate, toDate\)/)
+  assert.match(client, /A 1-week schedule can cover a maximum of 7 days\./)
+})
+
+test('new weekly schedules are saved for every day in the date range', () => {
+  assert.match(client, /function datesInRange\(fromDate, toDate\)/)
+  assert.match(client, /for \(let date = fromDate; date <= toDate; date = addDays\(date, 1\)\)/)
   assert.match(client, /for \(const targetDate of scheduleDates\)/)
   assert.match(client, /p_shift_date: targetDate/)
-  assert.match(client, /Select at least one day to load the schedule\./)
 })
 
-test('bulk day selection is limited to create mode', () => {
-  assert.match(client, /const scheduleDates = scheduleId \? \[shiftDate\] : selectedScheduleDates\(shiftDate\)/)
-  assert.match(client, /scheduleDaysFieldset\.hidden = true/)
+test('shift start and end use time-only inputs and support overnight shifts', () => {
+  assert.match(html, /id="scheduleStart" type="time"/)
+  assert.match(html, /id="scheduleEnd" type="time"/)
+  assert.doesNotMatch(html, /id="schedule(?:Start|End)" type="datetime-local"/)
+  assert.match(client, /const targetEndDate = endTime <= startTime \? addDays\(targetDate, 1\) : targetDate/)
+  assert.match(client, /zonedDateTimeToIso\(`\$\{targetDate\}T\$\{startTime\}`/)
 })
