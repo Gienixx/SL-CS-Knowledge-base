@@ -343,6 +343,19 @@
             <span>Shift date</span>
             <input class="wf-control" id="scheduleDate" type="date" required>
           </label>
+          <fieldset class="wf-field full wf-day-picker" id="scheduleDaysFieldset">
+            <legend>Days to load schedule</legend>
+            <p>Select one or more days in the week containing the shift date.</p>
+            <div class="wf-day-options">
+              <label><input type="checkbox" name="scheduleDay" value="0"><span>Sun</span></label>
+              <label><input type="checkbox" name="scheduleDay" value="1"><span>Mon</span></label>
+              <label><input type="checkbox" name="scheduleDay" value="2"><span>Tue</span></label>
+              <label><input type="checkbox" name="scheduleDay" value="3"><span>Wed</span></label>
+              <label><input type="checkbox" name="scheduleDay" value="4"><span>Thu</span></label>
+              <label><input type="checkbox" name="scheduleDay" value="5"><span>Fri</span></label>
+              <label><input type="checkbox" name="scheduleDay" value="6"><span>Sat</span></label>
+            </div>
+          </fieldset>
           <label class="wf-field">
             <span>Shift sequence</span>
             <input class="wf-control" id="scheduleSequence" type="number" min="1" max="99" value="1" required>
@@ -402,6 +415,6 @@
   </div>
 
   <script type="module" src="./scripts/workforce.js?v=4"></script>
-  <script type="module" src="./scripts/workforce-schedules-entry.js?v=2"></script>
+  <script type="module" src="./scripts/workforce-schedules-entry.js?v=3"></script>
 </body>
 </html>

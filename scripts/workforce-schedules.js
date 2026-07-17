@@ -25,6 +25,8 @@ if (section) {
   const restDayInput = document.getElementById('scheduleIsRestDay')
   const holidayInput = document.getElementById('scheduleIsHoliday')
   const repeatWeeklyInput = document.getElementById('scheduleRepeatWeekly')
+  const scheduleDaysFieldset = document.getElementById('scheduleDaysFieldset')
+  const scheduleDayInputs = [...document.querySelectorAll('input[name="scheduleDay"]')]
   const tablePagination = document.getElementById('scheduleTablePagination')
   const tablePageInfo = document.getElementById('scheduleTablePageInfo')
   const tablePreviousButton = document.getElementById('previousScheduleTablePage')
@@ -80,6 +82,33 @@ if (section) {
     const date = parseDateKey(value)
     date.setUTCDate(date.getUTCDate() + amount)
     return dateKey(date)
+  }
+
+  function selectShiftDateDay() {
+    const shiftDate = document.getElementById('scheduleDate').value
+    if (!shiftDate || !scheduleDayInputs.length) return
+    const weekday = parseDateKey(shiftDate).getUTCDay()
+    if (!scheduleDayInputs.some(input => input.checked)) {
+      const matchingInput = scheduleDayInputs.find(input => Number(input.value) === weekday)
+      if (matchingInput) matchingInput.checked = true
+    }
+  }
+
+  function selectedScheduleDates(shiftDate) {
+    if (!scheduleDayInputs.length) return [shiftDate]
+    const selectedDays = scheduleDayInputs
+      .filter(input => input.checked)
+      .map(input => Number(input.value))
+      .sort((a, b) => a - b)
+    const shiftWeekday = parseDateKey(shiftDate).getUTCDay()
+    const weekSunday = addDays(shiftDate, -shiftWeekday)
+    return selectedDays.map(day => addDays(weekSunday, day))
+  }
+
+  function moveLocalDateTime(localValue, targetDate, sourceDate) {
+    if (!localValue) return localValue
+    const dayOffset = Math.round((parseDateKey(localValue.slice(0, 10)) - parseDateKey(sourceDate)) / 86400000)
+    return `${addDays(targetDate, dayOffset)}${localValue.slice(10)}`
   }
 
   function addMonths(value, amount) {
@@ -423,8 +452,11 @@ if (section) {
     document.getElementById('scheduleDate').value = anchorDate
     document.getElementById('scheduleSequence').value = '1'
     document.getElementById('scheduleTimezone').value = 'America/New_York'
-    document.getElementById('scheduleStatus').value = 'scheduled'
+    document.getElementById('scheduleStatus').value = 'published'
     document.getElementById('scheduleEmployee').value = employeeFilter.value || ''
+    scheduleDaysFieldset.hidden = false
+    scheduleDayInputs.forEach(input => { input.checked = false })
+    selectShiftDateDay()
     setMessage(formMessage, '')
     updateScheduleFormState()
   }
@@ -447,6 +479,7 @@ if (section) {
       document.getElementById('scheduleNotes').value = schedule.notes || ''
       document.getElementById('scheduleStart').value = localInputValue(schedule.shift_start, schedule.timezone)
       document.getElementById('scheduleEnd').value = localInputValue(schedule.shift_end, schedule.timezone)
+      scheduleDaysFieldset.hidden = true
       updateScheduleFormState()
     }
 
@@ -512,9 +545,20 @@ if (section) {
     const holidayName = normalizeText(document.getElementById('scheduleHolidayName').value) || null
     const notes = normalizeText(document.getElementById('scheduleNotes').value) || null
     const repeatWeekly = repeatWeeklyInput.checked
+    const scheduleDates = scheduleId ? [shiftDate] : selectedScheduleDates(shiftDate)
 
     if (!userId || !shiftDate || !Number.isInteger(sequence) || sequence < 1 || sequence > 99) {
       setMessage(formMessage, 'Employee, date, and a shift sequence from 1 to 99 are required.', 'error')
+      return
+    }
+
+    if (!scheduleDates.length) {
+      setMessage(formMessage, 'Select at least one day to load the schedule.', 'error')
+      return
+    }
+
+    if (repeatWeekly && scheduleDates.length > 1) {
+      setMessage(formMessage, 'Save the selected days first, then enable weekly repetition from a single completed-week entry.', 'error')
       return
     }
 
@@ -544,29 +588,36 @@ if (section) {
     setMessage(formMessage, 'Saving schedule entry...')
 
     try {
-      const { error } = await supabase.rpc('workforce_admin_save_schedule_and_repeat', {
-        p_schedule_id: scheduleId,
-        p_user_id: userId,
-        p_shift_date: shiftDate,
-        p_shift_sequence: sequence,
-        p_shift_start: shiftStart,
-        p_shift_end: shiftEnd,
-        p_timezone: timezone,
-        p_status: status,
-        p_is_rest_day: isRestDay,
-        p_is_holiday: isHoliday,
-        p_holiday_name: holidayName,
-        p_notes: notes,
-        p_repeat_weekly: repeatWeekly
-      })
-
-      if (error) throw error
+      for (const targetDate of scheduleDates) {
+        const targetStart = isRestDay
+          ? null
+          : zonedDateTimeToIso(moveLocalDateTime(document.getElementById('scheduleStart').value, targetDate, shiftDate), timezone)
+        const targetEnd = isRestDay
+          ? null
+          : zonedDateTimeToIso(moveLocalDateTime(document.getElementById('scheduleEnd').value, targetDate, shiftDate), timezone)
+        const { error } = await supabase.rpc('workforce_admin_save_schedule_and_repeat', {
+          p_schedule_id: scheduleId,
+          p_user_id: userId,
+          p_shift_date: targetDate,
+          p_shift_sequence: sequence,
+          p_shift_start: targetStart,
+          p_shift_end: targetEnd,
+          p_timezone: timezone,
+          p_status: status,
+          p_is_rest_day: isRestDay,
+          p_is_holiday: isHoliday,
+          p_holiday_name: holidayName,
+          p_notes: notes,
+          p_repeat_weekly: repeatWeekly
+        })
+        if (error) throw error
+      }
 
       setMessage(
         formMessage,
         repeatWeekly
           ? 'Schedule saved and weekly automation enabled.'
-          : 'Schedule entry saved successfully.',
+          : `${scheduleDates.length} schedule entr${scheduleDates.length === 1 ? 'y' : 'ies'} saved successfully.`,
         'success'
       )
       anchorDate = shiftDate
