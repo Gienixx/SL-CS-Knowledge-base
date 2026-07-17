@@ -8,6 +8,7 @@ const section = document.getElementById('scheduleManagementSection')
 
 if (section) {
   const scheduleTableBody = document.getElementById('scheduleTableBody')
+  const scheduleTableHead = document.getElementById('scheduleTableHead')
   const scheduleMessage = document.getElementById('scheduleMessage')
   const rangeLabel = document.getElementById('scheduleRangeLabel')
   const viewSelect = document.getElementById('scheduleView')
@@ -313,13 +314,28 @@ if (section) {
   function renderSchedules() {
     const rows = filteredSchedules()
     scheduleTableBody.replaceChildren()
+    scheduleTableHead.replaceChildren()
     renderSummary(rows)
+
+    const range = selectedRange()
+    const dates = datesInRange(range.start, range.end)
+    const headerRow = document.createElement('tr')
+    const userHeading = document.createElement('th')
+    userHeading.textContent = 'User'
+    headerRow.appendChild(userHeading)
+    dates.forEach(date => {
+      const heading = document.createElement('th')
+      const parsed = parseDateKey(date)
+      heading.innerHTML = `<strong>${new Intl.DateTimeFormat('en-US', { weekday: 'short', timeZone: 'UTC' }).format(parsed)}</strong><span>${new Intl.DateTimeFormat('en-US', { month: 'short', day: 'numeric', timeZone: 'UTC' }).format(parsed)}</span>`
+      headerRow.appendChild(heading)
+    })
+    scheduleTableHead.appendChild(headerRow)
 
     if (!rows.length) {
       tablePagination.hidden = true
       const row = document.createElement('tr')
       const cell = document.createElement('td')
-      cell.colSpan = 8
+      cell.colSpan = dates.length + 1
       cell.className = 'wf-empty'
       cell.textContent = 'No schedule entries match the selected range and filters.'
       row.appendChild(cell)
@@ -327,57 +343,53 @@ if (section) {
       return
     }
 
-    const pageCount = Math.ceil(rows.length / TABLE_PAGE_SIZE)
+    const employeeIds = [...new Set(rows.map(schedule => schedule.user_id))]
+    const pageCount = Math.ceil(employeeIds.length / TABLE_PAGE_SIZE)
     schedulePage = Math.min(Math.max(schedulePage, 1), pageCount)
     const pageStart = (schedulePage - 1) * TABLE_PAGE_SIZE
-    const pageRows = rows.slice(pageStart, pageStart + TABLE_PAGE_SIZE)
+    const pageEmployeeIds = employeeIds.slice(pageStart, pageStart + TABLE_PAGE_SIZE)
 
-    tablePagination.hidden = rows.length <= TABLE_PAGE_SIZE
+    tablePagination.hidden = employeeIds.length <= TABLE_PAGE_SIZE
     tablePageInfo.textContent = `Page ${schedulePage} of ${pageCount}`
     tablePreviousButton.disabled = schedulePage === 1
     tableNextButton.disabled = schedulePage === pageCount
 
-    pageRows.forEach(schedule => {
-      const profile = profileById(schedule.user_id)
+    pageEmployeeIds.forEach(userId => {
+      const profile = profileById(userId)
       const row = document.createElement('tr')
-      const typeCell = document.createElement('td')
-      const statusCell = document.createElement('td')
-      const actionCell = document.createElement('td')
-      actionCell.className = 'wf-row-actions'
-
-      if (schedule.is_rest_day) typeCell.appendChild(badge('Rest day', 'muted'))
-      else typeCell.appendChild(badge('Shift'))
-      if (schedule.is_holiday) typeCell.appendChild(badge(schedule.holiday_name || 'Holiday', 'warning'))
-
-      statusCell.appendChild(badge(
-        STATUS_LABELS[schedule.status] || schedule.status,
-        statusModifier(schedule.status)
-      ))
-
-      const editButton = document.createElement('button')
-      editButton.type = 'button'
-      editButton.className = 'wf-row-btn'
-      editButton.textContent = 'Edit'
-      editButton.addEventListener('click', () => openSchedule(schedule.id))
-      actionCell.appendChild(editButton)
-
-      const deleteButton = document.createElement('button')
-      deleteButton.type = 'button'
-      deleteButton.className = 'wf-row-btn danger'
-      deleteButton.textContent = 'Delete'
-      deleteButton.addEventListener('click', () => deleteSchedule(schedule, deleteButton))
-      actionCell.appendChild(deleteButton)
-
-      row.append(
-        textCell(formatDate(schedule.shift_date), `Sequence ${schedule.shift_sequence}`),
-        textCell(profile?.full_name || 'Unknown employee', profile?.employee_id || ''),
-        textCell(teamName(profile?.team_id || schedule.team_id)),
-        textCell(formatShift(schedule), schedule.timezone),
-        typeCell,
-        statusCell,
-        textCell(formatDateTime(schedule.updated_at)),
-        actionCell
-      )
+      const userCell = document.createElement('td')
+      userCell.className = 'wf-grid-user'
+      userCell.innerHTML = `<strong>${profile?.full_name || 'Unknown user'}</strong><span>${teamName(profile?.team_id)}</span>`
+      row.appendChild(userCell)
+      dates.forEach(date => {
+        const cell = document.createElement('td')
+        cell.className = 'wf-grid-cell'
+        const dayEntries = rows.filter(schedule => schedule.user_id === userId && schedule.shift_date === date)
+        if (!dayEntries.length) {
+          const empty = document.createElement('span')
+          empty.className = 'wf-schedule-chip empty'
+          empty.textContent = '—'
+          cell.appendChild(empty)
+        }
+        dayEntries.forEach(schedule => {
+          const chip = document.createElement('div')
+          chip.className = `wf-schedule-chip ${schedule.is_holiday ? 'holiday' : schedule.is_rest_day ? 'rest' : 'shift'} ${schedule.status === 'scheduled' ? 'draft' : 'published'}`
+          const editButton = document.createElement('button')
+          editButton.type = 'button'
+          editButton.className = 'wf-chip-main'
+          editButton.innerHTML = `<strong>${schedule.is_rest_day ? 'Rest day' : schedule.is_holiday ? schedule.holiday_name || 'Holiday' : formatShift(schedule)}</strong><small>${schedule.is_rest_day ? '' : `Sequence ${schedule.shift_sequence}`}</small>`
+          editButton.addEventListener('click', () => openSchedule(schedule.id))
+          const deleteButton = document.createElement('button')
+          deleteButton.type = 'button'
+          deleteButton.className = 'wf-chip-delete'
+          deleteButton.textContent = '×'
+          deleteButton.setAttribute('aria-label', `Delete schedule for ${profile?.full_name || 'user'} on ${date}`)
+          deleteButton.addEventListener('click', () => deleteSchedule(schedule, deleteButton))
+          chip.append(editButton, deleteButton)
+          cell.appendChild(chip)
+        })
+        row.appendChild(cell)
+      })
       scheduleTableBody.appendChild(row)
     })
   }
@@ -705,6 +717,9 @@ if (section) {
       section.hidden = true
       return
     }
+
+    const scheduleViewButton = document.getElementById('scheduleViewButton')
+    if (scheduleViewButton) scheduleViewButton.hidden = false
 
     document.querySelectorAll('[data-schedule-close]').forEach(button => {
       button.addEventListener('click', closeModal)

@@ -166,6 +166,41 @@ function textCell(primary, secondary = '') {
   return cell
 }
 
+function userCell(profile) {
+  const cell = document.createElement('td')
+  const wrap = document.createElement('div')
+  wrap.className = 'wf-user-cell'
+  const avatar = document.createElement('span')
+  const paletteIndex = [...normalizeText(profile.full_name)].reduce((total, character) => total + character.charCodeAt(0), 0) % 4
+  avatar.className = `wf-avatar palette-${paletteIndex}`
+  avatar.textContent = normalizeText(profile.full_name).split(/\s+/).slice(0, 2).map(part => part[0]).join('').toUpperCase() || 'U'
+  const details = document.createElement('span')
+  const name = document.createElement('strong')
+  name.textContent = profile.full_name || '—'
+  const meta = document.createElement('small')
+  meta.textContent = [profile.email, profile.employee_id].filter(Boolean).join(' · ')
+  details.append(name, meta)
+  wrap.append(avatar, details)
+  cell.appendChild(wrap)
+  return cell
+}
+
+function teamCell(teamId) {
+  const cell = document.createElement('td')
+  const wrap = document.createElement('span')
+  wrap.className = `wf-team-cell${teamId ? '' : ' unassigned'}`
+  const dot = document.createElement('i')
+  if (teamId) {
+    const paletteIndex = [...teamId].reduce((total, character) => total + character.charCodeAt(0), 0) % 3
+    dot.className = `palette-${paletteIndex}`
+  }
+  const name = document.createElement('span')
+  name.textContent = teamName(teamId)
+  wrap.append(dot, name)
+  cell.appendChild(wrap)
+  return cell
+}
+
 function renderSummary() {
   document.getElementById('totalProfiles').textContent = profiles.length
   document.getElementById('activeAgents').textContent = profiles.filter(profile =>
@@ -223,7 +258,7 @@ function renderEmployees() {
     tablePagination.hidden = true
     const row = document.createElement('tr')
     const cell = document.createElement('td')
-    cell.colSpan = 8
+    cell.colSpan = 7
     cell.className = 'wf-empty'
     cell.textContent = 'No user profiles match the selected filters.'
     row.appendChild(cell)
@@ -247,7 +282,11 @@ function renderEmployees() {
     const grantedCount = WORKFORCE_PERMISSION_KEYS.filter(key => permissions[key] === true).length
 
     const accessCell = document.createElement('td')
-    accessCell.appendChild(badge(ACCESS_LABELS[accessTypeFor(profile)] || 'Regular Agent'))
+    const accessType = accessTypeFor(profile)
+    accessCell.appendChild(badge(
+      ACCESS_LABELS[accessType] || 'Regular Agent',
+      accessType === 'admin' || accessType === 'admin_agent' ? 'admin' : 'agent'
+    ))
 
     const statusCell = document.createElement('td')
     if (profile.onboarding_status === 'invited') {
@@ -259,38 +298,58 @@ function renderEmployees() {
     ))
 
     const permissionCell = document.createElement('td')
-    permissionCell.appendChild(badge(`${grantedCount} granted`, grantedCount ? 'success' : 'muted'))
+    permissionCell.className = 'wf-permission-cell'
+    const permissionCount = document.createElement('strong')
+    permissionCount.textContent = String(grantedCount)
+    permissionCell.append(permissionCount, document.createTextNode(' granted'))
 
     const actionCell = document.createElement('td')
     actionCell.className = 'wf-row-actions'
     const editButton = document.createElement('button')
     editButton.type = 'button'
-    editButton.className = 'wf-row-btn'
+    editButton.className = 'wf-row-btn wf-profile-edit'
     editButton.textContent = 'Edit'
     editButton.addEventListener('click', () => openEmployee(profile.user_id))
     actionCell.appendChild(editButton)
+
+    const menuButton = document.createElement('button')
+    menuButton.type = 'button'
+    menuButton.className = 'wf-kebab'
+    menuButton.textContent = '⋯'
+    menuButton.setAttribute('aria-label', `More actions for ${profile.full_name}`)
+    menuButton.setAttribute('aria-expanded', 'false')
+    const actionMenu = document.createElement('div')
+    actionMenu.className = 'wf-action-menu'
+    menuButton.addEventListener('click', event => {
+      event.stopPropagation()
+      document.querySelectorAll('.wf-action-menu.open').forEach(menu => {
+        if (menu !== actionMenu) menu.classList.remove('open')
+      })
+      actionMenu.classList.toggle('open')
+      menuButton.setAttribute('aria-expanded', String(actionMenu.classList.contains('open')))
+    })
     if (profile.onboarding_status === 'invited') {
       const resendButton = document.createElement('button')
       resendButton.type = 'button'
       resendButton.className = 'wf-row-btn'
       resendButton.textContent = 'Resend invite'
       resendButton.addEventListener('click', () => resendInvitation(profile, resendButton))
-      actionCell.appendChild(resendButton)
+      actionMenu.appendChild(resendButton)
     }
     if (profile.employment_status === 'inactive') {
-      actionCell.appendChild(lifecycleButton(profile, 'Reactivate', 'reactivate'))
+      actionMenu.appendChild(lifecycleButton(profile, 'Reactivate', 'reactivate'))
     } else if (profile.employment_status !== 'terminated') {
-      actionCell.appendChild(lifecycleButton(profile, 'Deactivate', 'deactivate'))
+      actionMenu.appendChild(lifecycleButton(profile, 'Deactivate', 'deactivate'))
     }
     if (!profile.account_deleted_at) {
-      actionCell.appendChild(lifecycleButton(profile, 'Delete account', 'delete', true))
+      actionMenu.appendChild(lifecycleButton(profile, 'Delete account', 'delete', true))
     }
+    actionCell.append(menuButton, actionMenu)
 
     row.append(
-      textCell(profile.full_name, profile.email),
-      textCell(profile.employee_id),
+      userCell(profile),
       accessCell,
-      textCell(teamName(profile.team_id)),
+      teamCell(profile.team_id),
       textCell(personName(profile.supervisor_id)),
       statusCell,
       permissionCell,
@@ -701,6 +760,11 @@ async function initialize() {
   openInviteButton.addEventListener('click', openEmployeeInvitation)
   inviteAccessType.addEventListener('change', applyInviteAccessTypeRules)
   inviteForm.addEventListener('submit', sendEmployeeInvitation)
+  document.addEventListener('click', event => {
+    if (event.target.closest('.wf-row-actions')) return
+    document.querySelectorAll('.wf-action-menu.open').forEach(menu => menu.classList.remove('open'))
+    document.querySelectorAll('.wf-kebab[aria-expanded="true"]').forEach(button => button.setAttribute('aria-expanded', 'false'))
+  })
 
   await loadWorkforceData()
 }

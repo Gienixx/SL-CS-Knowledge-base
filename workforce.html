@@ -4,11 +4,19 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Workforce Management | SocialLoop CS Base</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@500&family=Sora:wght@600;700;800&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="./styles/button-theme.css?v=1">
-  <link rel="stylesheet" href="./styles/workforce-admin.css?v=4">
+  <link rel="stylesheet" href="./styles/workforce-admin.css?v=8">
 </head>
 <body>
   <main class="wf-page">
+    <nav class="wf-view-switcher" aria-label="Workforce management views">
+      <button class="active" id="workforceViewButton" type="button" aria-controls="workforceView" aria-selected="true">Workforce Management</button>
+      <button id="scheduleViewButton" type="button" aria-controls="scheduleManagementSection" aria-selected="false" hidden>Schedule Management</button>
+    </nav>
+    <div id="workforceView">
     <header class="wf-topbar">
       <div class="wf-title">
         <h1>Workforce Management</h1>
@@ -21,10 +29,10 @@
     </header>
 
     <section class="wf-summary-grid" aria-label="Workforce summary">
-      <article class="wf-summary"><span>Total profiles</span><strong id="totalProfiles">—</strong></article>
-      <article class="wf-summary"><span>Active agents</span><strong id="activeAgents">—</strong></article>
-      <article class="wf-summary"><span>Administrators</span><strong id="administratorCount">—</strong></article>
-      <article class="wf-summary"><span>Unassigned team</span><strong id="unassignedCount">—</strong></article>
+      <article class="wf-summary"><span class="wf-stat-icon violet"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="8" cy="8" r="3"/><circle cx="17" cy="9" r="2.5"/><path d="M2.5 20c0-4 2.7-6 5.5-6s5.5 2 5.5 6M14 15c3.7-.8 6.5 1 7 5"/></svg></span><span class="wf-stat-copy"><span>Total profiles</span><strong id="totalProfiles">—</strong></span></article>
+      <article class="wf-summary"><span class="wf-stat-icon mint"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="m8 12 2.5 2.5L16 9"/></svg></span><span class="wf-stat-copy"><span>Active agents</span><strong id="activeAgents">—</strong></span></article>
+      <article class="wf-summary"><span class="wf-stat-icon gold"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="m12 3 2.5 5.5 6 .7-4.4 4 1.2 5.8-5.3-3-5.3 3 1.2-5.8-4.4-4 6-.7z"/></svg></span><span class="wf-stat-copy"><span>Administrators</span><strong id="administratorCount">—</strong></span></article>
+      <article class="wf-summary"><span class="wf-stat-icon coral"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 4 3 20h18z"/><path d="M12 9v5M12 17h.01"/></svg></span><span class="wf-stat-copy"><span>Unassigned team</span><strong id="unassignedCount">—</strong></span></article>
     </section>
 
     <section class="wf-card">
@@ -69,7 +77,6 @@
           <thead>
             <tr>
               <th>User</th>
-              <th>User ID</th>
               <th>Access type</th>
               <th>Team</th>
               <th>Supervisor</th>
@@ -79,21 +86,24 @@
             </tr>
           </thead>
           <tbody id="employeeTableBody">
-            <tr><td colspan="8" class="wf-empty">Loading user profiles...</td></tr>
+            <tr><td colspan="7" class="wf-empty">Loading user profiles...</td></tr>
           </tbody>
         </table>
       </div>
-      <nav id="employeeTablePagination" class="wf-table-pagination" aria-label="User profile pages" hidden>
-        <span id="employeeTablePageInfo">Page 1 of 1</span>
-        <div class="wf-actions">
-          <button class="wf-row-btn" id="previousEmployeeTablePage" type="button">← Previous</button>
-          <button class="wf-row-btn" id="nextEmployeeTablePage" type="button">Next →</button>
-        </div>
-      </nav>
-      <p id="employeesMessage" class="wf-message" aria-live="polite"></p>
+      <div class="wf-profile-panel-foot">
+        <p id="employeesMessage" class="wf-message" aria-live="polite"></p>
+        <nav id="employeeTablePagination" class="wf-table-pagination" aria-label="User profile pages" hidden>
+          <span id="employeeTablePageInfo">Page 1 of 1</span>
+          <div class="wf-actions">
+            <button class="wf-row-btn" id="previousEmployeeTablePage" type="button">← Previous</button>
+            <button class="wf-row-btn" id="nextEmployeeTablePage" type="button">Next →</button>
+          </div>
+        </nav>
+      </div>
     </section>
+    </div>
 
-    <section class="wf-card" id="scheduleManagementSection">
+    <section class="wf-card wf-management-view" id="scheduleManagementSection" hidden>
       <div class="wf-card-header">
         <div>
           <h2>Schedule Management</h2>
@@ -143,29 +153,26 @@
         </label>
       </div>
 
+      <div class="wf-schedule-legend" aria-label="Schedule legend">
+        <span><i class="shift"></i>Shift</span>
+        <span><i class="rest"></i>Rest day</span>
+        <span><i class="holiday"></i>Holiday</span>
+        <span><i class="published"></i>Published</span>
+        <span><i class="draft"></i>Draft</span>
+      </div>
+
       <div class="wf-summary-grid wf-schedule-summary" aria-label="Schedule summary">
-        <article class="wf-summary"><span>Entries shown</span><strong id="scheduleCount">—</strong></article>
-        <article class="wf-summary"><span>Published</span><strong id="publishedScheduleCount">—</strong></article>
-        <article class="wf-summary"><span>Rest days</span><strong id="restDayCount">—</strong></article>
-        <article class="wf-summary"><span>Holidays</span><strong id="holidayCount">—</strong></article>
+        <article class="wf-summary"><span class="wf-stat-icon violet"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="5" width="18" height="16" rx="2"/><path d="M3 10h18M8 3v4M16 3v4"/></svg></span><span class="wf-stat-copy"><span>Entries shown</span><strong id="scheduleCount">—</strong></span></article>
+        <article class="wf-summary"><span class="wf-stat-icon mint"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="m8 12 2.5 2.5L16 9"/></svg></span><span class="wf-stat-copy"><span>Published</span><strong id="publishedScheduleCount">—</strong></span></article>
+        <article class="wf-summary"><span class="wf-stat-icon gold"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M8 12h8"/></svg></span><span class="wf-stat-copy"><span>Rest days</span><strong id="restDayCount">—</strong></span></article>
+        <article class="wf-summary"><span class="wf-stat-icon coral"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="m12 3 2.5 5.5 6 .7-4.4 4 1.2 5.8-5.3-3-5.3 3 1.2-5.8-4.4-4 6-.7z"/></svg></span><span class="wf-stat-copy"><span>Holidays</span><strong id="holidayCount">—</strong></span></article>
       </div>
 
       <div class="wf-table-wrap">
-        <table class="wf-table wf-schedule-table wf-compact-table">
-          <thead>
-            <tr>
-              <th>Date</th>
-              <th>User</th>
-              <th>Team</th>
-              <th>Shift</th>
-              <th>Type</th>
-              <th>Status</th>
-              <th>Updated</th>
-              <th>Action</th>
-            </tr>
-          </thead>
+        <table class="wf-schedule-grid-table">
+          <thead id="scheduleTableHead"><tr><th>User</th></tr></thead>
           <tbody id="scheduleTableBody">
-            <tr><td colspan="8" class="wf-empty">Loading schedule entries...</td></tr>
+            <tr><td class="wf-empty">Loading schedule entries...</td></tr>
           </tbody>
         </table>
       </div>
@@ -435,7 +442,8 @@
     </section>
   </div>
 
-  <script type="module" src="./scripts/workforce.js?v=4"></script>
-  <script type="module" src="./scripts/workforce-schedules-entry.js?v=6"></script>
+  <script type="module" src="./scripts/workforce.js?v=7"></script>
+  <script type="module" src="./scripts/workforce-schedules-entry.js?v=8"></script>
+  <script type="module" src="./scripts/workforce-view-switcher.js?v=1"></script>
 </body>
 </html>
