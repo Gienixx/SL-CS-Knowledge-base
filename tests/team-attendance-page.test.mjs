@@ -5,6 +5,7 @@ import test from 'node:test'
 const read = path => readFile(new URL(`../${path}`, import.meta.url), 'utf8')
 const migrationPath = 'supabase/migrations-legacy/2026070902_team_attendance_page.sql'
 const manualEntryMigrationPath = 'supabase/migrations/20260714070649_manual_attendance_entry.sql'
+const approvalLockingMigrationPath = 'supabase/migrations/20260717171751_attendance_approval_locking.sql'
 
 test('Step 10 page contains every required attendance column and filter', async () => {
   const page = await read('team-attendance.html')
@@ -126,10 +127,39 @@ test('Team Attendance does not flag fully classified long overtime records', asy
   const page = await read('team-attendance.html')
   const script = await read('scripts/team-attendance.js')
 
-  assert.match(page, /scripts\/team-attendance\.js\?v=3/)
+  assert.match(page, /scripts\/team-attendance\.js\?v=4/)
   assert.match(script, /const hasUnclassifiedWorkedMinutes = workedMinutes > regularMinutes \+ overtimeMinutes/)
   assert.match(script, /record\.schedule_id && hasUnclassifiedWorkedMinutes/)
   assert.match(script, /if \(overtimeMinutes > 0\) return \{ label: 'Overtime'/)
+})
+
+test('Team Attendance provides authorized audited approval and locking actions', async () => {
+  const page = await read('team-attendance.html')
+  const script = await read('scripts/team-attendance.js')
+  const migration = await read(approvalLockingMigrationPath)
+  const verification = await read('supabase/verification/attendance_approval_locking_check.sql')
+  const documentation = await read('docs/attendance-approval-locking.md')
+
+  assert.match(page, /irreversibly lock finalized attendance/)
+  assert.match(script, /access\?\.can_approve_attendance/)
+  assert.match(script, /reviewAttendance\(row, 'approved'/)
+  assert.match(script, /reviewAttendance\(row, 'locked'/)
+  assert.match(script, /supabase\.rpc\('workforce_review_attendance'/)
+  assert.match(script, /locked attendance cannot be corrected or deleted/)
+
+  assert.match(migration, /create or replace function public\.workforce_review_attendance\(/)
+  assert.match(migration, /security definer\s+set search_path = ''/)
+  assert.match(migration, /workforce_current_profile_id\(\)/)
+  assert.match(migration, /workforce_can_approve_attendance\(v_attendance\.user_id\)/)
+  assert.match(migration, /review_status = p_review_status/)
+  assert.match(migration, /'attendance_approved'/)
+  assert.match(migration, /'attendance_locked'/)
+  assert.match(migration, /create trigger zz_attendance_locked_immutable/)
+  assert.match(migration, /revoke all on function public\.workforce_review_attendance[\s\S]*from public, anon/)
+  assert.match(migration, /grant execute on function public\.workforce_review_attendance[\s\S]*to authenticated/)
+  assert.match(verification, /review_rpc_acl_is_safe/)
+  assert.match(verification, /reviewed_by is null or reviewed_at is null/)
+  assert.match(documentation, /Locked attendance cannot be updated, corrected, or deleted/)
 })
 
 test('Step 10 data service enforces permission and supervisor scope', async () => {

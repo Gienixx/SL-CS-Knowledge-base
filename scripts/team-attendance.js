@@ -184,7 +184,7 @@ function formatShift(row) {
 }
 
 function statusBadgeClass(status) {
-  if (status === 'present' || status === 'approved') return 'success'
+  if (status === 'present' || status === 'approved' || status === 'locked') return 'success'
   if (status === 'absent' || status === 'rejected') return 'danger'
   if (status === 'on_leave' || status === 'excused' || status === 'pending' || status === 'corrected') return 'warning'
   return 'muted'
@@ -272,11 +272,30 @@ function createActionCell(row) {
   correctButton.type = 'button'
   correctButton.className = 'wf-btn secondary compact'
   correctButton.textContent = 'Correct'
-  correctButton.disabled = !access?.can_correct_attendance || !row.employee_user_id
+  correctButton.disabled = !access?.can_correct_attendance || !row.employee_user_id || row.review_status === 'locked'
   correctButton.addEventListener('click', () => openCorrectionModal(row))
   actions.appendChild(correctButton)
 
-  if (access?.is_admin === true && hasWorkforcePermission(access, 'manage_schedules')) {
+  if (access?.can_approve_attendance && ['pending', 'corrected'].includes(row.review_status)) {
+    const approveButton = document.createElement('button')
+    approveButton.type = 'button'
+    approveButton.className = 'wf-btn primary compact'
+    approveButton.textContent = 'Approve'
+    approveButton.disabled = row.is_open || row.is_missing_clock_out || !row.employee_user_id
+    approveButton.addEventListener('click', () => reviewAttendance(row, 'approved', approveButton))
+    actions.appendChild(approveButton)
+  }
+
+  if (access?.can_approve_attendance && row.review_status === 'approved') {
+    const lockButton = document.createElement('button')
+    lockButton.type = 'button'
+    lockButton.className = 'wf-btn danger compact'
+    lockButton.textContent = 'Lock'
+    lockButton.addEventListener('click', () => reviewAttendance(row, 'locked', lockButton))
+    actions.appendChild(lockButton)
+  }
+
+  if (access?.is_admin === true && hasWorkforcePermission(access, 'manage_schedules') && row.review_status !== 'locked') {
     const deleteButton = document.createElement('button')
     deleteButton.type = 'button'
     deleteButton.className = 'wf-btn danger compact'
@@ -287,6 +306,43 @@ function createActionCell(row) {
 
   cell.appendChild(actions)
   return cell
+}
+
+async function reviewAttendance(row, reviewStatus, button) {
+  if (!row.attendance_id || busy) return
+
+  const isLock = reviewStatus === 'locked'
+  const action = isLock ? 'Lock' : 'Approve'
+  const warning = isLock
+    ? ' This is final: locked attendance cannot be corrected or deleted.'
+    : ''
+  const confirmed = window.confirm(
+    `${action} ${row.employee_name || 'this employee'}'s attendance for ${formatDate(row.work_date)}?${warning}`
+  )
+  if (!confirmed) return
+
+  busy = true
+  button.disabled = true
+  button.textContent = isLock ? 'Locking...' : 'Approving...'
+  setMessage(elements.tableMessage, `${action} attendance...`)
+
+  try {
+    const { error } = await supabase.rpc('workforce_review_attendance', {
+      p_attendance_id: row.attendance_id,
+      p_review_status: reviewStatus,
+      p_review_notes: null
+    })
+    if (error) throw error
+
+    await loadAttendance()
+    setMessage(elements.tableMessage, `Attendance ${reviewStatus} successfully.`, 'success')
+  } catch (error) {
+    setMessage(elements.tableMessage, errorMessage(error), 'error')
+  } finally {
+    busy = false
+    button.disabled = false
+    button.textContent = action
+  }
 }
 
 function formatCorrectionDateTime(value, timezone) {
