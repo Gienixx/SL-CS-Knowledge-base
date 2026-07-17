@@ -428,11 +428,11 @@
           </label>
           <label class="wf-check full">
             <input id="scheduleRepeatWeekly" type="checkbox">
-            <span>Repeat this completed week automatically</span>
+            <span>Add this schedule to Sunday weekly automation</span>
           </label>
         </div>
 
-        <p class="wf-note">Published schedules are visible to the assigned agent. Scheduled entries remain drafts. To enable repetition, first add exactly one entry for every day from Sunday through Saturday, including rest days, then check the box while saving the final entry. Admin edits to generated schedules are not overwritten.</p>
+        <p class="wf-note">Check the box to reuse each saved schedule automatically every week. You can select one date or several dates. Holidays stay one-time only.</p>
         <div class="wf-dialog-actions">
           <button class="wf-btn secondary" type="button" data-schedule-close>Cancel</button>
           <button class="wf-btn" id="saveScheduleButton" type="submit">Save Schedule</button>
@@ -443,7 +443,7 @@
   </div>
 
   <script type="module" src="./scripts/workforce.js?v=7"></script>
-  <script type="module" src="./scripts/workforce-schedules-entry.js?v=8"></script>
+  <script type="module" src="./scripts/workforce-schedules-entry.js?v=9"></script>
   <script type="module" src="./scripts/workforce-view-switcher.js?v=1"></script>
 </body>
 </html>

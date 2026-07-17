@@ -619,11 +619,6 @@ if (section) {
       return
     }
 
-    if (repeatWeekly && scheduleDates.length > 1) {
-      setMessage(formMessage, 'Save the selected days first, then enable weekly repetition from a single completed-week entry.', 'error')
-      return
-    }
-
     if (isHoliday && !holidayName) {
       setMessage(formMessage, 'Enter the holiday name.', 'error')
       return
@@ -669,7 +664,7 @@ if (section) {
       setMessage(
         formMessage,
         repeatWeekly
-          ? 'Schedule saved and weekly automation enabled.'
+          ? `${scheduleDates.length} schedule entr${scheduleDates.length === 1 ? 'y was' : 'ies were'} saved and added to weekly automation.`
           : `${scheduleDates.length} schedule entr${scheduleDates.length === 1 ? 'y' : 'ies'} saved successfully.`,
         'success'
       )
