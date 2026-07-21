@@ -265,13 +265,6 @@ function createUpcomingScheduleCard(schedule) {
     copy.appendChild(meta)
   }
 
-  if (schedule.notes) {
-    const notes = document.createElement('span')
-    notes.className = 'home-schedule-event-note'
-    notes.textContent = schedule.notes
-    copy.appendChild(notes)
-  }
-
   const type = document.createElement('span')
   const typeValue = scheduleType(schedule)
   type.className = `event-type ${typeValue.className}`
@@ -310,10 +303,6 @@ function upcomingScheduleMeta(schedule) {
 
   if (schedule.is_holiday && schedule.shift_start) {
     details.push(schedule.holiday_name || 'Holiday')
-  }
-
-  if (schedule.timezone && !schedule.is_rest_day) {
-    details.push(schedule.timezone)
   }
 
   return details.filter(Boolean).join(' · ')

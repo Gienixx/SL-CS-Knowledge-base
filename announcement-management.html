@@ -1,0 +1,186 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Website Management | SocialLoop</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Space+Grotesk:wght@500;600;700&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="./styles/announcement-management.css?v=5" />
+</head>
+<body>
+  <header class="page-header">
+    <a class="back-link" href="./home.html" aria-label="Back to Home">
+      <span aria-hidden="true">&#8592;</span>
+      Home
+    </a>
+    <div>
+      <p>ADMINISTRATION</p>
+      <h1>Website Management</h1>
+      <span>Manage team announcements and individual daily checklists.</span>
+    </div>
+  </header>
+
+  <main id="announcementManagementPage" class="management-page" aria-busy="true">
+    <div class="management-tabs" role="tablist" aria-label="Website management sections">
+      <button id="announcementManagementTab" class="management-tab active" type="button" role="tab" aria-selected="true" aria-controls="announcementManagementPanel">Announcement Management</button>
+      <button id="todoManagementTab" class="management-tab" type="button" role="tab" aria-selected="false" aria-controls="todoManagementPanel" hidden>To-Do List Management</button>
+    </div>
+
+    <section id="announcementManagementPanel" class="management-tab-panel" role="tabpanel" aria-labelledby="announcementManagementTab">
+      <div class="page-shell">
+        <section class="editor-panel" aria-labelledby="announcementEditorTitle">
+          <div class="section-heading">
+            <div>
+              <h2 id="announcementEditorTitle">Create announcement</h2>
+              <p id="announcementEditorHint">Add a team update and publish it when it is ready.</p>
+            </div>
+            <button id="announcementCancelEdit" class="text-button" type="button" hidden>Cancel edit</button>
+          </div>
+
+          <form id="announcementForm">
+            <label for="announcementTitle">Title</label>
+            <input id="announcementTitle" name="title" type="text" maxlength="120" autocomplete="off" required />
+
+            <label for="announcementCategory">Category</label>
+            <select id="announcementCategory" name="category">
+              <option>General</option>
+              <option>Operations</option>
+              <option>Policy</option>
+              <option>Training</option>
+              <option>Recognition</option>
+            </select>
+
+            <label id="announcementBodyLabel" for="announcementBody">Message</label>
+            <div class="announcement-editor-field">
+              <div class="announcement-format-toolbar" role="toolbar" aria-label="Message formatting">
+                <button type="button" data-format-command="bold" aria-label="Bold" title="Bold"><strong>B</strong></button>
+                <button type="button" data-format-command="italic" aria-label="Italic" title="Italic"><em>I</em></button>
+                <button type="button" data-format-command="underline" aria-label="Underline" title="Underline"><span class="underline-symbol">U</span></button>
+                <button type="button" data-format-command="insertUnorderedList" aria-label="Bulleted list" title="Bulleted list"><span aria-hidden="true">&#8226;&#8801;</span></button>
+              </div>
+              <div id="announcementMessageEditor" class="announcement-message-editor" contenteditable="true" role="textbox" aria-multiline="true" aria-labelledby="announcementBodyLabel" data-placeholder="Write the announcement message..."></div>
+            </div>
+            <textarea id="announcementBody" name="body" hidden aria-hidden="true"></textarea>
+            <div class="form-meta">
+              <span id="announcementCharacterCount">0 / 2000</span>
+              <span>Published announcements appear in Latest team updates.</span>
+            </div>
+
+            <div id="announcementFormStatus" class="form-status" role="status" aria-live="polite"></div>
+            <div class="form-actions">
+              <button id="announcementSaveDraft" class="secondary-button" type="submit" value="draft">Save draft</button>
+              <button id="announcementPublish" class="primary-button" type="submit" value="published">Publish</button>
+            </div>
+          </form>
+        </section>
+
+        <section class="list-panel" aria-labelledby="announcementListTitle">
+          <div class="section-heading">
+            <div>
+              <h2 id="announcementListTitle">Announcements</h2>
+              <p>Manage drafts and published team updates.</p>
+            </div>
+            <span id="announcementCount" class="count-badge">0</span>
+          </div>
+          <div id="announcementList" class="announcement-list" aria-live="polite">
+            <p class="list-state">Loading announcements...</p>
+          </div>
+        </section>
+      </div>
+    </section>
+
+    <section id="todoManagementPanel" class="management-tab-panel" role="tabpanel" aria-labelledby="todoManagementTab" hidden>
+      <div class="page-shell todo-management-grid">
+        <section class="editor-panel" aria-labelledby="todoEditorTitle">
+          <div class="section-heading">
+            <div>
+              <h2 id="todoEditorTitle">Assign a task</h2>
+              <p id="todoEditorHint">Add an item to selected team members' daily checklists.</p>
+            </div>
+            <button id="todoCancelEdit" class="text-button" type="button" hidden>Cancel edit</button>
+          </div>
+
+          <form id="todoForm">
+            <fieldset class="todo-member-picker">
+              <legend>Assign to</legend>
+              <span id="todoAssigneeCount" class="todo-assignee-count">0 selected</span>
+              <div id="todoAssignee" class="todo-assignee-list" aria-label="Team members">
+                <p class="member-picker-empty">Loading team members...</p>
+              </div>
+              <div class="todo-member-picker-actions">
+                <button id="todoSelectAll" type="button">Select all</button>
+                <button id="todoClearSelection" type="button">Clear</button>
+              </div>
+            </fieldset>
+
+            <label for="todoTitle">Task</label>
+            <input id="todoTitle" name="title" type="text" maxlength="180" autocomplete="off" required />
+
+            <label for="todoSortOrder">Display order</label>
+            <input id="todoSortOrder" name="sort_order" type="number" min="0" max="9999" step="1" value="0" />
+
+            <label class="checkbox-field" for="todoIsActive">
+              <input id="todoIsActive" name="is_active" type="checkbox" checked />
+              <span>Show on the user's daily checklist</span>
+            </label>
+
+            <div id="todoFormStatus" class="form-status" role="status" aria-live="polite"></div>
+            <div class="form-actions">
+              <button id="todoSave" class="primary-button" type="submit">Assign task</button>
+            </div>
+          </form>
+        </section>
+
+        <section class="list-panel" aria-labelledby="todoListTitle">
+          <div class="section-heading todo-list-heading">
+            <div>
+              <h2 id="todoListTitle">Assigned tasks</h2>
+              <p>Tasks remain on Home each day until they are deactivated or deleted.</p>
+            </div>
+            <span id="todoCount" class="count-badge">0</span>
+          </div>
+          <label class="filter-label" for="todoUserFilter">Team member</label>
+          <select id="todoUserFilter" class="todo-user-filter">
+            <option value="">All team members</option>
+          </select>
+          <div id="todoManagementList" class="todo-management-list" aria-live="polite">
+            <p class="list-state">Loading assigned tasks...</p>
+          </div>
+        </section>
+      </div>
+
+      <section class="todo-log-panel" aria-labelledby="todoActivityLogTitle">
+        <div class="section-heading todo-log-heading">
+          <div>
+            <h2 id="todoActivityLogTitle">Activity log</h2>
+            <p>Recent daily checklist changes in America/New_York time.</p>
+          </div>
+          <div class="todo-log-tools">
+            <span id="todoActivityLogCount" class="count-badge">0</span>
+            <button id="todoActivityLogRefresh" class="secondary-button compact-button" type="button">Refresh log</button>
+          </div>
+        </div>
+        <div class="todo-log-table-wrap">
+          <table class="todo-log-table">
+            <thead>
+              <tr>
+                <th scope="col">Timestamp</th>
+                <th scope="col">Task</th>
+                <th scope="col">Agent</th>
+                <th scope="col">Action</th>
+              </tr>
+            </thead>
+            <tbody id="todoActivityLogBody">
+              <tr><td colspan="4" class="todo-log-empty">Loading activity...</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </section>
+    </section>
+  </main>
+
+  <script type="module" src="./scripts/announcement-management.js?v=6"></script>
+</body>
+</html>

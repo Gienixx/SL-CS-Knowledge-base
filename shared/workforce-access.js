@@ -6,6 +6,7 @@ export const WORKFORCE_PERMISSION_KEYS = Object.freeze([
   'approve_attendance',
   'approve_leave',
   'view_workforce_reports',
+  'manage_announcements',
   'edit_articles',
   'manage_payroll'
 ])
@@ -131,6 +132,7 @@ export function normalizeWorkforceAccess(
     timezone: normalizeText(data.timezone) || 'America/New_York',
     permissions,
     can_edit_articles: permissions.edit_articles === true,
+    can_manage_announcements: permissions.manage_announcements === true,
     can_manage_payroll: permissions.manage_payroll === true,
     can_correct_attendance: permissions.correct_attendance === true,
     can_approve_attendance: permissions.approve_attendance === true,
@@ -208,6 +210,7 @@ export function createLegacyWorkforceAccess(
       timezone: 'America/New_York',
       permissions,
       can_edit_articles: permissions.edit_articles,
+      can_manage_announcements: false,
       can_manage_payroll: false,
       can_correct_attendance: false,
       can_approve_attendance: false,

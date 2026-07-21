@@ -10,6 +10,7 @@ import {
   loadCurrentWorkforceAccess,
   hasWorkforcePermission
 } from './workforce-permissions.js'
+import { renderAnnouncementHtml } from './announcement-rich-text.js?v=1'
 
 const SVG_NAMESPACE = 'http://www.w3.org/2000/svg'
 const HOME_HISTORY_LIMIT = 14
@@ -88,7 +89,13 @@ async function initializeHome() {
     }
 
     configureUserInterface(currentUser, access)
-    await loadHomeMetrics()
+    try {
+      await loadHomeMetrics()
+    } catch (error) {
+      console.error('Unable to load Home metrics:', error)
+      setMetricStateUnavailable()
+    }
+    await loadPublishedAnnouncements()
   } catch (error) {
     if (isMissingAuthSession(error)) {
       window.location.replace('./login.html')
@@ -124,10 +131,18 @@ function configureUserInterface(user, access) {
   setText('homeUserAvatar', initials)
 
   const articleButton = document.getElementById('homeArticleManagementBtn')
+  const announcementButton = document.getElementById('homeAnnouncementManagementBtn')
   const changePasswordButton = document.getElementById('homeChangePasswordBtn')
 
   if (articleButton) {
     articleButton.hidden = !hasWorkforcePermission(access, 'edit_articles')
+  }
+
+  if (announcementButton) {
+    announcementButton.hidden = !(
+      access.is_admin === true ||
+      hasWorkforcePermission(access, 'manage_announcements')
+    )
   }
 
   if (changePasswordButton) {
@@ -219,7 +234,118 @@ function renderAnnouncements() {
   const body = document.getElementById('announcementRows')
   if (!body) return
 
-  body.innerHTML = '<tr><td class="home-empty-table-cell" colspan="4">None</td></tr>'
+  body.className = 'empty-state team-updates-body'
+  body.innerHTML = `
+    <span class="updates-empty-icon" aria-hidden="true"></span>
+    <strong>No updates posted yet</strong>
+    <small>New announcements from the team will show up here.</small>
+    <span class="sr-only home-empty-table-cell">None</span>
+  `
+}
+
+async function loadPublishedAnnouncements() {
+  const body = document.getElementById('announcementRows')
+  if (!body) return
+
+  try {
+    const { data, error } = await supabase
+      .from('team_announcements')
+      .select('id, title, body, category, published_by_name, published_at')
+      .eq('status', 'published')
+      .order('published_at', { ascending: false })
+      .limit(5)
+
+    if (error) throw error
+
+    if (!Array.isArray(data) || data.length === 0) {
+      renderAnnouncements()
+      return
+    }
+
+    body.className = 'team-updates-body has-updates'
+    body.replaceChildren()
+
+    const list = document.createElement('div')
+    list.className = 'team-update-list'
+
+    const columns = document.createElement('div')
+    columns.className = 'team-update-columns'
+
+    const dateColumn = document.createElement('span')
+    dateColumn.textContent = 'Date'
+
+    const titleColumn = document.createElement('span')
+    titleColumn.textContent = 'Title'
+
+    const unlabeledColumn = document.createElement('span')
+    unlabeledColumn.setAttribute('aria-hidden', 'true')
+    columns.append(dateColumn, titleColumn, unlabeledColumn)
+    list.appendChild(columns)
+
+    for (const announcement of data) {
+      list.appendChild(createTeamUpdate(announcement))
+    }
+
+    body.appendChild(list)
+  } catch (error) {
+    console.error('Unable to load published announcements:', error)
+    renderAnnouncements()
+  }
+}
+
+function createTeamUpdate(announcement) {
+  const row = document.createElement('button')
+  row.type = 'button'
+  row.className = 'team-update-item'
+  row.setAttribute('aria-label', `Open announcement: ${announcement.title}`)
+
+  const date = document.createElement('span')
+  date.className = 'team-update-date'
+  date.textContent = formatAnnouncementDate(announcement.published_at)
+
+  const title = document.createElement('strong')
+  title.textContent = announcement.title
+
+  const category = document.createElement('span')
+  category.className = 'team-update-category'
+  category.textContent = announcement.category || 'General'
+
+  row.append(date, title, category)
+  row.addEventListener('click', () => openAnnouncementDialog(announcement))
+  return row
+}
+
+function openAnnouncementDialog(announcement) {
+  const dialog = document.getElementById('announcementDialog')
+  if (!dialog) return
+
+  setText('announcementDialogCategory', announcement.category || 'General')
+  setText('announcementDialogTitle', announcement.title)
+  setText(
+    'announcementDialogMeta',
+    `${formatAnnouncementDate(announcement.published_at)} · ${announcement.published_by_name || 'Administrator'}`
+  )
+  renderAnnouncementHtml(
+    document.getElementById('announcementDialogBody'),
+    announcement.body
+  )
+
+  if (typeof dialog.showModal === 'function') {
+    dialog.showModal()
+  } else {
+    dialog.setAttribute('open', '')
+  }
+}
+
+function formatAnnouncementDate(value) {
+  const date = new Date(value)
+  if (Number.isNaN(date.getTime())) return 'Recently published'
+
+  return new Intl.DateTimeFormat('en-PH', {
+    month: 'short',
+    day: 'numeric',
+    year: 'numeric'
+  }).format(date)
 }
 
 function renderUpcomingEvents() {
@@ -316,6 +442,12 @@ function installPageEvents() {
   })
 
   backdrop?.addEventListener('click', closeSidebar)
+
+  document.getElementById('announcementDialog')?.addEventListener('click', event => {
+    if (event.target === event.currentTarget) {
+      event.currentTarget.close()
+    }
+  })
 
   window.addEventListener('resize', () => {
     if (window.innerWidth > 820) closeSidebar()
