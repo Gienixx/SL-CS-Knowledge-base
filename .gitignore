@@ -1,0 +1,16 @@
+# Dependencies
+node_modules/
+
+# Generated Cloudflare Pages output and local state
+dist/
+.wrangler/
+
+# Local environment and secret files
+.dev.vars
+.env
+.env.*
+!.env.example
+
+# Local logs and operating-system files
+*.log
+.DS_Store
