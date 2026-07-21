@@ -130,7 +130,7 @@ test('Team Attendance shows a compact filtered total billed hours summary', asyn
 
   assert.match(page, /Total billed hours/)
   assert.match(page, /id="teamAttendanceBilledHours"/)
-  assert.match(page, /styles\/team-attendance\.css\?v=8/)
+  assert.match(page, /styles\/team-attendance\.css\?v=9/)
   assert.match(script, /billedHours: document\.getElementById\('teamAttendanceBilledHours'\)/)
   assert.match(script, /row\.total_worked_minutes/)
   assert.match(script, /elements\.billedHours\.textContent = formatMinutes/)
@@ -138,6 +138,7 @@ test('Team Attendance shows a compact filtered total billed hours summary', asyn
   assert.match(styles, /\.team-attendance-page \.wf-summary\{[^}]*min-height:70px/)
   assert.match(styles, /\.team-attendance-page \.wf-summary span\{[^}]*font-size:9px[^}]*white-space:nowrap/)
   assert.match(styles, /\.team-attendance-page \.wf-summary strong\{[^}]*font-size:18px[^}]*white-space:nowrap/)
+  assert.match(styles, /\.team-attendance-page \.wf-summary:nth-child\(5\)>span\{[^}]*max-width:70px[^}]*white-space:normal/)
 })
 
 test('Team Attendance does not flag fully classified long overtime records', async () => {
