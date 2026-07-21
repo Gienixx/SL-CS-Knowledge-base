@@ -27,6 +27,7 @@ const elements = {
   openCount: document.getElementById('teamAttendanceOpenCount'),
   missingCount: document.getElementById('teamAttendanceMissingCount'),
   overtimeCount: document.getElementById('teamAttendanceOvertimeCount'),
+  billedHours: document.getElementById('teamAttendanceBilledHours'),
   scope: document.getElementById('teamAttendanceScope'),
   search: document.getElementById('teamAttendanceSearch'),
   startDate: document.getElementById('teamAttendanceStartDate'),
@@ -427,6 +428,10 @@ function renderSummary(rows) {
   elements.openCount.textContent = rows.filter(row => row.is_open).length
   elements.missingCount.textContent = rows.filter(row => row.is_missing_clock_out).length
   elements.overtimeCount.textContent = rows.filter(row => Number(row.total_overtime_minutes) > 0).length
+  elements.billedHours.textContent = formatMinutes(rows.reduce(
+    (total, row) => total + Math.max(0, Number(row.total_worked_minutes) || 0),
+    0
+  ))
 }
 
 function initials(value) {
