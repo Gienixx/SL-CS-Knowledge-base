@@ -48,6 +48,7 @@ test('production build publishes only browser assets', async () => {
     'dist/index.html',
     'dist/partials',
     'dist/scripts',
+    'dist/shared/workforce-access.js',
     'dist/styles'
   ]) {
     assert.equal(await exists(requiredPath), true, `${requiredPath} should exist`)

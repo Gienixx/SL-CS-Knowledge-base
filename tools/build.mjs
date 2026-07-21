@@ -10,6 +10,7 @@ const publicDirectories = [
   'images',
   'partials',
   'scripts',
+  'shared',
   'styles'
 ]
 
