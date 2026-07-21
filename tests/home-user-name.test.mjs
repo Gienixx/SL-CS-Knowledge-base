@@ -8,7 +8,7 @@ const read = path => readFile(new URL(`../${path}`, import.meta.url), 'utf8')
 test('Home loads the User Management display-name integration', async () => {
   const page = await read('home.html')
 
-  assert.match(page, /home-user-name\.js\?v=1/)
+  assert.match(page, /home-user-name\.js\?v=2/)
 })
 
 test('Home display name comes from login.name and uses only the first name', async () => {

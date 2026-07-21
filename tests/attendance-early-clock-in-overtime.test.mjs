@@ -7,7 +7,7 @@ const read = path => readFile(new URL(`../${path}`, import.meta.url), 'utf8')
 test('attendance page loads the unrestricted pre-shift client', async () => {
   const html = await read('attendance.html')
 
-  assert.match(html, /scripts\/attendance\.js\?v=3/)
+  assert.match(html, /scripts\/attendance\.js\?v=4/)
   assert.doesNotMatch(html, /attendance-clock-in-window\.js/)
   assert.match(html, /Clock-in is available before a published or changed shift/)
   assert.match(html, /20 hours in total per scheduled work date/)

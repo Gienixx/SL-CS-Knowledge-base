@@ -1,10 +1,11 @@
-import { supabase } from './supabaseClient.js?v=9'
+import { supabase } from './supabaseClient.js?v=10'
 import {
   hasWorkforcePermission,
   loadCurrentWorkforceAccess
 } from './workforce-permissions.js?v=1'
 
 const RELEASED_SCHEDULE_STATUSES = Object.freeze(['published', 'changed'])
+const REQUEST_TIMEOUT_MS = 15000
 const ATTENDANCE_STATUS_LABELS = Object.freeze({
   present: 'Present',
   absent: 'Absent',
@@ -46,7 +47,14 @@ let busy = false
 let clockTimer = null
 
 function errorMessage(error) {
+  if (/abort|timeout/i.test(`${error?.name || ''} ${error?.message || ''}`)) {
+    return 'The attendance request timed out. Check your connection and try again.'
+  }
   return error?.message || 'An unexpected error occurred.'
+}
+
+function requestSignal() {
+  return AbortSignal.timeout(REQUEST_TIMEOUT_MS)
 }
 
 function setActionMessage(text, type = '') {
@@ -567,6 +575,7 @@ async function loadToday() {
     .in('status', RELEASED_SCHEDULE_STATUSES)
     .order('shift_date')
     .order('shift_sequence')
+    .abortSignal(requestSignal())
 
   const attendanceQuery = supabase
     .from('attendance')
@@ -575,6 +584,7 @@ async function loadToday() {
     .gte('work_date', rangeStart)
     .lte('work_date', rangeEnd)
     .order('created_at')
+    .abortSignal(requestSignal())
 
   const [scheduleResult, attendanceResult] = await Promise.all([scheduleQuery, attendanceQuery])
   if (scheduleResult.error) throw scheduleResult.error
@@ -597,6 +607,7 @@ async function loadHistory() {
     .lte('work_date', range.end)
     .order('work_date', { ascending: false })
     .order('created_at', { ascending: false })
+    .abortSignal(requestSignal())
 
   if (error) throw error
   historyRows = data || []
@@ -644,7 +655,9 @@ async function clockIn() {
   )
 
   try {
-    const { error } = await supabase.rpc('workforce_clock_in', { p_schedule_id: scheduleId })
+    const { error } = await supabase
+      .rpc('workforce_clock_in', { p_schedule_id: scheduleId })
+      .abortSignal(requestSignal())
     if (error) throw error
     await Promise.all([loadToday(), loadHistory()])
     setActionMessage(
@@ -670,7 +683,9 @@ async function clockOut() {
   setActionMessage('Recording your clock-out...')
 
   try {
-    const { error } = await supabase.rpc('workforce_clock_out')
+    const { error } = await supabase
+      .rpc('workforce_clock_out')
+      .abortSignal(requestSignal())
     if (error) throw error
     await Promise.all([loadToday(), loadHistory()])
     setActionMessage('Clock-out recorded successfully.', 'success')

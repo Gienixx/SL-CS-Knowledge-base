@@ -94,7 +94,7 @@ test('Home exposes Google Calendar controls without browser secrets', async () =
   assert.match(page, /id="googleCalendarDisconnectButton"/)
   assert.match(page, /id="googleCalendarStatus"/)
   assert.match(page, /home-google-calendar\.css\?v=1/)
-  assert.match(page, /home-google-calendar\.js\?v=1/)
+  assert.match(page, /home-google-calendar\.js\?v=2/)
   assert.match(script, /\/google-calendar\/status/)
   assert.match(script, /\/google-calendar\/connect/)
   assert.match(script, /\/google-calendar\/events/)
