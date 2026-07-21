@@ -7,8 +7,8 @@ const styles = await readFile(new URL('../styles/workforce-admin.css', import.me
 
 test('employee profiles and schedule management use the compact table design', () => {
   assert.match(page, /class="wf-table wf-compact-table wf-employee-table"/)
-  assert.match(page, /class="wf-table wf-schedule-table wf-compact-table"/)
-  assert.match(page, /workforce-admin\.css\?v=4/)
+  assert.match(page, /class="wf-schedule-grid-table"/)
+  assert.match(page, /workforce-admin\.css\?v=8/)
 })
 
 test('compact workforce tables tighten cells, supporting text, badges, and actions', () => {

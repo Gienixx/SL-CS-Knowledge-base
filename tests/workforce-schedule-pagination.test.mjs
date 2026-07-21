@@ -11,17 +11,18 @@ test('Schedule Management provides accessible pagination controls', () => {
   assert.match(page, /id="scheduleTablePageInfo"/)
   assert.match(page, /id="previousScheduleTablePage"/)
   assert.match(page, /id="nextScheduleTablePage"/)
-  assert.match(page, /workforce-admin\.css\?v=4/)
-  assert.match(page, /workforce-schedules-entry\.js\?v=6/)
+  assert.match(page, /workforce-admin\.css\?v=8/)
+  assert.match(page, /workforce-schedules-entry\.js\?v=9/)
   assert.match(styles, /\.wf-table-pagination\{/)
   assert.match(styles, /\.wf-table-pagination\[hidden\]\{display:none\}/)
 })
 
-test('Schedule Management displays ten filtered entries per page', () => {
+test('Schedule Management displays ten filtered users per page', () => {
   assert.match(script, /const TABLE_PAGE_SIZE = 10/)
-  assert.match(script, /const pageRows = rows\.slice\(pageStart, pageStart \+ TABLE_PAGE_SIZE\)/)
-  assert.match(script, /pageRows\.forEach\(schedule =>/)
-  assert.match(script, /tablePagination\.hidden = rows\.length <= TABLE_PAGE_SIZE/)
+  assert.match(script, /const employeeIds = \[\.\.\.new Set\(rows\.map\(schedule => schedule\.user_id\)\)\]/)
+  assert.match(script, /const pageEmployeeIds = employeeIds\.slice\(pageStart, pageStart \+ TABLE_PAGE_SIZE\)/)
+  assert.match(script, /pageEmployeeIds\.forEach\(userId =>/)
+  assert.match(script, /tablePagination\.hidden = employeeIds\.length <= TABLE_PAGE_SIZE/)
   assert.match(script, /tablePageInfo\.textContent = `Page \$\{schedulePage\} of \$\{pageCount\}`/)
 })
 

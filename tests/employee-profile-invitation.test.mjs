@@ -31,11 +31,11 @@ test('invited employees show lifecycle state, SL ID, and server-owned resend', a
     read('functions/_middleware.js')
   ])
 
-  assert.match(html, /<th>User ID<\/th>/)
+  assert.match(html, /<th>User<\/th>/)
   assert.doesNotMatch(html, /<th>.*UUID.*<\/th>/i)
   assert.match(script, /onboarding_status/)
   assert.match(script, /badge\('Invited', 'warning'\)/)
-  assert.match(script, /textCell\(profile\.employee_id\)/)
+  assert.match(script, /\[profile\.email, profile\.employee_id\]/)
   assert.match(script, /authenticatedRequest\('\/resend-invite'/)
   assert.match(endpoint, /onboarding_status !== 'invited'/)
   assert.match(endpoint, /auth\/v1\/recover/)
