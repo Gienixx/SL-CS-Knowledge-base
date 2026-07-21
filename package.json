@@ -2,7 +2,9 @@
   "name": "socialloop-cs-base",
   "private": true,
   "scripts": {
+    "build": "node tools/build.mjs",
     "test": "node --test tests/*.test.mjs",
+    "test:build": "node --test tests/build-output.test.mjs",
     "test:repository": "node --test tests/repository-integrity.test.mjs tests/stylesheet-organization.test.mjs",
     "test:reporting": "node --test tests/dashboard-sync.test.mjs tests/reporting-system.test.mjs",
     "test:site": "node --test tests/access-and-content.test.mjs tests/reporting-operations-access.test.mjs tests/user-management-resend-invite.test.mjs",
