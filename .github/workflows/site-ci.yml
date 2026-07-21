@@ -17,6 +17,8 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: 22
+      - name: Test production build output
+        run: npm run test:build
       - name: Test access and content
         run: npm run test:site
       - name: Test reporting system
