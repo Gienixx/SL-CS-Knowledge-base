@@ -45,10 +45,15 @@ test('production build publishes only browser assets', async () => {
   }
 
   for (const requiredPath of [
+    'dist/announcement-management.html',
     'dist/index.html',
     'dist/partials',
+    'dist/scripts/announcement-management.js',
+    'dist/scripts/home-daily-overview.js',
+    'dist/scripts/home-live-clocks.js',
     'dist/scripts',
     'dist/shared/workforce-access.js',
+    'dist/styles/announcement-management.css',
     'dist/styles'
   ]) {
     assert.equal(await exists(requiredPath), true, `${requiredPath} should exist`)

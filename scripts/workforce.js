@@ -333,7 +333,12 @@ function renderEmployees() {
       resendButton.type = 'button'
       resendButton.className = 'wf-row-btn'
       resendButton.textContent = 'Resend invite'
-      resendButton.addEventListener('click', () => resendInvitation(profile, resendButton))
+      resendButton.addEventListener('click', event => {
+        event.stopPropagation()
+        actionMenu.classList.remove('open')
+        menuButton.setAttribute('aria-expanded', 'false')
+        resendInvitation(profile, resendButton)
+      })
       actionMenu.appendChild(resendButton)
     }
     if (profile.employment_status === 'inactive') {

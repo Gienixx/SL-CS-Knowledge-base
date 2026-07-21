@@ -114,7 +114,15 @@ test('Home upcoming events are populated from My Schedule', async () => {
   assert.match(script, /UPCOMING_SCHEDULE_LIMIT = 5/)
   assert.match(script, /document\.getElementById\('upcomingEventList'\)/)
   assert.match(script, /createUpcomingScheduleCard/)
-  assert.match(script, /schedule\.notes/)
+  const cardFunction = script.match(
+    /function createUpcomingScheduleCard\(schedule\) \{[\s\S]*?\n\}/
+  )?.[0] || ''
+  const metaFunction = script.match(
+    /function upcomingScheduleMeta\(schedule\) \{[\s\S]*?\n\}/
+  )?.[0] || ''
+
+  assert.doesNotMatch(cardFunction, /schedule\.notes|home-schedule-event-note/)
+  assert.doesNotMatch(metaFunction, /schedule\.timezone/)
 })
 
 test('Home upcoming events hide Published and mark completed entries with a check', async () => {

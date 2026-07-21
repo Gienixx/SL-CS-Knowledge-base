@@ -10,7 +10,7 @@ test('Employee Profiles provides accessible pagination controls', () => {
   assert.match(page, /id="employeeTablePageInfo"/)
   assert.match(page, /id="previousEmployeeTablePage"/)
   assert.match(page, /id="nextEmployeeTablePage"/)
-  assert.match(page, /scripts\/workforce\.js\?v=7/)
+  assert.match(page, /scripts\/workforce\.js\?v=11/)
 })
 
 test('Employee Profiles displays five filtered entries per page', () => {

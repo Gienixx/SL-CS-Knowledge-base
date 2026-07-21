@@ -1,4 +1,7 @@
-import { supabase } from './supabaseClient.js'
+import {
+    enforceSessionLifetime,
+    supabase
+} from './supabaseClient.js'
 
 function getCurrentRouteName() {
     const path = window.location.pathname
@@ -63,6 +66,9 @@ async function loadAuthenticatedPageEnhancements() {
 
 async function requireAuthentication() {
     try {
+        const expired = await enforceSessionLifetime()
+        if (expired) return
+
         const {
             data: { session },
             error

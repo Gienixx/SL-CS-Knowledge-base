@@ -70,7 +70,7 @@ export async function onRequestPost(context) {
     const profileUrl = new URL(`${authorization.supabaseUrl}/rest/v1/profiles`)
     profileUrl.searchParams.set(
       'select',
-      'user_id,email,employee_id,full_name,onboarding_status,is_system_admin'
+      'user_id,email,employee_id,full_name,onboarding_status,invited_at,is_system_admin'
     )
     profileUrl.searchParams.set('user_id', `eq.${userId}`)
     profileUrl.searchParams.set('limit', '1')
@@ -80,11 +80,16 @@ export async function onRequestPost(context) {
     )
     const profile = Array.isArray(profileRows) ? profileRows[0] : null
 
-    if (!profile || profile.onboarding_status !== 'invited') {
-      return jsonResponse({ error: 'Only invited employees can receive another invitation.' }, 409)
+    if (!profile) {
+      return jsonResponse({ error: 'The selected workforce account was not found.' }, 404)
     }
     if (profile.is_system_admin === true) {
       return jsonResponse({ error: 'The protected system owner cannot be modified.' }, 403)
+    }
+    if (profile.onboarding_status !== 'invited') {
+      return jsonResponse({
+        error: 'Only employees with a pending invitation can be sent another invite.'
+      }, 409)
     }
 
     const redirectUrl = new URL('/change-password.html?invite=1', context.request.url)

@@ -35,3 +35,20 @@ test('invited profiles are rejected by the shared workforce gate', async () => {
   assert.match(migration, /profile\.employment_status in \('active', 'on_leave'\)[\s\S]*profile\.onboarding_status = 'active'/)
   assert.match(verification, /shared workforce access gate does not require onboarding activation/i)
 })
+
+test('creating the invited Auth password activates the workforce profile', async () => {
+  const [migration, passwordPage, passwordScript] = await Promise.all([
+    read('supabase/migrations/20260718111240_activate_profile_after_invite_password.sql'),
+    read('change-password.html'),
+    read('scripts/change-password.js')
+  ])
+
+  assert.match(migration, /after update of encrypted_password on auth\.users/i)
+  assert.match(migration, /onboarding_status = 'active'/)
+  assert.match(migration, /onboarding_status = 'invited'/)
+  assert.match(migration, /employee_invitation_accepted/)
+  assert.match(passwordScript, /Create your password/)
+  assert.match(passwordScript, /password_change_completed: true/)
+  assert.doesNotMatch(passwordPage, /temporary password/i)
+  assert.doesNotMatch(passwordScript, /temporary password/i)
+})

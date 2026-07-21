@@ -3,219 +3,190 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Home | SocialLoop CS Base</title>
-
-  <link rel="stylesheet" href="./styles/button-theme.css?v=1" />
-  <link rel="stylesheet" href="./styles/home.css?v=1" />
-  <link rel="stylesheet" href="./styles/home-layout-overrides.css?v=1" />
-  <link rel="stylesheet" href="./styles/home-sidebar-collapse.css?v=2" />
-  <link rel="stylesheet" href="./styles/home-workforce-calendar.css?v=3" />
-  <link rel="stylesheet" href="./styles/home-google-calendar.css?v=1" />
-  <link rel="stylesheet" href="./styles/home-reference-redesign.css?v=3" />
+  <title>SocialLoop - Home</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Space+Grotesk:wght@500;600;700&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="./styles/home.css?v=1" media="not all" />
+  <link rel="stylesheet" href="./styles/home-layout-overrides.css?v=1" media="not all" />
+  <link rel="stylesheet" href="./styles/home-sidebar-collapse.css?v=2" media="not all" />
+  <link rel="stylesheet" href="./styles/home-workforce-calendar.css?v=3" media="not all" />
+  <link rel="stylesheet" href="./styles/home-google-calendar.css?v=1" media="not all" />
+  <link rel="stylesheet" href="./styles/home-reference-redesign.css?v=15" />
 </head>
 <body>
-  <div class="home-layout">
-    <aside id="homeSidebar" class="home-sidebar" aria-label="Primary navigation">
-      <button id="sidebarCollapseToggle" class="sidebar-brand sidebar-collapse-toggle" type="button" aria-label="Minimize sidebar" aria-expanded="true">
-        <span class="sidebar-hamburger" aria-hidden="true">S</span>
-        <span class="sidebar-brand-copy">
-          <strong>SocialLoop</strong>
-          <small>CS Workspace</small>
-        </span>
+  <div class="app home-layout">
+    <aside id="homeSidebar" class="side home-sidebar" aria-label="Primary navigation">
+      <button id="sidebarCollapseToggle" class="brand" type="button" aria-label="Minimize sidebar" aria-expanded="true">
+        <span class="brand-mark">S</span>
+        <span class="brand-copy"><strong>SocialLoop</strong><small>CS workspace</small></span>
       </button>
 
-      <nav class="sidebar-nav" aria-label="Team navigation">
-        <a class="sidebar-link active" href="./home.html" aria-current="page" title="Home">
-          <span class="sidebar-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M3 11.5 12 4l9 7.5M5.5 10v10h13V10M9.5 20v-6h5v6"/></svg></span>
-          <span>Home</span>
-        </a>
-        <a class="sidebar-link" href="./dashboard.html" title="Analytics">
-          <span class="sidebar-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M5 20V11m7 9V4m7 16v-6"/></svg></span>
-          <span>Analytics</span>
-        </a>
-        <p class="sidebar-group-label">Resources</p>
-        <a class="sidebar-link" href="./KB.html" title="Knowledge Base">
-          <span class="sidebar-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M5 5.5h14v13H5zM8 9h8M8 12h8M8 15h5"/></svg></span>
-          <span>Knowledge Base</span>
-        </a>
-        <a class="sidebar-link" href="./org-chart.html" title="Organizational Chart">
-          <span class="sidebar-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M12 12a3.5 3.5 0 1 0 0-7 3.5 3.5 0 0 0 0 7ZM5.5 20a6.5 6.5 0 0 1 13 0"/></svg></span>
-          <span>Organizational Chart</span>
-        </a>
-        <p class="sidebar-group-label">My work</p>
-        <a id="homeMyScheduleBtn" class="sidebar-link" href="./my-schedule.html" title="My Schedule" hidden>
-          <span class="sidebar-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M4 7h16v13H4zM7 4v6M17 4v6M4 11h16"/></svg></span>
-          <span>My Schedule</span>
-        </a>
-        <a id="homeAttendanceBtn" class="sidebar-link" href="./attendance.html" title="Attendance" hidden>
-          <span class="sidebar-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="8"/><path d="M12 7v5l3 2"/></svg></span>
-          <span>Attendance</span>
-        </a>
-        <a id="homeLeaveRequestsBtn" class="sidebar-link" href="./leave-requests.html" title="Leave Requests" hidden>
-          <span class="sidebar-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></svg></span>
-          <span>Leave Requests</span>
-        </a>
-        <div class="sidebar-admin-links">
-        <a id="homeTeamAttendanceBtn" class="sidebar-link" href="./team-attendance.html" title="Team Attendance" hidden>
-          <span class="sidebar-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="8"/><path d="M12 7v5l3 2"/></svg></span>
-          <span>Team Attendance</span>
-        </a>
-        <a id="homeWorkforceManagementBtn" class="sidebar-link" href="./workforce.html" title="Workforce Management" hidden>
-          <span class="sidebar-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M8 11a3 3 0 1 0 0-6 3 3 0 0 0 0 6Zm8-1a2.5 2.5 0 1 0 0-5M3.5 20a4.5 4.5 0 0 1 9 0m1.5-7a4 4 0 0 1 6.5 3.1"/></svg></span>
-          <span>Workforce Management</span>
-        </a>
-        <a id="homeArticleManagementBtn" class="sidebar-link" href="./article-management.html" title="Article Management" hidden>
-          <span class="sidebar-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="m5 16-1 4 4-1L19 8l-3-3L5 16Zm8.5-8.5 3 3M4 20h16"/></svg></span>
-          <span>Article Management</span>
-        </a>
+      <nav aria-label="Team navigation">
+        <div class="nav-group">
+          <a class="sidebar-link active" href="./home.html" aria-current="page"><span class="nav-icon"><svg viewBox="0 0 24 24"><path d="M3 11.5 12 4l9 7.5M5.5 10v10h13V10M9.5 20v-6h5v6"/></svg></span><span>Home</span></a>
+          <a class="sidebar-link" href="./dashboard.html" title="Analytics"><span class="nav-icon"><svg viewBox="0 0 24 24"><path d="M5 20V11m7 9V4m7 16v-6"/></svg></span><span>Analytics</span></a>
+        </div>
+        <div class="nav-group">
+          <p class="nav-label">Resources</p>
+          <a class="sidebar-link" href="./KB.html"><span class="nav-icon"><svg viewBox="0 0 24 24"><path d="M5 5.5h14v13H5zM8 9h8M8 12h8M8 15h5"/></svg></span><span>Knowledge base</span></a>
+          <a class="sidebar-link" href="./org-chart.html"><span class="nav-icon"><svg viewBox="0 0 24 24"><circle cx="12" cy="8" r="3"/><path d="M6 20v-2a6 6 0 0 1 12 0v2"/></svg></span><span>Organizational chart</span></a>
+        </div>
+        <div class="nav-group">
+          <p class="nav-label">My work</p>
+          <a id="homeAttendanceBtn" class="sidebar-link" href="./attendance.html" hidden><span class="nav-icon"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="8"/><path d="M12 7v5l3 2"/></svg></span><span>Attendance</span></a>
+          <a id="homeLeaveRequestsBtn" class="sidebar-link" href="./leave-requests.html" hidden><span class="nav-icon"><svg viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></svg></span><span>Leave requests</span></a>
+          <a id="homeMyScheduleBtn" class="sidebar-link" href="./my-schedule.html" hidden><span class="nav-icon"><svg viewBox="0 0 24 24"><path d="M4 7h16v13H4zM7 4v6M17 4v6M4 11h16"/></svg></span><span>My schedule</span></a>
+          <a id="homeTeamAttendanceBtn" class="sidebar-link" href="./team-attendance.html" hidden><span class="nav-icon"><svg viewBox="0 0 24 24"><circle cx="9" cy="8" r="3"/><circle cx="17" cy="10" r="2"/><path d="M3 20a6 6 0 0 1 12 0m1-5a4 4 0 0 1 5 4"/></svg></span><span>Team attendance</span></a>
+        </div>
+        <div class="nav-group management-nav-group">
+          <p class="nav-label">Site management</p>
+          <a id="homeArticleManagementBtn" class="sidebar-link" href="./article-management.html" hidden><span class="nav-icon"><svg viewBox="0 0 24 24"><path d="m5 16-1 4 4-1L19 8l-3-3L5 16Zm8.5-8.5 3 3M4 20h16"/></svg></span><span>Article management</span></a>
+          <a id="homeAnnouncementManagementBtn" class="sidebar-link" href="./announcement-management.html" hidden><span class="nav-icon"><svg viewBox="0 0 24 24"><path d="M4 13V9l12-4v12L4 13Zm0 0 2 6h4l-2-5m8-5c2 1 2 3 0 4"/></svg></span><span>Website management</span></a>
+          <a id="homeWorkforceManagementBtn" class="sidebar-link" href="./workforce.html" hidden><span class="nav-icon"><svg viewBox="0 0 24 24"><circle cx="8" cy="8" r="3"/><circle cx="17" cy="7" r="2.5"/><path d="M2.5 20a5.5 5.5 0 0 1 11 0m1-7a4.5 4.5 0 0 1 7 3.7"/></svg></span><span>Workforce management</span></a>
         </div>
       </nav>
 
-      <div class="sidebar-footer">
-        <a id="homeChangePasswordBtn" class="sidebar-link sidebar-password" href="./change-password.html" title="Change Password" hidden>
-          <span class="sidebar-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M6 10h12v10H6zM8.5 10V7.5a3.5 3.5 0 0 1 7 0V10M12 14v2"/></svg></span>
-          <span>Change Password</span>
-        </a>
-        <div class="sidebar-user">
-          <span id="homeUserAvatar" class="user-avatar" aria-hidden="true">CS</span>
-          <span class="sidebar-user-copy">
-            <strong id="homeUserName">Support Team</strong>
-            <small id="homeUserRole">Team member</small>
-          </span>
+      <div class="side-foot">
+        <a id="homeChangePasswordBtn" class="settings-link" href="./change-password.html" hidden><span class="nav-icon"><svg viewBox="0 0 24 24"><path d="M6 10h12v10H6zM8.5 10V7.5a3.5 3.5 0 0 1 7 0V10M12 14v2"/></svg></span><span>Change password</span></a>
+        <div class="who">
+          <span id="homeUserAvatar" class="avatar">CS</span>
+          <span><strong id="homeUserName">Support Team</strong><small id="homeUserRole">Team member</small></span>
         </div>
-        <button id="homeLogoutBtn" class="sidebar-logout" type="button" title="Log out">Log out</button>
+        <button id="homeLogoutBtn" class="logout" type="button">Log out</button>
       </div>
     </aside>
 
     <button id="sidebarBackdrop" class="sidebar-backdrop" type="button" aria-label="Close navigation"></button>
 
-    <main class="home-main">
-      <header class="home-header">
-        <div class="home-heading-wrap">
-          <button id="sidebarToggle" class="sidebar-toggle" type="button" aria-label="Open navigation" aria-expanded="false">☰</button>
-          <div>
-            <p id="homeCurrentDate" class="home-date">Loading date...</p>
-            <h1>Welcome back, <span id="homeFirstName">Team</span></h1>
-            <p class="home-subtitle">Here's where the CS team stands as of the latest reporting day.</p>
+    <main>
+      <div class="topline">
+        <button id="sidebarToggle" class="mobile-menu" type="button" aria-label="Open navigation" aria-expanded="false">Menu</button>
+        <div class="home-heading">
+          <div class="home-heading-meta">
+            <p id="homeCurrentDate" class="eyebrow">Loading date...</p>
+            <section class="home-live-clocks" tabindex="0" aria-label="Live world clocks">
+              <div class="home-primary-clocks" role="timer">
+                <span class="home-clock"><span>New York</span><time data-time-zone="America/New_York">--:--:--</time></span>
+                <span class="home-clock"><span>Manila</span><time data-time-zone="Asia/Manila">--:--:--</time></span>
+              </div>
+              <div class="home-timezone-popover" aria-label="Additional time zones">
+                <span><strong>AEST</strong><time data-time-zone="Australia/Sydney">--:--:--</time></span>
+                <span><strong>BST</strong><time data-time-zone="Europe/London">--:--:--</time></span>
+                <span><strong>CEST</strong><time data-time-zone="Europe/Paris">--:--:--</time></span>
+                <span><strong>CT</strong><time data-time-zone="America/Chicago">--:--:--</time></span>
+                <span><strong>PT</strong><time data-time-zone="America/Los_Angeles">--:--:--</time></span>
+              </div>
+            </section>
           </div>
+          <h1>Welcome back, <span id="homeFirstName">Team</span></h1>
+          <p class="lede">Here's where the CS team stands as of the latest reporting day.</p>
         </div>
-      </header>
+      </div>
 
-      <section class="latest-summary" aria-labelledby="latestSummaryTitle">
-        <div class="section-heading summary-heading">
+      <section class="snapshot" aria-labelledby="latestSummaryTitle">
+        <div class="snap-head">
           <div>
-            <h2 id="latestSummaryTitle">Support snapshot</h2>
-            <p class="snapshot-subtitle">The backlog is what needs attention — everything else is context.</p>
+            <h2 id="latestSummaryTitle" class="snap-title">Support snapshot</h2>
+            <p class="snap-sub">The backlog is what needs attention - everything else is context.</p>
           </div>
-          <span id="homeLatestDate" class="data-status">Loading data...</span>
+          <span id="homeLatestDate" class="snap-pill">Loading data...</span>
         </div>
-
-        <div class="metric-grid">
-          <article class="metric-card backlog-card">
-            <div>
-              <p>Unsolved backlog</p>
-              <strong id="homeUnsolvedTickets">—</strong>
-              <small>Open tickets carrying over</small>
-            </div>
-          </article>
-          <article class="metric-card">
-            <div>
-              <p>New tickets</p>
-              <strong id="homeNewTickets">—</strong>
-              <small>Received on the reporting day</small>
-            </div>
-          </article>
-          <article class="metric-card">
-            <div>
-              <p>Solved</p>
-              <strong id="homeSolvedTickets">—</strong>
-              <small>Closed the same day</small>
-            </div>
-          </article>
-          <article class="metric-card">
-            <div>
-              <p>One-touch rate</p>
-              <strong id="homeOneTouch">—</strong>
-              <small>Resolved in one interaction</small>
-            </div>
-          </article>
+        <div class="snap-body">
+          <article class="snap-cell lead"><p class="snap-k">Unsolved backlog</p><strong id="homeUnsolvedTickets" class="snap-v">-</strong><p class="snap-note">Open tickets carrying over</p></article>
+          <article class="snap-cell"><p class="snap-k">New tickets</p><strong id="homeNewTickets" class="snap-v">-</strong><p class="snap-note">Received on the reporting day</p></article>
+          <article class="snap-cell"><p class="snap-k">Solved</p><strong id="homeSolvedTickets" class="snap-v">-</strong><p class="snap-note">Closed the same day</p></article>
+          <article class="snap-cell"><p class="snap-k">One-touch rate</p><strong id="homeOneTouch" class="snap-v">-</strong><p class="snap-note">Resolved in one interaction</p></article>
         </div>
-        <p id="homeBacklogDelta" class="snapshot-note">Comparing solved and received tickets…</p>
+        <p id="homeBacklogDelta" class="flow">Comparing solved and received tickets...</p>
       </section>
 
-      <section class="home-grid">
-        <article class="home-panel trend-panel announcements-panel">
-          <div class="section-heading">
-            <div>
-              <h2>Latest team updates</h2>
-            </div>
+      <div class="cols">
+        <div class="left-col">
+          <section class="panel updates-panel" aria-labelledby="updatesTitle">
+            <h2 id="updatesTitle" class="panel-title">Latest team updates</h2>
+            <div id="announcementRows" class="empty-state team-updates-body"></div>
+          </section>
+          <div class="home-lower-panels">
+            <section class="panel home-lower-panel" aria-labelledby="homeTodoTitle">
+              <div class="lower-panel-head">
+                <h3 id="homeTodoTitle">To-Do List</h3>
+                <span id="homeTodoDate">Today</span>
+              </div>
+              <div id="homeTodoList" class="todo-list" aria-live="polite">
+                <p class="lower-panel-empty">Loading tasks...</p>
+              </div>
+            </section>
+            <section class="panel home-lower-panel celebrations-panel" aria-labelledby="homeCelebrationsTitle">
+              <div class="lower-panel-head">
+                <h3 id="homeCelebrationsTitle">Anniversaries and Birthdays</h3>
+              </div>
+              <div id="homeCelebrationsList" class="celebrations-list" aria-live="polite">
+                <p class="lower-panel-empty">Loading celebrations...</p>
+              </div>
+            </section>
           </div>
-          <div class="announcement-table-wrap">
-            <table class="announcement-table">
-              <thead>
-                <tr>
-                  <th>Announcement</th>
-                  <th>Category</th>
-                  <th>Posted by</th>
-                  <th>Date</th>
-                </tr>
-              </thead>
-              <tbody id="announcementRows"></tbody>
-            </table>
-          </div>
-        </article>
+        </div>
 
-        <article class="home-panel calendar-panel">
-          <div class="section-heading">
-            <div>
-              <h2 id="calendarMonthLabel">Calendar</h2>
+        <div class="right-col">
+          <section class="panel cal-panel" aria-labelledby="calendarMonthLabel">
+            <div class="cal-head">
+              <h2 id="calendarMonthLabel" class="panel-title">Calendar</h2>
+              <div class="cal-nav">
+                <button id="calendarPrevious" type="button" aria-label="Previous month">&#8249;</button>
+                <button id="calendarNext" type="button" aria-label="Next month">&#8250;</button>
+              </div>
             </div>
-            <div class="calendar-controls">
-              <button id="calendarPrevious" type="button" aria-label="Previous month">‹</button>
-              <button id="calendarNext" type="button" aria-label="Next month">›</button>
+            <div class="cal-connect">
+              <span id="googleCalendarStatus" aria-live="polite">Checking Google Calendar connection...</span>
+              <span class="cal-actions">
+                <button id="googleCalendarConnectButton" type="button" disabled>Connect Google Calendar</button>
+                <button id="googleCalendarDisconnectButton" type="button" hidden>Disconnect</button>
+              </span>
             </div>
-          </div>
+            <div class="grid7 calendar-weekdays" aria-hidden="true">
+              <span>S</span><span>M</span><span>T</span><span>W</span><span>T</span><span>F</span><span>S</span>
+            </div>
+            <div id="calendarGrid" class="grid7 calendar-grid"></div>
+            <div class="legend calendar-legend">
+              <span><i class="event-dot meeting"></i>Meeting</span>
+              <span><i class="event-dot training"></i>Training</span>
+              <span><i class="event-dot deadline"></i>Deadline</span>
+              <span><i class="event-dot work-shift"></i>My shift</span>
+              <span><i class="event-dot work-rest-day"></i>Rest day</span>
+              <span><i class="event-dot work-holiday"></i>Holiday</span>
+              <span><i class="event-dot google-calendar"></i>Google Calendar</span>
+            </div>
+          </section>
 
-          <div class="google-calendar-connection" aria-label="Google Calendar connection">
-            <span id="googleCalendarStatus" class="google-calendar-status" aria-live="polite">Checking Google Calendar connection...</span>
-            <div class="google-calendar-actions">
-              <button id="googleCalendarConnectButton" class="google-calendar-button" type="button" disabled>Connect Google Calendar</button>
-              <button id="googleCalendarDisconnectButton" class="google-calendar-button secondary" type="button" hidden>Disconnect</button>
-            </div>
-          </div>
-
-          <div class="calendar-weekdays" aria-hidden="true">
-            <span>Sun</span><span>Mon</span><span>Tue</span><span>Wed</span><span>Thu</span><span>Fri</span><span>Sat</span>
-          </div>
-          <div id="calendarGrid" class="calendar-grid"></div>
-          <div class="calendar-legend">
-            <span><i class="event-dot meeting"></i>Meeting</span>
-            <span><i class="event-dot training"></i>Training</span>
-            <span><i class="event-dot deadline"></i>Deadline</span>
-            <span><i class="event-dot work-shift"></i>My shift</span>
-            <span><i class="event-dot work-rest-day"></i>Rest day</span>
-            <span><i class="event-dot work-holiday"></i>Holiday</span>
-            <span><i class="event-dot google-calendar"></i>Google Calendar</span>
-          </div>
-        </article>
-
-        <article class="home-panel events-panel">
-          <div class="section-heading">
-            <div>
-              <h2 id="homeUpcomingTitle">Upcoming Events</h2>
-            </div>
-          </div>
-          <div id="upcomingEventList" class="event-list"></div>
-        </article>
-      </section>
+          <section class="panel upcoming-panel" aria-labelledby="homeUpcomingTitle">
+            <h2 id="homeUpcomingTitle">Upcoming Events</h2>
+            <div id="upcomingEventList" class="up-list event-list"></div>
+          </section>
+        </div>
+      </div>
     </main>
   </div>
 
-  <script type="module" src="./scripts/home.js?v=3"></script>
+  <dialog id="announcementDialog" class="announcement-dialog" aria-labelledby="announcementDialogTitle">
+    <div class="announcement-dialog-head">
+      <span id="announcementDialogCategory" class="team-update-category">General</span>
+      <form method="dialog">
+        <button class="announcement-dialog-close" type="submit" aria-label="Close announcement" title="Close">&times;</button>
+      </form>
+    </div>
+    <h2 id="announcementDialogTitle">Announcement</h2>
+    <p id="announcementDialogMeta" class="announcement-dialog-meta"></p>
+    <div id="announcementDialogBody" class="announcement-dialog-body"></div>
+  </dialog>
+
+  <script type="module" src="./scripts/home.js?v=6"></script>
   <script type="module" src="./scripts/home-user-name.js?v=2"></script>
   <script type="module" src="./scripts/home-workforce-nav.js?v=3"></script>
   <script type="module" src="./scripts/home-workforce-calendar.js?v=5"></script>
   <script type="module" src="./scripts/home-google-calendar.js?v=2"></script>
+  <script type="module" src="./scripts/home-daily-overview.js?v=3"></script>
+  <script type="module" src="./scripts/home-live-clocks.js?v=1"></script>
   <script type="module" src="./scripts/home-sidebar-collapse.js?v=2"></script>
 </body>
 </html>
