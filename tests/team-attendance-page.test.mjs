@@ -5,7 +5,7 @@ import test from 'node:test'
 const read = path => readFile(new URL(`../${path}`, import.meta.url), 'utf8')
 const migrationPath = 'supabase/migrations-legacy/2026070902_team_attendance_page.sql'
 const manualEntryMigrationPath = 'supabase/migrations/20260714070649_manual_attendance_entry.sql'
-const approvalLockingMigrationPath = 'supabase/migrations/20260717171751_attendance_approval_locking.sql'
+const approvalLockingMigrationPath = 'supabase/migrations/20260717172240_attendance_approval_locking.sql'
 
 test('Step 10 page contains every required attendance column and filter', async () => {
   const page = await read('team-attendance.html')

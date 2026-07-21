@@ -6,7 +6,7 @@ const read = path => readFile(new URL(`../${path}`, import.meta.url), 'utf8')
 
 test('Step 7 adds protected employee lifecycle actions without deleting workforce history', async () => {
   const [migration, endpoint, client, middleware, verification] = await Promise.all([
-    read('supabase/migrations/20260715134940_employee_lifecycle_actions.sql'),
+    read('supabase/migrations/20260715141155_employee_lifecycle_actions.sql'),
     read('functions/employee-lifecycle.js'),
     read('scripts/workforce.js'),
     read('functions/_middleware.js'),
@@ -30,7 +30,7 @@ test('Step 7 adds protected employee lifecycle actions without deleting workforc
 })
 
 test('lifecycle cleanup cannot indirectly update the protected owner', async () => {
-  const fix = await read('supabase/migrations/20260715142832_fix_lifecycle_owner_supervisor_cleanup.sql')
+  const fix = await read('supabase/migrations/20260715142943_fix_lifecycle_owner_supervisor_cleanup.sql')
   assert.match(fix, /where is_system_admin is true[\s\S]*supervisor_id is not null/)
   assert.match(fix, /where supervisor_id = p_user_id[\s\S]*is_system_admin is false/)
   assert.match(fix, /system_owner_reporting_hierarchy_corrected/)

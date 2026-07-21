@@ -26,7 +26,7 @@ test('workforce administration includes the schedule management interface', asyn
 
 test('schedule deletion is admin-only, scoped, audited, and preserves attendance', async () => {
   const [migration, verification] = await Promise.all([
-    read('supabase/migrations/20260714115839_workforce_schedule_delete.sql'),
+    read('supabase/migrations/20260714121353_workforce_schedule_delete.sql'),
     read('supabase/verification/workforce_schedule_delete_check.sql')
   ])
 

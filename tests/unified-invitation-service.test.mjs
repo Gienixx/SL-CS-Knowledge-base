@@ -22,7 +22,7 @@ test('invitation is server-owned and hides temporary credentials', async () => {
 
 test('transactional provisioning creates the complete invited employee contract', async () => {
   const migration = await read(
-    'supabase/migrations/20260715123908_unified_invitation_service.sql'
+    'supabase/migrations/20260715132605_unified_invitation_service.sql'
   )
 
   assert.match(migration, /security definer/i)
