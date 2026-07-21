@@ -29,7 +29,7 @@ test('Daily checklist saves only the current agent daily completion', async () =
 })
 
 test('Daily overview migration protects agent completions with RLS', async () => {
-  const migration = await read('supabase/migrations/20260718074915_home_daily_todos_and_celebrations.sql')
+  const migration = await read('supabase/migrations/20260718075314_home_daily_todos_and_celebrations.sql')
 
   assert.match(migration, /alter table public\.home_todo_completions enable row level security/)
   assert.match(migration, /\(select auth\.uid\(\)\) = auth_user_id/)
@@ -48,7 +48,7 @@ test('Home daily overview script has valid JavaScript syntax', () => {
 })
 
 test('Organizational chart celebrations seed only verified modal details', async () => {
-  const migration = await read('supabase/migrations/20260718080859_seed_home_celebrations_from_org_chart.sql')
+  const migration = await read('supabase/migrations/20260718080944_seed_home_celebrations_from_org_chart.sql')
 
   const chartModals = [
     'Arezval Loiej Angelo A. Santos',

@@ -49,7 +49,7 @@ test('Administrators can assign and maintain tasks for active users', async () =
 })
 
 test('Assigned task migration restricts regular users and admin writes', async () => {
-  const migration = await read('supabase/migrations/20260718084625_assign_home_todos_to_users.sql')
+  const migration = await read('supabase/migrations/20260718085241_assign_home_todos_to_users.sql')
 
   assert.match(migration, /add column assigned_to uuid references public\.profiles\(user_id\)/)
   assert.match(migration, /Users can view assigned home tasks/)
@@ -78,7 +78,7 @@ test('To-Do management exposes the administrator activity log table', async () =
 })
 
 test('Database trigger appends checkbox activity and limits reads to admins', async () => {
-  const migration = await read('supabase/migrations/20260718090225_log_home_todo_activity.sql')
+  const migration = await read('supabase/migrations/20260718090629_log_home_todo_activity.sql')
 
   assert.match(migration, /create table public\.home_todo_activity_logs/)
   assert.match(migration, /action in \('checked', 'unchecked'\)/)
