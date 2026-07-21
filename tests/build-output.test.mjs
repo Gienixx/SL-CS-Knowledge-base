@@ -1,5 +1,5 @@
 import assert from 'node:assert/strict'
-import { access, readdir } from 'node:fs/promises'
+import { access, readdir, readFile } from 'node:fs/promises'
 import { execFile } from 'node:child_process'
 import { promisify } from 'node:util'
 import { resolve } from 'node:path'
@@ -9,6 +9,27 @@ import test from 'node:test'
 const execFileAsync = promisify(execFile)
 const root = fileURLToPath(new URL('../', import.meta.url))
 const pathFromRoot = path => resolve(root, path)
+
+const publicDirectories = [
+  'assets',
+  'images',
+  'partials',
+  'scripts',
+  'shared',
+  'styles'
+]
+
+const publicRootFiles = [
+  '_headers',
+  '_redirects',
+  '_routes.json',
+  'apple-touch-icon.png',
+  'favicon.ico',
+  'manifest.json',
+  'manifest.webmanifest',
+  'robots.txt',
+  'site.webmanifest'
+]
 
 async function exists(path) {
   try {
@@ -43,6 +64,30 @@ test('production build publishes only browser assets', async () => {
   for (const htmlFile of sourceHtmlFiles) {
     assert.equal(await exists(`dist/${htmlFile}`), true, `${htmlFile} should be in dist/`)
   }
+
+  const expectedPublicFiles = [...sourceHtmlFiles]
+  for (const rootFile of publicRootFiles) {
+    if (await exists(rootFile)) expectedPublicFiles.push(rootFile)
+  }
+  for (const directory of publicDirectories) {
+    if (await exists(directory)) expectedPublicFiles.push(...await filesBelow(directory))
+  }
+
+  for (const sourcePath of expectedPublicFiles) {
+    const outputPath = `dist/${sourcePath}`
+    assert.equal(await exists(outputPath), true, `${sourcePath} should be published`)
+    assert.deepEqual(
+      await readFile(pathFromRoot(outputPath)),
+      await readFile(pathFromRoot(sourcePath)),
+      `${sourcePath} should be copied byte-for-byte`
+    )
+  }
+
+  assert.deepEqual(
+    (await filesBelow('dist')).sort(),
+    expectedPublicFiles.map(path => `dist/${path}`).sort(),
+    'dist/ should exactly match the complete public source snapshot'
+  )
 
   for (const requiredPath of [
     'dist/announcement-management.html',
