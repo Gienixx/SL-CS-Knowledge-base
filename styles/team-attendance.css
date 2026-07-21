@@ -6,9 +6,9 @@ body:has(.team-attendance-page){background:#eef1f5}
 .team-attendance-page .wf-title h1{font-size:30px;letter-spacing:-.025em}
 .team-attendance-page .wf-title p{margin-top:10px;font-size:14px;line-height:1.4}
 .team-attendance-page .wf-link,.team-attendance-page .wf-btn{min-height:40px;padding:0 17px;border-radius:8px;font-size:13px}
-.team-attendance-page .wf-summary-grid{grid-template-columns:repeat(5,minmax(0,1fr));gap:10px;margin-bottom:16px}
-.team-attendance-page .wf-summary{min-height:70px;padding:11px 14px;border-color:var(--ta-line);border-radius:10px;box-shadow:none}
-.team-attendance-page .wf-summary span{font-size:10px;color:var(--ta-muted)}
+.team-attendance-page .wf-summary-grid{grid-template-columns:repeat(5,minmax(0,1fr));gap:8px;margin-bottom:16px}
+.team-attendance-page .wf-summary{min-height:70px;padding:10px 11px;border-color:var(--ta-line);border-radius:10px;box-shadow:none}
+.team-attendance-page .wf-summary span{font-size:9px;color:var(--ta-muted);white-space:nowrap}
 .team-attendance-page .wf-summary strong{margin-top:5px;font-size:20px}
 .team-attendance-page .wf-summary:nth-child(2) strong{color:var(--ta-blue)}
 .team-attendance-page .wf-summary:nth-child(3) strong{color:var(--ta-red)}
@@ -133,7 +133,6 @@ body:has(.team-attendance-page){background:#eef1f5}
 #teamAttendanceCorrectionModal .wf-dialog-actions #teamAttendanceCorrectionSubmit:hover:not(:disabled){background:#202d4c}
 
 @media(max-width:980px){
-  .team-attendance-page .wf-summary-grid{grid-template-columns:repeat(3,minmax(0,1fr))}
   .team-attendance-filter-grid{grid-template-columns:repeat(3,minmax(0,1fr))}
   .team-attendance-stats{grid-template-columns:repeat(4,minmax(70px,1fr))}
 }
