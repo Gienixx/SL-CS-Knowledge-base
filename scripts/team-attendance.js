@@ -362,11 +362,15 @@ async function deleteAttendance(row, button) {
 
   const employee = row.employee_name || 'this employee'
   const workDate = formatDate(row.work_date)
-  const confirmed = window.confirm(
-    `Delete ${employee}'s attendance record for ${workDate}? This cannot be undone.`
+  const reason = window.prompt(
+    `Why are you deleting ${employee}'s attendance record for ${workDate}? This cannot be undone.`
   )
 
-  if (!confirmed) return
+  if (reason === null) return
+  if (reason.trim().length < 3) {
+    setMessage(elements.tableMessage, 'Enter a deletion reason of at least 3 characters.', 'error')
+    return
+  }
 
   busy = true
   button.disabled = true
@@ -374,14 +378,13 @@ async function deleteAttendance(row, button) {
   setMessage(elements.tableMessage, 'Deleting attendance record...')
 
   try {
-    const { data, error } = await supabase
-      .from('attendance')
-      .delete()
-      .eq('id', row.attendance_id)
-      .select('id')
+    const { data, error } = await supabase.rpc('workforce_delete_attendance', {
+      p_attendance_id: row.attendance_id,
+      p_reason: reason.trim()
+    })
 
     if (error) throw error
-    if (!data?.length) throw new Error('Attendance record was not deleted. Check your permissions and try again.')
+    if (!data) throw new Error('Attendance record was not deleted. Check your permissions and try again.')
 
     await loadAttendance()
     setMessage(elements.tableMessage, 'Attendance record deleted successfully.', 'success')

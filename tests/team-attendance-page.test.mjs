@@ -6,6 +6,7 @@ const read = path => readFile(new URL(`../${path}`, import.meta.url), 'utf8')
 const migrationPath = 'supabase/migrations-legacy/2026070902_team_attendance_page.sql'
 const manualEntryMigrationPath = 'supabase/migrations/20260714070649_manual_attendance_entry.sql'
 const approvalLockingMigrationPath = 'supabase/migrations/20260717171751_attendance_approval_locking.sql'
+const writeBoundaryMigrationPath = 'supabase/migrations/20260721153218_harden_attendance_write_boundaries.sql'
 
 test('Step 10 page contains every required attendance column and filter', async () => {
   const page = await read('team-attendance.html')
@@ -61,12 +62,19 @@ test('Team Attendance requires view permission and only corrects attendance thro
 test('Team Attendance lets schedule administrators delete an attendance record with confirmation', async () => {
   const page = await read('team-attendance.html')
   const script = await read('scripts/team-attendance.js')
+  const migration = await read(writeBoundaryMigrationPath)
 
   assert.match(page, /permanently delete invalid test and timing records/)
   assert.match(script, /access\?\.is_admin === true && hasWorkforcePermission\(access, 'manage_schedules'\)/)
-  assert.match(script, /window\.confirm\(/)
-  assert.match(script, /\.from\('attendance'\)\s*\.delete\(\)\s*\.eq\('id', row\.attendance_id\)\s*\.select\('id'\)/)
+  assert.match(script, /window\.prompt\(/)
+  assert.match(script, /supabase\.rpc\('workforce_delete_attendance'/)
+  assert.doesNotMatch(script, /\.from\('attendance'\)\s*\.delete\(/)
   assert.match(script, /Attendance record deleted successfully\./)
+  assert.match(migration, /create or replace function public\.workforce_delete_attendance\(/)
+  assert.match(migration, /security definer\s+set search_path = ''/)
+  assert.match(migration, /workforce_can_manage_user\(v_attendance\.user_id, 'manage_schedules'\)/)
+  assert.match(migration, /'attendance_deleted'/)
+  assert.match(migration, /revoke all on function public\.workforce_delete_attendance\(uuid, text\)[\s\S]*from public, anon, authenticated/)
 })
 
 test('Team Attendance lets schedule administrators add an audited manual record', async () => {
@@ -145,7 +153,7 @@ test('Team Attendance does not flag fully classified long overtime records', asy
   const page = await read('team-attendance.html')
   const script = await read('scripts/team-attendance.js')
 
-  assert.match(page, /scripts\/team-attendance\.js\?v=5/)
+  assert.match(page, /scripts\/team-attendance\.js\?v=6/)
   assert.match(script, /const hasUnclassifiedWorkedMinutes = workedMinutes > regularMinutes \+ overtimeMinutes/)
   assert.match(script, /record\.schedule_id && hasUnclassifiedWorkedMinutes/)
   assert.match(script, /if \(overtimeMinutes > 0\) return \{ label: 'Overtime'/)
