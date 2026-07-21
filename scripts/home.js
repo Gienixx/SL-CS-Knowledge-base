@@ -1,4 +1,4 @@
-import { supabase } from './supabaseClient.js?v=8'
+import { supabase } from './supabaseClient.js?v=10'
 import {
   requiresFirstLoginPasswordChange
 } from './first-login-policy.js?v=4'
@@ -332,8 +332,11 @@ function installPageEvents() {
   })
 
   document.getElementById('homeLogoutBtn')?.addEventListener('click', async () => {
-    await supabase.auth.signOut()
-    window.location.href = './login.html'
+    try {
+      await supabase.auth.signOut({ scope: 'local' })
+    } finally {
+      window.location.replace('./login.html')
+    }
   })
 }
 

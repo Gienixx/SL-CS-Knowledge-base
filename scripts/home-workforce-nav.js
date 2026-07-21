@@ -1,4 +1,4 @@
-import { supabase } from './supabaseClient.js?v=8'
+import { supabase } from './supabaseClient.js?v=10'
 import {
   hasWorkforcePermission,
   loadCurrentWorkforceAccess
