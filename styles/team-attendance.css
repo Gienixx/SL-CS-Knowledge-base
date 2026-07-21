@@ -8,8 +8,8 @@ body:has(.team-attendance-page){background:#eef1f5}
 .team-attendance-page .wf-link,.team-attendance-page .wf-btn{min-height:40px;padding:0 17px;border-radius:8px;font-size:13px}
 .team-attendance-page .wf-summary-grid{grid-template-columns:repeat(5,minmax(0,1fr));gap:8px;margin-bottom:16px}
 .team-attendance-page .wf-summary{min-height:70px;padding:10px 11px;border-color:var(--ta-line);border-radius:10px;box-shadow:none}
-.team-attendance-page .wf-summary span{font-size:9px;color:var(--ta-muted);white-space:nowrap}
-.team-attendance-page .wf-summary strong{margin-top:5px;font-size:20px}
+.team-attendance-page .wf-summary span{min-width:0;flex:1;font-size:9px;color:var(--ta-muted);white-space:nowrap}
+.team-attendance-page .wf-summary strong{flex:none;margin-top:5px;font-size:18px;white-space:nowrap}
 .team-attendance-page .wf-summary:nth-child(2) strong{color:var(--ta-blue)}
 .team-attendance-page .wf-summary:nth-child(3) strong{color:var(--ta-red)}
 .team-attendance-page .wf-summary:nth-child(4) strong{color:var(--ta-amber)}
