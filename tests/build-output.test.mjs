@@ -34,7 +34,7 @@ async function filesBelow(relativeDirectory) {
 }
 
 test('production build publishes only browser assets', async () => {
-  await execFileAsync(process.execPath, ['scripts/build.mjs'], { cwd: root })
+  await execFileAsync(process.execPath, ['tools/build.mjs'], { cwd: root })
 
   const sourceHtmlFiles = (await readdir(root, { withFileTypes: true }))
     .filter(entry => entry.isFile() && entry.name.endsWith('.html'))
@@ -63,6 +63,8 @@ test('production build publishes only browser assets', async () => {
     'dist/node_modules',
     'dist/supabase',
     'dist/tests',
+    'dist/tools',
+    'dist/scripts/build.mjs',
     'dist/package-lock.json',
     'dist/package.json',
     'dist/README.md',
