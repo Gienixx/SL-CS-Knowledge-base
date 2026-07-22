@@ -75,6 +75,15 @@ test('Announcement messages support sanitized rich-text formatting', async () =>
   assert.match(richText, /node\.removeAttribute\(attribute\.name\)/)
 })
 
+test('Announcement dialog uses the wider responsive layout', async () => {
+  const page = await read('home.html')
+  const stylesheet = await read('styles/home-reference-redesign.css')
+
+  assert.match(page, /home-reference-redesign\.css\?v=16/)
+  assert.match(stylesheet, /\.announcement-dialog\s*\{[^}]*width:\s*min\(900px, calc\(100vw - 64px\)\)/)
+  assert.match(stylesheet, /@media \(max-width: 680px\)[\s\S]*\.announcement-dialog\s*\{[^}]*width:\s*calc\(100vw - 32px\)/)
+})
+
 test('Announcement records use RLS for published reads and admin writes', async () => {
   const migration = await read('supabase/migrations/20260718082259_team_announcements.sql')
 
