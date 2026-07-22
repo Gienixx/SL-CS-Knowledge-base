@@ -1,4 +1,4 @@
--- Run after 20260714110701_standardize_america_new_york_timezone.sql.
+-- Run after 20260714113700_standardize_america_new_york_timezone.sql.
 
 -- Must return zero rows: no timezone-bearing record may use another zone.
 select source, value, row_count

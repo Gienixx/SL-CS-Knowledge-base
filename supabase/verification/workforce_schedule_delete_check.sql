@@ -1,4 +1,4 @@
--- Run after 20260714115839_workforce_schedule_delete.sql.
+-- Run after 20260714121353_workforce_schedule_delete.sql.
 
 select
   to_regprocedure('public.workforce_admin_delete_schedule(uuid)') is not null

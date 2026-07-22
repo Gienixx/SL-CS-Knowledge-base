@@ -5,7 +5,7 @@ import test from 'node:test'
 const read = path => readFile(new URL(`../${path}`, import.meta.url), 'utf8')
 
 test('ownership transfer targets the verified dedicated admin identity', async () => {
-  const migration = await read('supabase/migrations/20260714160959_transfer_system_ownership_to_admin.sql')
+  const migration = await read('supabase/migrations/20260714165247_transfer_system_ownership_to_admin.sql')
 
   assert.match(migration, /arby\.benito10@gmail\.com/)
   assert.match(migration, /SL-7859DCC5/)
@@ -16,7 +16,7 @@ test('ownership transfer targets the verified dedicated admin identity', async (
 })
 
 test('ownership transfer revokes the employee owner override and grants the admin account', async () => {
-  const migration = await read('supabase/migrations/20260714160959_transfer_system_ownership_to_admin.sql')
+  const migration = await read('supabase/migrations/20260714165247_transfer_system_ownership_to_admin.sql')
 
   assert.match(migration, /set is_system_admin = false,[\s\S]*base_role = 'agent'/)
   assert.match(migration, /set is_system_admin = true,[\s\S]*base_role = 'admin'/)
@@ -26,7 +26,7 @@ test('ownership transfer revokes the employee owner override and grants the admi
 })
 
 test('database enforces exactly one active protected owner', async () => {
-  const migration = await read('supabase/migrations/20260714160959_transfer_system_ownership_to_admin.sql')
+  const migration = await read('supabase/migrations/20260714165247_transfer_system_ownership_to_admin.sql')
 
   assert.match(migration, /create unique index if not exists profiles_single_system_owner_idx/)
   assert.match(migration, /create constraint trigger profiles_require_single_active_system_owner/)

@@ -40,3 +40,20 @@ npx --yes supabase@latest db push
 Never apply schema changes directly in the dashboard unless a documented
 incident requires it. If that happens, capture the change in a migration and
 repair history immediately.
+
+## Ledger reconciliation — July 22, 2026
+
+The local migration filenames were normalized to the versions already recorded
+by the linked production project. Three production migration files that were
+present in repository history but absent from the local working tree were also
+restored.
+
+- Local migration versions: 41
+- Remote migration versions: 41
+- Unmatched local versions: 0
+- Unmatched remote versions: 0
+- `supabase db push --linked --dry-run`: Remote database is up to date
+
+This reconciliation changed repository filenames and restored migration source
+files only. It did not execute migration SQL, modify the production schema, or
+change production data.

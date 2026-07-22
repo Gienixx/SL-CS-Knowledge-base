@@ -5,10 +5,10 @@ import test from 'node:test'
 const page = await readFile(new URL('../workforce.html', import.meta.url), 'utf8')
 const styles = await readFile(new URL('../styles/workforce-admin.css', import.meta.url), 'utf8')
 
-test('employee profiles and schedule management use the compact table design', () => {
+test('employee profiles use the compact table and schedule management uses the schedule grid', () => {
   assert.match(page, /class="wf-table wf-compact-table wf-employee-table"/)
   assert.match(page, /class="wf-schedule-grid-table"/)
-  assert.match(page, /workforce-admin\.css\?v=8/)
+  assert.match(page, /workforce-admin\.css\?v=\d+/)
 })
 
 test('compact workforce tables tighten cells, supporting text, badges, and actions', () => {

@@ -76,7 +76,7 @@ test('Announcement messages support sanitized rich-text formatting', async () =>
 })
 
 test('Announcement records use RLS for published reads and admin writes', async () => {
-  const migration = await read('supabase/migrations/20260718081705_team_announcements.sql')
+  const migration = await read('supabase/migrations/20260718082259_team_announcements.sql')
 
   assert.match(migration, /alter table public\.team_announcements enable row level security/)
   assert.match(migration, /status = 'published'/)

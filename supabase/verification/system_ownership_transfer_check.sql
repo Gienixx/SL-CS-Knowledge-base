@@ -1,4 +1,4 @@
--- Run after 20260714160959_transfer_system_ownership_to_admin.sql.
+-- Run after 20260714165247_transfer_system_ownership_to_admin.sql.
 
 select
   full_name,

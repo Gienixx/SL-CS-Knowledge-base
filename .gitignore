@@ -4,6 +4,8 @@ node_modules/
 # Generated Cloudflare Pages output and local state
 dist/
 .wrangler/
+.wrangler.pre-restore/
+.codex-*
 
 # Local environment and secret files
 .dev.vars

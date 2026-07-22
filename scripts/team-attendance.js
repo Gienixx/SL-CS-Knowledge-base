@@ -312,6 +312,7 @@ function createActionCell(row) {
 async function reviewAttendance(row, reviewStatus, button) {
   if (!row.attendance_id || busy) return
 
+  const searchValue = elements.search.value
   const isLock = reviewStatus === 'locked'
   const action = isLock ? 'Lock' : 'Approve'
   const warning = isLock
@@ -336,6 +337,12 @@ async function reviewAttendance(row, reviewStatus, button) {
     if (error) throw error
 
     await loadAttendance()
+    elements.search.value = searchValue
+    elements.search.disabled = false
+    elements.search.readOnly = false
+    elements.search.focus({ preventScroll: true })
+    const searchCaret = elements.search.value.length
+    elements.search.setSelectionRange(searchCaret, searchCaret)
     setMessage(elements.tableMessage, `Attendance ${reviewStatus} successfully.`, 'success')
   } catch (error) {
     setMessage(elements.tableMessage, errorMessage(error), 'error')

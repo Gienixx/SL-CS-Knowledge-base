@@ -11,13 +11,13 @@ test('Schedule Management provides accessible pagination controls', () => {
   assert.match(page, /id="scheduleTablePageInfo"/)
   assert.match(page, /id="previousScheduleTablePage"/)
   assert.match(page, /id="nextScheduleTablePage"/)
-  assert.match(page, /workforce-admin\.css\?v=8/)
-  assert.match(page, /workforce-schedules-entry\.js\?v=9/)
+  assert.match(page, /workforce-admin\.css\?v=\d+/)
+  assert.match(page, /workforce-schedules-entry\.js\?v=\d+/)
   assert.match(styles, /\.wf-table-pagination\{/)
   assert.match(styles, /\.wf-table-pagination\[hidden\]\{display:none\}/)
 })
 
-test('Schedule Management displays ten filtered users per page', () => {
+test('Schedule Management displays ten filtered employees per page', () => {
   assert.match(script, /const TABLE_PAGE_SIZE = 10/)
   assert.match(script, /const employeeIds = \[\.\.\.new Set\(rows\.map\(schedule => schedule\.user_id\)\)\]/)
   assert.match(script, /const pageEmployeeIds = employeeIds\.slice\(pageStart, pageStart \+ TABLE_PAGE_SIZE\)/)

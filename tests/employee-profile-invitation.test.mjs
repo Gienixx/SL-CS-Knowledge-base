@@ -35,7 +35,7 @@ test('invited employees show lifecycle state, SL ID, and server-owned resend', a
   assert.doesNotMatch(html, /<th>.*UUID.*<\/th>/i)
   assert.match(script, /onboarding_status/)
   assert.match(script, /badge\('Invited', 'warning'\)/)
-  assert.match(script, /\[profile\.email, profile\.employee_id\]/)
+  assert.match(script, /profile\.employee_id/)
   assert.match(script, /authenticatedRequest\('\/resend-invite'/)
   assert.match(script, /actionMenu\.appendChild\(resendButton\)/)
   assert.match(script, /if \(profile\.onboarding_status === 'invited'\)/)

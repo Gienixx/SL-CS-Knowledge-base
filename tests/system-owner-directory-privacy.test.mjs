@@ -17,7 +17,7 @@ test('canonical account mutation endpoints delegate owner protection to guarded 
   const [update, lifecycle, ownerGuard] = await Promise.all([
     read('functions/update-employee.js'),
     read('functions/employee-lifecycle.js'),
-    read('supabase/migrations/20260714172911_protect_hidden_system_owner.sql')
+    read('supabase/migrations/20260714173641_protect_hidden_system_owner.sql')
   ])
 
   assert.match(update, /protected system owner/i)
@@ -27,7 +27,7 @@ test('canonical account mutation endpoints delegate owner protection to guarded 
 
 test('database trigger protects the owner without removing permissions', async () => {
   const [migration, verification] = await Promise.all([
-    read('supabase/migrations/20260714172911_protect_hidden_system_owner.sql'),
+    read('supabase/migrations/20260714173641_protect_hidden_system_owner.sql'),
     read('supabase/verification/hidden_system_owner_check.sql')
   ])
 

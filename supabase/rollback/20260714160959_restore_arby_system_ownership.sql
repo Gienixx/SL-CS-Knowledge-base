@@ -1,4 +1,4 @@
--- Emergency rollback for 20260714160959_transfer_system_ownership_to_admin.sql.
+-- Emergency rollback for 20260714165247_transfer_system_ownership_to_admin.sql.
 -- Apply manually only if the dedicated admin ownership transfer must be reversed.
 
 begin;

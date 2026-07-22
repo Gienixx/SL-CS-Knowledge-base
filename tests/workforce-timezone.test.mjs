@@ -56,7 +56,7 @@ test('team attendance converts datetime-local values as New York wall-clock time
 })
 
 test('sitewide timezone migration normalizes records, functions, defaults, and constraints', async () => {
-  const migration = await read('supabase/migrations/20260714110701_standardize_america_new_york_timezone.sql')
+  const migration = await read('supabase/migrations/20260714113700_standardize_america_new_york_timezone.sql')
   const verification = await read('supabase/verification/america_new_york_sitewide_check.sql')
 
   for (const table of [
