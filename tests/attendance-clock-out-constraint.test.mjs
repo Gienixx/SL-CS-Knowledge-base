@@ -3,7 +3,7 @@ import { readFile } from 'node:fs/promises'
 import test from 'node:test'
 
 const migration = await readFile(
-  new URL('../supabase/migrations/20260721112404_fix_clock_out_structured_totals.sql', import.meta.url),
+  new URL('../supabase/migrations/20260721112529_fix_clock_out_structured_totals.sql', import.meta.url),
   'utf8'
 )
 

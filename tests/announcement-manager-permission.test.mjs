@@ -50,7 +50,7 @@ test('announcement managers see only the announcement management surface', async
 
 test('database migration persists and enforces announcement-manager access', async () => {
   const migration = await read(
-    'supabase/migrations/20260718093234_add_announcement_manager_permission.sql'
+    'supabase/migrations/20260718093749_add_announcement_manager_permission.sql'
   )
 
   assert.match(migration, /user_permissions_permission_key_check/)

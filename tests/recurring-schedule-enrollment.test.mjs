@@ -6,7 +6,7 @@ const html = await readFile(new URL('../workforce.html', import.meta.url), 'utf8
 const client = await readFile(new URL('../scripts/workforce-schedules.js', import.meta.url), 'utf8')
 const entry = await readFile(new URL('../scripts/workforce-schedules-entry.js', import.meta.url), 'utf8')
 const migration = await readFile(
-  new URL('../supabase/migrations/20260717173513_simplify_recurring_schedule_checkbox.sql', import.meta.url),
+  new URL('../supabase/migrations/20260717173809_simplify_recurring_schedule_checkbox.sql', import.meta.url),
   'utf8'
 )
 

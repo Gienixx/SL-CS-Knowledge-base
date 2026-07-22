@@ -5,7 +5,7 @@ import test from 'node:test'
 const read = path => readFile(new URL(`../${path}`, import.meta.url), 'utf8')
 
 test('onboarding lifecycle remains separate from employment status', async () => {
-  const migration = await read('supabase/migrations/20260715071028_add_onboarding_lifecycle.sql')
+  const migration = await read('supabase/migrations/20260715075613_add_onboarding_lifecycle.sql')
 
   assert.match(migration, /add column if not exists onboarding_status text/)
   assert.match(migration, /onboarding_status in \('invited', 'active'\)/)
@@ -17,7 +17,7 @@ test('onboarding lifecycle remains separate from employment status', async () =>
 })
 
 test('existing profiles are activated and new profiles default to invited', async () => {
-  const migration = await read('supabase/migrations/20260715071028_add_onboarding_lifecycle.sql')
+  const migration = await read('supabase/migrations/20260715075613_add_onboarding_lifecycle.sql')
 
   assert.match(migration, /set onboarding_status = 'active'/)
   assert.match(migration, /alter column onboarding_status set default 'invited'/)
@@ -27,7 +27,7 @@ test('existing profiles are activated and new profiles default to invited', asyn
 
 test('invited profiles are rejected by the shared workforce gate', async () => {
   const [migration, verification] = await Promise.all([
-    read('supabase/migrations/20260715071028_add_onboarding_lifecycle.sql'),
+    read('supabase/migrations/20260715075613_add_onboarding_lifecycle.sql'),
     read('supabase/verification/onboarding_lifecycle_check.sql')
   ])
 

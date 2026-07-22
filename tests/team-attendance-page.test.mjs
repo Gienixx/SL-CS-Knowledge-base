@@ -5,7 +5,7 @@ import test from 'node:test'
 const read = path => readFile(new URL(`../${path}`, import.meta.url), 'utf8')
 const migrationPath = 'supabase/migrations-legacy/2026070902_team_attendance_page.sql'
 const manualEntryMigrationPath = 'supabase/migrations/20260714070649_manual_attendance_entry.sql'
-const approvalLockingMigrationPath = 'supabase/migrations/20260717171751_attendance_approval_locking.sql'
+const approvalLockingMigrationPath = 'supabase/migrations/20260717172240_attendance_approval_locking.sql'
 const writeBoundaryMigrationPath = 'supabase/migrations/20260721153218_harden_attendance_write_boundaries.sql'
 
 test('Step 10 page contains every required attendance column and filter', async () => {
@@ -186,6 +186,17 @@ test('Team Attendance provides authorized audited approval and locking actions',
   assert.match(verification, /review_rpc_acl_is_safe/)
   assert.match(verification, /reviewed_by is null or reviewed_at is null/)
   assert.match(documentation, /Locked attendance cannot be updated, corrected, or deleted/)
+})
+
+test('Team Attendance keeps the employee search editable after approval reloads the records', async () => {
+  const script = await read('scripts/team-attendance.js')
+
+  assert.match(script, /const searchValue = elements\.search\.value/)
+  assert.match(script, /await loadAttendance\(\)[\s\S]*elements\.search\.value = searchValue/)
+  assert.match(script, /elements\.search\.disabled = false/)
+  assert.match(script, /elements\.search\.readOnly = false/)
+  assert.match(script, /elements\.search\.focus\(\{ preventScroll: true \}\)/)
+  assert.match(script, /elements\.search\.setSelectionRange\(searchCaret, searchCaret\)/)
 })
 
 test('Step 10 data service enforces permission and supervisor scope', async () => {
