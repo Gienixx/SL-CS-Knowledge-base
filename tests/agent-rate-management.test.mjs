@@ -6,6 +6,10 @@ const migrationUrl = new URL(
   '../supabase/migrations/20260723073843_manage_agent_rates.sql',
   import.meta.url
 )
+const usdMigrationUrl = new URL(
+  '../supabase/migrations/20260723081057_use_usd_payroll_currency.sql',
+  import.meta.url
+)
 const pageUrl = new URL('../agent-rates.html', import.meta.url)
 const scriptUrl = new URL('../scripts/agent-rates.js', import.meta.url)
 const homeUrl = new URL('../home.html', import.meta.url)
@@ -99,6 +103,31 @@ test('agent rates page supports all effective-dated rate fields and history', as
   assert.match(script, /supabase\.rpc\('payroll_create_agent_rate', payload\)/)
   assert.doesNotMatch(script, /\.from\('agent_rates'\)\.(?:update|delete)/)
   assert.doesNotMatch(page, />\s*(?:Edit|Delete)\s*</i)
+})
+
+test('USD is canonical and PHP is a live PayPal display conversion', async () => {
+  const [migration, page, script] = await Promise.all([
+    readFile(usdMigrationUrl, 'utf8'),
+    readFile(pageUrl, 'utf8'),
+    readFile(scriptUrl, 'utf8')
+  ])
+
+  assert.match(
+    migration,
+    /alter table public\.agent_rates[\s\S]*alter column currency_code set default 'USD'/
+  )
+  assert.match(
+    migration,
+    /add constraint agent_rates_currency_code_check[\s\S]*currency_code = 'USD'/
+  )
+  assert.match(migration, /'USD'[\s\S]*v_reason/)
+  assert.match(page, /USD \(\$\)/)
+  assert.match(page, /data-php-preview-for="hourlyRate"/)
+  assert.match(script, /currency: 'USD'/)
+  assert.match(script, /currency: 'PHP'/)
+  assert.match(script, /fetch\('\.\/api\/paypal-exchange-rate'/)
+  assert.match(script, /Authorization: `Bearer \$\{state\.accessToken\}`/)
+  assert.doesNotMatch(page, /effective-dated PHP pay rates/)
 })
 
 test('home navigation reveals Agent Rates only through manage_agent_rates', async () => {

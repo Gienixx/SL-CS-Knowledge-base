@@ -9,7 +9,7 @@
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@500;600&family=Sora:wght@600;700;800&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="./styles/button-theme.css?v=1">
   <link rel="stylesheet" href="./styles/workforce-admin.css?v=8">
-  <link rel="stylesheet" href="./styles/agent-rates.css?v=1">
+  <link rel="stylesheet" href="./styles/agent-rates.css?v=2">
 </head>
 <body class="rate-access-pending">
   <main class="wf-page agent-rates-page">
@@ -17,7 +17,7 @@
       <div class="wf-title">
         <span class="rate-eyebrow">Payroll · Rate management</span>
         <h1>Agent Rates</h1>
-        <p>Maintain effective-dated PHP pay rates without changing historical records used by payroll.</p>
+        <p>Maintain effective-dated USD pay rates with a live PayPal PHP conversion view, without changing historical payroll records.</p>
       </div>
       <nav class="wf-nav" aria-label="Agent rate navigation">
         <a class="wf-link" href="./home.html">← Back to Home</a>
@@ -27,7 +27,7 @@
 
     <section class="wf-summary-grid" aria-label="Rate management summary">
       <article class="wf-summary">
-        <span class="wf-stat-icon violet" aria-hidden="true">₱</span>
+        <span class="wf-stat-icon violet" aria-hidden="true">$</span>
         <span class="wf-stat-copy"><span>Eligible agents</span><strong id="rateEmployeeCount">—</strong></span>
       </article>
       <article class="wf-summary">
@@ -45,6 +45,15 @@
     </section>
 
     <p id="agentRatesPageMessage" class="wf-message rate-page-message" role="status" aria-live="polite"></p>
+
+    <section id="paypalFxPanel" class="rate-fx-panel unavailable" aria-labelledby="paypalFxTitle">
+      <div>
+        <span class="rate-section-kicker">Display conversion · PayPal</span>
+        <strong id="paypalFxTitle">PHP conversion unavailable</strong>
+        <p id="paypalFxMeta">Checking the live PayPal USD to PHP quote…</p>
+      </div>
+      <button id="refreshPaypalRateButton" class="wf-btn secondary" type="button">Refresh PayPal rate</button>
+    </section>
 
     <div class="rate-workspace">
       <aside class="wf-card rate-directory-card" aria-labelledby="rateDirectoryTitle">
@@ -78,11 +87,11 @@
             <span id="selectedRateStatus" class="wf-badge muted">No selection</span>
           </div>
           <div id="currentRateValues" class="rate-value-grid" aria-label="Current effective rate">
-            <article><span>Hourly</span><strong>—</strong></article>
-            <article><span>Daily</span><strong>—</strong></article>
-            <article><span>Monthly</span><strong>—</strong></article>
-            <article><span>Overtime</span><strong>—</strong></article>
-            <article><span>Holiday</span><strong>—</strong></article>
+            <article><span>Hourly</span><strong>—</strong><small>PHP: —</small></article>
+            <article><span>Daily</span><strong>—</strong><small>PHP: —</small></article>
+            <article><span>Monthly</span><strong>—</strong><small>PHP: —</small></article>
+            <article><span>Overtime</span><strong>—</strong><small>PHP: —</small></article>
+            <article><span>Holiday</span><strong>—</strong><small>PHP: —</small></article>
           </div>
           <p id="currentRateEffective" class="rate-effective-note">No current rate on file.</p>
         </section>
@@ -93,7 +102,7 @@
               <span class="rate-section-kicker">Append-only change</span>
               <h2 id="rateFormTitle">Add an effective-dated rate</h2>
             </div>
-            <span class="rate-currency-pill">PHP</span>
+            <span class="rate-currency-pill">USD ($)</span>
           </div>
           <form id="agentRateForm" class="wf-form rate-form">
             <div class="rate-form-grid">
@@ -115,23 +124,28 @@
               <div class="rate-input-grid">
                 <label class="wf-field">
                   <span>Hourly rate</span>
-                  <span class="rate-money-input"><i>₱</i><input id="hourlyRate" class="wf-control" type="number" min="0" step="0.0001" inputmode="decimal" placeholder="0.0000"></span>
+                  <span class="rate-money-input"><i>$</i><input id="hourlyRate" class="wf-control" type="number" min="0" step="0.0001" inputmode="decimal" placeholder="0.0000"></span>
+                  <small class="rate-php-preview" data-php-preview-for="hourlyRate">PHP: —</small>
                 </label>
                 <label class="wf-field">
                   <span>Daily rate</span>
-                  <span class="rate-money-input"><i>₱</i><input id="dailyRate" class="wf-control" type="number" min="0" step="0.0001" inputmode="decimal" placeholder="0.0000"></span>
+                  <span class="rate-money-input"><i>$</i><input id="dailyRate" class="wf-control" type="number" min="0" step="0.0001" inputmode="decimal" placeholder="0.0000"></span>
+                  <small class="rate-php-preview" data-php-preview-for="dailyRate">PHP: —</small>
                 </label>
                 <label class="wf-field">
                   <span>Monthly rate</span>
-                  <span class="rate-money-input"><i>₱</i><input id="monthlyRate" class="wf-control" type="number" min="0" step="0.0001" inputmode="decimal" placeholder="0.0000"></span>
+                  <span class="rate-money-input"><i>$</i><input id="monthlyRate" class="wf-control" type="number" min="0" step="0.0001" inputmode="decimal" placeholder="0.0000"></span>
+                  <small class="rate-php-preview" data-php-preview-for="monthlyRate">PHP: —</small>
                 </label>
                 <label class="wf-field">
                   <span>Overtime rate</span>
-                  <span class="rate-money-input"><i>₱</i><input id="overtimeRate" class="wf-control" type="number" min="0" step="0.0001" inputmode="decimal" placeholder="0.0000"></span>
+                  <span class="rate-money-input"><i>$</i><input id="overtimeRate" class="wf-control" type="number" min="0" step="0.0001" inputmode="decimal" placeholder="0.0000"></span>
+                  <small class="rate-php-preview" data-php-preview-for="overtimeRate">PHP: —</small>
                 </label>
                 <label class="wf-field">
                   <span>Holiday rate</span>
-                  <span class="rate-money-input"><i>₱</i><input id="holidayRate" class="wf-control" type="number" min="0" step="0.0001" inputmode="decimal" placeholder="0.0000"></span>
+                  <span class="rate-money-input"><i>$</i><input id="holidayRate" class="wf-control" type="number" min="0" step="0.0001" inputmode="decimal" placeholder="0.0000"></span>
+                  <small class="rate-php-preview" data-php-preview-for="holidayRate">PHP: —</small>
                 </label>
               </div>
             </fieldset>
@@ -179,6 +193,6 @@
     </div>
   </main>
 
-  <script type="module" src="./scripts/agent-rates.js?v=1"></script>
+  <script type="module" src="./scripts/agent-rates.js?v=2"></script>
 </body>
 </html>

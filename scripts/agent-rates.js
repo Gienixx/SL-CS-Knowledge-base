@@ -5,10 +5,21 @@ const state = {
   employees: [],
   selectedEmployeeId: '',
   search: '',
-  loading: false
+  loading: false,
+  accessToken: '',
+  paypalQuote: null,
+  paypalQuoteLoading: false,
+  paypalQuoteError: ''
 }
 
-const moneyFormatter = new Intl.NumberFormat('en-PH', {
+const usdFormatter = new Intl.NumberFormat('en-US', {
+  style: 'currency',
+  currency: 'USD',
+  minimumFractionDigits: 2,
+  maximumFractionDigits: 4
+})
+
+const phpFormatter = new Intl.NumberFormat('en-PH', {
   style: 'currency',
   currency: 'PHP',
   minimumFractionDigits: 2,
@@ -37,6 +48,17 @@ const employeeSelect = document.getElementById('rateEmployeeSelect')
 const rateForm = document.getElementById('agentRateForm')
 const saveButton = document.getElementById('saveAgentRateButton')
 const refreshButton = document.getElementById('refreshAgentRatesButton')
+const paypalFxPanel = document.getElementById('paypalFxPanel')
+const paypalFxTitle = document.getElementById('paypalFxTitle')
+const paypalFxMeta = document.getElementById('paypalFxMeta')
+const refreshPaypalRateButton = document.getElementById('refreshPaypalRateButton')
+const rateInputIds = [
+  'hourlyRate',
+  'dailyRate',
+  'monthlyRate',
+  'overtimeRate',
+  'holidayRate'
+]
 
 function localToday() {
   return new Date().toLocaleDateString('en-CA', { timeZone: 'Asia/Manila' })
@@ -52,10 +74,31 @@ function formatDateTime(value) {
   return dateTimeFormatter.format(new Date(value))
 }
 
-function formatMoney(value) {
+function formatUsd(value) {
   if (value === null || value === undefined || value === '') return '—'
   const number = Number(value)
-  return Number.isFinite(number) ? moneyFormatter.format(number) : '—'
+  return Number.isFinite(number) ? usdFormatter.format(number) : '—'
+}
+
+function phpConversion(value) {
+  const number = Number(value)
+  const exchangeRate = Number(state.paypalQuote?.exchangeRate)
+  if (
+    value === null ||
+    value === undefined ||
+    value === '' ||
+    !Number.isFinite(number) ||
+    !Number.isFinite(exchangeRate) ||
+    exchangeRate <= 0
+  ) {
+    return null
+  }
+  return number * exchangeRate
+}
+
+function formatPhpConversion(value) {
+  const converted = phpConversion(value)
+  return converted === null ? 'PHP: —' : `PHP: ≈ ${phpFormatter.format(converted)}`
 }
 
 function initials(name) {
@@ -222,14 +265,97 @@ function renderEmployeeList() {
 
 function rateValue(label, value) {
   const card = element('article')
-  card.append(element('span', '', label), element('strong', '', formatMoney(value)))
+  card.append(
+    element('span', '', label),
+    element('strong', '', formatUsd(value)),
+    element('small', 'rate-php-row', formatPhpConversion(value))
+  )
   return card
 }
 
 function appendRateLine(container, label, value) {
   const line = element('span', 'rate-line')
-  line.append(element('em', '', `${label}: `), document.createTextNode(formatMoney(value)))
+  line.append(
+    element('em', '', `${label}: `),
+    document.createTextNode(formatUsd(value)),
+    element('small', 'rate-line-php', formatPhpConversion(value))
+  )
   container.append(line)
+}
+
+function renderRateInputPreviews() {
+  for (const inputId of rateInputIds) {
+    const input = document.getElementById(inputId)
+    const preview = document.querySelector(`[data-php-preview-for="${inputId}"]`)
+    preview.textContent = formatPhpConversion(input.value)
+  }
+}
+
+function renderPaypalQuote() {
+  const quote = state.paypalQuote
+  paypalFxPanel.classList.toggle('loading', state.paypalQuoteLoading)
+  paypalFxPanel.classList.toggle('available', Boolean(quote))
+  paypalFxPanel.classList.toggle('unavailable', !quote)
+  refreshPaypalRateButton.disabled = state.paypalQuoteLoading
+
+  if (state.paypalQuoteLoading) {
+    paypalFxTitle.textContent = 'Checking PayPal USD to PHP rate…'
+    paypalFxMeta.textContent = 'The quote is requested securely from the server.'
+  } else if (quote) {
+    paypalFxTitle.textContent =
+      `1 USD = ${phpFormatter.format(quote.exchangeRate)}`
+    const timing = quote.expiresAt
+      ? ` · Expires ${formatDateTime(quote.expiresAt)}`
+      : ''
+    paypalFxMeta.textContent =
+      `Live PayPal quote · Retrieved ${formatDateTime(quote.fetchedAt)}${timing}. PHP values are display-only.`
+  } else {
+    paypalFxTitle.textContent = 'PHP conversion unavailable'
+    paypalFxMeta.textContent =
+      state.paypalQuoteError ||
+      'A live PayPal USD to PHP quote is not currently available.'
+  }
+
+  renderRateInputPreviews()
+}
+
+async function loadPaypalQuote() {
+  if (state.paypalQuoteLoading || !state.accessToken) return
+  state.paypalQuoteLoading = true
+  state.paypalQuoteError = ''
+  renderPaypalQuote()
+
+  try {
+    const response = await fetch('./api/paypal-exchange-rate', {
+      method: 'GET',
+      headers: {
+        Accept: 'application/json',
+        Authorization: `Bearer ${state.accessToken}`
+      },
+      cache: 'no-store'
+    })
+    const result = await response.json().catch(() => null)
+
+    if (!response.ok || !Number.isFinite(Number(result?.exchangeRate))) {
+      state.paypalQuote = null
+      state.paypalQuoteError =
+        result?.error || 'The live PayPal rate could not be loaded.'
+    } else {
+      state.paypalQuote = {
+        exchangeRate: Number(result.exchangeRate),
+        fetchedAt: result.fetchedAt,
+        expiresAt: result.expiresAt,
+        refreshesAt: result.refreshesAt
+      }
+    }
+  } catch {
+    state.paypalQuote = null
+    state.paypalQuoteError = 'The live PayPal rate could not be loaded.'
+  } finally {
+    state.paypalQuoteLoading = false
+    renderPaypalQuote()
+    renderSelectedEmployee()
+  }
 }
 
 function renderHistory(employee) {
@@ -369,6 +495,7 @@ function renderAll() {
   renderEmployeeSelect()
   renderEmployeeList()
   renderSelectedEmployee()
+  renderPaypalQuote()
 }
 
 async function loadDirectory({ preserveSelection = true } = {}) {
@@ -442,16 +569,10 @@ function validateRatePayload(payload) {
 }
 
 function resetRateInputs() {
-  for (const id of [
-    'hourlyRate',
-    'dailyRate',
-    'monthlyRate',
-    'overtimeRate',
-    'holidayRate',
-    'rateChangeReason'
-  ]) {
+  for (const id of [...rateInputIds, 'rateChangeReason']) {
     document.getElementById(id).value = ''
   }
+  renderRateInputPreviews()
 }
 
 async function submitRate(event) {
@@ -528,8 +649,14 @@ employeeSelect.addEventListener('change', () => {
   selectEmployee(employeeSelect.value)
 })
 
-refreshButton.addEventListener('click', () => loadDirectory())
+refreshButton.addEventListener('click', async () => {
+  await Promise.all([loadDirectory(), loadPaypalQuote()])
+})
+refreshPaypalRateButton.addEventListener('click', loadPaypalQuote)
 rateForm.addEventListener('submit', submitRate)
+for (const inputId of rateInputIds) {
+  document.getElementById(inputId).addEventListener('input', renderRateInputPreviews)
+}
 document.getElementById('rateEffectiveDate').value = localToday()
 
 async function initializeAgentRates() {
@@ -545,8 +672,12 @@ async function initializeAgentRates() {
     )
 
     if (!access) return
+    state.accessToken = access.session?.access_token || ''
     document.body.classList.remove('rate-access-pending')
-    await loadDirectory({ preserveSelection: false })
+    await Promise.all([
+      loadDirectory({ preserveSelection: false }),
+      loadPaypalQuote()
+    ])
   } catch {
     document.body.classList.remove('rate-access-pending')
     setMessage(

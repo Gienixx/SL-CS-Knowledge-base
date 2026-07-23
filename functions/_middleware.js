@@ -28,6 +28,11 @@ const PROTECTED_ROUTES = Object.freeze({
     methods: ['POST'],
     permission: 'manage_employees',
     requireAdmin: true
+  },
+  '/api/paypal-exchange-rate': {
+    methods: ['GET'],
+    permission: 'manage_agent_rates',
+    requireAdmin: false
   }
 })
 
