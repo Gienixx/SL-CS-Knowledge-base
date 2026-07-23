@@ -1,0 +1,77 @@
+.rate-access-pending .agent-rates-page{visibility:hidden}
+.agent-rates-page{max-width:1380px}
+.rate-eyebrow,.rate-section-kicker{display:block;margin-bottom:6px;color:#6c5ce0;font-family:'JetBrains Mono',monospace;font-size:.67rem;font-weight:600;letter-spacing:.075em;text-transform:uppercase}
+.rate-page-message{min-height:0;margin:0 0 14px}
+.rate-workspace{display:grid;grid-template-columns:minmax(250px,310px) minmax(0,1fr);gap:18px;align-items:start}
+.rate-content{display:grid;gap:18px;min-width:0}
+.rate-directory-card,.rate-current-card,.rate-form-card,.rate-history-card{margin:0}
+.rate-directory-card{position:sticky;top:18px;max-height:calc(100vh - 36px);display:flex;flex-direction:column}
+.rate-directory-card .wf-card-header{padding-bottom:14px;border-bottom:1px solid #eae8f5}
+.rate-count-badge,.rate-currency-pill{display:inline-flex;align-items:center;justify-content:center;min-height:28px;padding:4px 10px;border-radius:999px;background:#edeafb;color:#6c5ce0;font-family:'JetBrains Mono',monospace;font-size:.68rem;font-weight:600}
+.rate-currency-pill{background:#fff8ea;color:#8a5a00}
+.rate-directory-search{padding:14px 16px 10px}
+.rate-employee-list{min-height:170px;overflow-y:auto;padding:4px 10px 14px}
+.rate-directory-empty{padding:30px 12px;color:#8a8aa3;text-align:center;font-size:.78rem}
+.rate-employee-button{display:flex;align-items:center;gap:10px;width:100%;min-height:62px;padding:9px 10px;border:1px solid transparent;border-radius:12px;background:transparent;color:#14142b;text-align:left}
+.rate-employee-button:hover{background:#f6f5fb}
+.rate-employee-button[aria-selected="true"]{border-color:#ddd8fa;background:#edeafb}
+.rate-avatar{display:grid;place-items:center;width:38px;height:38px;border-radius:12px;background:linear-gradient(135deg,#8c7cf0,#6c5ce0);color:#fff;font-size:.76rem;font-weight:800;flex:none}
+.rate-employee-copy{display:grid;min-width:0;gap:3px}
+.rate-employee-copy strong,.rate-employee-copy small{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.rate-employee-copy strong{font-size:.78rem}
+.rate-employee-copy small{color:#8a8aa3;font-size:.64rem}
+.rate-status-dot{width:8px;height:8px;margin-left:auto;border-radius:50%;background:#1fb287;flex:none}
+.rate-status-dot.missing{background:#f1554c}
+.rate-status-dot.future{background:#f5a623}
+.rate-current-card{padding:22px!important}
+.rate-current-head{display:flex;align-items:flex-start;justify-content:space-between;gap:16px;margin-bottom:20px}
+.rate-person-heading{display:flex;align-items:center;gap:13px}
+.rate-person-heading .rate-avatar{width:46px;height:46px;border-radius:14px}
+.rate-person-heading h2{margin:0;color:#14142b;font-family:'Sora',sans-serif;font-size:1.14rem}
+.rate-person-heading p{margin:4px 0 0;color:#8a8aa3;font-size:.75rem}
+.rate-value-grid{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:10px}
+.rate-value-grid article{padding:13px;border:1px solid #eae8f5;border-radius:12px;background:#f9f8fc}
+.rate-value-grid span{display:block;color:#8a8aa3;font-family:'JetBrains Mono',monospace;font-size:.61rem;font-weight:600;letter-spacing:.06em;text-transform:uppercase}
+.rate-value-grid strong{display:block;margin-top:7px;color:#14142b;font-size:.9rem;white-space:nowrap}
+.rate-effective-note{margin:14px 0 0;color:#6a6a81;font-size:.73rem}
+.rate-form-card>.wf-card-header,.rate-history-card>.wf-card-header{padding:20px 22px 16px;border-bottom:1px solid #eae8f5}
+.rate-form{padding:20px 22px 22px}
+.rate-form-grid{display:grid;grid-template-columns:2fr 1fr;gap:14px}
+.rate-fields{margin:0;padding:16px;border:1px solid #eae8f5;border-radius:14px}
+.rate-fields legend{padding:0 7px;color:#14142b;font-family:'Sora',sans-serif;font-size:.84rem;font-weight:700}
+.rate-fields>p{margin:0 0 14px;color:#8a8aa3;font-size:.72rem}
+.rate-input-grid{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:10px}
+.rate-money-input{position:relative;display:block}
+.rate-money-input i{position:absolute;z-index:1;left:12px;top:50%;translate:0 -50%;color:#8a8aa3;font-style:normal;font-size:.8rem}
+.rate-money-input .wf-control{padding-left:28px;font-family:'JetBrains Mono',monospace;font-size:.75rem}
+.rate-field-help{color:#8a8aa3;font-size:.67rem}
+.rate-form-footer{display:flex;align-items:center;justify-content:space-between;gap:18px;padding:13px 14px;border-radius:12px;background:#fff8ea}
+.rate-form-footer p{margin:0;color:#6b4c0c;font-size:.7rem;line-height:1.5}
+.rate-form-footer .wf-btn{flex:none;border-color:#6c5ce0;background:#6c5ce0}
+.rate-history-table{min-width:820px}
+.rate-history-table th,.rate-history-table td{padding-inline:16px}
+.rate-history-table td{vertical-align:top;line-height:1.45}
+.rate-history-table strong{color:#14142b}
+.rate-history-table small{display:block;color:#8a8aa3;font-size:.68rem}
+.rate-history-table .rate-history-effective{white-space:nowrap}
+.rate-history-table .rate-history-reason{max-width:290px;white-space:normal}
+.rate-line{display:block;white-space:nowrap}
+.rate-line em{color:#8a8aa3;font-style:normal}
+
+@media(max-width:1080px){
+  .rate-workspace{grid-template-columns:240px minmax(0,1fr)}
+  .rate-value-grid{grid-template-columns:repeat(3,minmax(0,1fr))}
+  .rate-input-grid{grid-template-columns:repeat(3,minmax(0,1fr))}
+}
+
+@media(max-width:820px){
+  .rate-workspace{grid-template-columns:1fr}
+  .rate-directory-card{position:static;max-height:none}
+  .rate-employee-list{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));max-height:260px}
+}
+
+@media(max-width:680px){
+  .rate-current-head,.rate-form-footer{align-items:stretch;flex-direction:column}
+  .rate-form-grid,.rate-input-grid,.rate-value-grid,.rate-employee-list{grid-template-columns:1fr}
+  .rate-form-footer .wf-btn{width:100%}
+}
