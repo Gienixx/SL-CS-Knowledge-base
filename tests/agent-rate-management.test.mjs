@@ -16,6 +16,7 @@ const hourlyDerivationMigrationUrl = new URL(
 )
 const pageUrl = new URL('../agent-rates.html', import.meta.url)
 const scriptUrl = new URL('../scripts/agent-rates.js', import.meta.url)
+const styleUrl = new URL('../styles/agent-rates.css', import.meta.url)
 const homeUrl = new URL('../home.html', import.meta.url)
 const homeNavigationUrl = new URL(
   '../scripts/home-workforce-nav.js',
@@ -174,6 +175,24 @@ test('daily and monthly rates are derived from hourly in the browser and databas
     migration,
     /revoke all on function public\.payroll_derive_agent_rates_from_hourly\(\)[\s\S]*from public, anon, authenticated/
   )
+})
+
+test('rate currency prefixes use consistent vertical and horizontal alignment', async () => {
+  const [page, style] = await Promise.all([
+    readFile(pageUrl, 'utf8'),
+    readFile(styleUrl, 'utf8')
+  ])
+
+  assert.match(page, /styles\/agent-rates\.css\?v=5/)
+  assert.match(
+    style,
+    /\.rate-money-input i\{[^}]*inset:0 auto 0 0[^}]*display:flex[^}]*align-items:center[^}]*justify-content:center[^}]*width:32px/
+  )
+  assert.match(
+    style,
+    /\.rate-money-input \.wf-control\{padding-left:32px/
+  )
+  assert.doesNotMatch(style, /\.rate-money-input i\{[^}]*translate:/)
 })
 
 test('home navigation reveals Agent Rates only through manage_agent_rates', async () => {
