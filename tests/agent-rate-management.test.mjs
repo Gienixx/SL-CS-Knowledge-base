@@ -177,22 +177,29 @@ test('daily and monthly rates are derived from hourly in the browser and databas
   )
 })
 
-test('rate currency prefixes use consistent vertical and horizontal alignment', async () => {
+test('agent rates uses the supplied compact card design', async () => {
   const [page, style] = await Promise.all([
     readFile(pageUrl, 'utf8'),
     readFile(styleUrl, 'utf8')
   ])
 
-  assert.match(page, /styles\/agent-rates\.css\?v=6/)
+  assert.match(page, /styles\/agent-rates\.css\?v=7/)
+  assert.match(page, /scripts\/agent-rates\.js\?v=5/)
+  assert.match(page, /class="rate-metrics"/)
+  assert.match(page, /class="rate-conversion-banner unavailable"/)
+  assert.match(page, /class="rate-workspace"/)
+  assert.match(page, /class="rate-card rate-directory-card"/)
+  assert.match(page, /class="rate-card rate-history-card"/)
+  assert.doesNotMatch(page, /class="wf-table/)
   assert.match(
     style,
-    /\.rate-money-input i\{[^}]*inset:0 auto 0 0[^}]*display:flex[^}]*align-items:center[^}]*justify-content:center[^}]*width:32px/
+    /\.rate-workspace\s*\{[\s\S]*?grid-template-columns:\s*260px minmax\(0,\s*1fr\)/
   )
   assert.match(
     style,
-    /\.rate-money-input \.wf-control\{padding-left:32px/
+    /\.rate-metric-card\s*\{[\s\S]*?border-radius:\s*14px[\s\S]*?background:\s*var\(--rate-surface\)/
   )
-  assert.doesNotMatch(style, /\.rate-money-input i\{[^}]*translate:/)
+  assert.match(style, /\.rate-audit-banner\s*\{[\s\S]*?background:\s*#fdf1dc/)
 })
 
 test('generated base rates stay blank and aligned until hourly is entered', async () => {

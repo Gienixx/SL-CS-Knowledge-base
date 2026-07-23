@@ -4,82 +4,91 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Agent Rates | SocialLoop CS Base</title>
-  <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@500;600&family=Sora:wght@600;700;800&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="./styles/button-theme.css?v=1">
   <link rel="stylesheet" href="./styles/workforce-admin.css?v=8">
-  <link rel="stylesheet" href="./styles/agent-rates.css?v=6">
+  <link rel="stylesheet" href="./styles/agent-rates.css?v=7">
 </head>
 <body class="rate-access-pending">
-  <main class="wf-page agent-rates-page">
-    <header class="wf-topbar">
-      <div class="wf-title">
-        <span class="rate-eyebrow">Payroll · Rate management</span>
-        <h1>Agent Rates</h1>
-        <p>Maintain effective-dated USD pay rates with a PayPal-based PHP conversion view, without changing historical payroll records.</p>
+  <main class="agent-rates-page">
+    <header class="rate-page-header">
+      <div>
+        <p class="rate-eyebrow">Payroll · Rate management</p>
+        <h1>Agent rates</h1>
+        <p class="rate-page-subtitle">Maintain effective-dated USD pay rates with a PayPal-based PHP conversion view, without changing historical payroll records.</p>
       </div>
-      <nav class="wf-nav" aria-label="Agent rate navigation">
-        <a class="wf-link" href="./home.html">← Back to Home</a>
-        <button id="refreshAgentRatesButton" class="wf-btn secondary" type="button">Refresh</button>
+      <nav class="rate-header-actions" aria-label="Agent rate navigation">
+        <a class="rate-button rate-button-secondary" href="./home.html">← Back to home</a>
+        <button id="refreshAgentRatesButton" class="rate-button rate-button-secondary" type="button">↻ Refresh</button>
       </nav>
     </header>
 
-    <section class="wf-summary-grid" aria-label="Rate management summary">
-      <article class="wf-summary">
-        <span class="wf-stat-icon violet" aria-hidden="true">$</span>
-        <span class="wf-stat-copy"><span>Eligible agents</span><strong id="rateEmployeeCount">—</strong></span>
+    <section class="rate-metrics" aria-label="Rate management summary">
+      <article class="rate-metric-card">
+        <span class="rate-metric-icon violet" aria-hidden="true">$</span>
+        <div>
+          <p>Eligible agents</p>
+          <strong id="rateEmployeeCount">—</strong>
+        </div>
       </article>
-      <article class="wf-summary">
-        <span class="wf-stat-icon mint" aria-hidden="true">✓</span>
-        <span class="wf-stat-copy"><span>Current rate</span><strong id="rateCurrentCount">—</strong></span>
+      <article class="rate-metric-card">
+        <span class="rate-metric-icon green" aria-hidden="true">✓</span>
+        <div>
+          <p>Current rate</p>
+          <strong id="rateCurrentCount">—</strong>
+        </div>
       </article>
-      <article class="wf-summary">
-        <span class="wf-stat-icon coral" aria-hidden="true">!</span>
-        <span class="wf-stat-copy"><span>Missing rate</span><strong id="rateMissingCount">—</strong></span>
+      <article class="rate-metric-card">
+        <span class="rate-metric-icon red" aria-hidden="true">!</span>
+        <div>
+          <p>Missing rate</p>
+          <strong id="rateMissingCount">—</strong>
+        </div>
       </article>
-      <article class="wf-summary">
-        <span class="wf-stat-icon gold" aria-hidden="true">↗</span>
-        <span class="wf-stat-copy"><span>Future changes</span><strong id="rateFutureCount">—</strong></span>
+      <article class="rate-metric-card">
+        <span class="rate-metric-icon amber" aria-hidden="true">↗</span>
+        <div>
+          <p>Future changes</p>
+          <strong id="rateFutureCount">—</strong>
+        </div>
       </article>
     </section>
 
     <p id="agentRatesPageMessage" class="wf-message rate-page-message" role="status" aria-live="polite"></p>
 
-    <section id="paypalFxPanel" class="rate-fx-panel unavailable" aria-labelledby="paypalFxTitle">
+    <section id="paypalFxPanel" class="rate-conversion-banner unavailable" aria-labelledby="paypalFxTitle">
       <div>
-        <span class="rate-section-kicker">Display conversion · PayPal</span>
+        <p class="rate-eyebrow">Display conversion · PayPal</p>
         <strong id="paypalFxTitle">PHP conversion unavailable</strong>
         <p id="paypalFxMeta">Checking the PayPal USD to PHP conversion…</p>
       </div>
-      <button id="refreshPaypalRateButton" class="wf-btn secondary" type="button">Refresh PayPal rate</button>
+      <button id="refreshPaypalRateButton" class="rate-button rate-button-secondary" type="button">Refresh PayPal rate</button>
     </section>
 
     <div class="rate-workspace">
-      <aside class="wf-card rate-directory-card" aria-labelledby="rateDirectoryTitle">
-        <div class="wf-card-header">
+      <aside class="rate-card rate-directory-card" aria-labelledby="rateDirectoryTitle">
+        <div class="rate-directory-heading">
           <div>
-            <span class="rate-section-kicker">Directory</span>
+            <p class="rate-eyebrow">Directory</p>
             <h2 id="rateDirectoryTitle">Employees</h2>
           </div>
-          <span id="rateDirectoryCount" class="rate-count-badge">0</span>
+          <span id="rateDirectoryCount" class="rate-count-pill">0</span>
         </div>
-        <div class="rate-directory-search">
-          <label class="wf-field">
-            <span>Search employee</span>
-            <input id="rateEmployeeSearch" class="wf-control" type="search" placeholder="Name, email, or ID" autocomplete="off">
-          </label>
+        <label class="rate-visually-hidden" for="rateEmployeeSearch">Search employee</label>
+        <input id="rateEmployeeSearch" class="rate-control rate-search-input" type="search" placeholder="Name, email, or ID" autocomplete="off">
+        <div class="rate-directory-legend" aria-label="Rate status legend">
+          <span><i class="current" aria-hidden="true"></i>Current rate</span>
+          <span><i class="missing" aria-hidden="true"></i>Missing rate</span>
         </div>
         <div id="rateEmployeeList" class="rate-employee-list" role="listbox" aria-label="Eligible agents"></div>
       </aside>
 
-      <div class="rate-content">
-        <section class="wf-card rate-current-card" aria-labelledby="selectedAgentName">
+      <div class="rate-main-column">
+        <section class="rate-card rate-current-card" aria-labelledby="selectedAgentName">
           <div class="rate-current-head">
             <div class="rate-person-heading">
-              <span id="selectedAgentAvatar" class="rate-avatar" aria-hidden="true">—</span>
+              <span id="selectedAgentAvatar" class="rate-avatar rate-avatar-large" aria-hidden="true">—</span>
               <div>
-                <span class="rate-section-kicker">Selected employee</span>
+                <p class="rate-eyebrow">Selected employee</p>
                 <h2 id="selectedAgentName">Select an employee</h2>
                 <p id="selectedAgentMeta">Choose an eligible agent from the directory.</p>
               </div>
@@ -96,103 +105,91 @@
           <p id="currentRateEffective" class="rate-effective-note">No current rate on file.</p>
         </section>
 
-        <section class="wf-card rate-form-card" aria-labelledby="rateFormTitle">
-          <div class="wf-card-header">
+        <section class="rate-card rate-form-card" aria-labelledby="rateFormTitle">
+          <div class="rate-form-title-row">
             <div>
-              <span class="rate-section-kicker">Append-only change</span>
+              <p class="rate-eyebrow">Append-only change</p>
               <h2 id="rateFormTitle">Add an effective-dated rate</h2>
             </div>
             <span class="rate-currency-pill">USD ($)</span>
           </div>
-          <form id="agentRateForm" class="wf-form rate-form">
+
+          <form id="agentRateForm" class="rate-form">
             <div class="rate-form-grid">
-              <label class="wf-field rate-employee-field">
+              <label class="rate-field">
                 <span>Employee</span>
-                <select id="rateEmployeeSelect" class="wf-control" required>
+                <select id="rateEmployeeSelect" class="rate-control" required>
                   <option value="">Select an eligible employee</option>
                 </select>
               </label>
-              <label class="wf-field">
+              <label class="rate-field">
                 <span>Effective date</span>
-                <input id="rateEffectiveDate" class="wf-control" type="date" required>
+                <input id="rateEffectiveDate" class="rate-control" type="date" required>
               </label>
             </div>
 
-            <fieldset class="rate-fields">
-              <legend>Pay rates</legend>
-              <p>Enter the hourly rate. Daily and monthly rates are calculated automatically.</p>
-              <div class="rate-input-grid">
-                <label class="wf-field">
-                  <span>Hourly rate</span>
-                  <span class="rate-money-input"><i>$</i><input id="hourlyRate" class="wf-control" type="number" min="0" step="0.0001" inputmode="decimal" placeholder="0.0000"></span>
-                  <small class="rate-php-preview" data-php-preview-for="hourlyRate">PHP: —</small>
-                </label>
-                <label class="wf-field">
-                  <span>Daily rate</span>
-                  <span class="rate-money-input"><i>$</i><input id="dailyRate" class="wf-control rate-auto-value" type="number" min="0" step="0.0001" inputmode="decimal" placeholder="--" readonly></span>
-                  <small class="rate-php-preview" data-php-preview-for="dailyRate">PHP: —</small>
-                </label>
-                <label class="wf-field">
-                  <span>Monthly rate</span>
-                  <span class="rate-money-input"><i>$</i><input id="monthlyRate" class="wf-control rate-auto-value" type="number" min="0" step="0.0001" inputmode="decimal" placeholder="--" readonly></span>
-                  <small class="rate-php-preview" data-php-preview-for="monthlyRate">PHP: —</small>
-                </label>
-                <label class="wf-field">
-                  <span>Overtime rate</span>
-                  <span class="rate-money-input"><i>$</i><input id="overtimeRate" class="wf-control" type="number" min="0" step="0.0001" inputmode="decimal" placeholder="0.0000"></span>
-                  <small class="rate-php-preview" data-php-preview-for="overtimeRate">PHP: —</small>
-                </label>
-                <label class="wf-field">
-                  <span>Holiday rate</span>
-                  <span class="rate-money-input"><i>$</i><input id="holidayRate" class="wf-control" type="number" min="0" step="0.0001" inputmode="decimal" placeholder="0.0000"></span>
-                  <small class="rate-php-preview" data-php-preview-for="holidayRate">PHP: —</small>
-                </label>
-              </div>
-            </fieldset>
+            <p class="rate-form-hint">Enter the hourly rate. Daily and monthly rates, and PHP equivalents, are calculated automatically.</p>
 
-            <label class="wf-field">
+            <div class="rate-input-grid" aria-label="Pay rates">
+              <label class="rate-field">
+                <span>Hourly</span>
+                <input id="hourlyRate" class="rate-control rate-number-control" type="number" min="0" step="0.0001" inputmode="decimal" placeholder="0.0000">
+                <small class="rate-php-preview" data-php-preview-for="hourlyRate">PHP: —</small>
+              </label>
+              <label class="rate-field">
+                <span>Daily</span>
+                <input id="dailyRate" class="rate-control rate-number-control rate-auto-value" type="number" min="0" step="0.0001" inputmode="decimal" placeholder="--" readonly>
+                <small class="rate-php-preview" data-php-preview-for="dailyRate">PHP: —</small>
+              </label>
+              <label class="rate-field">
+                <span>Monthly</span>
+                <input id="monthlyRate" class="rate-control rate-number-control rate-auto-value" type="number" min="0" step="0.0001" inputmode="decimal" placeholder="--" readonly>
+                <small class="rate-php-preview" data-php-preview-for="monthlyRate">PHP: —</small>
+              </label>
+              <label class="rate-field">
+                <span>Overtime</span>
+                <input id="overtimeRate" class="rate-control rate-number-control" type="number" min="0" step="0.0001" inputmode="decimal" placeholder="0.0000">
+                <small class="rate-php-preview" data-php-preview-for="overtimeRate">PHP: —</small>
+              </label>
+              <label class="rate-field">
+                <span>Holiday</span>
+                <input id="holidayRate" class="rate-control rate-number-control" type="number" min="0" step="0.0001" inputmode="decimal" placeholder="0.0000">
+                <small class="rate-php-preview" data-php-preview-for="holidayRate">PHP: —</small>
+              </label>
+            </div>
+
+            <label class="rate-field rate-reason-field">
               <span>Rate-change reason</span>
-              <textarea id="rateChangeReason" class="wf-control" maxlength="500" required placeholder="Document why this rate becomes effective on the selected date."></textarea>
-              <small class="rate-field-help">Required for the permanent payroll audit trail.</small>
+              <textarea id="rateChangeReason" class="rate-control" maxlength="500" required placeholder="Document why this rate becomes effective on the selected date."></textarea>
+              <small>Required for the permanent payroll audit trail.</small>
             </label>
 
-            <div class="rate-form-footer">
-              <p><strong>Historical rates cannot be edited or deleted.</strong> To correct or change a rate, add a new effective date.</p>
-              <button id="saveAgentRateButton" class="wf-btn" type="submit">Save new rate</button>
+            <p id="agentRateFormMessage" class="wf-message rate-form-message" role="status" aria-live="polite"></p>
+
+            <div class="rate-audit-banner">
+              <p><span aria-hidden="true">🔒</span> <strong>Historical rates cannot be edited or deleted.</strong> To correct or change a rate, add a new effective date.</p>
+              <button id="saveAgentRateButton" class="rate-button rate-button-primary" type="submit">Save new rate</button>
             </div>
-            <p id="agentRateFormMessage" class="wf-message" role="status" aria-live="polite"></p>
           </form>
         </section>
 
-        <section class="wf-card rate-history-card" aria-labelledby="rateHistoryTitle">
-          <div class="wf-card-header">
+        <section class="rate-card rate-history-card" aria-labelledby="rateHistoryTitle">
+          <div class="rate-history-heading">
             <div>
-              <span class="rate-section-kicker">Permanent record</span>
+              <p class="rate-eyebrow">Permanent record</p>
               <h2 id="rateHistoryTitle">Rate history</h2>
             </div>
-            <span id="rateHistoryCount" class="rate-count-badge">0 records</span>
+            <span id="rateHistoryCount" class="rate-count-pill">0 records</span>
           </div>
-          <div class="wf-table-wrap">
-            <table class="wf-table rate-history-table">
-              <thead>
-                <tr>
-                  <th>Effective</th>
-                  <th>Base rates</th>
-                  <th>Premium rates</th>
-                  <th>Reason</th>
-                  <th>Recorded</th>
-                </tr>
-              </thead>
-              <tbody id="rateHistoryBody">
-                <tr><td colspan="5" class="wf-empty">Select an employee to view rate history.</td></tr>
-              </tbody>
-            </table>
+          <p class="rate-history-note"><span aria-hidden="true">🔒</span> Every entry below is permanent. Corrections are made by adding a new effective date, never by editing history.</p>
+          <div id="rateHistoryBody" class="rate-history-list">
+            <p class="rate-history-empty">Select an employee to view rate history.</p>
           </div>
         </section>
       </div>
     </div>
   </main>
 
-  <script type="module" src="./scripts/agent-rates.js?v=4"></script>
+  <script type="module" src="./scripts/agent-rates.js?v=5"></script>
 </body>
 </html>

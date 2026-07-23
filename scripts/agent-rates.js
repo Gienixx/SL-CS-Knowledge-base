@@ -277,16 +277,6 @@ function rateValue(label, value) {
   return card
 }
 
-function appendRateLine(container, label, value) {
-  const line = element('span', 'rate-line')
-  line.append(
-    element('em', '', `${label}: `),
-    document.createTextNode(formatUsd(value)),
-    element('small', 'rate-line-php', formatPhpConversion(value))
-  )
-  container.append(line)
-}
-
 function renderRateInputPreviews() {
   for (const inputId of rateInputIds) {
     const input = document.getElementById(inputId)
@@ -407,15 +397,13 @@ async function loadPaypalQuote() {
 }
 
 function renderHistory(employee) {
-  const body = document.getElementById('rateHistoryBody')
+  const list = document.getElementById('rateHistoryBody')
   const historyCount = document.getElementById('rateHistoryCount')
 
   if (!employee) {
-    const row = document.createElement('tr')
-    const cell = element('td', 'wf-empty', 'Select an employee to view rate history.')
-    cell.colSpan = 5
-    row.append(cell)
-    body.replaceChildren(row)
+    list.replaceChildren(
+      element('p', 'rate-history-empty', 'Select an employee to view rate history.')
+    )
     historyCount.textContent = '0 records'
     return
   }
@@ -424,56 +412,80 @@ function renderHistory(employee) {
     `${employee.rates.length} ${employee.rates.length === 1 ? 'record' : 'records'}`
 
   if (!employee.rates.length) {
-    const row = document.createElement('tr')
-    const cell = element('td', 'wf-empty', 'No rate history has been recorded.')
-    cell.colSpan = 5
-    row.append(cell)
-    body.replaceChildren(row)
+    list.replaceChildren(
+      element('p', 'rate-history-empty', 'No rate history has been recorded.')
+    )
     return
   }
 
   const today = localToday()
   const active = currentRate(employee)
+  const chronological = [...employee.rates].sort((left, right) =>
+    left.effective_date.localeCompare(right.effective_date)
+  )
+  const displayRates = [...chronological].reverse()
   const fragment = document.createDocumentFragment()
 
-  for (const rate of employee.rates) {
-    const row = document.createElement('tr')
-    const effectiveCell = element('td', 'rate-history-effective')
-    effectiveCell.append(element('strong', '', formatDate(rate.effective_date)))
+  for (const rate of displayRates) {
+    const row = element('article', 'rate-history-row')
+    const rowInner = element('div', 'rate-history-row-inner')
+    const dateColumn = element('div', 'rate-history-date')
+    dateColumn.append(element('strong', '', formatDate(rate.effective_date)))
 
     const status = rate.effective_date > today
-      ? element('small', '', 'Future')
+      ? element('span', 'rate-history-status future', 'Upcoming')
       : rate.id === active?.id
-        ? element('small', '', 'Current')
-        : element('small', '', 'Historical')
-    effectiveCell.append(status)
+        ? element('span', 'rate-history-status current', 'Current')
+        : element('span', 'rate-history-status historical', 'Superseded')
+    dateColumn.append(status)
 
-    const baseCell = document.createElement('td')
-    appendRateLine(baseCell, 'Hourly', rate.hourly_rate)
-    appendRateLine(baseCell, 'Daily', rate.daily_rate)
-    appendRateLine(baseCell, 'Monthly', rate.monthly_rate)
-
-    const premiumCell = document.createElement('td')
-    appendRateLine(premiumCell, 'Overtime', rate.overtime_rate)
-    appendRateLine(premiumCell, 'Holiday', rate.holiday_rate)
-
-    const reasonCell = element(
-      'td',
-      'rate-history-reason',
-      rate.rate_change_reason || '—'
+    const rateColumn = element('div', 'rate-history-rates')
+    const hourlyRow = element('div', 'rate-history-hourly')
+    hourlyRow.append(
+      element('strong', '', `${formatUsd(rate.hourly_rate)}/hr`)
     )
 
-    const recordedCell = document.createElement('td')
-    recordedCell.append(
-      element('strong', '', formatDateTime(rate.created_at)),
-      element('small', '', 'Immutable audit record')
+    const chronologicalIndex = chronological.findIndex(item => item.id === rate.id)
+    const previousRate = chronological[chronologicalIndex - 1]
+    const delta = previousRate
+      ? Number(rate.hourly_rate) - Number(previousRate.hourly_rate)
+      : 0
+    if (Number.isFinite(delta) && Math.abs(delta) >= 0.0001) {
+      const deltaText = `${delta > 0 ? '+' : ''}${delta.toFixed(4)}`
+      const deltaNode = element('span', 'rate-history-delta', deltaText)
+      if (delta < 0) deltaNode.classList.add('negative')
+      hourlyRow.append(deltaNode)
+    }
+    hourlyRow.append(
+      element('small', 'rate-history-php', formatPhpConversion(rate.hourly_rate))
     )
 
-    row.append(effectiveCell, baseCell, premiumCell, reasonCell, recordedCell)
+    rateColumn.append(
+      hourlyRow,
+      element(
+        'p',
+        'rate-history-sub',
+        `Daily ${formatUsd(rate.daily_rate)} (${formatPhpConversion(rate.daily_rate)}) · Monthly ${formatUsd(rate.monthly_rate)} (${formatPhpConversion(rate.monthly_rate)})`
+      ),
+      element(
+        'p',
+        'rate-history-sub',
+        `Overtime ${formatUsd(rate.overtime_rate)} · Holiday ${formatUsd(rate.holiday_rate)}`
+      )
+    )
+
+    const metaColumn = element('div', 'rate-history-meta')
+    metaColumn.append(
+      element('p', '', rate.rate_change_reason || '—'),
+      element('small', '', `Recorded ${formatDateTime(rate.created_at)} · Immutable audit record`)
+    )
+
+    rowInner.append(dateColumn, rateColumn, metaColumn)
+    row.append(rowInner)
     fragment.append(row)
   }
 
-  body.replaceChildren(fragment)
+  list.replaceChildren(fragment)
 }
 
 function renderSelectedEmployee() {
