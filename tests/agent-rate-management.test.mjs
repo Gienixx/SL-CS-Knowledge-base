@@ -183,7 +183,7 @@ test('rate currency prefixes use consistent vertical and horizontal alignment', 
     readFile(styleUrl, 'utf8')
   ])
 
-  assert.match(page, /styles\/agent-rates\.css\?v=5/)
+  assert.match(page, /styles\/agent-rates\.css\?v=6/)
   assert.match(
     style,
     /\.rate-money-input i\{[^}]*inset:0 auto 0 0[^}]*display:flex[^}]*align-items:center[^}]*justify-content:center[^}]*width:32px/
@@ -193,6 +193,24 @@ test('rate currency prefixes use consistent vertical and horizontal alignment', 
     /\.rate-money-input \.wf-control\{padding-left:32px/
   )
   assert.doesNotMatch(style, /\.rate-money-input i\{[^}]*translate:/)
+})
+
+test('generated base rates stay blank and aligned until hourly is entered', async () => {
+  const [page, script, style] = await Promise.all([
+    readFile(pageUrl, 'utf8'),
+    readFile(scriptUrl, 'utf8'),
+    readFile(styleUrl, 'utf8')
+  ])
+
+  assert.match(page, /id="dailyRate"[^>]*placeholder="--"[^>]*readonly/)
+  assert.match(page, /id="monthlyRate"[^>]*placeholder="--"[^>]*readonly/)
+  assert.doesNotMatch(page, /rate-auto-formula|Automatic: hourly rate/)
+  assert.doesNotMatch(style, /\.rate-auto-formula/)
+  assert.match(
+    script,
+    /hourlyInput\.value\.trim\(\) === ''[\s\S]*?dailyInput\.value = ''[\s\S]*?monthlyInput\.value = ''/
+  )
+  assert.match(script, /if \(payload\.p_hourly_rate === null\)/)
 })
 
 test('home navigation reveals Agent Rates only through manage_agent_rates', async () => {

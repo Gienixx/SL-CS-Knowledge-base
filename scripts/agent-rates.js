@@ -593,18 +593,14 @@ function validateRatePayload(payload) {
   if (!payload.p_effective_date) return 'Select an effective date.'
   if (!payload.p_rate_change_reason) return 'Enter a rate-change reason.'
 
-  const baseRates = [
-    payload.p_hourly_rate,
-    payload.p_daily_rate,
-    payload.p_monthly_rate
-  ]
-
-  if (baseRates.every(value => value === null)) {
-    return 'Enter at least one base rate: hourly, daily, or monthly.'
+  if (payload.p_hourly_rate === null) {
+    return 'Enter an hourly rate.'
   }
 
   const allRates = [
-    ...baseRates,
+    payload.p_hourly_rate,
+    payload.p_daily_rate,
+    payload.p_monthly_rate,
     payload.p_overtime_rate,
     payload.p_holiday_rate
   ]

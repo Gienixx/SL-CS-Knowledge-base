@@ -9,7 +9,7 @@
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@500;600&family=Sora:wght@600;700;800&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="./styles/button-theme.css?v=1">
   <link rel="stylesheet" href="./styles/workforce-admin.css?v=8">
-  <link rel="stylesheet" href="./styles/agent-rates.css?v=5">
+  <link rel="stylesheet" href="./styles/agent-rates.css?v=6">
 </head>
 <body class="rate-access-pending">
   <main class="wf-page agent-rates-page">
@@ -120,7 +120,7 @@
 
             <fieldset class="rate-fields">
               <legend>Pay rates</legend>
-              <p>Enter at least one base rate: hourly, daily, or monthly.</p>
+              <p>Enter the hourly rate. Daily and monthly rates are calculated automatically.</p>
               <div class="rate-input-grid">
                 <label class="wf-field">
                   <span>Hourly rate</span>
@@ -129,14 +129,12 @@
                 </label>
                 <label class="wf-field">
                   <span>Daily rate</span>
-                  <span class="rate-money-input"><i>$</i><input id="dailyRate" class="wf-control rate-auto-value" type="number" min="0" step="0.0001" inputmode="decimal" placeholder="Hourly × 8" readonly aria-describedby="dailyRateFormula"></span>
-                  <small id="dailyRateFormula" class="rate-auto-formula">Automatic: hourly rate × 8 hours</small>
+                  <span class="rate-money-input"><i>$</i><input id="dailyRate" class="wf-control rate-auto-value" type="number" min="0" step="0.0001" inputmode="decimal" placeholder="--" readonly></span>
                   <small class="rate-php-preview" data-php-preview-for="dailyRate">PHP: —</small>
                 </label>
                 <label class="wf-field">
                   <span>Monthly rate</span>
-                  <span class="rate-money-input"><i>$</i><input id="monthlyRate" class="wf-control rate-auto-value" type="number" min="0" step="0.0001" inputmode="decimal" placeholder="Hourly × 176" readonly aria-describedby="monthlyRateFormula"></span>
-                  <small id="monthlyRateFormula" class="rate-auto-formula">Automatic: hourly rate × 8 hours × 22 days</small>
+                  <span class="rate-money-input"><i>$</i><input id="monthlyRate" class="wf-control rate-auto-value" type="number" min="0" step="0.0001" inputmode="decimal" placeholder="--" readonly></span>
                   <small class="rate-php-preview" data-php-preview-for="monthlyRate">PHP: —</small>
                 </label>
                 <label class="wf-field">
