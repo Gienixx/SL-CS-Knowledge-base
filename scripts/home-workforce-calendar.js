@@ -3,6 +3,10 @@ import {
   hasWorkforcePermission,
   loadCurrentWorkforceAccess
 } from './workforce-permissions.js?v=1'
+import {
+  setUpcomingEventDate,
+  sortUpcomingEventCards
+} from './home-upcoming-events.js?v=1'
 
 const RELEASED_SCHEDULE_STATUSES = Object.freeze([
   'published',
@@ -224,6 +228,7 @@ function renderUpcomingSchedules() {
   })
 
   recurringEvents.forEach(event => list.appendChild(event))
+  sortUpcomingEventCards(list)
 }
 
 function createUpcomingScheduleCard(schedule) {
@@ -231,6 +236,7 @@ function createUpcomingScheduleCard(schedule) {
   card.className = 'event-card home-schedule-event-card'
   card.href = './my-schedule.html'
   card.setAttribute('aria-label', `${formatScheduleDate(schedule.shift_date)}: ${scheduleDescription(schedule)}`)
+  setUpcomingEventDate(card, schedule.shift_date)
 
   if (schedule.status === 'changed') card.classList.add('changed')
   if (schedule.status === 'scheduled') card.classList.add('scheduled')

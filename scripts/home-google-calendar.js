@@ -1,4 +1,8 @@
 import { supabase } from './supabaseClient.js?v=10'
+import {
+  setUpcomingEventDate,
+  sortUpcomingEventCards
+} from './home-upcoming-events.js?v=1'
 
 const MONTH_INDEX = Object.freeze({
   january: 0,
@@ -332,9 +336,7 @@ function mergeGoogleUpcomingEvents() {
       .querySelectorAll('.home-google-event-card')
       .forEach(card => card.remove())
 
-    const existingCards = elements.upcomingList.querySelectorAll('.event-card').length
-    const availableSlots = Math.max(0, UPCOMING_LIMIT - existingCards)
-    const googleEvents = state.upcomingEvents.slice(0, availableSlots)
+    const googleEvents = state.upcomingEvents.slice(0, UPCOMING_LIMIT)
 
     if (googleEvents.length) {
       elements.upcomingList
@@ -345,6 +347,8 @@ function mergeGoogleUpcomingEvents() {
         elements.upcomingList.appendChild(createGoogleUpcomingCard(event))
       })
     }
+
+    sortUpcomingEventCards(elements.upcomingList, { limit: UPCOMING_LIMIT })
   } finally {
     state.applyingUpcoming = false
     state.upcomingObserver?.observe(elements.upcomingList, {
@@ -362,6 +366,7 @@ function createGoogleUpcomingCard(event) {
   card.rel = 'noopener noreferrer'
 
   const startDateKey = googleEventStartDate(event)
+  setUpcomingEventDate(card, startDateKey)
   const date = parseDateKey(startDateKey)
   const dateBox = document.createElement('div')
   dateBox.className = 'event-date-box google'

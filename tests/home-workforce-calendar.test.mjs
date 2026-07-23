@@ -11,7 +11,7 @@ test('Home loads the workforce schedule calendar integration', async () => {
   assert.match(page, /class="sidebar-link" href="\.\/dashboard\.html" title="Analytics"/)
   assert.doesNotMatch(page, /Open full analytics|analytics-cta/)
   assert.match(page, /home-workforce-calendar\.css\?v=3/)
-  assert.match(page, /home-workforce-calendar\.js\?v=5/)
+  assert.match(page, /home-workforce-calendar\.js\?v=6/)
   assert.match(page, /<h2 id="homeUpcomingTitle">Upcoming Events<\/h2>/)
   assert.doesNotMatch(page, /homeUpcomingEyebrow/)
   assert.match(page, />My shift</)
@@ -145,6 +145,31 @@ test('Home upcoming events exclude cancelled and ended incomplete shifts', async
   assert.match(script, /schedule\.status === 'cancelled'/)
   assert.match(script, /new Date\(schedule\.shift_end\)\.getTime\(\) > now\.getTime\(\)/)
   assert.match(script, /\.slice\(0, UPCOMING_SCHEDULE_LIMIT\)/)
+})
+
+test('Home upcoming events are sorted by date regardless of source', async () => {
+  const [home, workforce, google, sorter] = await Promise.all([
+    read('scripts/home.js'),
+    read('scripts/home-workforce-calendar.js'),
+    read('scripts/home-google-calendar.js'),
+    read('scripts/home-upcoming-events.js')
+  ])
+
+  assert.match(home, /setUpcomingEventDate\(cards\[index\], event\.date\)/)
+  assert.match(workforce, /setUpcomingEventDate\(card, schedule\.shift_date\)/)
+  assert.match(google, /setUpcomingEventDate\(card, startDateKey\)/)
+  assert.match(home, /sortUpcomingEventCards\(list\)/)
+  assert.match(workforce, /sortUpcomingEventCards\(list\)/)
+  assert.match(
+    google,
+    /sortUpcomingEventCards\(elements\.upcomingList, \{ limit: UPCOMING_LIMIT \}\)/
+  )
+  assert.doesNotMatch(google, /availableSlots/)
+  assert.match(
+    sorter,
+    /cards\.sort\(\(left, right\) =>[\s\S]*left\.dataset\.eventDate[\s\S]*right\.dataset\.eventDate/
+  )
+  assert.match(sorter, /card\.hidden = index >= limit/)
 })
 
 test('Home schedule entries link back to My Schedule', async () => {

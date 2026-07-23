@@ -7,6 +7,10 @@ import {
   upcomingRecurringTeamEvents
 } from './home-recurring-events.js?v=1'
 import {
+  setUpcomingEventDate,
+  sortUpcomingEventCards
+} from './home-upcoming-events.js?v=1'
+import {
   loadCurrentWorkforceAccess,
   hasWorkforcePermission
 } from './workforce-permissions.js'
@@ -371,6 +375,12 @@ function renderUpcomingEvents() {
       </article>
     `
   }).join('')
+
+  const cards = list.querySelectorAll('.home-static-event-card')
+  events.forEach((event, index) => {
+    setUpcomingEventDate(cards[index], event.date)
+  })
+  sortUpcomingEventCards(list)
 }
 
 function renderCalendar() {

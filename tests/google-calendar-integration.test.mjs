@@ -94,7 +94,7 @@ test('Home exposes Google Calendar controls without browser secrets', async () =
   assert.match(page, /id="googleCalendarDisconnectButton"/)
   assert.match(page, /id="googleCalendarStatus"/)
   assert.match(page, /home-google-calendar\.css\?v=1/)
-  assert.match(page, /home-google-calendar\.js\?v=2/)
+  assert.match(page, /home-google-calendar\.js\?v=3/)
   assert.match(script, /\/google-calendar\/status/)
   assert.match(script, /\/google-calendar\/connect/)
   assert.match(script, /\/google-calendar\/events/)
@@ -104,13 +104,14 @@ test('Home exposes Google Calendar controls without browser secrets', async () =
   assert.doesNotMatch(script, /GOOGLE_TOKEN_ENCRYPTION_KEY/)
 })
 
-test('Home overlays Google events and preserves workforce schedule priority', async () => {
+test('Home overlays Google events and sorts upcoming cards by date', async () => {
   const script = await read('scripts/home-google-calendar.js')
 
   assert.match(script, /home-google-calendar-label/)
   assert.match(script, /has-google-calendar-event/)
   assert.match(script, /if \(!button\.classList\.contains\('has-work-schedule'\)\)/)
-  assert.match(script, /UPCOMING_LIMIT - existingCards/)
+  assert.match(script, /sortUpcomingEventCards/)
+  assert.doesNotMatch(script, /UPCOMING_LIMIT - existingCards/)
   assert.match(script, /home-google-event-card/)
   assert.match(script, /Google Calendar:/)
 })
