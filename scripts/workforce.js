@@ -451,7 +451,7 @@ function applyInviteAccessTypeRules() {
   const adminPermissions = new Set([
     'manage_employees', 'manage_schedules', 'view_team_attendance',
     'correct_attendance', 'approve_attendance', 'approve_leave',
-    'view_workforce_reports', 'manage_payroll'
+    'view_workforce_reports'
   ])
   document.querySelectorAll('#invitePermissionGrid input[type="checkbox"]').forEach(input => {
     if (adminPermissions.has(input.value)) input.checked = isAdmin

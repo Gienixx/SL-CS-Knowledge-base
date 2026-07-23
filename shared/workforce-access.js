@@ -8,7 +8,26 @@ export const WORKFORCE_PERMISSION_KEYS = Object.freeze([
   'view_workforce_reports',
   'manage_announcements',
   'edit_articles',
+  'manage_agent_rates',
+  'create_payroll',
+  'review_payroll',
+  'finalize_payroll',
+  'view_all_payslips',
+  'view_own_payslips',
+  'export_payslips',
+  'reopen_payroll',
   'manage_payroll'
+])
+
+export const PAYROLL_PERMISSION_KEYS = Object.freeze([
+  'manage_agent_rates',
+  'create_payroll',
+  'review_payroll',
+  'finalize_payroll',
+  'view_all_payslips',
+  'view_own_payslips',
+  'export_payslips',
+  'reopen_payroll'
 ])
 
 export const LEGACY_ADMIN_PERMISSION_KEYS = Object.freeze([
@@ -134,6 +153,14 @@ export function normalizeWorkforceAccess(
     can_edit_articles: permissions.edit_articles === true,
     can_manage_announcements: permissions.manage_announcements === true,
     can_manage_payroll: permissions.manage_payroll === true,
+    can_manage_agent_rates: permissions.manage_agent_rates === true,
+    can_create_payroll: permissions.create_payroll === true,
+    can_review_payroll: permissions.review_payroll === true,
+    can_finalize_payroll: permissions.finalize_payroll === true,
+    can_view_all_payslips: permissions.view_all_payslips === true,
+    can_view_own_payslips: permissions.view_own_payslips === true,
+    can_export_payslips: permissions.export_payslips === true,
+    can_reopen_payroll: permissions.reopen_payroll === true,
     can_correct_attendance: permissions.correct_attendance === true,
     can_approve_attendance: permissions.approve_attendance === true,
     legacy: data.legacy && typeof data.legacy === 'object'
@@ -212,6 +239,14 @@ export function createLegacyWorkforceAccess(
       can_edit_articles: permissions.edit_articles,
       can_manage_announcements: false,
       can_manage_payroll: false,
+      can_manage_agent_rates: false,
+      can_create_payroll: false,
+      can_review_payroll: false,
+      can_finalize_payroll: false,
+      can_view_all_payslips: false,
+      can_view_own_payslips: false,
+      can_export_payslips: false,
+      can_reopen_payroll: false,
       can_correct_attendance: false,
       can_approve_attendance: false,
       legacy: {

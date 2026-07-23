@@ -235,7 +235,15 @@
             <label class="wf-check"><input type="checkbox" value="view_workforce_reports"><span>View workforce reports</span></label>
             <label class="wf-check"><input type="checkbox" value="manage_announcements"><span>Manage announcements</span></label>
             <label class="wf-check"><input type="checkbox" value="edit_articles"><span>Edit articles</span></label>
-            <label class="wf-check"><input type="checkbox" value="manage_payroll"><span>Manage payroll</span></label>
+            <label class="wf-check"><input type="checkbox" value="manage_agent_rates"><span>Manage agent rates</span></label>
+            <label class="wf-check"><input type="checkbox" value="create_payroll"><span>Create payroll</span></label>
+            <label class="wf-check"><input type="checkbox" value="review_payroll"><span>Review payroll</span></label>
+            <label class="wf-check"><input type="checkbox" value="finalize_payroll"><span>Finalize payroll</span></label>
+            <label class="wf-check"><input type="checkbox" value="view_all_payslips"><span>View all payslips</span></label>
+            <label class="wf-check"><input type="checkbox" value="view_own_payslips"><span>View own payslips</span></label>
+            <label class="wf-check"><input type="checkbox" value="export_payslips"><span>Export payslips</span></label>
+            <label class="wf-check"><input type="checkbox" value="reopen_payroll"><span>Reopen payroll</span></label>
+            <label class="wf-check"><input type="checkbox" value="manage_payroll"><span>Legacy payroll access</span></label>
           </div>
         </div>
 
@@ -319,11 +327,19 @@
             <label class="wf-check"><input type="checkbox" value="view_workforce_reports"><span>View workforce reports</span></label>
             <label class="wf-check"><input type="checkbox" value="manage_announcements"><span>Manage announcements</span></label>
             <label class="wf-check"><input type="checkbox" value="edit_articles"><span>Edit articles</span></label>
-            <label class="wf-check"><input type="checkbox" value="manage_payroll"><span>Manage payroll</span></label>
+            <label class="wf-check"><input type="checkbox" value="manage_agent_rates"><span>Manage agent rates</span></label>
+            <label class="wf-check"><input type="checkbox" value="create_payroll"><span>Create payroll</span></label>
+            <label class="wf-check"><input type="checkbox" value="review_payroll"><span>Review payroll</span></label>
+            <label class="wf-check"><input type="checkbox" value="finalize_payroll"><span>Finalize payroll</span></label>
+            <label class="wf-check"><input type="checkbox" value="view_all_payslips"><span>View all payslips</span></label>
+            <label class="wf-check"><input type="checkbox" value="view_own_payslips"><span>View own payslips</span></label>
+            <label class="wf-check"><input type="checkbox" value="export_payslips"><span>Export payslips</span></label>
+            <label class="wf-check"><input type="checkbox" value="reopen_payroll"><span>Reopen payroll</span></label>
+            <label class="wf-check"><input type="checkbox" value="manage_payroll"><span>Legacy payroll access</span></label>
           </div>
         </div>
 
-        <p class="wf-note">Name and email changes are synchronized across Supabase Auth, the user profile, compatibility login, and identity link. If synchronization fails, the previous values are restored. Attendance correction and approval permissions apply only to administrators. Payroll access does not include either permission.</p>
+        <p class="wf-note">Name and email changes are synchronized across Supabase Auth, the user profile, compatibility login, and identity link. If synchronization fails, the previous values are restored. Payroll permissions are granted individually and are not included with administrator access. Payroll access does not include either permission.</p>
         <div class="wf-dialog-actions">
           <button class="wf-btn secondary" type="button" data-close="employeeModal">Cancel</button>
           <button class="wf-btn" id="saveEmployeeButton" type="submit">Save User</button>
