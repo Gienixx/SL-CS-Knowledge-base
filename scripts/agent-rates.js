@@ -293,8 +293,10 @@ function renderRateInputPreviews() {
 
 function renderPaypalQuote() {
   const quote = state.paypalQuote
+  const isEstimate = quote?.rateType === 'paypal_estimate'
   paypalFxPanel.classList.toggle('loading', state.paypalQuoteLoading)
   paypalFxPanel.classList.toggle('available', Boolean(quote))
+  paypalFxPanel.classList.toggle('estimated', isEstimate)
   paypalFxPanel.classList.toggle('unavailable', !quote)
   refreshPaypalRateButton.disabled = state.paypalQuoteLoading
 
@@ -303,12 +305,18 @@ function renderPaypalQuote() {
     paypalFxMeta.textContent = 'The quote is requested securely from the server.'
   } else if (quote) {
     paypalFxTitle.textContent =
-      `1 USD = ${phpFormatter.format(quote.exchangeRate)}`
-    const timing = quote.expiresAt
-      ? ` · Expires ${formatDateTime(quote.expiresAt)}`
-      : ''
-    paypalFxMeta.textContent =
-      `Live PayPal quote · Retrieved ${formatDateTime(quote.fetchedAt)}${timing}. PHP values are display-only.`
+      `1 USD ${isEstimate ? '≈' : '='} ${phpFormatter.format(quote.exchangeRate)}`
+
+    if (isEstimate) {
+      paypalFxMeta.textContent =
+        `Estimated PayPal payout conversion · ECB reference ${phpFormatter.format(quote.marketRate)} on ${formatDate(quote.referenceDate)}, reduced by PayPal's published ${quote.spreadPercent}% payment/Payouts spread. PHP values are display-only.`
+    } else {
+      const timing = quote.expiresAt
+        ? ` · Expires ${formatDateTime(quote.expiresAt)}`
+        : ''
+      paypalFxMeta.textContent =
+        `Live PayPal quote · Retrieved ${formatDateTime(quote.fetchedAt)}${timing}. PHP values are display-only.`
+    }
   } else {
     paypalFxTitle.textContent = 'PHP conversion unavailable'
     paypalFxMeta.textContent =
@@ -342,7 +350,14 @@ async function loadPaypalQuote() {
         result?.error || 'The live PayPal rate could not be loaded.'
     } else {
       state.paypalQuote = {
+        source: result.source,
+        rateType: result.rateType,
         exchangeRate: Number(result.exchangeRate),
+        marketRate: Number(result.marketRate),
+        spreadPercent: Number(result.spreadPercent),
+        referenceSource: result.referenceSource,
+        referenceProvider: result.referenceProvider,
+        referenceDate: result.referenceDate,
         fetchedAt: result.fetchedAt,
         expiresAt: result.expiresAt,
         refreshesAt: result.refreshesAt

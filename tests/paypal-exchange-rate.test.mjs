@@ -3,24 +3,43 @@ import { readFile } from 'node:fs/promises'
 import test from 'node:test'
 
 import {
+  fetchEstimatedPayPalUsdPhpQuote,
   fetchPayPalUsdPhpQuote,
   paypalFxConfigured
 } from '../functions/api/paypal-exchange-rate.js'
 
 const middlewareUrl = new URL('../functions/_middleware.js', import.meta.url)
 
-test('PayPal FX integration requires server-side credentials', async () => {
-  let fetchCalled = false
-  const result = await fetchPayPalUsdPhpQuote({}, async () => {
-    fetchCalled = true
+test('missing PayPal access falls back to an ECB rate with the published spread', async () => {
+  const requests = []
+  const result = await fetchPayPalUsdPhpQuote({}, async (url, options) => {
+    requests.push({ url, options })
+    return new Response(JSON.stringify({
+      date: '2026-07-22',
+      base: 'USD',
+      quote: 'PHP',
+      rate: 61.763
+    }), {
+      status: 200,
+      headers: { 'Content-Type': 'application/json' }
+    })
   })
 
   assert.equal(paypalFxConfigured({}), false)
-  assert.equal(fetchCalled, false)
-  assert.equal(result.status, 503)
+  assert.equal(requests.length, 1)
+  assert.equal(
+    requests[0].url,
+    'https://api.frankfurter.dev/v2/rate/USD/PHP?providers=ECB'
+  )
+  assert.equal(result.status, 200)
   assert.equal(result.data.configured, false)
+  assert.equal(result.data.rateType, 'paypal_estimate')
   assert.equal(result.data.baseCurrency, 'USD')
   assert.equal(result.data.quoteCurrency, 'PHP')
+  assert.equal(result.data.marketRate, 61.763)
+  assert.equal(result.data.spreadPercent, 4)
+  assert.equal(result.data.exchangeRate, 59.29248)
+  assert.equal(result.data.referenceSource, 'European Central Bank')
 })
 
 test('PayPal FX integration requests and returns a live USD to PHP quote', async () => {
@@ -54,6 +73,7 @@ test('PayPal FX integration requests and returns a live USD to PHP quote', async
 
   assert.equal(result.status, 200)
   assert.equal(result.data.exchangeRate, 58.123456)
+  assert.equal(result.data.rateType, 'paypal_live')
   assert.equal(requests.length, 2)
   assert.equal(requests[0].url, 'https://api-m.paypal.com/v1/oauth2/token')
   assert.match(requests[0].options.headers.Authorization, /^Basic /)
@@ -71,7 +91,7 @@ test('PayPal FX integration requests and returns a live USD to PHP quote', async
   })
 })
 
-test('PayPal FX eligibility failures are reported without leaking details', async () => {
+test('PayPal FX eligibility failures fall back without leaking details', async () => {
   const responses = [
     new Response(JSON.stringify({ access_token: 'server-token' }), {
       status: 200,
@@ -79,6 +99,15 @@ test('PayPal FX eligibility failures are reported without leaking details', asyn
     }),
     new Response(JSON.stringify({ name: 'NOT_AUTHORIZED' }), {
       status: 403,
+      headers: { 'Content-Type': 'application/json' }
+    }),
+    new Response(JSON.stringify({
+      date: '2026-07-22',
+      base: 'USD',
+      quote: 'PHP',
+      rate: 61.763
+    }), {
+      status: 200,
       headers: { 'Content-Type': 'application/json' }
     })
   ]
@@ -88,10 +117,29 @@ test('PayPal FX eligibility failures are reported without leaking details', asyn
     PAYPAL_CLIENT_SECRET: 'client-secret'
   }, async () => responses.shift())
 
-  assert.equal(result.status, 503)
+  assert.equal(result.status, 200)
   assert.equal(result.data.configured, true)
-  assert.match(result.data.error, /not enabled for live FX quotes/)
+  assert.equal(result.data.rateType, 'paypal_estimate')
+  assert.equal(result.data.exchangeRate, 59.29248)
   assert.doesNotMatch(JSON.stringify(result.data), /client-id|client-secret|server-token/)
+})
+
+test('the fallback fails closed when the official reference is unavailable', async () => {
+  const result = await fetchEstimatedPayPalUsdPhpQuote(
+    async () => new Response(JSON.stringify({ rate: 'invalid' }), {
+      status: 502,
+      headers: { 'Content-Type': 'application/json' }
+    }),
+    {
+      configured: false,
+      unavailableStatus: 503,
+      unavailableError: 'No reliable conversion is available.'
+    }
+  )
+
+  assert.equal(result.status, 503)
+  assert.equal(result.data.exchangeRate, undefined)
+  assert.equal(result.data.error, 'No reliable conversion is available.')
 })
 
 test('PayPal FX endpoint requires the payroll rate permission', async () => {

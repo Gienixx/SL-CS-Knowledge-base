@@ -127,6 +127,11 @@ test('USD is canonical and PHP is a live PayPal display conversion', async () =>
   assert.match(script, /currency: 'PHP'/)
   assert.match(script, /fetch\('\.\/api\/paypal-exchange-rate'/)
   assert.match(script, /Authorization: `Bearer \$\{state\.accessToken\}`/)
+  assert.match(script, /quote\?\.rateType === 'paypal_estimate'/)
+  assert.match(
+    script,
+    /PayPal's published \$\{quote\.spreadPercent\}% payment\/Payouts spread/
+  )
   assert.doesNotMatch(page, /effective-dated PHP pay rates/)
 })
 

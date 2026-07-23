@@ -7,6 +7,8 @@
 .rate-fx-panel p{margin:4px 0 0;color:#6a6a81;font-size:.69rem;line-height:1.45}
 .rate-fx-panel.available{border-color:#ccecdf;background:#f3fcf8}
 .rate-fx-panel.available .rate-section-kicker{color:#168565}
+.rate-fx-panel.estimated{border-color:#eed8aa;background:#fffaf0}
+.rate-fx-panel.estimated .rate-section-kicker{color:#9a6500}
 .rate-fx-panel.unavailable{border-color:#f1dec0;background:#fffaf1}
 .rate-fx-panel.unavailable .rate-section-kicker{color:#9a6500}
 .rate-fx-panel.loading{opacity:.8}
