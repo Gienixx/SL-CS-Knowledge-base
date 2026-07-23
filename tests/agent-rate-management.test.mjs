@@ -10,6 +10,10 @@ const usdMigrationUrl = new URL(
   '../supabase/migrations/20260723081057_use_usd_payroll_currency.sql',
   import.meta.url
 )
+const hourlyDerivationMigrationUrl = new URL(
+  '../supabase/migrations/20260723091517_derive_agent_rates_from_hourly.sql',
+  import.meta.url
+)
 const pageUrl = new URL('../agent-rates.html', import.meta.url)
 const scriptUrl = new URL('../scripts/agent-rates.js', import.meta.url)
 const homeUrl = new URL('../home.html', import.meta.url)
@@ -133,6 +137,43 @@ test('USD is canonical and PHP is a live PayPal display conversion', async () =>
     /PayPal's published \$\{quote\.spreadPercent\}% payment\/Payouts spread/
   )
   assert.doesNotMatch(page, /effective-dated PHP pay rates/)
+})
+
+test('daily and monthly rates are derived from hourly in the browser and database', async () => {
+  const [migration, page, script] = await Promise.all([
+    readFile(hourlyDerivationMigrationUrl, 'utf8'),
+    readFile(pageUrl, 'utf8'),
+    readFile(scriptUrl, 'utf8')
+  ])
+
+  assert.match(script, /const PAID_HOURS_PER_DAY = 8/)
+  assert.match(script, /const WORK_DAYS_PER_MONTH = 22/)
+  assert.match(
+    script,
+    /dailyInput\.value = formatCalculatedRate\([\s\S]*?hourlyRate \* PAID_HOURS_PER_DAY/
+  )
+  assert.match(
+    script,
+    /monthlyInput\.value = formatCalculatedRate\([\s\S]*?hourlyRate \* PAID_HOURS_PER_MONTH/
+  )
+  assert.match(page, /id="dailyRate"[\s\S]*?readonly/)
+  assert.match(page, /id="monthlyRate"[\s\S]*?readonly/)
+  assert.match(
+    migration,
+    /new\.daily_rate := round\(new\.hourly_rate \* 8, 4\)/
+  )
+  assert.match(
+    migration,
+    /new\.monthly_rate := round\(new\.hourly_rate \* 176, 4\)/
+  )
+  assert.match(
+    migration,
+    /create trigger agent_rates_derive_from_hourly[\s\S]*before insert on public\.agent_rates/
+  )
+  assert.match(
+    migration,
+    /revoke all on function public\.payroll_derive_agent_rates_from_hourly\(\)[\s\S]*from public, anon, authenticated/
+  )
 })
 
 test('home navigation reveals Agent Rates only through manage_agent_rates', async () => {

@@ -56,6 +56,8 @@
 .rate-money-input{position:relative;display:block}
 .rate-money-input i{position:absolute;z-index:1;left:12px;top:50%;translate:0 -50%;color:#8a8aa3;font-style:normal;font-size:.8rem}
 .rate-money-input .wf-control{padding-left:28px;font-family:'JetBrains Mono',monospace;font-size:.75rem}
+.rate-money-input .rate-auto-value{border-style:dashed;background:#f7f6fb;color:#56566e;cursor:not-allowed}
+.rate-auto-formula{display:block;margin-top:5px;color:#6c5ce0;font-size:.61rem;line-height:1.35}
 .rate-php-preview{display:block;min-height:1em;margin-top:5px;color:#168565;font-family:'JetBrains Mono',monospace;font-size:.61rem}
 .rate-field-help{color:#8a8aa3;font-size:.67rem}
 .rate-form-footer{display:flex;align-items:center;justify-content:space-between;gap:18px;padding:13px 14px;border-radius:12px;background:#fff8ea}

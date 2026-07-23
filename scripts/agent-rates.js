@@ -1,6 +1,10 @@
 import { supabase } from './supabaseClient.js?v=10'
 import { requireWorkforcePermission } from './workforce-permissions.js?v=1'
 
+const PAID_HOURS_PER_DAY = 8
+const WORK_DAYS_PER_MONTH = 22
+const PAID_HOURS_PER_MONTH = PAID_HOURS_PER_DAY * WORK_DAYS_PER_MONTH
+
 const state = {
   employees: [],
   selectedEmployeeId: '',
@@ -289,6 +293,35 @@ function renderRateInputPreviews() {
     const preview = document.querySelector(`[data-php-preview-for="${inputId}"]`)
     preview.textContent = formatPhpConversion(input.value)
   }
+}
+
+function formatCalculatedRate(value) {
+  return Number(value.toFixed(4)).toString()
+}
+
+function updateCalculatedBaseRates() {
+  const hourlyInput = document.getElementById('hourlyRate')
+  const dailyInput = document.getElementById('dailyRate')
+  const monthlyInput = document.getElementById('monthlyRate')
+  const hourlyRate = Number(hourlyInput.value)
+
+  if (
+    hourlyInput.value.trim() === '' ||
+    !Number.isFinite(hourlyRate) ||
+    hourlyRate < 0
+  ) {
+    dailyInput.value = ''
+    monthlyInput.value = ''
+  } else {
+    dailyInput.value = formatCalculatedRate(
+      hourlyRate * PAID_HOURS_PER_DAY
+    )
+    monthlyInput.value = formatCalculatedRate(
+      hourlyRate * PAID_HOURS_PER_MONTH
+    )
+  }
+
+  renderRateInputPreviews()
 }
 
 function renderPaypalQuote() {
@@ -672,6 +705,10 @@ rateForm.addEventListener('submit', submitRate)
 for (const inputId of rateInputIds) {
   document.getElementById(inputId).addEventListener('input', renderRateInputPreviews)
 }
+document.getElementById('hourlyRate').addEventListener(
+  'input',
+  updateCalculatedBaseRates
+)
 document.getElementById('rateEffectiveDate').value = localToday()
 
 async function initializeAgentRates() {
