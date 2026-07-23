@@ -79,9 +79,26 @@ test('Announcement dialog uses the wider responsive layout', async () => {
   const page = await read('home.html')
   const stylesheet = await read('styles/home-reference-redesign.css')
 
-  assert.match(page, /home-reference-redesign\.css\?v=16/)
+  assert.match(page, /home-reference-redesign\.css\?v=17/)
   assert.match(stylesheet, /\.announcement-dialog\s*\{[^}]*width:\s*min\(900px, calc\(100vw - 64px\)\)/)
   assert.match(stylesheet, /@media \(max-width: 680px\)[\s\S]*\.announcement-dialog\s*\{[^}]*width:\s*calc\(100vw - 32px\)/)
+})
+
+test('Home gives more desktop width to updates and equal lower panels', async () => {
+  const stylesheet = await read('styles/home-reference-redesign.css')
+
+  assert.match(
+    stylesheet,
+    /\.cols\s*\{[^}]*grid-template-columns:\s*minmax\(0, 1\.65fr\) minmax\(300px, 1fr\)/
+  )
+  assert.match(
+    stylesheet,
+    /\.home-lower-panels\s*\{[^}]*grid-template-columns:\s*1fr 1fr/
+  )
+  assert.match(
+    stylesheet,
+    /@media \(max-width: 1000px\)[\s\S]*\.cols\s*\{[^}]*grid-template-columns:\s*1fr/
+  )
 })
 
 test('Announcement records use RLS for published reads and admin writes', async () => {
