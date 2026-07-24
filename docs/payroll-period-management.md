@@ -10,6 +10,7 @@ Step 5 introduces the controlled setup stage for each payroll run.
 - Load all active and on-leave agents into the new period.
 - Open a period and review employee-by-employee rate and attendance readiness.
 - See missing rates, incomplete attendance, missing attendance entries, missing clock-outs, and records awaiting approval.
+- Open a missing attendance entry in Team Attendance, filtered to the affected employee and work date, when they also have attendance-view permission.
 
 ## Access boundary
 
@@ -20,6 +21,8 @@ The pages require at least one of `create_payroll`, `review_payroll`,
 General administrator access does not grant access to these pages. Browser
 users cannot insert directly into `payroll_periods` or `payroll_records`; draft
 creation runs through the audited `payroll_create_period` database operation.
+Payroll-only users see attendance exceptions without receiving links into Team
+Attendance or gaining attendance correction access.
 
 ## Data boundary
 

@@ -15,6 +15,8 @@ const state = {
   periodId: new URLSearchParams(window.location.search).get('id') || '',
   period: null,
   employees: [],
+  missingAttendance: new Map(),
+  canViewAttendance: false,
   loading: false
 }
 
@@ -92,6 +94,20 @@ function employeeHasAttendanceIssue(employee) {
     Number(employee.incomplete_attendance_count || 0) > 0 ||
     Number(employee.missing_attendance_count || 0) > 0
   )
+}
+
+function missingAttendanceFor(employee) {
+  return state.missingAttendance.get(employee.employee_user_id) || []
+}
+
+function teamAttendanceUrl(employeeId, workDate) {
+  const params = new URLSearchParams({
+    employee: employeeId,
+    start: workDate,
+    end: workDate,
+    source: 'payroll-missing'
+  })
+  return `./team-attendance.html?${params}`
 }
 
 function renderMetrics() {
@@ -184,13 +200,26 @@ function attendanceStatus(employee) {
     Number(employee.incomplete_attendance_count || 0) +
     Number(employee.missing_attendance_count || 0)
   const wrap = element('div')
-  wrap.append(
-    element(
-      'span',
-      `payroll-data-status ${issueCount ? 'warning' : 'ready'}`,
-      issueCount ? 'Incomplete' : 'Complete'
-    )
+  const missingEntries = missingAttendanceFor(employee)
+  const statusTag =
+    issueCount && state.canViewAttendance && missingEntries.length ? 'a' : 'span'
+  const status = element(
+    statusTag,
+    `payroll-data-status ${issueCount ? 'warning' : 'ready'}${statusTag === 'a' ? ' payroll-data-status-link' : ''}`,
+    issueCount ? 'Incomplete' : 'Complete'
   )
+  if (statusTag === 'a') {
+    status.href = teamAttendanceUrl(
+      employee.employee_user_id,
+      missingEntries[0].work_date
+    )
+    status.title = 'Open the missing attendance date in Team Attendance'
+    status.setAttribute(
+      'aria-label',
+      `Open missing attendance for ${employee.employee_name || employee.employee_email} on ${formatDate(missingEntries[0].work_date)}`
+    )
+  }
+  wrap.append(status)
 
   const notes = []
   if (employee.missing_clock_out_count) {
@@ -199,11 +228,36 @@ function attendanceStatus(employee) {
   if (employee.pending_review_count) {
     notes.push(`${employee.pending_review_count} awaiting review`)
   }
-  if (employee.missing_attendance_count) {
-    notes.push(`${employee.missing_attendance_count} missing entry`)
-  }
   if (notes.length) {
     wrap.append(element('small', 'payroll-cell-note', notes.join(' · ')))
+  }
+  if (employee.missing_attendance_count) {
+    const missingCount = Number(employee.missing_attendance_count)
+    const note = element('small', 'payroll-cell-note')
+    note.append(
+      document.createTextNode(
+        `${missingCount} missing ${missingCount === 1 ? 'entry' : 'entries'}`
+      )
+    )
+
+    if (state.canViewAttendance && missingEntries.length) {
+      note.append(document.createTextNode(' · '))
+      missingEntries.forEach((entry, index) => {
+        if (index) note.append(document.createTextNode(', '))
+        const link = element(
+          'a',
+          'payroll-missing-date-link',
+          formatDate(entry.work_date)
+        )
+        link.href = teamAttendanceUrl(
+          employee.employee_user_id,
+          entry.work_date
+        )
+        link.title = 'Open this missing attendance date'
+        note.append(link)
+      })
+    }
+    wrap.append(note)
   }
   return wrap
 }
@@ -291,17 +345,25 @@ async function loadPeriod() {
   elements.refresh.disabled = true
   setMessage('Checking rates and attendance readiness…')
 
-  const [dashboardResult, readinessResult] = await Promise.all([
-    supabase.rpc('payroll_get_period_dashboard'),
-    supabase.rpc('payroll_get_period_employee_readiness', {
-      p_payroll_period_id: state.periodId
-    })
-  ])
+  const [dashboardResult, readinessResult, missingAttendanceResult] =
+    await Promise.all([
+      supabase.rpc('payroll_get_period_dashboard'),
+      supabase.rpc('payroll_get_period_employee_readiness', {
+        p_payroll_period_id: state.periodId
+      }),
+      supabase.rpc('payroll_get_period_missing_attendance', {
+        p_payroll_period_id: state.periodId
+      })
+    ])
 
   state.loading = false
   elements.refresh.disabled = false
 
-  if (dashboardResult.error || readinessResult.error) {
+  if (
+    dashboardResult.error ||
+    readinessResult.error ||
+    missingAttendanceResult.error
+  ) {
     setMessage(
       'Payroll readiness could not be loaded. Refresh or contact a system administrator.',
       'error'
@@ -319,6 +381,12 @@ async function loadPeriod() {
   }
 
   state.employees = readinessResult.data || []
+  state.missingAttendance = new Map()
+  for (const entry of missingAttendanceResult.data || []) {
+    const rows = state.missingAttendance.get(entry.employee_user_id) || []
+    rows.push(entry)
+    state.missingAttendance.set(entry.employee_user_id, rows)
+  }
   renderAll()
   setMessage('')
 }
@@ -345,6 +413,10 @@ async function initialize() {
       return
     }
 
+    state.canViewAttendance = hasWorkforcePermission(
+      access,
+      'view_team_attendance'
+    )
     document.body.classList.remove('payroll-access-pending')
     await loadPeriod()
   } catch {

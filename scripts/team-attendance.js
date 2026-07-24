@@ -84,6 +84,17 @@ function defaultDateRange() {
   return { start: `${today.slice(0, 7)}-01`, end: today }
 }
 
+function isValidUuid(value) {
+  return /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(value)
+}
+
+function isValidDateKey(value) {
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(value)) return false
+  const date = parseDateKey(value)
+  return !Number.isNaN(date.getTime()) &&
+    date.toISOString().slice(0, 10) === value
+}
+
 function parseDateKey(value) {
   const [year, month, day] = String(value).split('-').map(Number)
   return new Date(Date.UTC(year, month - 1, day))
@@ -91,6 +102,26 @@ function parseDateKey(value) {
 
 function dateRangeDays(start, end) {
   return Math.floor((parseDateKey(end) - parseDateKey(start)) / 86400000)
+}
+
+function payrollAttendanceLinkFilters() {
+  const params = new URLSearchParams(window.location.search)
+  const employee = params.get('employee') || ''
+  const start = params.get('start') || ''
+  const end = params.get('end') || ''
+
+  if (
+    params.get('source') !== 'payroll-missing' ||
+    !isValidUuid(employee) ||
+    !isValidDateKey(start) ||
+    !isValidDateKey(end) ||
+    end < start ||
+    dateRangeDays(start, end) > 366
+  ) {
+    return null
+  }
+
+  return { employee, start, end }
 }
 
 function validateDateRange() {
@@ -1141,13 +1172,36 @@ async function initialize() {
     access.is_admin === true && hasWorkforcePermission(access, 'manage_schedules')
   )
 
-  const range = defaultDateRange()
+  const linkedFilters = payrollAttendanceLinkFilters()
+  const range = linkedFilters || defaultDateRange()
   elements.startDate.value = range.start
   elements.endDate.value = range.end
   bindEvents()
 
   await loadReferenceData()
+  if (
+    linkedFilters &&
+    [...elements.employeeFilter.options].some(
+      option => option.value === linkedFilters.employee
+    )
+  ) {
+    elements.employeeFilter.value = linkedFilters.employee
+    const advancedFilters = document.querySelector(
+      '.team-attendance-advanced-filters'
+    )
+    if (advancedFilters) advancedFilters.open = true
+  }
   await refreshAttendance()
+
+  if (linkedFilters) {
+    const employee = employees.find(
+      candidate => candidate.user_id === linkedFilters.employee
+    )
+    setMessage(
+      elements.filterMessage,
+      `Payroll exception: attendance is missing for ${employee?.full_name || 'this employee'} on ${formatDate(linkedFilters.start)}. The page is filtered to the affected employee and work date.`
+    )
+  }
 }
 
 initialize().catch(error => {

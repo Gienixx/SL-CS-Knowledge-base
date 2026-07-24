@@ -408,7 +408,17 @@ body { margin: 0; background-image: none; }
 .payroll-data-status.missing::before { background: var(--payroll-red); }
 .payroll-data-status.warning { color: var(--payroll-amber); }
 .payroll-data-status.warning::before { background: var(--payroll-amber); }
+.payroll-data-status-link { text-decoration: none; }
+.payroll-data-status-link:hover,
+.payroll-data-status-link:focus-visible { text-decoration: underline; }
 .payroll-cell-note { display: block; margin-top: 3px; color: var(--payroll-muted); font-size: 9px; }
+.payroll-missing-date-link {
+  color: var(--payroll-blue);
+  font-weight: 700;
+  text-decoration: none;
+}
+.payroll-missing-date-link:hover,
+.payroll-missing-date-link:focus-visible { text-decoration: underline; }
 .payroll-readiness-badge.ready { color: var(--payroll-green); background: var(--payroll-green-soft); }
 .payroll-readiness-badge.attention { color: var(--payroll-red); background: var(--payroll-red-soft); }
 

@@ -133,6 +133,48 @@ test('employee readiness identifies missing rates and incomplete attendance', as
   )
 })
 
+test('missing attendance links open the exact employee and work date only for attendance viewers', async () => {
+  const [migration, periodPage, periodScript, attendancePage, attendanceScript] =
+    await Promise.all([
+      read('supabase/migrations/20260724103215_payroll_missing_attendance_links.sql'),
+      read('payroll-period.html'),
+      read('scripts/payroll-period.js'),
+      read('team-attendance.html'),
+      read('scripts/team-attendance.js')
+    ])
+
+  assert.match(
+    migration,
+    /create or replace function public\.payroll_get_period_missing_attendance\(/
+  )
+  assert.match(
+    migration,
+    /not exists \([\s\S]*?attendance_row\.schedule_id = schedule\.id/
+  )
+  assert.match(
+    migration,
+    /revoke all on function public\.payroll_get_period_missing_attendance\(uuid\)[\s\S]*?from public, anon/
+  )
+  assert.doesNotMatch(migration, /hourly_rate|daily_rate|monthly_rate|salary/)
+
+  assert.match(periodPage, /scripts\/payroll-period\.js\?v=2/)
+  assert.match(
+    periodScript,
+    /supabase\.rpc\('payroll_get_period_missing_attendance'/
+  )
+  assert.match(
+    periodScript,
+    /state\.canViewAttendance = hasWorkforcePermission\(\s*access,\s*'view_team_attendance'/
+  )
+  assert.match(periodScript, /source: 'payroll-missing'/)
+  assert.match(attendancePage, /scripts\/team-attendance\.js\?v=7/)
+  assert.match(attendanceScript, /function payrollAttendanceLinkFilters\(\)/)
+  assert.match(
+    attendanceScript,
+    /elements\.employeeFilter\.value = linkedFilters\.employee/
+  )
+})
+
 test('payroll pages require explicit processing permissions and Home hides the link', async () => {
   const [dashboardScript, periodScript, home, homeNavigation] =
     await Promise.all([
