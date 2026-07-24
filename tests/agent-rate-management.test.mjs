@@ -18,10 +18,7 @@ const pageUrl = new URL('../agent-rates.html', import.meta.url)
 const scriptUrl = new URL('../scripts/agent-rates.js', import.meta.url)
 const styleUrl = new URL('../styles/agent-rates.css', import.meta.url)
 const homeUrl = new URL('../home.html', import.meta.url)
-const homeNavigationUrl = new URL(
-  '../scripts/home-workforce-nav.js',
-  import.meta.url
-)
+const payrollDashboardUrl = new URL('../payroll-dashboard.html', import.meta.url)
 
 test('agent rate history is immutable at the database boundary', async () => {
   const migration = await readFile(migrationUrl, 'utf8')
@@ -220,22 +217,21 @@ test('generated base rates stay blank and aligned until hourly is entered', asyn
   assert.match(script, /if \(payload\.p_hourly_rate === null\)/)
 })
 
-test('home navigation reveals Agent Rates only through manage_agent_rates', async () => {
-  const [home, navigation] = await Promise.all([
+test('Agent Rates is reached through the payroll dashboard instead of Home', async () => {
+  const [home, page, payrollDashboard] = await Promise.all([
     readFile(homeUrl, 'utf8'),
-    readFile(homeNavigationUrl, 'utf8')
+    readFile(pageUrl, 'utf8'),
+    readFile(payrollDashboardUrl, 'utf8')
   ])
 
+  assert.doesNotMatch(home, /homeAgentRatesBtn|href="\.\/agent-rates\.html"/)
+  assert.match(home, /scripts\/home-workforce-nav\.js\?v=6/)
   assert.match(
-    home,
-    /id="homeAgentRatesBtn"[\s\S]*href="\.\/agent-rates\.html"[\s\S]*hidden/
+    page,
+    /href="\.\/payroll-dashboard\.html">← Back to payroll dashboard<\/a>/
   )
   assert.match(
-    navigation,
-    /canManageAgentRates = hasWorkforcePermission\([\s\S]*?'manage_agent_rates'/
-  )
-  assert.match(
-    navigation,
-    /agentRatesButton\.hidden = !canManageAgentRates/
+    payrollDashboard,
+    /id="payrollAgentRatesLink"[\s\S]*href="\.\/agent-rates\.html"[\s\S]*hidden/
   )
 })

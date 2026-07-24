@@ -12,7 +12,6 @@ async function configureHomeWorkforceNavigation() {
   const workforceManagementButton = document.getElementById(
     'homeWorkforceManagementBtn'
   )
-  const agentRatesButton = document.getElementById('homeAgentRatesBtn')
   const payrollDashboardButton = document.getElementById(
     'homePayrollDashboardBtn'
   )
@@ -23,7 +22,6 @@ async function configureHomeWorkforceNavigation() {
     !leaveRequestsButton &&
     !teamAttendanceButton &&
     !workforceManagementButton &&
-    !agentRatesButton &&
     !payrollDashboardButton
   ) {
     return
@@ -49,10 +47,6 @@ async function configureHomeWorkforceNavigation() {
     const canManageEmployees =
       access.is_admin === true &&
       hasWorkforcePermission(access, 'manage_employees')
-    const canManageAgentRates = hasWorkforcePermission(
-      access,
-      'manage_agent_rates'
-    )
     const canAccessPayrollDashboard = [
       'create_payroll',
       'review_payroll',
@@ -78,10 +72,6 @@ async function configureHomeWorkforceNavigation() {
 
     if (workforceManagementButton) {
       workforceManagementButton.hidden = !canManageEmployees
-    }
-
-    if (agentRatesButton) {
-      agentRatesButton.hidden = !canManageAgentRates
     }
 
     if (payrollDashboardButton) {

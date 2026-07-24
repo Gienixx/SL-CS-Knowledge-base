@@ -200,7 +200,7 @@ test('payroll pages require explicit processing permissions and Home hides the l
     home,
     /id="homePayrollDashboardBtn"[\s\S]*?href="\.\/payroll-dashboard\.html"[\s\S]*?hidden/
   )
-  assert.match(home, /home-workforce-nav\.js\?v=5/)
+  assert.match(home, /home-workforce-nav\.js\?v=6/)
   assert.match(
     homeNavigation,
     /canAccessPayrollDashboard = \[[\s\S]*?'create_payroll'[\s\S]*?\.some\(permission => hasWorkforcePermission\(access, permission\)\)/
