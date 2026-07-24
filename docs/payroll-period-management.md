@@ -29,6 +29,7 @@ Attendance or gaining attendance correction access.
 Step 5 creates the period and one draft payroll record for each eligible
 employee. It does not copy attendance into payroll.
 
-Approved attendance is imported into immutable payroll attendance snapshots in
-Step 6. Readiness displayed in Step 5 is a live pre-import check and does not
-change attendance or payroll calculations.
+Approved attendance is imported into immutable, versioned payroll attendance
+snapshots in Step 6. Readiness remains a live check; the period page now also
+shows which current attendance versions have been preserved. Changes after
+import flag non-finalized payroll records for recalculation.

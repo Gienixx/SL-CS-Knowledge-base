@@ -365,6 +365,56 @@ body { margin: 0; background-image: none; }
   font-weight: 700;
 }
 
+.payroll-import-heading {
+  align-items: center;
+}
+
+.payroll-import-stats {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 10px;
+}
+
+.payroll-import-stats > div {
+  padding: 12px 14px;
+  border-radius: 10px;
+  background: var(--payroll-bg);
+}
+
+.payroll-import-stats span,
+.payroll-import-stats strong {
+  display: block;
+}
+
+.payroll-import-stats span {
+  margin-bottom: 4px;
+  color: var(--payroll-muted);
+  font-size: 9px;
+  font-weight: 700;
+  text-transform: uppercase;
+}
+
+.payroll-import-stats strong {
+  color: var(--payroll-text);
+  font-size: 18px;
+}
+
+.payroll-import-status {
+  margin: 12px 0 0;
+  color: var(--payroll-copy);
+  font-size: 11px;
+  line-height: 1.45;
+}
+
+.payroll-import-status.warning {
+  color: var(--payroll-amber);
+  font-weight: 650;
+}
+
+.payroll-import-status.ready {
+  color: var(--payroll-green);
+}
+
 .payroll-table-wrap { overflow-x: auto; border: 1px solid var(--payroll-border); border-radius: 10px; }
 .payroll-readiness-table {
   width: 100%;
@@ -424,6 +474,7 @@ body { margin: 0; background-image: none; }
 
 @media (max-width: 900px) {
   .payroll-metrics { grid-template-columns: 1fr 1fr; }
+  .payroll-import-stats { grid-template-columns: 1fr 1fr 1fr; }
   .payroll-period-form { grid-template-columns: 1fr 1fr; }
   .payroll-period-form .payroll-button { min-height: 40px; }
   .payroll-period-date-grid { grid-template-columns: 1fr 1fr; }
@@ -439,6 +490,7 @@ body { margin: 0; background-image: none; }
   .payroll-header-actions { width: 100%; justify-content: flex-start; }
   .payroll-header-actions .payroll-button { flex: 1; }
   .payroll-metrics,
+  .payroll-import-stats,
   .payroll-period-form,
   .payroll-period-date-grid,
   .payroll-period-row { grid-template-columns: 1fr; }

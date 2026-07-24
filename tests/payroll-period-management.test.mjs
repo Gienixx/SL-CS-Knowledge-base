@@ -94,7 +94,10 @@ test('payroll dashboard and period pages expose the complete Step 5 workflow', a
     periodScript,
     /supabase\.rpc\('payroll_get_period_employee_readiness'/
   )
-  assert.match(period, /Approved attendance will be copied into payroll snapshots in Step 6/)
+  assert.match(
+    period,
+    /Imported counts show the current attendance versions preserved/
+  )
   assert.doesNotMatch(period, /Hourly rate|Daily rate|Monthly rate|Salary/)
 })
 
@@ -157,7 +160,7 @@ test('missing attendance links open the exact employee and work date only for at
   )
   assert.doesNotMatch(migration, /hourly_rate|daily_rate|monthly_rate|salary/)
 
-  assert.match(periodPage, /scripts\/payroll-period\.js\?v=2/)
+  assert.match(periodPage, /scripts\/payroll-period\.js\?v=3/)
   assert.match(
     periodScript,
     /supabase\.rpc\('payroll_get_period_missing_attendance'/

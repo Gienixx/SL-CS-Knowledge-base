@@ -16,13 +16,18 @@ const state = {
   period: null,
   employees: [],
   missingAttendance: new Map(),
+  importStatuses: new Map(),
   canViewAttendance: false,
-  loading: false
+  canImportAttendance: false,
+  loading: false,
+  importing: false
 }
 
 const elements = {
   message: document.getElementById('payrollPeriodMessage'),
   refresh: document.getElementById('refreshPayrollPeriodButton'),
+  importButton: document.getElementById('importPayrollAttendanceButton'),
+  importStatus: document.getElementById('payrollImportStatus'),
   body: document.getElementById('payrollReadinessBody'),
   exceptionSummary: document.getElementById('payrollExceptionSummary'),
   exceptionTitle: document.getElementById('payrollExceptionTitle'),
@@ -87,6 +92,14 @@ function renderPeriod() {
   const status = document.getElementById('payrollDetailStatus')
   status.className = `payroll-status-badge ${period.period_status}`
   status.textContent = statusLabel(period.period_status)
+
+  const importable = ['draft', 'reopened'].includes(period.period_status)
+  elements.importButton.hidden = !state.canImportAttendance
+  elements.importButton.disabled =
+    state.loading || state.importing || !importable
+  elements.importButton.title = importable
+    ? 'Copy current payroll-ready attendance into immutable snapshots'
+    : 'Attendance can only be imported into draft or reopened payroll periods'
 }
 
 function employeeHasAttendanceIssue(employee) {
@@ -172,6 +185,60 @@ function renderExceptions() {
   addExceptionChip(fragment, missingClockOuts, 'missing clock-outs')
   addExceptionChip(fragment, pendingReviews, 'awaiting review')
   elements.exceptionChips.replaceChildren(fragment)
+}
+
+function importStatusFor(employee) {
+  return state.importStatuses.get(employee.employee_user_id) || {
+    imported_attendance_count: 0,
+    current_snapshot_count: 0,
+    outdated_snapshot_count: 0,
+    requires_recalculation: false,
+    recalculation_reason: ''
+  }
+}
+
+function renderImportStatus() {
+  const statuses = [...state.importStatuses.values()]
+  const readyAttendanceCount = state.employees.reduce(
+    (total, employee) =>
+      total + Number(employee.payroll_ready_attendance_count || 0),
+    0
+  )
+  const currentSnapshotCount = statuses.reduce(
+    (total, status) => total + Number(status.current_snapshot_count || 0),
+    0
+  )
+  const importedEmployeeCount = statuses.filter(
+    status => Number(status.current_snapshot_count || 0) > 0
+  ).length
+  const recalculationFlagCount = statuses.filter(
+    status => status.requires_recalculation
+  ).length
+
+  document.getElementById('payrollCurrentSnapshotCount').textContent =
+    currentSnapshotCount
+  document.getElementById('payrollImportedEmployeeCount').textContent =
+    importedEmployeeCount
+  document.getElementById('payrollRecalculationFlagCount').textContent =
+    recalculationFlagCount
+
+  elements.importStatus.className = 'payroll-import-status'
+  if (recalculationFlagCount) {
+    elements.importStatus.textContent =
+      `${recalculationFlagCount} payroll ${recalculationFlagCount === 1 ? 'record requires' : 'records require'} recalculation because attendance changed after import.`
+    elements.importStatus.classList.add('warning')
+  } else if (!currentSnapshotCount) {
+    elements.importStatus.textContent =
+      'No attendance snapshots have been imported yet.'
+  } else if (currentSnapshotCount < readyAttendanceCount) {
+    elements.importStatus.textContent =
+      `${currentSnapshotCount} of ${readyAttendanceCount} currently payroll-ready attendance entries are captured.`
+    elements.importStatus.classList.add('warning')
+  } else {
+    elements.importStatus.textContent =
+      `All ${currentSnapshotCount} currently payroll-ready attendance ${currentSnapshotCount === 1 ? 'entry is' : 'entries are'} preserved for this period.`
+    elements.importStatus.classList.add('ready')
+  }
 }
 
 function rateStatus(employee) {
@@ -308,15 +375,35 @@ function renderEmployees() {
       '',
       `${Number(employee.payroll_ready_attendance_count || 0)} / ${Number(employee.attendance_record_count || 0)}`
     )
-    const statusCell = document.createElement('td')
-    const ready = employee.readiness_status === 'ready'
-    statusCell.append(
+    const employeeImportStatus = importStatusFor(employee)
+    readyAttendanceCell.append(
       element(
-        'span',
-        `payroll-readiness-badge ${ready ? 'ready' : 'attention'}`,
-        ready ? 'Ready' : 'Attention required'
+        'small',
+        'payroll-cell-note',
+        `${Number(employeeImportStatus.current_snapshot_count || 0)} imported`
       )
     )
+    const statusCell = document.createElement('td')
+    const ready = employee.readiness_status === 'ready'
+    const requiresRecalculation = employeeImportStatus.requires_recalculation
+    statusCell.append(element(
+      'span',
+      `payroll-readiness-badge ${ready && !requiresRecalculation ? 'ready' : 'attention'}`,
+      requiresRecalculation
+        ? 'Recalculation required'
+        : ready
+          ? 'Ready'
+          : 'Attention required'
+    ))
+    if (requiresRecalculation && employeeImportStatus.recalculation_reason) {
+      statusCell.append(
+        element(
+          'small',
+          'payroll-cell-note',
+          employeeImportStatus.recalculation_reason
+        )
+      )
+    }
 
     row.append(
       employeeCell,
@@ -336,6 +423,7 @@ function renderAll() {
   renderPeriod()
   renderMetrics()
   renderExceptions()
+  renderImportStatus()
   renderEmployees()
 }
 
@@ -343,15 +431,24 @@ async function loadPeriod() {
   if (state.loading) return
   state.loading = true
   elements.refresh.disabled = true
+  elements.importButton.disabled = true
   setMessage('Checking rates and attendance readiness…')
 
-  const [dashboardResult, readinessResult, missingAttendanceResult] =
+  const [
+    dashboardResult,
+    readinessResult,
+    missingAttendanceResult,
+    importStatusResult
+  ] =
     await Promise.all([
       supabase.rpc('payroll_get_period_dashboard'),
       supabase.rpc('payroll_get_period_employee_readiness', {
         p_payroll_period_id: state.periodId
       }),
       supabase.rpc('payroll_get_period_missing_attendance', {
+        p_payroll_period_id: state.periodId
+      }),
+      supabase.rpc('payroll_get_period_attendance_import_status', {
         p_payroll_period_id: state.periodId
       })
     ])
@@ -362,7 +459,8 @@ async function loadPeriod() {
   if (
     dashboardResult.error ||
     readinessResult.error ||
-    missingAttendanceResult.error
+    missingAttendanceResult.error ||
+    importStatusResult.error
   ) {
     setMessage(
       'Payroll readiness could not be loaded. Refresh or contact a system administrator.',
@@ -387,8 +485,55 @@ async function loadPeriod() {
     rows.push(entry)
     state.missingAttendance.set(entry.employee_user_id, rows)
   }
+  state.importStatuses = new Map(
+    (importStatusResult.data || []).map(status => [
+      status.employee_user_id,
+      status
+    ])
+  )
   renderAll()
   setMessage('')
+}
+
+async function importApprovedAttendance() {
+  if (
+    state.importing ||
+    !state.canImportAttendance ||
+    !['draft', 'reopened'].includes(state.period?.period_status)
+  ) {
+    return
+  }
+
+  state.importing = true
+  elements.importButton.disabled = true
+  elements.refresh.disabled = true
+  setMessage('Importing payroll-ready attendance…')
+
+  const { data, error } = await supabase.rpc('payroll_import_attendance', {
+    p_payroll_period_id: state.periodId
+  })
+
+  state.importing = false
+  elements.refresh.disabled = false
+
+  if (error) {
+    elements.importButton.disabled = false
+    setMessage(
+      error.message || 'Approved attendance could not be imported.',
+      'error'
+    )
+    return
+  }
+
+  await loadPeriod()
+  const importedCount = Number(data?.new_snapshot_count || 0)
+  const alreadyCurrentCount = Number(
+    data?.already_current_snapshot_count || 0
+  )
+  setMessage(
+    `${importedCount} new attendance ${importedCount === 1 ? 'snapshot was' : 'snapshots were'} imported. ${alreadyCurrentCount} ${alreadyCurrentCount === 1 ? 'entry was' : 'entries were'} already current.`,
+    'success'
+  )
 }
 
 async function initialize() {
@@ -417,6 +562,10 @@ async function initialize() {
       access,
       'view_team_attendance'
     )
+    state.canImportAttendance = hasWorkforcePermission(
+      access,
+      'create_payroll'
+    )
     document.body.classList.remove('payroll-access-pending')
     await loadPeriod()
   } catch {
@@ -425,4 +574,5 @@ async function initialize() {
 }
 
 elements.refresh.addEventListener('click', loadPeriod)
+elements.importButton.addEventListener('click', importApprovedAttendance)
 document.addEventListener('DOMContentLoaded', initialize)
