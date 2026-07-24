@@ -33,3 +33,9 @@ Approved attendance is imported into immutable, versioned payroll attendance
 snapshots in Step 6. Readiness remains a live check; the period page now also
 shows which current attendance versions have been preserved. Changes after
 import flag non-finalized payroll records for recalculation.
+
+Step 8 adds a filterable period-exception review covering rate coverage,
+attendance approval and completeness, duplicates, excessive overtime,
+schedule and period overlaps, and attendance changes after import. Actions
+link to the affected attendance date or rate-management page only when the
+payroll user already has the separate permission required for that page.

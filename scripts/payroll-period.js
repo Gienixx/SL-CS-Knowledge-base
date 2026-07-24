@@ -11,14 +11,28 @@ const PROCESS_PERMISSIONS = [
   'reopen_payroll'
 ]
 
+const ATTENDANCE_EXCEPTION_CODES = new Set([
+  'incomplete_attendance',
+  'unapproved_attendance',
+  'missing_clock_out',
+  'overtime_above_limit',
+  'duplicate_attendance',
+  'overlapping_schedules',
+  'changed_attendance_after_import',
+  'missing_attendance'
+])
+
 const state = {
   periodId: new URLSearchParams(window.location.search).get('id') || '',
   period: null,
   employees: [],
+  exceptions: [],
+  exceptionFilter: 'all',
   missingAttendance: new Map(),
   importStatuses: new Map(),
   canViewAttendance: false,
   canImportAttendance: false,
+  canManageRates: false,
   loading: false,
   importing: false
 }
@@ -32,7 +46,10 @@ const elements = {
   exceptionSummary: document.getElementById('payrollExceptionSummary'),
   exceptionTitle: document.getElementById('payrollExceptionTitle'),
   exceptionText: document.getElementById('payrollExceptionText'),
-  exceptionChips: document.getElementById('payrollExceptionChips')
+  exceptionChips: document.getElementById('payrollExceptionChips'),
+  exceptionFilter: document.getElementById('payrollExceptionFilter'),
+  exceptionCount: document.getElementById('payrollExceptionCount'),
+  exceptionBody: document.getElementById('payrollExceptionBody')
 }
 
 const dateFormatter = new Intl.DateTimeFormat('en-PH', {
@@ -151,40 +168,170 @@ function addExceptionChip(fragment, count, label) {
 }
 
 function renderExceptions() {
-  const missingRates =
-    state.employees.filter(employee => !employee.has_effective_rate).length
-  const incompleteAttendance =
-    state.employees.filter(employee => employeeHasAttendanceIssue(employee)).length
-  const missingEntries = state.employees.reduce(
-    (total, employee) => total + Number(employee.missing_attendance_count || 0),
-    0
-  )
-  const missingClockOuts = state.employees.reduce(
-    (total, employee) => total + Number(employee.missing_clock_out_count || 0),
-    0
-  )
-  const pendingReviews = state.employees.reduce(
-    (total, employee) => total + Number(employee.pending_review_count || 0),
-    0
-  )
-  const hasExceptions = missingRates > 0 || incompleteAttendance > 0
+  const blockingExceptions = state.exceptions.filter(issue => issue.is_blocking)
+  const hasExceptions = blockingExceptions.length > 0
 
   elements.exceptionSummary.className =
     `payroll-exception-summary ${hasExceptions ? 'warning' : 'clear'}`
   elements.exceptionTitle.textContent = hasExceptions
-    ? 'Readiness issues need attention'
-    : 'Employees are ready for attendance import'
+    ? `${blockingExceptions.length} blocking ${blockingExceptions.length === 1 ? 'exception needs' : 'exceptions need'} attention`
+    : 'No blocking payroll exceptions detected'
   elements.exceptionText.textContent = hasExceptions
-    ? 'Resolve missing rates and attendance issues before payroll calculation.'
-    : 'No missing rates or incomplete attendance were detected for the loaded employees.'
+    ? 'Resolve every blocking issue before payroll calculation and finalization.'
+    : 'Rates, attendance, schedules, imports, and period dates passed the current checks.'
+
+  const counts = new Map()
+  for (const issue of blockingExceptions) {
+    const current = counts.get(issue.exception_code) || {
+      count: 0,
+      label: issue.exception_label
+    }
+    current.count += 1
+    counts.set(issue.exception_code, current)
+  }
+  const fragment = document.createDocumentFragment()
+  for (const { count, label } of counts.values()) {
+    addExceptionChip(fragment, count, label.toLowerCase())
+  }
+  elements.exceptionChips.replaceChildren(fragment)
+}
+
+function syncExceptionFilter() {
+  const labels = new Map()
+  for (const issue of state.exceptions) {
+    labels.set(issue.exception_code, issue.exception_label)
+  }
+
+  const options = [new Option('All exceptions', 'all')]
+  for (const [code, label] of [...labels.entries()].sort((left, right) =>
+    left[1].localeCompare(right[1])
+  )) {
+    options.push(new Option(label, code))
+  }
+  elements.exceptionFilter.replaceChildren(...options)
+
+  if (state.exceptionFilter !== 'all' && !labels.has(state.exceptionFilter)) {
+    state.exceptionFilter = 'all'
+  }
+  elements.exceptionFilter.value = state.exceptionFilter
+}
+
+function exceptionAction(issue) {
+  if (issue.exception_code === 'missing_rate') {
+    if (!state.canManageRates) return null
+    return {
+      href: './agent-rates.html',
+      label: 'Open rates',
+      title: 'Open effective-dated rate management'
+    }
+  }
+
+  if (issue.exception_code === 'payroll_period_overlap') {
+    return {
+      href: './payroll-dashboard.html',
+      label: 'Open periods',
+      title: 'Review payroll period dates'
+    }
+  }
+
+  if (
+    ATTENDANCE_EXCEPTION_CODES.has(issue.exception_code) &&
+    state.canViewAttendance &&
+    issue.employee_user_id &&
+    issue.work_date
+  ) {
+    return {
+      href: teamAttendanceUrl(issue.employee_user_id, issue.work_date),
+      label: 'Open attendance',
+      title: `Open Team Attendance on ${formatDate(issue.work_date)}`
+    }
+  }
+
+  return null
+}
+
+function renderExceptionReview() {
+  syncExceptionFilter()
+  const visibleIssues = state.exceptionFilter === 'all'
+    ? state.exceptions
+    : state.exceptions.filter(
+      issue => issue.exception_code === state.exceptionFilter
+    )
+
+  elements.exceptionCount.textContent =
+    `${visibleIssues.length} ${visibleIssues.length === 1 ? 'issue' : 'issues'}`
+
+  if (!visibleIssues.length) {
+    const row = document.createElement('tr')
+    const cell = element(
+      'td',
+      'payroll-table-empty',
+      state.exceptions.length
+        ? 'No exceptions match this filter.'
+        : 'No payroll exceptions were detected for this period.'
+    )
+    cell.colSpan = 5
+    row.append(cell)
+    elements.exceptionBody.replaceChildren(row)
+    return
+  }
 
   const fragment = document.createDocumentFragment()
-  addExceptionChip(fragment, missingRates, 'missing rates')
-  addExceptionChip(fragment, incompleteAttendance, 'employees with attendance issues')
-  addExceptionChip(fragment, missingEntries, 'missing attendance entries')
-  addExceptionChip(fragment, missingClockOuts, 'missing clock-outs')
-  addExceptionChip(fragment, pendingReviews, 'awaiting review')
-  elements.exceptionChips.replaceChildren(fragment)
+  for (const issue of visibleIssues) {
+    const row = document.createElement('tr')
+
+    const issueCell = document.createElement('td')
+    issueCell.append(
+      element('strong', 'payroll-exception-name', issue.exception_label),
+      element(
+        'span',
+        `payroll-exception-severity ${issue.is_blocking ? 'blocking' : 'warning'}`,
+        issue.is_blocking ? 'Blocking' : 'Warning'
+      )
+    )
+
+    const employeeCell = element('td', 'payroll-employee-cell')
+    employeeCell.append(
+      element('strong', '', issue.employee_name || 'Payroll period')
+    )
+    if (issue.employee_number) {
+      employeeCell.append(element('small', '', issue.employee_number))
+    }
+
+    const workDateCell = element('td', '', formatDate(issue.work_date))
+    const detailCell = element('td', 'payroll-exception-detail', issue.message)
+    const actionCell = document.createElement('td')
+    const action = exceptionAction(issue)
+    if (action) {
+      const link = element(
+        'a',
+        'payroll-exception-action',
+        action.label
+      )
+      link.href = action.href
+      link.title = action.title
+      actionCell.append(link)
+    } else {
+      actionCell.append(
+        element(
+          'span',
+          'payroll-exception-action-unavailable',
+          issue.employee_user_id ? 'Restricted' : '—'
+        )
+      )
+    }
+
+    row.append(
+      issueCell,
+      employeeCell,
+      workDateCell,
+      detailCell,
+      actionCell
+    )
+    fragment.append(row)
+  }
+
+  elements.exceptionBody.replaceChildren(fragment)
 }
 
 function importStatusFor(employee) {
@@ -404,6 +551,18 @@ function renderEmployees() {
         )
       )
     }
+    const exceptionCount = state.exceptions.filter(
+      issue => issue.employee_user_id === employee.employee_user_id
+    ).length
+    if (exceptionCount) {
+      statusCell.append(
+        element(
+          'small',
+          'payroll-cell-note payroll-cell-note-alert',
+          `${exceptionCount} blocking ${exceptionCount === 1 ? 'exception' : 'exceptions'}`
+        )
+      )
+    }
 
     row.append(
       employeeCell,
@@ -423,6 +582,7 @@ function renderAll() {
   renderPeriod()
   renderMetrics()
   renderExceptions()
+  renderExceptionReview()
   renderImportStatus()
   renderEmployees()
 }
@@ -438,7 +598,8 @@ async function loadPeriod() {
     dashboardResult,
     readinessResult,
     missingAttendanceResult,
-    importStatusResult
+    importStatusResult,
+    exceptionsResult
   ] =
     await Promise.all([
       supabase.rpc('payroll_get_period_dashboard'),
@@ -450,6 +611,9 @@ async function loadPeriod() {
       }),
       supabase.rpc('payroll_get_period_attendance_import_status', {
         p_payroll_period_id: state.periodId
+      }),
+      supabase.rpc('payroll_get_period_exceptions', {
+        p_payroll_period_id: state.periodId
       })
     ])
 
@@ -460,7 +624,8 @@ async function loadPeriod() {
     dashboardResult.error ||
     readinessResult.error ||
     missingAttendanceResult.error ||
-    importStatusResult.error
+    importStatusResult.error ||
+    exceptionsResult.error
   ) {
     setMessage(
       'Payroll readiness could not be loaded. Refresh or contact a system administrator.',
@@ -479,6 +644,7 @@ async function loadPeriod() {
   }
 
   state.employees = readinessResult.data || []
+  state.exceptions = exceptionsResult.data || []
   state.missingAttendance = new Map()
   for (const entry of missingAttendanceResult.data || []) {
     const rows = state.missingAttendance.get(entry.employee_user_id) || []
@@ -566,6 +732,10 @@ async function initialize() {
       access,
       'create_payroll'
     )
+    state.canManageRates = hasWorkforcePermission(
+      access,
+      'manage_agent_rates'
+    )
     document.body.classList.remove('payroll-access-pending')
     await loadPeriod()
   } catch {
@@ -575,4 +745,8 @@ async function initialize() {
 
 elements.refresh.addEventListener('click', loadPeriod)
 elements.importButton.addEventListener('click', importApprovedAttendance)
+elements.exceptionFilter.addEventListener('change', event => {
+  state.exceptionFilter = event.target.value
+  renderExceptionReview()
+})
 document.addEventListener('DOMContentLoaded', initialize)

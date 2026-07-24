@@ -6,7 +6,7 @@
   <title>Payroll Period | SocialLoop CS Base</title>
   <link rel="stylesheet" href="./styles/button-theme.css?v=1">
   <link rel="stylesheet" href="./styles/workforce-admin.css?v=8">
-  <link rel="stylesheet" href="./styles/payroll-periods.css?v=3">
+  <link rel="stylesheet" href="./styles/payroll-periods.css?v=4">
 </head>
 <body class="payroll-access-pending">
   <main class="payroll-page">
@@ -92,6 +92,39 @@
       <p id="payrollImportStatus" class="payroll-import-status">No attendance snapshots have been imported yet.</p>
     </section>
 
+    <section class="payroll-card payroll-exception-review-card" aria-labelledby="payrollExceptionReviewTitle">
+      <div class="payroll-section-heading payroll-exception-review-heading">
+        <div>
+          <p class="payroll-eyebrow">Payroll review</p>
+          <h2 id="payrollExceptionReviewTitle">Period exceptions</h2>
+          <p>Review blocking issues before calculation and finalization. Links open the exact attendance date when access allows it.</p>
+        </div>
+        <div class="payroll-exception-controls">
+          <label for="payrollExceptionFilter">Show</label>
+          <select id="payrollExceptionFilter" class="payroll-control">
+            <option value="all">All exceptions</option>
+          </select>
+          <span id="payrollExceptionCount" class="payroll-count-pill">0 issues</span>
+        </div>
+      </div>
+      <div class="payroll-table-wrap">
+        <table class="payroll-exception-table">
+          <thead>
+            <tr>
+              <th>Exception</th>
+              <th>Employee</th>
+              <th>Work date</th>
+              <th>Details</th>
+              <th>Action</th>
+            </tr>
+          </thead>
+          <tbody id="payrollExceptionBody">
+            <tr><td colspan="5" class="payroll-table-empty">Loading payroll exceptions…</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </section>
+
     <section class="payroll-card payroll-readiness-card" aria-labelledby="payrollEmployeeReadinessTitle">
       <div class="payroll-section-heading payroll-list-heading">
         <div>
@@ -121,6 +154,6 @@
     </section>
   </main>
 
-  <script type="module" src="./scripts/payroll-period.js?v=3"></script>
+  <script type="module" src="./scripts/payroll-period.js?v=4"></script>
 </body>
 </html>

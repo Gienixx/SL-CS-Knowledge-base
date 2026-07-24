@@ -160,7 +160,7 @@ test('missing attendance links open the exact employee and work date only for at
   )
   assert.doesNotMatch(migration, /hourly_rate|daily_rate|monthly_rate|salary/)
 
-  assert.match(periodPage, /scripts\/payroll-period\.js\?v=3/)
+  assert.match(periodPage, /scripts\/payroll-period\.js\?v=4/)
   assert.match(
     periodScript,
     /supabase\.rpc\('payroll_get_period_missing_attendance'/

@@ -415,6 +415,116 @@ body { margin: 0; background-image: none; }
   color: var(--payroll-green);
 }
 
+.payroll-exception-review-heading {
+  align-items: center;
+}
+
+.payroll-exception-controls {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 8px;
+  flex: 0 0 auto;
+}
+
+.payroll-exception-controls label {
+  color: var(--payroll-copy);
+  font-size: 10px;
+  font-weight: 700;
+  text-transform: uppercase;
+}
+
+.payroll-exception-controls .payroll-control {
+  width: 190px;
+  min-height: 36px;
+  padding: 7px 30px 7px 10px;
+  font-size: 11px;
+}
+
+.payroll-exception-table {
+  width: 100%;
+  min-width: 900px;
+  border-collapse: collapse;
+  table-layout: fixed;
+  font-size: 11px;
+}
+
+.payroll-exception-table th {
+  padding: 9px 11px;
+  border-bottom: 1px solid var(--payroll-border);
+  color: var(--payroll-muted);
+  background: #faf9fd;
+  font-size: 9px;
+  font-weight: 700;
+  text-align: left;
+  text-transform: uppercase;
+}
+
+.payroll-exception-table td {
+  padding: 11px;
+  border-bottom: 1px solid var(--payroll-border);
+  color: var(--payroll-copy);
+  vertical-align: middle;
+}
+
+.payroll-exception-table tr:last-child td {
+  border-bottom: 0;
+}
+
+.payroll-exception-table th:nth-child(1) { width: 20%; }
+.payroll-exception-table th:nth-child(2) { width: 20%; }
+.payroll-exception-table th:nth-child(3) { width: 12%; }
+.payroll-exception-table th:nth-child(4) { width: 36%; }
+.payroll-exception-table th:nth-child(5) { width: 12%; }
+
+.payroll-exception-name {
+  display: block;
+  margin-bottom: 5px;
+  color: var(--payroll-text);
+  font-size: 11.5px;
+}
+
+.payroll-exception-severity {
+  display: inline-flex;
+  padding: 3px 7px;
+  border-radius: 999px;
+  font-size: 8.5px;
+  font-weight: 750;
+  text-transform: uppercase;
+}
+
+.payroll-exception-severity.blocking {
+  color: var(--payroll-red);
+  background: var(--payroll-red-soft);
+}
+
+.payroll-exception-severity.warning {
+  color: var(--payroll-amber);
+  background: var(--payroll-amber-soft);
+}
+
+.payroll-exception-detail {
+  line-height: 1.4;
+}
+
+.payroll-exception-action {
+  color: var(--payroll-blue);
+  font-size: 10px;
+  font-weight: 700;
+  text-decoration: none;
+  white-space: nowrap;
+}
+
+.payroll-exception-action:hover,
+.payroll-exception-action:focus-visible {
+  text-decoration: underline;
+}
+
+.payroll-exception-action-unavailable {
+  color: var(--payroll-muted);
+  font-size: 10px;
+}
+
 .payroll-table-wrap { overflow-x: auto; border: 1px solid var(--payroll-border); border-radius: 10px; }
 .payroll-readiness-table {
   width: 100%;
@@ -462,6 +572,7 @@ body { margin: 0; background-image: none; }
 .payroll-data-status-link:hover,
 .payroll-data-status-link:focus-visible { text-decoration: underline; }
 .payroll-cell-note { display: block; margin-top: 3px; color: var(--payroll-muted); font-size: 9px; }
+.payroll-cell-note-alert { color: var(--payroll-red); }
 .payroll-missing-date-link {
   color: var(--payroll-blue);
   font-weight: 700;
@@ -489,6 +600,8 @@ body { margin: 0; background-image: none; }
   .payroll-exception-summary { flex-direction: column; }
   .payroll-header-actions { width: 100%; justify-content: flex-start; }
   .payroll-header-actions .payroll-button { flex: 1; }
+  .payroll-exception-controls { width: 100%; justify-content: flex-start; flex-wrap: wrap; }
+  .payroll-exception-controls .payroll-control { flex: 1; width: auto; }
   .payroll-metrics,
   .payroll-import-stats,
   .payroll-period-form,
