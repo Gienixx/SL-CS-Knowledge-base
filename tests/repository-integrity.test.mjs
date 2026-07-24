@@ -145,7 +145,9 @@ test('retired disconnected entry points and integrations are absent', async () =
 test('current site and operational entry points remain available', async () => {
   const required = [
     'index.html', 'login.html', 'home.html', 'KB.html', 'article.html',
-    'user-management.html', 'workforce.html', 'agent-rates.html', 'dashboard.html', 'report-details.html',
+    'user-management.html', 'workforce.html', 'agent-rates.html',
+    'payroll-dashboard.html', 'payroll-period.html',
+    'dashboard.html', 'report-details.html',
     'agent-analytics.html', 'response-times.html', 'reporting-operations.html',
     'functions/api/sync-dashboard.js', 'apps-script/dashboard-sync.gs',
     'supabase/migrations-legacy/2026070402_reporting_operations.sql',

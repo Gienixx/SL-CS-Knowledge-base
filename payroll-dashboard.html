@@ -1,0 +1,94 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Payroll Dashboard | SocialLoop CS Base</title>
+  <link rel="stylesheet" href="./styles/button-theme.css?v=1">
+  <link rel="stylesheet" href="./styles/workforce-admin.css?v=8">
+  <link rel="stylesheet" href="./styles/payroll-periods.css?v=1">
+</head>
+<body class="payroll-access-pending">
+  <main class="payroll-page">
+    <header class="payroll-page-header">
+      <div>
+        <p class="payroll-eyebrow">Payroll · Period management</p>
+        <h1>Payroll dashboard</h1>
+        <p class="payroll-page-subtitle">Create controlled payroll periods, load eligible employees, and review readiness before attendance is imported.</p>
+      </div>
+      <nav class="payroll-header-actions" aria-label="Payroll navigation">
+        <a class="payroll-button payroll-button-secondary" href="./home.html">← Back to home</a>
+        <a id="payrollAgentRatesLink" class="payroll-button payroll-button-secondary" href="./agent-rates.html" hidden>Agent rates</a>
+        <button id="refreshPayrollDashboardButton" class="payroll-button payroll-button-secondary" type="button">↻ Refresh</button>
+      </nav>
+    </header>
+
+    <section class="payroll-metrics" aria-label="Payroll period summary">
+      <article class="payroll-metric-card">
+        <span class="payroll-metric-icon violet" aria-hidden="true">▤</span>
+        <div><p>Total periods</p><strong id="payrollPeriodCount">—</strong></div>
+      </article>
+      <article class="payroll-metric-card">
+        <span class="payroll-metric-icon amber" aria-hidden="true">◷</span>
+        <div><p>Draft</p><strong id="payrollDraftCount">—</strong></div>
+      </article>
+      <article class="payroll-metric-card">
+        <span class="payroll-metric-icon blue" aria-hidden="true">✓</span>
+        <div><p>In review</p><strong id="payrollReviewCount">—</strong></div>
+      </article>
+      <article class="payroll-metric-card">
+        <span class="payroll-metric-icon green" aria-hidden="true">●</span>
+        <div><p>Finalized</p><strong id="payrollFinalizedCount">—</strong></div>
+      </article>
+    </section>
+
+    <p id="payrollDashboardMessage" class="wf-message payroll-page-message" role="status" aria-live="polite"></p>
+
+    <section id="createPayrollPeriodCard" class="payroll-card payroll-create-card" aria-labelledby="createPayrollPeriodTitle">
+      <div class="payroll-section-heading">
+        <div>
+          <p class="payroll-eyebrow">New payroll run</p>
+          <h2 id="createPayrollPeriodTitle">Create payroll period</h2>
+          <p>All active and on-leave agents will be loaded as draft payroll records.</p>
+        </div>
+        <span class="payroll-currency-pill">USD ($)</span>
+      </div>
+
+      <form id="createPayrollPeriodForm" class="payroll-period-form">
+        <label class="payroll-field">
+          <span>Start date</span>
+          <input id="payrollPeriodStart" class="payroll-control" type="date" required>
+        </label>
+        <label class="payroll-field">
+          <span>End date</span>
+          <input id="payrollPeriodEnd" class="payroll-control" type="date" required>
+        </label>
+        <label class="payroll-field">
+          <span>Payment date</span>
+          <input id="payrollPaymentDate" class="payroll-control" type="date" required>
+        </label>
+        <button id="createPayrollPeriodButton" class="payroll-button payroll-button-primary" type="submit">Create draft period</button>
+      </form>
+
+      <div id="payrollOverlapResult" class="payroll-overlap-result neutral" role="status" aria-live="polite">
+        Select a start and end date to check for overlapping payroll periods.
+      </div>
+    </section>
+
+    <section class="payroll-card payroll-period-list-card" aria-labelledby="payrollPeriodsTitle">
+      <div class="payroll-section-heading payroll-list-heading">
+        <div>
+          <p class="payroll-eyebrow">History and active work</p>
+          <h2 id="payrollPeriodsTitle">Payroll periods</h2>
+        </div>
+        <span id="payrollPeriodListCount" class="payroll-count-pill">0 periods</span>
+      </div>
+      <div id="payrollPeriodList" class="payroll-period-list">
+        <p class="payroll-empty">Loading payroll periods…</p>
+      </div>
+    </section>
+  </main>
+
+  <script type="module" src="./scripts/payroll-dashboard.js?v=1"></script>
+</body>
+</html>

@@ -1,0 +1,100 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Payroll Period | SocialLoop CS Base</title>
+  <link rel="stylesheet" href="./styles/button-theme.css?v=1">
+  <link rel="stylesheet" href="./styles/workforce-admin.css?v=8">
+  <link rel="stylesheet" href="./styles/payroll-periods.css?v=1">
+</head>
+<body class="payroll-access-pending">
+  <main class="payroll-page">
+    <header class="payroll-page-header">
+      <div>
+        <p class="payroll-eyebrow">Payroll · Period readiness</p>
+        <h1 id="payrollPeriodTitle">Payroll period</h1>
+        <p id="payrollPeriodSubtitle" class="payroll-page-subtitle">Loading payroll period details…</p>
+      </div>
+      <nav class="payroll-header-actions" aria-label="Payroll period navigation">
+        <a class="payroll-button payroll-button-secondary" href="./payroll-dashboard.html">← Payroll dashboard</a>
+        <button id="refreshPayrollPeriodButton" class="payroll-button payroll-button-secondary" type="button">↻ Refresh readiness</button>
+      </nav>
+    </header>
+
+    <section class="payroll-card payroll-period-summary" aria-labelledby="payrollPeriodSummaryTitle">
+      <div class="payroll-period-summary-copy">
+        <p class="payroll-eyebrow">Draft setup</p>
+        <h2 id="payrollPeriodSummaryTitle">Period details</h2>
+        <div class="payroll-period-date-grid">
+          <div><span>Period start</span><strong id="payrollDetailStart">—</strong></div>
+          <div><span>Period end</span><strong id="payrollDetailEnd">—</strong></div>
+          <div><span>Payment date</span><strong id="payrollDetailPayment">—</strong></div>
+          <div><span>Currency</span><strong id="payrollDetailCurrency">USD</strong></div>
+        </div>
+      </div>
+      <span id="payrollDetailStatus" class="payroll-status-badge draft">Draft</span>
+    </section>
+
+    <section class="payroll-metrics payroll-readiness-metrics" aria-label="Payroll readiness summary">
+      <article class="payroll-metric-card">
+        <span class="payroll-metric-icon violet" aria-hidden="true">◎</span>
+        <div><p>Employees loaded</p><strong id="payrollEmployeeCount">—</strong></div>
+      </article>
+      <article class="payroll-metric-card">
+        <span class="payroll-metric-icon green" aria-hidden="true">$</span>
+        <div><p>Rates ready</p><strong id="payrollRatesReadyCount">—</strong></div>
+      </article>
+      <article class="payroll-metric-card">
+        <span class="payroll-metric-icon blue" aria-hidden="true">✓</span>
+        <div><p>Attendance ready</p><strong id="payrollAttendanceReadyCount">—</strong></div>
+      </article>
+      <article class="payroll-metric-card">
+        <span class="payroll-metric-icon red" aria-hidden="true">!</span>
+        <div><p>Needs attention</p><strong id="payrollAttentionCount">—</strong></div>
+      </article>
+    </section>
+
+    <p id="payrollPeriodMessage" class="wf-message payroll-page-message" role="status" aria-live="polite"></p>
+
+    <section id="payrollExceptionSummary" class="payroll-exception-summary clear" aria-labelledby="payrollExceptionTitle">
+      <div>
+        <p class="payroll-eyebrow">Pre-calculation checks</p>
+        <h2 id="payrollExceptionTitle">Checking employee readiness…</h2>
+        <p id="payrollExceptionText">Rates and approved attendance are checked against the selected period.</p>
+      </div>
+      <div id="payrollExceptionChips" class="payroll-exception-chips"></div>
+    </section>
+
+    <section class="payroll-card payroll-readiness-card" aria-labelledby="payrollEmployeeReadinessTitle">
+      <div class="payroll-section-heading payroll-list-heading">
+        <div>
+          <p class="payroll-eyebrow">Eligible employees</p>
+          <h2 id="payrollEmployeeReadinessTitle">Employee readiness</h2>
+          <p>Step 5 checks current data only. Approved attendance will be copied into payroll snapshots in Step 6.</p>
+        </div>
+        <span id="payrollReadinessCount" class="payroll-count-pill">0 employees</span>
+      </div>
+      <div class="payroll-table-wrap">
+        <table class="payroll-readiness-table">
+          <thead>
+            <tr>
+              <th>Employee</th>
+              <th>Rate</th>
+              <th>Attendance</th>
+              <th>Scheduled shifts</th>
+              <th>Payroll-ready entries</th>
+              <th>Status</th>
+            </tr>
+          </thead>
+          <tbody id="payrollReadinessBody">
+            <tr><td colspan="6" class="payroll-table-empty">Loading employee readiness…</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </section>
+  </main>
+
+  <script type="module" src="./scripts/payroll-period.js?v=1"></script>
+</body>
+</html>

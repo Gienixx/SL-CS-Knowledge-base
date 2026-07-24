@@ -13,6 +13,9 @@ async function configureHomeWorkforceNavigation() {
     'homeWorkforceManagementBtn'
   )
   const agentRatesButton = document.getElementById('homeAgentRatesBtn')
+  const payrollDashboardButton = document.getElementById(
+    'homePayrollDashboardBtn'
+  )
 
   if (
     !myScheduleButton &&
@@ -20,7 +23,8 @@ async function configureHomeWorkforceNavigation() {
     !leaveRequestsButton &&
     !teamAttendanceButton &&
     !workforceManagementButton &&
-    !agentRatesButton
+    !agentRatesButton &&
+    !payrollDashboardButton
   ) {
     return
   }
@@ -49,6 +53,12 @@ async function configureHomeWorkforceNavigation() {
       access,
       'manage_agent_rates'
     )
+    const canAccessPayrollDashboard = [
+      'create_payroll',
+      'review_payroll',
+      'finalize_payroll',
+      'reopen_payroll'
+    ].some(permission => hasWorkforcePermission(access, permission))
 
     if (myScheduleButton) {
       myScheduleButton.hidden = !canViewSchedules
@@ -72,6 +82,10 @@ async function configureHomeWorkforceNavigation() {
 
     if (agentRatesButton) {
       agentRatesButton.hidden = !canManageAgentRates
+    }
+
+    if (payrollDashboardButton) {
+      payrollDashboardButton.hidden = !canAccessPayrollDashboard
     }
   } catch (error) {
     console.error('Home workforce navigation failed:', error)
