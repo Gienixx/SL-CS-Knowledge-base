@@ -81,7 +81,17 @@ function localDateKey(date = new Date(), timezone = WORKFORCE_TIMEZONE) {
 
 function defaultDateRange() {
   const today = localDateKey()
-  return { start: `${today.slice(0, 7)}-01`, end: today }
+  const [year, month, day] = today.split('-').map(Number)
+  const periodStart = day <= 15 ? '01' : '16'
+  const periodEnd = day <= 15
+    ? '15'
+    : String(new Date(Date.UTC(year, month, 0)).getUTCDate()).padStart(2, '0')
+  const monthKey = today.slice(0, 7)
+
+  return {
+    start: `${monthKey}-${periodStart}`,
+    end: `${monthKey}-${periodEnd}`
+  }
 }
 
 function isValidUuid(value) {
