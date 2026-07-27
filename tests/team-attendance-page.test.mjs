@@ -49,6 +49,42 @@ test('Step 10 page contains every required attendance column and filter', async 
   }
 })
 
+test('Team Attendance defaults to the current half-month attendance period', async () => {
+  const script = await read('scripts/team-attendance.js')
+  const functionSource = script.match(/function defaultDateRange\(\) \{[\s\S]*?\n\}/)?.[0]
+
+  assert.ok(functionSource, 'defaultDateRange should remain independently testable')
+  const defaultRangeFor = dateKey => Function(
+    'localDateKey',
+    `${functionSource}\nreturn defaultDateRange()`
+  )(() => dateKey)
+
+  assert.deepEqual(defaultRangeFor('2026-07-01'), {
+    start: '2026-07-01',
+    end: '2026-07-15'
+  })
+  assert.deepEqual(defaultRangeFor('2026-07-15'), {
+    start: '2026-07-01',
+    end: '2026-07-15'
+  })
+  assert.deepEqual(defaultRangeFor('2026-07-16'), {
+    start: '2026-07-16',
+    end: '2026-07-31'
+  })
+  assert.deepEqual(defaultRangeFor('2026-04-30'), {
+    start: '2026-04-16',
+    end: '2026-04-30'
+  })
+  assert.deepEqual(defaultRangeFor('2028-02-16'), {
+    start: '2028-02-16',
+    end: '2028-02-29'
+  })
+  assert.deepEqual(defaultRangeFor('2027-02-16'), {
+    start: '2027-02-16',
+    end: '2027-02-28'
+  })
+})
+
 test('Team Attendance requires view permission and only corrects attendance through the RPC', async () => {
   const script = await read('scripts/team-attendance.js')
 
@@ -153,7 +189,7 @@ test('Team Attendance does not flag fully classified long overtime records', asy
   const page = await read('team-attendance.html')
   const script = await read('scripts/team-attendance.js')
 
-  assert.match(page, /scripts\/team-attendance\.js\?v=7/)
+  assert.match(page, /scripts\/team-attendance\.js\?v=8/)
   assert.match(script, /const hasUnclassifiedWorkedMinutes = workedMinutes > regularMinutes \+ overtimeMinutes/)
   assert.match(script, /record\.schedule_id && hasUnclassifiedWorkedMinutes/)
   assert.match(script, /if \(overtimeMinutes > 0\) return \{ label: 'Overtime'/)
