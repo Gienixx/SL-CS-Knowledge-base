@@ -1,41 +1,71 @@
-# Payroll period management
+# Payroll period and pre-plot management
 
-Step 5 introduces the controlled setup stage for each payroll run.
+Revised Phase 2 Step 5 provides the controlled setup stage for each payroll run
+and explicitly approves future scheduled hours paid before cutoff.
 
 ## What payroll users can do
 
-- Open the Payroll dashboard from Home when they have an explicit payroll-processing permission.
-- Create a draft payroll period with start, end, and payment dates.
-- Check proposed dates against every active payroll period before creation.
-- Load all active and on-leave agents into the new period.
-- Open a period and review employee-by-employee rate and attendance readiness.
-- See missing rates, incomplete attendance, missing attendance entries, missing clock-outs, and records awaiting approval.
-- Open a missing attendance entry in Team Attendance, filtered to the affected employee and work date, when they also have attendance-view permission.
+- Open the Payroll dashboard with an explicit payroll-processing permission.
+- Create a draft period with start, end, and payment dates.
+- Pay on cutoff or up to three calendar days early under the standard rule.
+- Record an override reason when payment is more than three days early.
+- Check proposed dates against every active payroll period.
+- Load all active and on-leave agents into the period.
+- Review employee rate and attendance readiness.
+- Open an exact missing-attendance date when separately authorized.
+- Review schedules after payment and through cutoff.
+- Select eligible ordinary shifts and approve them with one required reason.
+- See the captured schedule version, hours, day type, and approval state.
+
+## Early-payment rule
+
+The payment date cannot be after cutoff. A payment date up to three calendar
+days before cutoff is within the normal window. Earlier payment remains
+possible only when the payroll creator records an override reason. The period
+preserves the configured window, number of early days, reason, actor, and
+timestamp for audit.
+
+## Pre-plot approval
+
+Only published or changed ordinary schedules with complete start and end times
+may be approved. A schedule must belong to an employee loaded into the period,
+fall after payment and no later than cutoff, and have no linked attendance.
+
+Approval locks and reads the current schedule in PostgreSQL. The browser sends
+only schedule IDs and a reason; it cannot supply trusted hours, employees,
+versions, or special-day classifications. The resulting
+`payroll_schedule_snapshots` row is immutable.
+
+Rest days and holidays are visible for context but cannot be selected. They
+remain guaranteed or additional pay and never create prepaid-hour debt. A
+current-version approval removes that shift from missing-attendance readiness
+and exceptions. If the schedule later changes, the new version requires
+explicit reapproval while the old approval remains preserved.
 
 ## Access boundary
 
-The pages require at least one of `create_payroll`, `review_payroll`,
-`finalize_payroll`, or `reopen_payroll`. Creation itself requires
+The pages require `create_payroll`, `review_payroll`, `finalize_payroll`, or
+`reopen_payroll`. Creating periods and approving pre-plots both require
 `create_payroll`.
 
-General administrator access does not grant access to these pages. Browser
-users cannot insert directly into `payroll_periods` or `payroll_records`; draft
-creation runs through the audited `payroll_create_period` database operation.
-Payroll-only users see attendance exceptions without receiving links into Team
-Attendance or gaining attendance correction access.
+General administrator access does not grant access. Browser users cannot write
+directly to payroll periods, records, or schedule snapshots. Period creation
+runs through `payroll_create_period`; approval runs through
+`payroll_approve_preplots`. Both operations validate authorization and write
+payroll audit logs.
+
+Payroll-only users see attendance exceptions without receiving attendance
+correction access or links to pages they cannot otherwise open.
 
 ## Data boundary
 
-Step 5 creates the period and one draft payroll record for each eligible
-employee. It does not copy attendance into payroll.
+Step 5 creates the period, one draft record per eligible employee, and only the
+explicitly approved immutable schedule snapshots. It does not copy attendance
+or create prepaid balances.
 
-Approved attendance is imported into immutable, versioned payroll attendance
-snapshots in Step 6. Readiness remains a live check; the period page now also
-shows which current attendance versions have been preserved. Changes after
-import flag non-finalized payroll records for recalculation.
+Step 6 imports approved attendance and will turn the approved schedule
+snapshots into prepaid-minute balances. Readiness remains live, and schedule or
+attendance versions are never silently replaced.
 
-Step 8 adds a filterable period-exception review covering rate coverage,
-attendance approval and completeness, duplicates, excessive overtime,
-schedule and period overlaps, and attendance changes after import. Actions
-link to the affected attendance date or rate-management page only when the
-payroll user already has the separate permission required for that page.
+Step 8 provides the broader exception review. Revised Step 5 already prevents
+an approved current schedule version from appearing as missing attendance.

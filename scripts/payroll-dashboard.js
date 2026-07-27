@@ -11,6 +11,8 @@ const PROCESS_PERMISSIONS = [
   'reopen_payroll'
 ]
 
+const STANDARD_EARLY_PAYMENT_DAYS = 3
+
 const state = {
   periods: [],
   canCreate: false,
@@ -27,6 +29,11 @@ const elements = {
   start: document.getElementById('payrollPeriodStart'),
   end: document.getElementById('payrollPeriodEnd'),
   payment: document.getElementById('payrollPaymentDate'),
+  paymentTiming: document.getElementById('payrollPaymentTimingResult'),
+  earlyPaymentReasonField: document.getElementById(
+    'payrollEarlyPaymentReasonField'
+  ),
+  earlyPaymentReason: document.getElementById('payrollEarlyPaymentReason'),
   createButton: document.getElementById('createPayrollPeriodButton'),
   overlap: document.getElementById('payrollOverlapResult'),
   list: document.getElementById('payrollPeriodList'),
@@ -59,6 +66,21 @@ function element(tag, className = '', text = '') {
 
 function statusLabel(status) {
   return String(status || 'draft').replaceAll('_', ' ')
+}
+
+function calendarDayDifference(laterDate, earlierDate) {
+  if (!laterDate || !earlierDate) return 0
+  const later = Date.parse(`${laterDate}T00:00:00Z`)
+  const earlier = Date.parse(`${earlierDate}T00:00:00Z`)
+  return Math.round((later - earlier) / 86400000)
+}
+
+function earlyPaymentDays() {
+  return calendarDayDifference(elements.end.value, elements.payment.value)
+}
+
+function requiresEarlyPaymentOverride() {
+  return earlyPaymentDays() > STANDARD_EARLY_PAYMENT_DAYS
 }
 
 function hasProcessingAccess(access) {
@@ -98,13 +120,17 @@ function renderPeriods() {
     row.href = `./payroll-period.html?id=${encodeURIComponent(period.payroll_period_id)}`
 
     const dates = element('div')
+    const earlyDays = Number(period.early_payment_days || 0)
+    const paymentNote = earlyDays
+      ? `Payment ${formatDate(period.payment_date)} · ${earlyDays} ${earlyDays === 1 ? 'day' : 'days'} early${period.has_early_payment_override ? ' · override documented' : ''}`
+      : `Payment ${formatDate(period.payment_date)} · cutoff day`
     dates.append(
       element(
         'strong',
         '',
         `${formatDate(period.period_start)} – ${formatDate(period.period_end)}`
       ),
-      element('small', '', `Payment ${formatDate(period.payment_date)}`)
+      element('small', '', paymentNote)
     )
 
     const employees = element('div', 'payroll-period-meta')
@@ -186,10 +212,58 @@ function validateDates({ includePayment = false } = {}) {
   if (!start || !end) return 'Select the payroll start and end dates.'
   if (end < start) return 'Payroll end date cannot be before the start date.'
   if (includePayment && !payment) return 'Select the payment date.'
-  if (includePayment && payment < end) {
-    return 'Payment date cannot be before the payroll end date.'
+  if (includePayment && payment > end) {
+    return 'Payment date cannot be after the payroll cutoff date.'
+  }
+  if (
+    includePayment &&
+    requiresEarlyPaymentOverride() &&
+    !elements.earlyPaymentReason.value.trim()
+  ) {
+    return 'Add an override reason when payment is more than 3 days early.'
   }
   return ''
+}
+
+function renderPaymentTiming() {
+  const payment = elements.payment.value
+  const end = elements.end.value
+  const earlyDays = earlyPaymentDays()
+  const requiresOverride = payment && end && requiresEarlyPaymentOverride()
+
+  elements.earlyPaymentReasonField.hidden = !requiresOverride
+  elements.earlyPaymentReason.required = Boolean(requiresOverride)
+
+  if (!payment || !end) {
+    elements.paymentTiming.className = 'payroll-overlap-result neutral'
+    elements.paymentTiming.textContent =
+      'Payment may be on the cutoff or up to 3 calendar days early.'
+    return
+  }
+
+  if (payment > end) {
+    elements.paymentTiming.className = 'payroll-overlap-result blocked'
+    elements.paymentTiming.textContent =
+      'Payment cannot be after the payroll cutoff date.'
+    return
+  }
+
+  if (earlyDays === 0) {
+    elements.paymentTiming.className = 'payroll-overlap-result clear'
+    elements.paymentTiming.textContent = 'Payment is scheduled on the cutoff date.'
+    return
+  }
+
+  if (requiresOverride) {
+    elements.paymentTiming.className = 'payroll-overlap-result warning'
+    elements.paymentTiming.textContent =
+      `Payment is ${earlyDays} days early. Document the business reason before creating this period.`
+    return
+  }
+
+  elements.paymentTiming.className = 'payroll-overlap-result clear'
+  elements.paymentTiming.textContent =
+    `Payment is ${earlyDays} ${earlyDays === 1 ? 'day' : 'days'} early and within the standard window.`
 }
 
 function renderOverlap() {
@@ -268,14 +342,18 @@ async function checkOverlap() {
 }
 
 function syncPaymentDate() {
-  elements.payment.min = elements.end.value || ''
+  elements.payment.max = elements.end.value || ''
   if (
     elements.payment.value &&
     elements.end.value &&
-    elements.payment.value < elements.end.value
+    elements.payment.value > elements.end.value
   ) {
     elements.payment.value = elements.end.value
   }
+  if (!elements.payment.value && elements.end.value) {
+    elements.payment.value = elements.end.value
+  }
+  renderPaymentTiming()
 }
 
 async function createPeriod(event) {
@@ -298,7 +376,9 @@ async function createPeriod(event) {
 
   const { data, error } = await supabase.rpc('payroll_create_period', {
     ...periodPayload(),
-    p_payment_date: elements.payment.value
+    p_payment_date: elements.payment.value,
+    p_early_payment_override_reason:
+      elements.earlyPaymentReason.value.trim() || null
   })
 
   if (error) {
@@ -364,7 +444,11 @@ elements.end.addEventListener('change', () => {
   syncPaymentDate()
   checkOverlap()
 })
-elements.payment.addEventListener('change', () => setMessage(''))
+elements.payment.addEventListener('change', () => {
+  renderPaymentTiming()
+  setMessage('')
+})
+elements.earlyPaymentReason.addEventListener('input', () => setMessage(''))
 elements.form.addEventListener('submit', createPeriod)
 elements.refresh.addEventListener('click', loadPeriods)
 document.addEventListener('DOMContentLoaded', initialize)

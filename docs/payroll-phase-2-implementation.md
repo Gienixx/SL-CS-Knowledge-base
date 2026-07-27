@@ -417,7 +417,7 @@ Phase 2 becomes the primary payroll process only when:
 | 2 | Complete | None |
 | 3 | Complete and updated for own-payslip access | Continue regression testing |
 | 4 | Complete | Confirm calculator uses work-date rates |
-| 5 | Implemented | Add early payment dates and pre-plot approval |
+| 5 | Complete | Early-payment window, documented override, eligible schedule review, immutable pre-plot approval, and audit logging implemented |
 | 6 | Implemented | Add schedule snapshots and special-day minute details |
 | 7 | Not started | Start only after Steps 1, 5, 6, and 8 are revised |
 | 8 | Implemented | Exempt approved pre-plots and add reconciliation exceptions |
@@ -428,8 +428,7 @@ Phase 2 becomes the primary payroll process only when:
 
 ## Next implementation order
 
-1. Revise Step 5 to support early payment and explicit pre-plot approval.
-2. Revise Step 6 to import approved pre-plotted schedules.
-3. Revise Step 8 so approved pre-plots do not create false blocking exceptions.
-4. Implement the Step 7 payroll calculator and FIFO hour allocation.
-5. Continue with Steps 9 through 15.
+1. Revise Step 6 to import approved pre-plotted schedules.
+2. Revise Step 8 with the remaining schedule-change and reconciliation exceptions.
+3. Implement the Step 7 payroll calculator and FIFO hour allocation.
+4. Continue with Steps 9 through 15.

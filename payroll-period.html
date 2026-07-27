@@ -6,7 +6,7 @@
   <title>Payroll Period | SocialLoop CS Base</title>
   <link rel="stylesheet" href="./styles/button-theme.css?v=1">
   <link rel="stylesheet" href="./styles/workforce-admin.css?v=8">
-  <link rel="stylesheet" href="./styles/payroll-periods.css?v=4">
+  <link rel="stylesheet" href="./styles/payroll-periods.css?v=5">
 </head>
 <body class="payroll-access-pending">
   <main class="payroll-page">
@@ -56,6 +56,59 @@
     </section>
 
     <p id="payrollPeriodMessage" class="wf-message payroll-page-message" role="status" aria-live="polite"></p>
+
+    <section class="payroll-card payroll-preplot-card" aria-labelledby="payrollPreplotTitle">
+      <div class="payroll-section-heading payroll-preplot-heading">
+        <div>
+          <p class="payroll-eyebrow">Early-payment coverage</p>
+          <h2 id="payrollPreplotTitle">Approve pre-plotted schedules</h2>
+          <p>Select eligible ordinary shifts after the payment date. Approval captures the exact schedule version; rest days and guaranteed special days never create prepaid-hour debt.</p>
+        </div>
+        <span id="payrollPreplotCount" class="payroll-count-pill">0 schedules</span>
+      </div>
+
+      <div class="payroll-preplot-stats" aria-label="Pre-plot approval summary">
+        <div><span>Eligible</span><strong id="payrollPreplotEligibleCount">0</strong></div>
+        <div><span>Selected</span><strong id="payrollPreplotSelectedCount">0</strong></div>
+        <div><span>Approved</span><strong id="payrollPreplotApprovedCount">0</strong></div>
+      </div>
+
+      <div class="payroll-table-wrap">
+        <table class="payroll-preplot-table">
+          <thead>
+            <tr>
+              <th><span class="sr-only">Select</span></th>
+              <th>Employee</th>
+              <th>Work date</th>
+              <th>Scheduled shift</th>
+              <th>Hours</th>
+              <th>Day type</th>
+              <th>Approval status</th>
+            </tr>
+          </thead>
+          <tbody id="payrollPreplotBody">
+            <tr><td colspan="7" class="payroll-table-empty">Loading pre-plot candidates…</td></tr>
+          </tbody>
+        </table>
+      </div>
+
+      <div id="payrollPreplotActions" class="payroll-preplot-actions" hidden>
+        <label class="payroll-field payroll-preplot-reason">
+          <span>Approval reason</span>
+          <input
+            id="payrollPreplotReason"
+            class="payroll-control"
+            type="text"
+            maxlength="500"
+            placeholder="Why these future shifts are approved for early payment"
+          >
+        </label>
+        <button id="approvePayrollPreplotsButton" class="payroll-button payroll-button-primary" type="button" disabled>
+          Approve selected schedules
+        </button>
+      </div>
+      <p id="payrollPreplotStatus" class="payroll-import-status">No eligible post-payment schedules are loaded.</p>
+    </section>
 
     <section id="payrollExceptionSummary" class="payroll-exception-summary clear" aria-labelledby="payrollExceptionTitle">
       <div>
@@ -154,6 +207,6 @@
     </section>
   </main>
 
-  <script type="module" src="./scripts/payroll-period.js?v=4"></script>
+  <script type="module" src="./scripts/payroll-period.js?v=5"></script>
 </body>
 </html>

@@ -26,15 +26,19 @@ const state = {
   periodId: new URLSearchParams(window.location.search).get('id') || '',
   period: null,
   employees: [],
+  preplots: [],
+  selectedPreplots: new Set(),
   exceptions: [],
   exceptionFilter: 'all',
   missingAttendance: new Map(),
   importStatuses: new Map(),
   canViewAttendance: false,
   canImportAttendance: false,
+  canApprovePreplots: false,
   canManageRates: false,
   loading: false,
-  importing: false
+  importing: false,
+  approvingPreplots: false
 }
 
 const elements = {
@@ -42,6 +46,17 @@ const elements = {
   refresh: document.getElementById('refreshPayrollPeriodButton'),
   importButton: document.getElementById('importPayrollAttendanceButton'),
   importStatus: document.getElementById('payrollImportStatus'),
+  preplotBody: document.getElementById('payrollPreplotBody'),
+  preplotCount: document.getElementById('payrollPreplotCount'),
+  preplotEligibleCount: document.getElementById('payrollPreplotEligibleCount'),
+  preplotSelectedCount: document.getElementById('payrollPreplotSelectedCount'),
+  preplotApprovedCount: document.getElementById('payrollPreplotApprovedCount'),
+  preplotActions: document.getElementById('payrollPreplotActions'),
+  preplotReason: document.getElementById('payrollPreplotReason'),
+  approvePreplotsButton: document.getElementById(
+    'approvePayrollPreplotsButton'
+  ),
+  preplotStatus: document.getElementById('payrollPreplotStatus'),
   body: document.getElementById('payrollReadinessBody'),
   exceptionSummary: document.getElementById('payrollExceptionSummary'),
   exceptionTitle: document.getElementById('payrollExceptionTitle'),
@@ -60,6 +75,24 @@ const dateFormatter = new Intl.DateTimeFormat('en-PH', {
 
 function formatDate(value) {
   return value ? dateFormatter.format(new Date(`${value}T00:00:00`)) : '—'
+}
+
+function formatShiftTime(value, timezone = 'America/New_York') {
+  if (!value) return '—'
+  try {
+    return new Intl.DateTimeFormat('en-PH', {
+      hour: 'numeric',
+      minute: '2-digit',
+      timeZone: timezone || 'America/New_York'
+    }).format(new Date(value))
+  } catch {
+    return '—'
+  }
+}
+
+function formatHours(minutes) {
+  const hours = Number(minutes || 0) / 60
+  return Number.isInteger(hours) ? String(hours) : hours.toFixed(2)
 }
 
 function setMessage(message = '', type = '') {
@@ -96,7 +129,7 @@ function renderPeriod() {
   document.getElementById('payrollPeriodTitle').textContent =
     `${formatDate(period.period_start)} – ${formatDate(period.period_end)}`
   document.getElementById('payrollPeriodSubtitle').textContent =
-    `Payment date ${formatDate(period.payment_date)} · ${Number(period.employee_count || 0)} eligible employees loaded`
+    `Payment date ${formatDate(period.payment_date)}${Number(period.early_payment_days || 0) ? ` · ${Number(period.early_payment_days)} ${Number(period.early_payment_days) === 1 ? 'day' : 'days'} early` : ' · cutoff day'} · ${Number(period.employee_count || 0)} eligible employees loaded`
   document.getElementById('payrollDetailStart').textContent =
     formatDate(period.period_start)
   document.getElementById('payrollDetailEnd').textContent =
@@ -158,6 +191,175 @@ function renderMetrics() {
   document.getElementById('payrollAttentionCount').textContent = attentionCount
   document.getElementById('payrollReadinessCount').textContent =
     `${employeeCount} ${employeeCount === 1 ? 'employee' : 'employees'}`
+}
+
+function preplotStatusLabel(candidate) {
+  const labels = {
+    approved: 'Approved',
+    attendance_exists: 'Attendance available',
+    rest_day: 'Rest day',
+    guaranteed_special_day: 'Guaranteed special day',
+    unpublished: 'Not published',
+    incomplete_shift: 'Incomplete shift',
+    invalid_shift: 'Invalid shift',
+    schedule_changed: 'Changed · reapprove',
+    eligible: 'Eligible'
+  }
+  return labels[candidate.approval_status] || 'Review'
+}
+
+function renderPreplots() {
+  const eligible = state.preplots.filter(candidate => candidate.can_approve)
+  const approved = state.preplots.filter(
+    candidate => candidate.approval_status === 'approved'
+  )
+  const validIds = new Set(eligible.map(candidate => candidate.schedule_id))
+  for (const scheduleId of state.selectedPreplots) {
+    if (!validIds.has(scheduleId)) state.selectedPreplots.delete(scheduleId)
+  }
+
+  elements.preplotCount.textContent =
+    `${state.preplots.length} ${state.preplots.length === 1 ? 'schedule' : 'schedules'}`
+  elements.preplotEligibleCount.textContent = eligible.length
+  elements.preplotSelectedCount.textContent = state.selectedPreplots.size
+  elements.preplotApprovedCount.textContent = approved.length
+  elements.preplotActions.hidden = !state.canApprovePreplots
+
+  const periodCanApprove = ['draft', 'reopened'].includes(
+    state.period?.period_status
+  )
+  elements.approvePreplotsButton.disabled =
+    !state.canApprovePreplots ||
+    !periodCanApprove ||
+    state.approvingPreplots ||
+    state.selectedPreplots.size === 0 ||
+    !elements.preplotReason.value.trim()
+
+  if (!state.preplots.length) {
+    const row = document.createElement('tr')
+    const cell = element(
+      'td',
+      'payroll-table-empty',
+      Number(state.period?.early_payment_days || 0) > 0
+        ? 'No schedules fall after the payment date in this payroll period.'
+        : 'Payment is on the cutoff date, so this period has no pre-plot candidates.'
+    )
+    cell.colSpan = 7
+    row.append(cell)
+    elements.preplotBody.replaceChildren(row)
+    elements.preplotStatus.className = 'payroll-import-status'
+    elements.preplotStatus.textContent =
+      'No future ordinary shifts require pre-plot approval.'
+    return
+  }
+
+  const fragment = document.createDocumentFragment()
+  for (const candidate of state.preplots) {
+    const row = document.createElement('tr')
+    if (candidate.approval_status === 'approved') {
+      row.classList.add('payroll-preplot-approved-row')
+    }
+
+    const selectCell = document.createElement('td')
+    const checkbox = document.createElement('input')
+    checkbox.type = 'checkbox'
+    checkbox.className = 'payroll-preplot-checkbox'
+    checkbox.dataset.scheduleId = candidate.schedule_id
+    checkbox.disabled =
+      !state.canApprovePreplots || !periodCanApprove || !candidate.can_approve
+    checkbox.checked = state.selectedPreplots.has(candidate.schedule_id)
+    checkbox.setAttribute(
+      'aria-label',
+      `Select ${candidate.employee_name || candidate.employee_email} on ${formatDate(candidate.work_date)}`
+    )
+    selectCell.append(checkbox)
+
+    const employeeCell = element('td', 'payroll-employee-cell')
+    employeeCell.append(
+      element('strong', '', candidate.employee_name || candidate.employee_email),
+      element(
+        'small',
+        '',
+        [candidate.employee_number, candidate.employee_email]
+          .filter(Boolean)
+          .join(' · ')
+      )
+    )
+
+    const shiftCell = document.createElement('td')
+    shiftCell.append(
+      element(
+        'strong',
+        'payroll-preplot-shift',
+        `${formatShiftTime(candidate.shift_start, candidate.timezone)} – ${formatShiftTime(candidate.shift_end, candidate.timezone)}`
+      ),
+      element('small', 'payroll-cell-note', candidate.timezone)
+    )
+
+    const typeCell = document.createElement('td')
+    typeCell.append(
+      element(
+        'span',
+        `payroll-preplot-type ${candidate.special_day_type}`,
+        String(candidate.special_day_type || 'ordinary').replaceAll('_', ' ')
+      )
+    )
+    if (candidate.holiday_name) {
+      typeCell.append(
+        element('small', 'payroll-cell-note', candidate.holiday_name)
+      )
+    }
+
+    const statusCell = document.createElement('td')
+    statusCell.append(
+      element(
+        'span',
+        `payroll-preplot-status ${candidate.approval_status}`,
+        preplotStatusLabel(candidate)
+      ),
+      element(
+        'small',
+        'payroll-cell-note',
+        candidate.approval_message || ''
+      )
+    )
+    if (candidate.approved_at) {
+      statusCell.append(
+        element(
+          'small',
+          'payroll-cell-note',
+          `Approved by ${candidate.approved_by_name || 'payroll'}`
+        )
+      )
+    }
+
+    row.append(
+      selectCell,
+      employeeCell,
+      element('td', '', formatDate(candidate.work_date)),
+      shiftCell,
+      element('td', '', formatHours(candidate.scheduled_minutes)),
+      typeCell,
+      statusCell
+    )
+    fragment.append(row)
+  }
+  elements.preplotBody.replaceChildren(fragment)
+
+  elements.preplotStatus.className = 'payroll-import-status'
+  if (state.selectedPreplots.size) {
+    elements.preplotStatus.textContent =
+      `${state.selectedPreplots.size} ${state.selectedPreplots.size === 1 ? 'schedule is' : 'schedules are'} selected. Add one approval reason for this batch.`
+    elements.preplotStatus.classList.add('warning')
+  } else if (eligible.length) {
+    elements.preplotStatus.textContent =
+      `${eligible.length} eligible ${eligible.length === 1 ? 'schedule requires' : 'schedules require'} explicit approval before early payment.`
+    elements.preplotStatus.classList.add('warning')
+  } else {
+    elements.preplotStatus.textContent =
+      `All ${approved.length} eligible schedule ${approved.length === 1 ? 'version is' : 'versions are'} approved.`
+    elements.preplotStatus.classList.add('ready')
+  }
 }
 
 function addExceptionChip(fragment, count, label) {
@@ -581,6 +783,7 @@ function renderEmployees() {
 function renderAll() {
   renderPeriod()
   renderMetrics()
+  renderPreplots()
   renderExceptions()
   renderExceptionReview()
   renderImportStatus()
@@ -599,7 +802,8 @@ async function loadPeriod() {
     readinessResult,
     missingAttendanceResult,
     importStatusResult,
-    exceptionsResult
+    exceptionsResult,
+    preplotsResult
   ] =
     await Promise.all([
       supabase.rpc('payroll_get_period_dashboard'),
@@ -614,6 +818,9 @@ async function loadPeriod() {
       }),
       supabase.rpc('payroll_get_period_exceptions', {
         p_payroll_period_id: state.periodId
+      }),
+      supabase.rpc('payroll_get_preplot_candidates', {
+        p_payroll_period_id: state.periodId
       })
     ])
 
@@ -625,7 +832,8 @@ async function loadPeriod() {
     readinessResult.error ||
     missingAttendanceResult.error ||
     importStatusResult.error ||
-    exceptionsResult.error
+    exceptionsResult.error ||
+    preplotsResult.error
   ) {
     setMessage(
       'Payroll readiness could not be loaded. Refresh or contact a system administrator.',
@@ -644,6 +852,7 @@ async function loadPeriod() {
   }
 
   state.employees = readinessResult.data || []
+  state.preplots = preplotsResult.data || []
   state.exceptions = exceptionsResult.data || []
   state.missingAttendance = new Map()
   for (const entry of missingAttendanceResult.data || []) {
@@ -702,6 +911,61 @@ async function importApprovedAttendance() {
   )
 }
 
+async function approveSelectedPreplots() {
+  const reason = elements.preplotReason.value.trim()
+  if (
+    state.approvingPreplots ||
+    !state.canApprovePreplots ||
+    !state.selectedPreplots.size
+  ) {
+    return
+  }
+
+  if (!reason) {
+    setMessage('Add an approval reason for the selected pre-plots.', 'error')
+    renderPreplots()
+    return
+  }
+
+  state.approvingPreplots = true
+  elements.approvePreplotsButton.disabled = true
+  elements.refresh.disabled = true
+  setMessage('Validating and approving the selected schedule versions…')
+
+  const { data, error } = await supabase.rpc('payroll_approve_preplots', {
+    p_payroll_period_id: state.periodId,
+    p_schedule_ids: [...state.selectedPreplots],
+    p_approval_reason: reason
+  })
+
+  state.approvingPreplots = false
+  elements.refresh.disabled = false
+
+  if (error) {
+    const safeMessage = String(error.message || '')
+    setMessage(
+      safeMessage.includes('cannot be approved') ||
+      safeMessage.includes('required') ||
+      safeMessage.includes('draft or reopened')
+        ? safeMessage
+        : 'The selected pre-plots could not be approved. Refresh and try again.',
+      'error'
+    )
+    renderPreplots()
+    return
+  }
+
+  const approvedCount = Number(data?.approved_schedule_count || 0)
+  const alreadyCurrentCount = Number(data?.already_current_count || 0)
+  state.selectedPreplots.clear()
+  elements.preplotReason.value = ''
+  await loadPeriod()
+  setMessage(
+    `${approvedCount} ${approvedCount === 1 ? 'schedule version was' : 'schedule versions were'} approved and preserved.${alreadyCurrentCount ? ` ${alreadyCurrentCount} ${alreadyCurrentCount === 1 ? 'selection was' : 'selections were'} already current.` : ''}`,
+    'success'
+  )
+}
+
 async function initialize() {
   if (!isValidUuid(state.periodId)) {
     window.location.replace('./payroll-dashboard.html')
@@ -732,6 +996,10 @@ async function initialize() {
       access,
       'create_payroll'
     )
+    state.canApprovePreplots = hasWorkforcePermission(
+      access,
+      'create_payroll'
+    )
     state.canManageRates = hasWorkforcePermission(
       access,
       'manage_agent_rates'
@@ -745,6 +1013,21 @@ async function initialize() {
 
 elements.refresh.addEventListener('click', loadPeriod)
 elements.importButton.addEventListener('click', importApprovedAttendance)
+elements.preplotBody.addEventListener('change', event => {
+  const checkbox = event.target.closest('.payroll-preplot-checkbox')
+  if (!checkbox) return
+  if (checkbox.checked) {
+    state.selectedPreplots.add(checkbox.dataset.scheduleId)
+  } else {
+    state.selectedPreplots.delete(checkbox.dataset.scheduleId)
+  }
+  renderPreplots()
+})
+elements.preplotReason.addEventListener('input', renderPreplots)
+elements.approvePreplotsButton.addEventListener(
+  'click',
+  approveSelectedPreplots
+)
 elements.exceptionFilter.addEventListener('change', event => {
   state.exceptionFilter = event.target.value
   renderExceptionReview()
