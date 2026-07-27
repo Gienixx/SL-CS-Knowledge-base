@@ -15,6 +15,20 @@ must be resolved before payroll can be calculated or finalized.
 - Attendance changed after import
 - Scheduled shifts with no attendance entry
 
+Before Step 7 begins, this review will be extended with:
+
+- Schedule changed after pre-plot approval
+- Pre-plot missing payroll approval
+- Invalid pre-plotted minutes
+- Duplicate hour allocation
+- Invalid prepaid balance source
+- Unresolved prepaid balance
+
+Approved pre-plotted dates will not be treated as missing attendance.
+Guaranteed special days without attendance will not be treated as missing
+attendance. A valid balance carried to a later payroll will be visible for
+review but will not be a blocking exception.
+
 The checks use current attendance, schedules, effective-dated rate coverage,
 and the latest imported attendance version. They do not calculate pay or expose
 rate amounts.

@@ -14,6 +14,22 @@ The import does not expose rates or calculate pay. Missing, incomplete, or
 unapproved attendance remains outside payroll and continues to appear in the
 readiness checks.
 
+## Prepaid-hours foundation
+
+The reconciliation tables and schedule versioning required by the revised
+Phase 2 Step 1 are now in place. The Step 6 import workflow still needs to be
+extended so authorized payroll users can approve and import future schedules.
+The system will not create fake attendance for pre-plotted dates and will not
+weaken the payroll-ready attendance rules.
+
+An approved pre-plotted schedule will create a prepaid-minute balance. Later
+payroll-ready attendance may settle that balance through append-only allocation
+records. The attendance row and the finalized source payroll will remain
+unchanged.
+
+Holiday, rest-day, and guaranteed special-day work will remain additional
+payable work and will not settle prepaid balances.
+
 ## Snapshot integrity
 
 Each imported row stores the employee, schedule, work date, clock times,
