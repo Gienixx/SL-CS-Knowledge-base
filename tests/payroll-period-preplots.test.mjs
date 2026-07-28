@@ -73,6 +73,29 @@ test('pre-plot candidates are limited to post-payment schedules in the period', 
   )
 })
 
+test('approved pre-plots remain visible and use immutable snapshot times', async () => {
+  const migration = await read(
+    'supabase/migrations/20260728094109_show_approved_preplots_in_period.sql'
+  )
+
+  assert.match(
+    migration,
+    /schedule\.shift_date > v_period\.payment_date\s+or exists \([\s\S]*?approved_snapshot\.schedule_version = schedule\.schedule_version/
+  )
+  assert.match(
+    migration,
+    /coalesce\(current_approval\.shift_start, schedule\.shift_start\)/
+  )
+  assert.match(
+    migration,
+    /coalesce\(\s*current_approval\.scheduled_minutes,[\s\S]*?schedule\.shift_end - schedule\.shift_start/
+  )
+  assert.match(
+    migration,
+    /schedule\.shift_date > v_period\.payment_date[\s\S]*?current_approval\.snapshot_id is null/
+  )
+})
+
 test('pre-plot approval snapshots trusted current schedule values atomically', async () => {
   const migration = await read(migrationPath)
 
