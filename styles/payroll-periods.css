@@ -430,6 +430,13 @@ body { margin: 0; background-image: none; }
 }
 
 .payroll-preplot-heading { align-items: center; }
+.payroll-preplot-heading-actions {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 9px;
+  flex: 0 0 auto;
+}
 
 .payroll-preplot-stats {
   display: grid;
@@ -552,6 +559,156 @@ body { margin: 0; background-image: none; }
 }
 
 .payroll-preplot-reason { min-width: 0; }
+
+.payroll-dialog {
+  width: min(680px, calc(100% - 32px));
+  max-height: calc(100vh - 48px);
+  padding: 0;
+  border: 1px solid var(--payroll-border);
+  border-radius: 16px;
+  color: var(--payroll-text);
+  background: var(--payroll-surface);
+  box-shadow: 0 24px 70px rgba(20, 20, 43, .22);
+}
+
+.payroll-dialog::backdrop {
+  background: rgba(20, 20, 43, .46);
+  backdrop-filter: blur(2px);
+}
+
+.payroll-dialog-form {
+  padding: 22px;
+}
+
+.payroll-dialog-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 18px;
+  margin-bottom: 20px;
+}
+
+.payroll-dialog-header h2 {
+  margin: 0 0 6px;
+  font-size: 21px;
+}
+
+.payroll-dialog-header p:last-child {
+  margin: 0;
+  color: var(--payroll-copy);
+  font-size: 12px;
+  line-height: 1.5;
+}
+
+.payroll-dialog-close {
+  display: grid;
+  place-items: center;
+  width: 34px;
+  height: 34px;
+  padding: 0;
+  border: 1px solid var(--payroll-border);
+  border-radius: 9px;
+  color: var(--payroll-copy);
+  background: var(--payroll-surface);
+  font-size: 22px;
+  line-height: 1;
+  cursor: pointer;
+}
+
+.payroll-prepaid-form-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 14px;
+}
+
+.payroll-prepaid-wide {
+  grid-column: 1 / -1;
+}
+
+.payroll-prepaid-hours {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  min-height: 40px;
+  padding: 8px 12px;
+  border-radius: 9px;
+  background: var(--payroll-bg);
+}
+
+.payroll-prepaid-hours span {
+  color: var(--payroll-muted);
+  font-size: 9px;
+  font-weight: 700;
+  text-transform: uppercase;
+}
+
+.payroll-prepaid-hours strong {
+  font-size: 15px;
+}
+
+.payroll-prepaid-source {
+  padding: 11px 13px;
+  border-radius: 9px;
+  color: var(--payroll-copy);
+  background: var(--payroll-bg);
+  font-size: 11px;
+  line-height: 1.5;
+}
+
+.payroll-prepaid-source.ready {
+  color: var(--payroll-green);
+  background: var(--payroll-green-soft);
+}
+
+.payroll-prepaid-source.warning {
+  color: var(--payroll-amber);
+  background: var(--payroll-amber-soft);
+}
+
+.payroll-prepaid-source.blocked {
+  color: var(--payroll-red);
+  background: var(--payroll-red-soft);
+}
+
+.payroll-prepaid-confirm {
+  display: flex;
+  align-items: flex-start;
+  gap: 9px;
+  padding: 11px 13px;
+  border-radius: 9px;
+  color: var(--payroll-amber);
+  background: var(--payroll-amber-soft);
+  font-size: 11px;
+  line-height: 1.45;
+}
+
+.payroll-prepaid-confirm input {
+  width: 16px;
+  height: 16px;
+  margin: 0;
+  flex: 0 0 16px;
+  accent-color: var(--payroll-purple);
+}
+
+.payroll-prepaid-message {
+  min-height: 17px;
+  margin: 12px 0 0;
+  color: var(--payroll-copy);
+  font-size: 11px;
+}
+
+.payroll-prepaid-message.error { color: var(--payroll-red); }
+.payroll-prepaid-message.success { color: var(--payroll-green); }
+
+.payroll-dialog-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 9px;
+  margin-top: 18px;
+  padding-top: 16px;
+  border-top: 1px solid var(--payroll-border);
+}
 
 .payroll-exception-review-heading {
   align-items: center;
@@ -746,10 +903,17 @@ body { margin: 0; background-image: none; }
   .payroll-import-stats,
   .payroll-preplot-stats,
   .payroll-preplot-actions,
+  .payroll-prepaid-form-grid,
   .payroll-period-form,
   .payroll-period-date-grid,
   .payroll-period-row { grid-template-columns: 1fr; }
   .payroll-card { padding: 16px; }
+  .payroll-preplot-heading-actions { width: 100%; justify-content: space-between; }
+  .payroll-prepaid-wide { grid-column: auto; }
+  .payroll-dialog { width: calc(100% - 20px); max-height: calc(100vh - 20px); }
+  .payroll-dialog-form { padding: 17px; }
+  .payroll-dialog-actions { flex-direction: column-reverse; }
+  .payroll-dialog-actions .payroll-button { width: 100%; }
   .payroll-preplot-actions .payroll-button { width: 100%; }
   .payroll-exception-chips { justify-content: flex-start; }
 }

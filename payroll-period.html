@@ -6,7 +6,7 @@
   <title>Payroll Period | SocialLoop CS Base</title>
   <link rel="stylesheet" href="./styles/button-theme.css?v=1">
   <link rel="stylesheet" href="./styles/workforce-admin.css?v=8">
-  <link rel="stylesheet" href="./styles/payroll-periods.css?v=6">
+  <link rel="stylesheet" href="./styles/payroll-periods.css?v=7">
 </head>
 <body class="payroll-access-pending">
   <main class="payroll-page">
@@ -64,7 +64,12 @@
           <h2 id="payrollPreplotTitle">Approve pre-plotted schedules</h2>
           <p>Select eligible ordinary shifts after the payment date. Approval creates prepaid hours without creating attendance. Actual approved hours settle the oldest balance first; any remainder carries forward. Rest days and guaranteed special days never reduce prepaid balances.</p>
         </div>
-        <span id="payrollPreplotCount" class="payroll-count-pill">0 schedules</span>
+        <div class="payroll-preplot-heading-actions">
+          <button id="addPayrollPrepaidButton" class="payroll-button payroll-button-primary" type="button" hidden>
+            + Add prepaid schedule
+          </button>
+          <span id="payrollPreplotCount" class="payroll-count-pill">0 schedules</span>
+        </div>
       </div>
 
       <div class="payroll-preplot-stats" aria-label="Pre-plot approval summary">
@@ -110,6 +115,97 @@
       </div>
       <p id="payrollPreplotStatus" class="payroll-import-status">No eligible post-payment schedules are loaded.</p>
     </section>
+
+    <dialog id="payrollPrepaidDialog" class="payroll-dialog" aria-labelledby="payrollPrepaidDialogTitle">
+      <form id="payrollPrepaidForm" class="payroll-dialog-form">
+        <header class="payroll-dialog-header">
+          <div>
+            <p class="payroll-eyebrow">Early-payment coverage</p>
+            <h2 id="payrollPrepaidDialogTitle">Add prepaid schedule</h2>
+            <p>Create prepaid hours from a real employee schedule. This does not create or edit attendance.</p>
+          </div>
+          <button id="closePayrollPrepaidDialogButton" class="payroll-dialog-close" type="button" aria-label="Close">×</button>
+        </header>
+
+        <div class="payroll-prepaid-form-grid">
+          <label class="payroll-field payroll-prepaid-wide">
+            <span>Employee</span>
+            <select id="payrollPrepaidEmployee" class="payroll-control" required>
+              <option value="">Select an employee</option>
+            </select>
+          </label>
+
+          <label class="payroll-field">
+            <span>Work date</span>
+            <input id="payrollPrepaidDate" class="payroll-control" type="date" required>
+          </label>
+
+          <label class="payroll-field">
+            <span>Timezone</span>
+            <input
+              id="payrollPrepaidTimezone"
+              class="payroll-control"
+              type="text"
+              value="America/New_York"
+              maxlength="100"
+              list="payrollTimezoneOptions"
+              autocomplete="off"
+              required
+            >
+            <datalist id="payrollTimezoneOptions">
+              <option value="America/New_York"></option>
+              <option value="Asia/Manila"></option>
+              <option value="UTC"></option>
+            </datalist>
+          </label>
+
+          <label class="payroll-field">
+            <span>Prepaid login</span>
+            <input id="payrollPrepaidLogin" class="payroll-control" type="time" step="60" required>
+          </label>
+
+          <label class="payroll-field">
+            <span>Prepaid logout</span>
+            <input id="payrollPrepaidLogout" class="payroll-control" type="time" step="60" required>
+          </label>
+
+          <div class="payroll-prepaid-hours">
+            <span>Prepaid hours</span>
+            <strong id="payrollPrepaidHours">—</strong>
+          </div>
+
+          <div id="payrollPrepaidSourceStatus" class="payroll-prepaid-source payroll-prepaid-wide" role="status">
+            Select an employee and date to check the source schedule.
+          </div>
+
+          <label id="payrollPrepaidConfirmWrap" class="payroll-prepaid-confirm payroll-prepaid-wide" hidden>
+            <input id="payrollPrepaidConfirmScheduleChange" type="checkbox">
+            <span id="payrollPrepaidConfirmText">I confirm this source schedule change. It will be permission-checked and audited.</span>
+          </label>
+
+          <label class="payroll-field payroll-prepaid-wide">
+            <span>Approval reason</span>
+            <textarea
+              id="payrollPrepaidApprovalReason"
+              class="payroll-control"
+              rows="3"
+              maxlength="500"
+              placeholder="Why these future hours are approved for early payment"
+              required
+            ></textarea>
+          </label>
+        </div>
+
+        <p id="payrollPrepaidMessage" class="payroll-prepaid-message" role="status" aria-live="polite"></p>
+
+        <footer class="payroll-dialog-actions">
+          <button id="cancelPayrollPrepaidButton" class="payroll-button payroll-button-secondary" type="button">Cancel</button>
+          <button id="savePayrollPrepaidButton" class="payroll-button payroll-button-primary" type="submit" disabled>
+            Approve prepaid schedule
+          </button>
+        </footer>
+      </form>
+    </dialog>
 
     <section id="payrollExceptionSummary" class="payroll-exception-summary clear" aria-labelledby="payrollExceptionTitle">
       <div>
@@ -208,6 +304,6 @@
     </section>
   </main>
 
-  <script type="module" src="./scripts/payroll-period.js?v=6"></script>
+  <script type="module" src="./scripts/payroll-period.js?v=7"></script>
 </body>
 </html>

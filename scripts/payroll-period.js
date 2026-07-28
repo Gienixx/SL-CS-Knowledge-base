@@ -36,10 +36,13 @@ const state = {
   canViewAttendance: false,
   canImportAttendance: false,
   canApprovePreplots: false,
+  canManageSchedules: false,
   canManageRates: false,
   loading: false,
   importing: false,
-  approvingPreplots: false
+  approvingPreplots: false,
+  savingPrepaid: false,
+  prepaidCandidate: null
 }
 
 const elements = {
@@ -61,6 +64,40 @@ const elements = {
     'approvePayrollPreplotsButton'
   ),
   preplotStatus: document.getElementById('payrollPreplotStatus'),
+  addPrepaidButton: document.getElementById('addPayrollPrepaidButton'),
+  prepaidDialog: document.getElementById('payrollPrepaidDialog'),
+  prepaidForm: document.getElementById('payrollPrepaidForm'),
+  prepaidEmployee: document.getElementById('payrollPrepaidEmployee'),
+  prepaidDate: document.getElementById('payrollPrepaidDate'),
+  prepaidLogin: document.getElementById('payrollPrepaidLogin'),
+  prepaidLogout: document.getElementById('payrollPrepaidLogout'),
+  prepaidTimezone: document.getElementById('payrollPrepaidTimezone'),
+  prepaidHours: document.getElementById('payrollPrepaidHours'),
+  prepaidSourceStatus: document.getElementById(
+    'payrollPrepaidSourceStatus'
+  ),
+  prepaidConfirmWrap: document.getElementById(
+    'payrollPrepaidConfirmWrap'
+  ),
+  prepaidConfirm: document.getElementById(
+    'payrollPrepaidConfirmScheduleChange'
+  ),
+  prepaidConfirmText: document.getElementById(
+    'payrollPrepaidConfirmText'
+  ),
+  prepaidReason: document.getElementById(
+    'payrollPrepaidApprovalReason'
+  ),
+  prepaidMessage: document.getElementById('payrollPrepaidMessage'),
+  savePrepaidButton: document.getElementById(
+    'savePayrollPrepaidButton'
+  ),
+  closePrepaidButton: document.getElementById(
+    'closePayrollPrepaidDialogButton'
+  ),
+  cancelPrepaidButton: document.getElementById(
+    'cancelPayrollPrepaidButton'
+  ),
   body: document.getElementById('payrollReadinessBody'),
   exceptionSummary: document.getElementById('payrollExceptionSummary'),
   exceptionTitle: document.getElementById('payrollExceptionTitle'),
@@ -126,6 +163,279 @@ function isValidUuid(value) {
   return /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(value)
 }
 
+function addCalendarDays(value, days) {
+  const date = new Date(`${value}T00:00:00Z`)
+  date.setUTCDate(date.getUTCDate() + days)
+  return date.toISOString().slice(0, 10)
+}
+
+function timeInputValue(value, timezone = 'America/New_York') {
+  if (!value) return ''
+  try {
+    const parts = new Intl.DateTimeFormat('en-CA', {
+      hour: '2-digit',
+      minute: '2-digit',
+      hourCycle: 'h23',
+      timeZone: timezone || 'America/New_York'
+    }).formatToParts(new Date(value))
+    const part = type => parts.find(entry => entry.type === type)?.value || ''
+    return `${part('hour')}:${part('minute')}`
+  } catch {
+    return ''
+  }
+}
+
+function timezoneParts(timestamp, timezone) {
+  const parts = new Intl.DateTimeFormat('en-US', {
+    timeZone: timezone,
+    year: 'numeric',
+    month: '2-digit',
+    day: '2-digit',
+    hour: '2-digit',
+    minute: '2-digit',
+    second: '2-digit',
+    hourCycle: 'h23'
+  }).formatToParts(new Date(timestamp))
+  return Object.fromEntries(
+    parts.map(part => [part.type, Number(part.value)])
+  )
+}
+
+function zonedDateTimeTimestamp(date, time, timezone) {
+  const [year, month, day] = date.split('-').map(Number)
+  const [hour, minute] = time.split(':').map(Number)
+  const utcGuess = Date.UTC(year, month - 1, day, hour, minute, 0)
+  const calculateOffset = timestamp => {
+    const parts = timezoneParts(timestamp, timezone)
+    return Date.UTC(
+      parts.year,
+      parts.month - 1,
+      parts.day,
+      parts.hour,
+      parts.minute,
+      parts.second
+    ) - timestamp
+  }
+  let timestamp = utcGuess - calculateOffset(utcGuess)
+  timestamp = utcGuess - calculateOffset(timestamp)
+  return timestamp
+}
+
+function prepaidMinutes(workDate, login, logout, timezone) {
+  if (!workDate || !login || !logout || !timezone) return 0
+  const [loginHour, loginMinute] = login.split(':').map(Number)
+  const [logoutHour, logoutMinute] = logout.split(':').map(Number)
+  if (
+    [loginHour, loginMinute, logoutHour, logoutMinute].some(
+      value => !Number.isFinite(value)
+    )
+  ) {
+    return 0
+  }
+  try {
+    const startMinute = (loginHour * 60) + loginMinute
+    const endMinute = (logoutHour * 60) + logoutMinute
+    const endDate = endMinute <= startMinute
+      ? addCalendarDays(workDate, 1)
+      : workDate
+    const start = zonedDateTimeTimestamp(
+      workDate,
+      login,
+      timezone
+    )
+    const end = zonedDateTimeTimestamp(
+      endDate,
+      logout,
+      timezone
+    )
+    return Math.max(0, Math.round((end - start) / 60000))
+  } catch {
+    return 0
+  }
+}
+
+function setPrepaidMessage(message = '', type = '') {
+  elements.prepaidMessage.textContent = message
+  elements.prepaidMessage.className = 'payroll-prepaid-message'
+  if (type) elements.prepaidMessage.classList.add(type)
+}
+
+function selectedPrepaidCandidates() {
+  const employeeId = elements.prepaidEmployee.value
+  const workDate = elements.prepaidDate.value
+  if (!employeeId || !workDate) return []
+  return state.preplots.filter(
+    candidate =>
+      candidate.employee_user_id === employeeId &&
+      candidate.work_date === workDate
+  )
+}
+
+function prepaidValuesDiffer(candidate) {
+  if (!candidate) return false
+  const timezone = candidate.timezone || 'America/New_York'
+  return (
+    elements.prepaidLogin.value !==
+      timeInputValue(candidate.shift_start, timezone) ||
+    elements.prepaidLogout.value !==
+      timeInputValue(candidate.shift_end, timezone) ||
+    elements.prepaidTimezone.value.trim() !== timezone
+  )
+}
+
+function updatePrepaidFormState({ loadCandidateTimes = false } = {}) {
+  const candidates = selectedPrepaidCandidates()
+  const candidate = candidates.length === 1 ? candidates[0] : null
+  const hasSelection =
+    Boolean(elements.prepaidEmployee.value) &&
+    Boolean(elements.prepaidDate.value)
+  const editablePeriod = ['draft', 'reopened'].includes(
+    state.period?.period_status
+  )
+
+  state.prepaidCandidate = candidate
+
+  if (candidate && loadCandidateTimes) {
+    const timezone = candidate.timezone || 'America/New_York'
+    elements.prepaidTimezone.value = timezone
+    elements.prepaidLogin.value = timeInputValue(
+      candidate.shift_start,
+      timezone
+    )
+    elements.prepaidLogout.value = timeInputValue(
+      candidate.shift_end,
+      timezone
+    )
+    elements.prepaidConfirm.checked = false
+  } else if (loadCandidateTimes) {
+    elements.prepaidTimezone.value = 'America/New_York'
+    elements.prepaidLogin.value = ''
+    elements.prepaidLogout.value = ''
+    elements.prepaidConfirm.checked = false
+  }
+
+  const minutes = prepaidMinutes(
+    elements.prepaidDate.value,
+    elements.prepaidLogin.value,
+    elements.prepaidLogout.value,
+    elements.prepaidTimezone.value.trim()
+  )
+  elements.prepaidHours.textContent = minutes
+    ? `${formatHours(minutes)} hours`
+    : '—'
+
+  const candidateNeedsRepair = Boolean(candidate) &&
+    ['unpublished', 'incomplete_shift', 'invalid_shift'].includes(
+      candidate.approval_status
+    )
+  const existingNeedsManager =
+    Boolean(candidate) &&
+    (
+      candidateNeedsRepair ||
+      prepaidValuesDiffer(candidate)
+    )
+  const missingNeedsManager = hasSelection && candidates.length === 0
+  const requiresManager = existingNeedsManager || missingNeedsManager
+  const requiresConfirmation = existingNeedsManager
+
+  elements.prepaidConfirmWrap.hidden = !requiresConfirmation
+  if (requiresConfirmation) {
+    elements.prepaidConfirmText.textContent =
+      candidate?.schedule_status === 'scheduled' && !prepaidValuesDiffer(candidate)
+        ? 'I confirm this source schedule should be published. This change will be permission-checked and audited.'
+        : 'I confirm these times will change the source schedule. This change will be permission-checked and audited.'
+  } else {
+    elements.prepaidConfirm.checked = false
+  }
+
+  const lockTimes = Boolean(candidate) && !state.canManageSchedules
+  elements.prepaidLogin.readOnly = lockTimes
+  elements.prepaidLogout.readOnly = lockTimes
+  elements.prepaidTimezone.readOnly = lockTimes
+
+  let sourceMessage =
+    'Select an employee and date to check the source schedule.'
+  let sourceClass = ''
+  let blocked = false
+
+  if (hasSelection && candidates.length > 1) {
+    sourceMessage =
+      'Multiple schedules exist for this employee and date. Resolve them in Team Attendance before prepaid approval.'
+    sourceClass = 'blocked'
+    blocked = true
+  } else if (candidate?.approval_status === 'approved') {
+    sourceMessage =
+      'This exact schedule version is already approved and preserved as prepaid hours.'
+    sourceClass = 'ready'
+    blocked = true
+  } else if (
+    candidate &&
+    (
+      ['rest_day', 'guaranteed_special_day', 'attendance_exists'].includes(
+        candidate.approval_status
+      ) ||
+      ['cancelled', 'completed'].includes(candidate.schedule_status)
+    )
+  ) {
+    sourceMessage =
+      candidate.approval_message ||
+      'This schedule cannot create prepaid hours.'
+    sourceClass = 'blocked'
+    blocked = true
+  } else if (candidate && requiresManager && !state.canManageSchedules) {
+    sourceMessage =
+      'A schedule manager must publish or correct this source schedule first. Your payroll permission can approve it after that.'
+    sourceClass = 'blocked'
+    blocked = true
+  } else if (candidate && requiresManager) {
+    sourceMessage =
+      'A source schedule exists. Confirm the audited schedule change, then it can be approved as prepaid hours.'
+    sourceClass = 'warning'
+  } else if (candidate) {
+    sourceMessage =
+      'An eligible source schedule exists. Its exact current version will be preserved when approved.'
+    sourceClass = 'ready'
+  } else if (hasSelection && !state.canManageSchedules) {
+    sourceMessage =
+      'No source schedule exists. A schedule manager must create it before payroll can approve prepaid hours.'
+    sourceClass = 'blocked'
+    blocked = true
+  } else if (hasSelection) {
+    sourceMessage =
+      'No source schedule exists. Saving will create a published schedule, audit it, and approve its exact version.'
+    sourceClass = 'warning'
+  }
+
+  elements.prepaidSourceStatus.className =
+    `payroll-prepaid-source payroll-prepaid-wide${sourceClass ? ` ${sourceClass}` : ''}`
+  elements.prepaidSourceStatus.textContent = sourceMessage
+
+  const complete =
+    hasSelection &&
+    Boolean(elements.prepaidLogin.value) &&
+    Boolean(elements.prepaidLogout.value) &&
+    Boolean(elements.prepaidTimezone.value.trim()) &&
+    Boolean(elements.prepaidReason.value.trim()) &&
+    minutes > 0
+  const confirmed =
+    !requiresConfirmation || elements.prepaidConfirm.checked
+
+  elements.savePrepaidButton.disabled =
+    state.savingPrepaid ||
+    !state.canApprovePreplots ||
+    !editablePeriod ||
+    blocked ||
+    (requiresManager && !state.canManageSchedules) ||
+    !complete ||
+    !confirmed
+  elements.savePrepaidButton.textContent =
+    candidates.length === 0 && hasSelection
+      ? 'Create schedule and approve'
+      : requiresManager
+        ? 'Update schedule and approve'
+        : 'Approve prepaid schedule'
+}
+
 function renderPeriod() {
   const period = state.period
   if (!period) return
@@ -154,6 +464,18 @@ function renderPeriod() {
   elements.importButton.title = importable
     ? 'Copy current payroll-ready attendance into immutable snapshots'
     : 'Attendance can only be imported into draft or reopened payroll periods'
+  const hasPrepaidWindow =
+    Boolean(period.payment_date) &&
+    Boolean(period.period_end) &&
+    period.payment_date < period.period_end
+  elements.addPrepaidButton.hidden = !state.canApprovePreplots
+  elements.addPrepaidButton.disabled =
+    state.loading || !importable || !hasPrepaidWindow
+  elements.addPrepaidButton.title = !hasPrepaidWindow
+    ? 'This period is paid on the cutoff date and has no prepaid work dates'
+    : importable
+      ? 'Add prepaid hours from a real source schedule'
+      : 'Prepaid schedules can only be added to draft or reopened periods'
 }
 
 function employeeHasAttendanceIssue(employee) {
@@ -804,10 +1126,44 @@ function renderEmployees() {
   elements.body.replaceChildren(fragment)
 }
 
+function renderPrepaidEntryControls() {
+  const selectedEmployee = elements.prepaidEmployee.value
+  const options = [new Option('Select an employee', '')]
+  const employees = [...state.employees].sort((left, right) =>
+    String(left.employee_name || left.employee_email || '').localeCompare(
+      String(right.employee_name || right.employee_email || '')
+    )
+  )
+  for (const employee of employees) {
+    const label = [
+      employee.employee_name || employee.employee_email,
+      employee.employee_number
+    ].filter(Boolean).join(' · ')
+    options.push(new Option(label, employee.employee_user_id))
+  }
+  elements.prepaidEmployee.replaceChildren(...options)
+  if (
+    selectedEmployee &&
+    employees.some(employee => employee.employee_user_id === selectedEmployee)
+  ) {
+    elements.prepaidEmployee.value = selectedEmployee
+  }
+
+  if (state.period) {
+    elements.prepaidDate.min = addCalendarDays(
+      state.period.payment_date,
+      1
+    )
+    elements.prepaidDate.max = state.period.period_end
+  }
+  updatePrepaidFormState()
+}
+
 function renderAll() {
   renderPeriod()
   renderMetrics()
   renderPreplots()
+  renderPrepaidEntryControls()
   renderExceptions()
   renderExceptionReview()
   renderImportStatus()
@@ -996,6 +1352,99 @@ async function approveSelectedPreplots() {
   )
 }
 
+function openPrepaidDialog() {
+  elements.prepaidForm.reset()
+  elements.prepaidTimezone.value = 'America/New_York'
+  elements.prepaidDate.min = addCalendarDays(
+    state.period.payment_date,
+    1
+  )
+  elements.prepaidDate.max = state.period.period_end
+  state.prepaidCandidate = null
+  setPrepaidMessage('')
+  updatePrepaidFormState()
+  if (typeof elements.prepaidDialog.showModal === 'function') {
+    elements.prepaidDialog.showModal()
+  } else {
+    elements.prepaidDialog.setAttribute('open', '')
+  }
+}
+
+function closePrepaidDialog() {
+  if (typeof elements.prepaidDialog.close === 'function') {
+    elements.prepaidDialog.close()
+  } else {
+    elements.prepaidDialog.removeAttribute('open')
+  }
+}
+
+async function savePrepaidSchedule(event) {
+  event.preventDefault()
+  updatePrepaidFormState()
+
+  if (
+    state.savingPrepaid ||
+    elements.savePrepaidButton.disabled
+  ) {
+    return
+  }
+
+  const candidate = state.prepaidCandidate
+  const scheduleChangeConfirmed =
+    Boolean(candidate) &&
+    (
+      candidate.schedule_status === 'scheduled' ||
+      prepaidValuesDiffer(candidate) ||
+      ['incomplete_shift', 'invalid_shift'].includes(
+        candidate.approval_status
+      )
+    ) &&
+    elements.prepaidConfirm.checked
+
+  state.savingPrepaid = true
+  updatePrepaidFormState()
+  setPrepaidMessage(
+    'Validating the source schedule and preserving its exact version…'
+  )
+
+  const { data, error } = await supabase.rpc(
+    'payroll_save_and_approve_prepaid_schedule',
+    {
+      p_payroll_period_id: state.periodId,
+      p_employee_id: elements.prepaidEmployee.value,
+      p_work_date: elements.prepaidDate.value,
+      p_prepaid_login: elements.prepaidLogin.value,
+      p_prepaid_logout: elements.prepaidLogout.value,
+      p_timezone: elements.prepaidTimezone.value.trim(),
+      p_approval_reason: elements.prepaidReason.value.trim(),
+      p_allow_schedule_change: scheduleChangeConfirmed
+    }
+  )
+
+  state.savingPrepaid = false
+
+  if (error) {
+    setPrepaidMessage(
+      error.message ||
+        'The prepaid schedule could not be saved. Refresh and try again.',
+      'error'
+    )
+    updatePrepaidFormState()
+    return
+  }
+
+  const action = data?.schedule_action || 'existing'
+  const alreadyCurrent = Number(data?.already_current_count || 0) > 0
+  closePrepaidDialog()
+  await loadPeriod()
+  setMessage(
+    alreadyCurrent
+      ? 'That exact schedule version was already approved as prepaid hours.'
+      : `${action === 'created' ? 'The source schedule was created and' : action === 'updated' || action === 'published' ? 'The source schedule was updated and' : 'The existing source schedule was'} approved as prepaid hours. No attendance entry was created.`,
+    'success'
+  )
+}
+
 async function initialize() {
   if (!isValidUuid(state.periodId)) {
     window.location.replace('./payroll-dashboard.html')
@@ -1030,6 +1479,10 @@ async function initialize() {
       access,
       'create_payroll'
     )
+    state.canManageSchedules = hasWorkforcePermission(
+      access,
+      'manage_schedules'
+    )
     state.canManageRates = hasWorkforcePermission(
       access,
       'manage_agent_rates'
@@ -1058,6 +1511,29 @@ elements.approvePreplotsButton.addEventListener(
   'click',
   approveSelectedPreplots
 )
+elements.addPrepaidButton.addEventListener('click', openPrepaidDialog)
+elements.closePrepaidButton.addEventListener('click', closePrepaidDialog)
+elements.cancelPrepaidButton.addEventListener('click', closePrepaidDialog)
+elements.prepaidForm.addEventListener('submit', savePrepaidSchedule)
+elements.prepaidEmployee.addEventListener('change', () => {
+  updatePrepaidFormState({ loadCandidateTimes: true })
+})
+elements.prepaidDate.addEventListener('change', () => {
+  updatePrepaidFormState({ loadCandidateTimes: true })
+})
+for (const input of [
+  elements.prepaidLogin,
+  elements.prepaidLogout,
+  elements.prepaidTimezone,
+  elements.prepaidReason,
+  elements.prepaidConfirm
+]) {
+  input.addEventListener('input', () => updatePrepaidFormState())
+  input.addEventListener('change', () => updatePrepaidFormState())
+}
+elements.prepaidDialog.addEventListener('click', event => {
+  if (event.target === elements.prepaidDialog) closePrepaidDialog()
+})
 elements.exceptionFilter.addEventListener('change', event => {
   state.exceptionFilter = event.target.value
   renderExceptionReview()

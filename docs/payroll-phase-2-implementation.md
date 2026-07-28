@@ -458,7 +458,7 @@ Phase 2 becomes the primary payroll process only when:
 | 2 | Complete | None |
 | 3 | Complete and updated for own-payslip access | Continue regression testing |
 | 4 | Complete | Confirm calculator uses work-date rates |
-| 5 | Partially complete | Early-payment controls, eligible schedule review, immutable approval, and audit logging are implemented. The 59 validated July 2026 ordinary pre-plots from the approved support timesheet are imported and visible through the existing prepaid views; payroll-side **Add prepaid schedule** entry and its permission-aware schedule handoff remain |
+| 5 | Complete | Early-payment controls, eligible schedule review, immutable approval, and audit logging are implemented. The payroll-period page now includes **Add prepaid schedule**, calculated hours, existing-schedule loading, schedule-manager handoff, permission-aware creation or updates, exact-version approval, and server validation that never writes attendance. The 59 validated July 2026 ordinary pre-plots remain imported and visible |
 | 6 | Complete | Approval creates prepaid balances; approved attendance imports remain immutable; existing July attendance was reconciled against the imported balances using the same FIFO rules |
 | 7 | Partially implemented | FIFO minute reconciliation and carry-forward are live and verified for exact, partial, multi-day, overtime, and special-day scenarios; monetary payroll calculation remains |
 | 8 | Partially implemented | Core exceptions, approved pre-plot exemptions, and calculated prepaid-versus-actual Team Attendance columns are implemented; remaining-balance links and the complete exception set remain |
@@ -481,11 +481,8 @@ The July 2026 source-data bootstrap is complete:
   three-day carry-forward, regular-plus-overtime settlement, and rest-day and
   holiday exclusion.
 
-1. Complete Step 5 by adding the payroll-side **Add prepaid schedule** form,
-   schedule lookup or permission-aware creation handoff, validation, audit
-   logging, and tests.
-2. Complete the remaining Step 8 balance links and exception coverage.
-3. Implement the remaining Step 7 monetary payroll calculator on top of the
+1. Complete the remaining Step 8 balance links and exception coverage.
+2. Implement the remaining Step 7 monetary payroll calculator on top of the
    verified FIFO minute-allocation ledger.
-4. Expand Step 8 with invalid-balance and duplicate-allocation exceptions.
-5. Continue with Steps 9 through 15.
+3. Expand Step 8 with invalid-balance and duplicate-allocation exceptions.
+4. Continue with Steps 9 through 15.
