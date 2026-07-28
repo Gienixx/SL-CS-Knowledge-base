@@ -36,6 +36,19 @@ Only these minute categories may settle a balance:
 Rest-day and holiday work are deliberately excluded so they remain additional
 pay.
 
+## Live reconciliation
+
+- Approving an ordinary pre-plotted schedule creates one prepaid balance for
+  its scheduled minutes.
+- Importing approved ordinary attendance applies minutes to the employee's
+  oldest eligible balance.
+- Partial attendance leaves the remaining minutes open for the next eligible
+  day.
+- Importing a corrected attendance version writes reversal lines before
+  applying the replacement values.
+- Future clock-in or clock-out timestamps are rejected from live attendance;
+  planned paid time must use pre-plots.
+
 ## Supporting changes
 
 - `work_schedules.schedule_version` now increments on every schedule update.

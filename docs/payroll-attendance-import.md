@@ -16,16 +16,17 @@ readiness checks.
 
 ## Prepaid-hours foundation
 
-The reconciliation tables and schedule versioning required by the revised
-Phase 2 Step 1 are now in place. The Step 6 import workflow still needs to be
-extended so authorized payroll users can approve and import future schedules.
-The system will not create fake attendance for pre-plotted dates and will not
-weaken the payroll-ready attendance rules.
+The reconciliation tables, schedule versioning, future-attendance guard, and
+pre-plot approval workflow are now in place. Authorized payroll users approve
+eligible post-payment schedules from the payroll-period page. Approval creates
+a prepaid-minute balance without creating a fake attendance row or weakening
+the payroll-ready attendance rules.
 
-An approved pre-plotted schedule will create a prepaid-minute balance. Later
-payroll-ready attendance may settle that balance through append-only allocation
-records. The attendance row and the finalized source payroll will remain
-unchanged.
+Later payroll-ready attendance settles the oldest eligible balance through
+append-only allocation records. Regular minutes settle first, followed by
+normal pre-shift and post-shift overtime. A shortfall remains open and carries
+to later eligible attendance until the balance reaches zero. The attendance row
+and the finalized source payroll remain unchanged.
 
 Holiday, rest-day, and guaranteed special-day work will remain additional
 payable work and will not settle prepaid balances.

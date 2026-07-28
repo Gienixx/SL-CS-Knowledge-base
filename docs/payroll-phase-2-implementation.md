@@ -145,6 +145,23 @@ Authorized users can:
 - Select future scheduled shifts to be prepaid.
 - Review scheduled minutes and special-day classification.
 - Explicitly approve the pre-plotted schedule snapshot.
+- Open an **Add prepaid schedule** form from the payroll-period page.
+- Select the employee, work date, prepaid login, prepaid logout, and timezone.
+- Review the automatically calculated prepaid minutes before approval.
+- Add a required approval reason.
+
+The payroll-period prepaid-entry form must use the employee's real work
+schedule:
+
+- If an eligible published or changed schedule already exists, load its
+  login, logout, timezone, and scheduled minutes into the form.
+- A user with both `create_payroll` and `manage_schedules` may create the
+  missing employee schedule from the payroll workflow and then approve it.
+- A payroll user without `manage_schedules` may approve an eligible existing
+  schedule but cannot create or modify one. The page must identify that a
+  schedule manager is required.
+- Manually entered prepaid times must never be written to the `attendance`
+  table or represented as completed work.
 
 Requirements:
 
@@ -155,6 +172,14 @@ Requirements:
   pre-plotted.
 - Rest days and guaranteed special days must not create prepaid-hour debt.
 - An approved pre-plot is not treated as missing attendance.
+- The prepaid work date must fall after the payment date and within the payroll
+  period.
+- Duplicate employee, work-date, schedule, or schedule-version approvals must
+  be rejected.
+- Prepaid login and logout must produce a positive duration and must follow the
+  schedule's timezone and overnight-shift rules.
+- Creating or changing the source schedule and approving it for payroll are
+  separately permission-checked and audited.
 
 ### Step 6 — Import approved attendance and pre-plotted schedules
 
@@ -254,6 +279,16 @@ Display:
 - Prepaid balance with no valid source
 - Unresolved prepaid balance
 
+On the authorized team-attendance and payroll review interfaces, display:
+
+- Prepaid login and logout from the approved schedule snapshot
+- Prepaid minutes or hours
+- Actual login and logout from attendance
+- Actual eligible minutes
+- Minutes applied to prepaid balances
+- Remaining prepaid minutes
+- Open, partially settled, settled, or void status
+
 Requirements:
 
 - Approved pre-plotted dates are not missing-attendance exceptions.
@@ -264,6 +299,12 @@ Requirements:
 - Invalid, duplicated, or unaudited balances are blocking exceptions.
 - Exception links must take authorized users to the relevant attendance,
   schedule, rate, or payroll record without granting additional access.
+- Prepaid display values must be calculated from
+  `payroll_schedule_snapshots`, `payroll_prepaid_hours`, and
+  `payroll_hour_allocations`; they must not be stored as replacement clock
+  values on `attendance`.
+- Applying later minutes to a prepaid balance must never change the employee's
+  actual clock-in, clock-out, or approved attendance totals.
 
 ### Step 9 — Allow audited draft adjustments
 
@@ -417,10 +458,10 @@ Phase 2 becomes the primary payroll process only when:
 | 2 | Complete | None |
 | 3 | Complete and updated for own-payslip access | Continue regression testing |
 | 4 | Complete | Confirm calculator uses work-date rates |
-| 5 | Complete | Early-payment window, documented override, eligible schedule review, immutable pre-plot approval, and audit logging implemented |
-| 6 | Implemented | Add schedule snapshots and special-day minute details |
-| 7 | Not started | Start only after Steps 1, 5, 6, and 8 are revised |
-| 8 | Implemented | Exempt approved pre-plots and add reconciliation exceptions |
+| 5 | Partially complete | Early-payment controls, eligible schedule review, immutable approval, and audit logging are implemented; payroll-side **Add prepaid schedule** entry and its permission-aware schedule handoff remain |
+| 6 | Complete | Approval creates prepaid balances; approved attendance imports remain immutable |
+| 7 | Partially implemented | FIFO minute reconciliation and carry-forward are live; monetary payroll calculation remains |
+| 8 | Partially implemented | Core exceptions and approved pre-plot exemptions exist; prepaid-versus-actual attendance columns, settlement status, and remaining-balance links remain |
 | 9 | Not started | Implement after the base calculator |
 | 10 | Not started | Implement after calculation and adjustments |
 | 11–13 | Not started | Implement after finalization workflow |
@@ -428,7 +469,12 @@ Phase 2 becomes the primary payroll process only when:
 
 ## Next implementation order
 
-1. Revise Step 6 to import approved pre-plotted schedules.
-2. Revise Step 8 with the remaining schedule-change and reconciliation exceptions.
-3. Implement the Step 7 payroll calculator and FIFO hour allocation.
-4. Continue with Steps 9 through 15.
+1. Complete Step 5 by adding the payroll-side **Add prepaid schedule** form,
+   schedule lookup or permission-aware creation handoff, validation, audit
+   logging, and tests.
+2. Complete the Step 8 prepaid-versus-actual attendance display, settlement
+   status, remaining-balance links, and access tests.
+3. Implement the remaining Step 7 monetary payroll calculator on top of the
+   verified FIFO minute-allocation ledger.
+4. Expand Step 8 with invalid-balance and duplicate-allocation exceptions.
+5. Continue with Steps 9 through 15.

@@ -27,6 +27,7 @@ const state = {
   period: null,
   employees: [],
   preplots: [],
+  prepaidBalances: [],
   selectedPreplots: new Set(),
   exceptions: [],
   exceptionFilter: 'all',
@@ -51,6 +52,9 @@ const elements = {
   preplotEligibleCount: document.getElementById('payrollPreplotEligibleCount'),
   preplotSelectedCount: document.getElementById('payrollPreplotSelectedCount'),
   preplotApprovedCount: document.getElementById('payrollPreplotApprovedCount'),
+  preplotRemainingHours: document.getElementById(
+    'payrollPreplotRemainingHours'
+  ),
   preplotActions: document.getElementById('payrollPreplotActions'),
   preplotReason: document.getElementById('payrollPreplotReason'),
   approvePreplotsButton: document.getElementById(
@@ -213,6 +217,15 @@ function renderPreplots() {
   const approved = state.preplots.filter(
     candidate => candidate.approval_status === 'approved'
   )
+  const prepaidBySchedule = new Map(
+    state.prepaidBalances.map(balance => [balance.schedule_id, balance])
+  )
+  const remainingMinutes = state.prepaidBalances
+    .filter(balance => balance.balance_status !== 'void')
+    .reduce(
+      (total, balance) => total + Number(balance.remaining_minutes || 0),
+      0
+    )
   const validIds = new Set(eligible.map(candidate => candidate.schedule_id))
   for (const scheduleId of state.selectedPreplots) {
     if (!validIds.has(scheduleId)) state.selectedPreplots.delete(scheduleId)
@@ -223,6 +236,7 @@ function renderPreplots() {
   elements.preplotEligibleCount.textContent = eligible.length
   elements.preplotSelectedCount.textContent = state.selectedPreplots.size
   elements.preplotApprovedCount.textContent = approved.length
+  elements.preplotRemainingHours.textContent = formatHours(remainingMinutes)
   elements.preplotActions.hidden = !state.canApprovePreplots
 
   const periodCanApprove = ['draft', 'reopened'].includes(
@@ -311,6 +325,7 @@ function renderPreplots() {
     }
 
     const statusCell = document.createElement('td')
+    const prepaidBalance = prepaidBySchedule.get(candidate.schedule_id)
     statusCell.append(
       element(
         'span',
@@ -329,6 +344,15 @@ function renderPreplots() {
           'small',
           'payroll-cell-note',
           `Approved by ${candidate.approved_by_name || 'payroll'}`
+        )
+      )
+    }
+    if (prepaidBalance) {
+      statusCell.append(
+        element(
+          'small',
+          'payroll-cell-note payroll-prepaid-balance-note',
+          `${formatHours(prepaidBalance.settled_minutes)}h rendered · ${formatHours(prepaidBalance.remaining_minutes)}h remaining`
         )
       )
     }
@@ -803,7 +827,8 @@ async function loadPeriod() {
     missingAttendanceResult,
     importStatusResult,
     exceptionsResult,
-    preplotsResult
+    preplotsResult,
+    prepaidBalancesResult
   ] =
     await Promise.all([
       supabase.rpc('payroll_get_period_dashboard'),
@@ -821,6 +846,9 @@ async function loadPeriod() {
       }),
       supabase.rpc('payroll_get_preplot_candidates', {
         p_payroll_period_id: state.periodId
+      }),
+      supabase.rpc('payroll_get_period_prepaid_hours', {
+        p_payroll_period_id: state.periodId
       })
     ])
 
@@ -833,7 +861,8 @@ async function loadPeriod() {
     missingAttendanceResult.error ||
     importStatusResult.error ||
     exceptionsResult.error ||
-    preplotsResult.error
+    preplotsResult.error ||
+    prepaidBalancesResult.error
   ) {
     setMessage(
       'Payroll readiness could not be loaded. Refresh or contact a system administrator.',
@@ -853,6 +882,7 @@ async function loadPeriod() {
 
   state.employees = readinessResult.data || []
   state.preplots = preplotsResult.data || []
+  state.prepaidBalances = prepaidBalancesResult.data || []
   state.exceptions = exceptionsResult.data || []
   state.missingAttendance = new Map()
   for (const entry of missingAttendanceResult.data || []) {

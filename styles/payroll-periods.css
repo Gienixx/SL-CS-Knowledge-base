@@ -433,7 +433,7 @@ body { margin: 0; background-image: none; }
 
 .payroll-preplot-stats {
   display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
+  grid-template-columns: repeat(4, minmax(0, 1fr));
   gap: 10px;
   margin-bottom: 14px;
 }
@@ -500,6 +500,10 @@ body { margin: 0; background-image: none; }
 .payroll-preplot-approved-row { background: #fbfdf8; }
 .payroll-preplot-checkbox { width: 16px; height: 16px; accent-color: var(--payroll-purple); }
 .payroll-preplot-shift { color: var(--payroll-text); font-size: 11px; }
+.payroll-prepaid-balance-note {
+  color: var(--payroll-green);
+  font-weight: 700;
+}
 
 .payroll-preplot-type,
 .payroll-preplot-status {

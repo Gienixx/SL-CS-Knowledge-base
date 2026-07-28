@@ -6,7 +6,7 @@
   <title>Payroll Period | SocialLoop CS Base</title>
   <link rel="stylesheet" href="./styles/button-theme.css?v=1">
   <link rel="stylesheet" href="./styles/workforce-admin.css?v=8">
-  <link rel="stylesheet" href="./styles/payroll-periods.css?v=5">
+  <link rel="stylesheet" href="./styles/payroll-periods.css?v=6">
 </head>
 <body class="payroll-access-pending">
   <main class="payroll-page">
@@ -62,7 +62,7 @@
         <div>
           <p class="payroll-eyebrow">Early-payment coverage</p>
           <h2 id="payrollPreplotTitle">Approve pre-plotted schedules</h2>
-          <p>Select eligible ordinary shifts after the payment date. Approval captures the exact schedule version; rest days and guaranteed special days never create prepaid-hour debt.</p>
+          <p>Select eligible ordinary shifts after the payment date. Approval creates prepaid hours without creating attendance. Actual approved hours settle the oldest balance first; any remainder carries forward. Rest days and guaranteed special days never reduce prepaid balances.</p>
         </div>
         <span id="payrollPreplotCount" class="payroll-count-pill">0 schedules</span>
       </div>
@@ -71,6 +71,7 @@
         <div><span>Eligible</span><strong id="payrollPreplotEligibleCount">0</strong></div>
         <div><span>Selected</span><strong id="payrollPreplotSelectedCount">0</strong></div>
         <div><span>Approved</span><strong id="payrollPreplotApprovedCount">0</strong></div>
+        <div><span>Hours remaining</span><strong id="payrollPreplotRemainingHours">0</strong></div>
       </div>
 
       <div class="payroll-table-wrap">
@@ -207,6 +208,6 @@
     </section>
   </main>
 
-  <script type="module" src="./scripts/payroll-period.js?v=5"></script>
+  <script type="module" src="./scripts/payroll-period.js?v=6"></script>
 </body>
 </html>
