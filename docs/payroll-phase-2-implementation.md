@@ -458,8 +458,8 @@ Phase 2 becomes the primary payroll process only when:
 | 2 | Complete | None |
 | 3 | Complete and updated for own-payslip access | Continue regression testing |
 | 4 | Complete | Confirm calculator uses work-date rates |
-| 5 | Partially complete | Early-payment controls, eligible schedule review, immutable approval, and audit logging are implemented; payroll-side **Add prepaid schedule** entry and its permission-aware schedule handoff remain |
-| 6 | Complete | Approval creates prepaid balances; approved attendance imports remain immutable |
+| 5 | Partially complete | Early-payment controls, eligible schedule review, immutable approval, and audit logging are implemented. The 59 validated July 2026 ordinary pre-plots from the approved support timesheet are imported and visible through the existing prepaid views; payroll-side **Add prepaid schedule** entry and its permission-aware schedule handoff remain |
+| 6 | Complete | Approval creates prepaid balances; approved attendance imports remain immutable; existing July attendance was reconciled against the imported balances using the same FIFO rules |
 | 7 | Partially implemented | FIFO minute reconciliation and carry-forward are live; monetary payroll calculation remains |
 | 8 | Partially implemented | Core exceptions, approved pre-plot exemptions, and calculated prepaid-versus-actual Team Attendance columns are implemented; remaining-balance links and the complete exception set remain |
 | 9 | Not started | Implement after the base calculator |
@@ -468,6 +468,15 @@ Phase 2 becomes the primary payroll process only when:
 | 14–15 | Not started | Test two linked periods, not a single isolated period |
 
 ## Next implementation order
+
+The July 2026 source-data bootstrap is complete:
+
+- 59 ordinary pre-plotted schedules were imported from the approved workbook.
+- 283 January-June rows were excluded because matching payroll periods do not
+  exist in the website.
+- 16 July OFF rows and one mixed RDOT row were excluded because they must not
+  create ordinary prepaid-hour debt.
+- No live attendance rows were created or changed by the import.
 
 1. Complete Step 5 by adding the payroll-side **Add prepaid schedule** form,
    schedule lookup or permission-aware creation handoff, validation, audit
