@@ -25,12 +25,44 @@ test('retired User Management redirects to Employee Profiles', async () => {
 })
 
 test('knowledge-base authoring and published article rendering remain connected', async () => {
-  const [knowledgeBase, article, articleScript, editor] = await Promise.all([
-    read('KB.html'), read('article.html'), read('scripts/article.js'), read('add-article.html')
+  const [knowledgeBase, kbScript, article, editor, management] = await Promise.all([
+    read('KB.html'),
+    read('scripts/kb.js'),
+    read('article.html'),
+    read('add-article.html'),
+    read('scripts/article-management.js')
   ])
   assert.match(knowledgeBase, /scripts\/kb\.js/)
-  assert.match(article, /scripts\/article\.js/)
-  assert.match(articleScript, /article-content-renderer-v7\.js/)
+  assert.match(knowledgeBase, /id="kbSearch"/)
+  assert.match(knowledgeBase, /id="kbList"/)
+  assert.match(knowledgeBase, /id="kbDetail"/)
+  assert.match(knowledgeBase, /id="backToTop"/)
+  assert.match(knowledgeBase, /class="layout"/)
+  assert.match(knowledgeBase, /grid-template-columns:260px minmax\(0,1fr\)/)
+  assert.match(knowledgeBase, /\.header\{[\s\S]*max-width:1440px/)
+  assert.match(knowledgeBase, /\.layout\{[\s\S]*max-width:1440px/)
+  assert.match(knowledgeBase, /\.back-to-top\{[\s\S]*position:fixed/)
+  assert.match(knowledgeBase, /\.back-to-top\.visible/)
+  assert.match(knowledgeBase, /class="back-to-top-icon" aria-hidden="true">↑<\/span>/)
+  assert.match(knowledgeBase, /\.back-to-top\.visible:hover\{[\s\S]*background:var\(--logo-bg\)/)
+  assert.doesNotMatch(knowledgeBase, /On this page|Related articles/)
+  assert.match(article, /window\.location\.replace\(target\.href\)/)
+  assert.match(article, /searchParams\.set\('article', articleId\)/)
+  assert.doesNotMatch(article, /scripts\/article\.js/)
+  assert.match(knowledgeBase, /scripts\/kb\.js\?v=9/)
+  assert.match(kbScript, /getRequestedArticleId\(\)/)
+  assert.match(kbScript, /\.get\('article'\)/)
+  assert.match(kbScript, /\{ articleId: item\.id \}/)
+  assert.match(management, /\.\/KB\.html\?article=/)
+  assert.match(kbScript, /parseArticleContent\(item\.content\)/)
+  assert.match(kbScript, /renderArticleUnit\(unit\)/)
+  assert.match(kbScript, /body\.className = item\.category === 'links' \? 'detail-body' : 'article-body'/)
+  assert.match(kbScript, /function scrollToSelectedItem\(\)/)
+  assert.match(kbScript, /window\.scrollTo\(\{ top: 0, behavior \}\)/)
+  assert.match(kbScript, /renderDetail\(item\)\s*scrollToSelectedItem\(\)/)
+  assert.match(knowledgeBase, /\.article-body h2/)
+  assert.match(knowledgeBase, /\.article-cover\{/)
+  assert.match(knowledgeBase, /id="kbDetail" class="detail"/)
   assert.match(editor, /scripts\/add-article\.js/)
 })
 

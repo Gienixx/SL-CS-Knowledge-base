@@ -4,7 +4,7 @@ import {
 import {
   parseArticleContent,
   renderArticleUnit
-} from './article-content-renderer-v7.js?v=1'
+} from './article-content-renderer-v8.js?v=2'
 import './article-nesting-styles.js?v=1'
 import './article-preview-parser-styles.js?v=1'
 import './article-editor-toolbar-overrides.js?v=1'

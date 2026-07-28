@@ -2,7 +2,7 @@ import { supabase } from './supabaseClient.js'
 import {
   parseArticleContent,
   renderArticleUnit
-} from './article-content-renderer-v7.js?v=1'
+} from './article-content-renderer-v8.js?v=2'
 import {
   removeArticleImage
 } from './article-image-upload.js?v=1'
@@ -291,7 +291,7 @@ function renderPreview(article) {
 
   if (article.published === true) {
     openPublishedArticleLink.href =
-      `./article.html?id=${encodeURIComponent(article.id)}`
+      `./KB.html?article=${encodeURIComponent(article.id)}`
     openPublishedArticleLink.hidden = false
   } else {
     openPublishedArticleLink.href = '#'

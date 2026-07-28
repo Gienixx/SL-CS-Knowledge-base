@@ -1,10 +1,13 @@
 import { supabase } from './supabaseClient.js'
 import {
   setupArticleEditorPreview
-} from './article-editor-preview-v3.js?v=2'
+} from './article-editor-preview-v3.js?v=3'
 import {
   setupGroupedArticleToolbar
-} from './article-editor-toolbar.js?v=1'
+} from './article-editor-toolbar.js?v=2'
+import {
+  normalizeArticleLinkHref
+} from './article-link-utils.js?v=2'
 import { requireWorkforcePermission } from './workforce-permissions.js'
 
 const form = document.getElementById('articleForm')
@@ -85,6 +88,44 @@ function wrapSelectedText(
     openingMarker.length,
     selectedText.length
   )
+}
+
+function insertLink() {
+  if (!contentInput) {
+    return
+  }
+
+  const selectedText = getSelectedText().trim()
+  const selectedHref = normalizeArticleLinkHref(selectedText)
+  const enteredLink = selectedHref
+    ? selectedText
+    : window.prompt(
+        'Enter the link URL (for example, https://example.com):',
+        'https://'
+      )
+
+  if (enteredLink === null) {
+    contentInput.focus()
+    return
+  }
+
+  const href = normalizeArticleLinkHref(enteredLink)
+
+  if (!href) {
+    window.alert(
+      'Enter a valid web link, email link, or relative page link.'
+    )
+    contentInput.focus()
+    return
+  }
+
+  const label = selectedText || String(enteredLink).trim()
+  const markdownHref = href
+    .replaceAll('(', '%28')
+    .replaceAll(')', '%29')
+  const replacement = `[${label}](${markdownHref})`
+
+  replaceSelection(replacement, 1, label.length)
 }
 
 function getLeadingSpacing() {
@@ -367,6 +408,9 @@ function applyFormatting(format) {
     case 'underline':
       wrapSelectedText('++', '++', 'underlined text')
       break
+    case 'link':
+      insertLink()
+      break
     case 'section':
       insertHeading('## ', 'Section title')
       break
@@ -454,6 +498,12 @@ function initializeEditorControls() {
       return
     }
 
+    if (modifierPressed && pressedKey === 'k') {
+      event.preventDefault()
+      applyFormatting('link')
+      return
+    }
+
     if (event.key === 'Tab') {
       event.preventDefault()
       replaceSelection('  ', 2)
@@ -464,7 +514,7 @@ function initializeEditorControls() {
 
   if (help) {
     help.innerHTML =
-      '<strong>Formatting guide:</strong> Use the icon buttons for text emphasis. Open the grouped menus for headings, lists, checklists, and special article layouts. Place the cursor before a structured block’s closing <strong>:::</strong> to nest another format inside it.'
+      '<strong>Formatting guide:</strong> Use the icon buttons for text emphasis and links. Select text and choose Link (or press Ctrl/Cmd+K) to attach a URL. Typed web addresses become clickable automatically. Open the grouped menus for headings, lists, checklists, and special article layouts. Place the cursor before a structured block’s closing <strong>:::</strong> to nest another format inside it.'
   }
 
   descriptionInput?.addEventListener(

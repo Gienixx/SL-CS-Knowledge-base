@@ -65,6 +65,16 @@ function installToolbarStyles() {
       text-underline-offset: 3px;
     }
 
+    .toolbar-icon-button svg {
+      width: 17px;
+      height: 17px;
+      fill: none;
+      stroke: currentColor;
+      stroke-width: 2;
+      stroke-linecap: round;
+      stroke-linejoin: round;
+    }
+
     .toolbar-icon-button.template-icon {
       margin-left: auto;
       color: #fff;
@@ -252,6 +262,16 @@ export function setupGroupedArticleToolbar({ toolbar, onFormat }) {
     icon: '<u>U</u>',
     title: 'Underline selected text'
   })
+  const linkButton = createIconButton({
+    format: 'link',
+    icon: `
+      <svg viewBox="0 0 24 24" aria-hidden="true">
+        <path d="M10 13a5 5 0 0 0 7.1.1l2-2a5 5 0 0 0-7.1-7.1l-1.1 1.1"></path>
+        <path d="M14 11a5 5 0 0 0-7.1-.1l-2 2A5 5 0 0 0 12 20l1.1-1.1"></path>
+      </svg>
+    `,
+    title: 'Add a link to selected text (Ctrl/Cmd+K)'
+  })
 
   const stylesMenu = createMenu({
     icon: '<span aria-hidden="true">¶</span>',
@@ -326,6 +346,7 @@ export function setupGroupedArticleToolbar({ toolbar, onFormat }) {
     boldButton,
     italicButton,
     underlineButton,
+    linkButton,
     divider,
     stylesMenu,
     checklistMenu,

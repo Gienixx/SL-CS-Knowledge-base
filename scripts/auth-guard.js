@@ -46,12 +46,6 @@ async function loadAuthenticatedPageEnhancements() {
         )
     }
 
-    if (routeName === 'article') {
-        modules.push(
-            import('./article-page-update-status.js?v=2')
-        )
-    }
-
     const results = await Promise.allSettled(modules)
 
     for (const result of results) {
