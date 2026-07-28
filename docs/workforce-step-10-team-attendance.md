@@ -23,6 +23,12 @@ It displays:
 - Total overtime
 - Late minutes
 - Undertime
+- Approved prepaid login and logout
+- Prepaid minutes
+- Actual minutes eligible for prepaid reconciliation
+- Minutes applied to prepaid balances
+- Remaining prepaid minutes
+- Prepaid settlement status
 - Attendance status
 - Correction and review status
 - Last correcting user and correction date
@@ -62,6 +68,15 @@ The function:
 
 The existing attendance RLS policies remain in force for the supporting employee and team filter queries.
 
+Phase 2 also adds:
+
+`workforce_list_team_attendance_prepaid(start_date, end_date)`
+
+This separate read function exposes only calculated, non-monetary prepaid
+reconciliation values. It requires the same `view_team_attendance` permission
+and employee scope as the main attendance function. It does not expose rates,
+gross pay, net pay, or any other salary value.
+
 ## Step boundary
 
 Step 10 is intentionally read-only.
@@ -84,7 +99,10 @@ The following remain for Steps 11 and 12:
 - `styles/team-attendance.css`
 - `supabase/migrations-legacy/2026070902_team_attendance_page.sql`
 - `supabase/verification/team_attendance_page_check.sql`
+- `supabase/migrations/20260728073925_add_prepaid_columns_to_team_attendance.sql`
+- `supabase/verification/team_attendance_prepaid_columns_check.sql`
 - `tests/team-attendance-page.test.mjs`
+- `tests/team-attendance-prepaid-columns.test.mjs`
 
 ## Deployment
 

@@ -461,7 +461,7 @@ Phase 2 becomes the primary payroll process only when:
 | 5 | Partially complete | Early-payment controls, eligible schedule review, immutable approval, and audit logging are implemented; payroll-side **Add prepaid schedule** entry and its permission-aware schedule handoff remain |
 | 6 | Complete | Approval creates prepaid balances; approved attendance imports remain immutable |
 | 7 | Partially implemented | FIFO minute reconciliation and carry-forward are live; monetary payroll calculation remains |
-| 8 | Partially implemented | Core exceptions and approved pre-plot exemptions exist; prepaid-versus-actual attendance columns, settlement status, and remaining-balance links remain |
+| 8 | Partially implemented | Core exceptions, approved pre-plot exemptions, and calculated prepaid-versus-actual Team Attendance columns are implemented; remaining-balance links and the complete exception set remain |
 | 9 | Not started | Implement after the base calculator |
 | 10 | Not started | Implement after calculation and adjustments |
 | 11–13 | Not started | Implement after finalization workflow |
@@ -472,8 +472,7 @@ Phase 2 becomes the primary payroll process only when:
 1. Complete Step 5 by adding the payroll-side **Add prepaid schedule** form,
    schedule lookup or permission-aware creation handoff, validation, audit
    logging, and tests.
-2. Complete the Step 8 prepaid-versus-actual attendance display, settlement
-   status, remaining-balance links, and access tests.
+2. Complete the remaining Step 8 balance links and exception coverage.
 3. Implement the remaining Step 7 monetary payroll calculator on top of the
    verified FIFO minute-allocation ledger.
 4. Expand Step 8 with invalid-balance and duplicate-allocation exceptions.

@@ -218,6 +218,24 @@ function formatMinutes(value) {
   return `${hours}h ${minutes}m`
 }
 
+function formatOptionalMinutes(value) {
+  if (value === null || value === undefined) return '—'
+  return formatMinutes(value)
+}
+
+function prepaidStatusLabel(value, appliedMinutes = 0) {
+  const labels = {
+    open: 'Open',
+    partially_settled: 'Partially settled',
+    settled: 'Settled',
+    void: 'Void'
+  }
+
+  if (labels[value]) return labels[value]
+  if (Number(appliedMinutes) > 0) return 'Applied to prior balance'
+  return 'Not prepaid'
+}
+
 function formatShift(row) {
   if (!row.schedule_id) return 'Unscheduled'
   if (!row.scheduled_start || !row.scheduled_end) return 'Shift unavailable'
@@ -521,6 +539,17 @@ function addStat(parent, value, label) {
   parent.appendChild(item)
 }
 
+function addPrepaidValue(parent, value, label, modifier = '') {
+  const item = document.createElement('div')
+  item.className = `team-attendance-prepaid-value${modifier ? ` ${modifier}` : ''}`
+  const strong = document.createElement('strong')
+  strong.textContent = value
+  const span = document.createElement('span')
+  span.textContent = label
+  item.append(strong, span)
+  parent.appendChild(item)
+}
+
 function addBadge(parent, label, modifier) {
   const badge = document.createElement('span')
   badge.className = `wf-badge ${modifier}`
@@ -633,6 +662,46 @@ function createAttendanceCard(record) {
   addStat(stats, record.total_overtime_minutes, 'Overtime')
   addStat(stats, record.minutes_late, 'Late')
 
+  const prepaid = document.createElement('section')
+  prepaid.className = 'team-attendance-prepaid'
+  prepaid.setAttribute('aria-label', 'Prepaid reconciliation')
+  const prepaidTitle = document.createElement('div')
+  prepaidTitle.className = 'team-attendance-prepaid-title'
+  prepaidTitle.textContent = 'Prepaid reconciliation'
+  const prepaidValues = document.createElement('div')
+  prepaidValues.className = 'team-attendance-prepaid-values'
+  addPrepaidValue(
+    prepaidValues,
+    formatDateTime(record.prepaid_clock_in, record.employee_timezone),
+    'Prepaid login'
+  )
+  addPrepaidValue(
+    prepaidValues,
+    formatDateTime(record.prepaid_clock_out, record.employee_timezone),
+    'Prepaid logout'
+  )
+  addPrepaidValue(prepaidValues, formatOptionalMinutes(record.prepaid_minutes), 'Prepaid time')
+  addPrepaidValue(prepaidValues, formatOptionalMinutes(record.actual_eligible_minutes), 'Actual eligible')
+  addPrepaidValue(
+    prepaidValues,
+    formatOptionalMinutes(record.applied_prepaid_minutes),
+    'Applied to prepaid',
+    Number(record.applied_prepaid_minutes) > 0 ? 'is-applied' : ''
+  )
+  addPrepaidValue(
+    prepaidValues,
+    formatOptionalMinutes(record.remaining_prepaid_minutes),
+    'Remaining prepaid',
+    Number(record.remaining_prepaid_minutes) > 0 ? 'has-balance' : ''
+  )
+  addPrepaidValue(
+    prepaidValues,
+    prepaidStatusLabel(record.prepaid_status, record.applied_prepaid_minutes),
+    'Prepaid status',
+    record.prepaid_status ? `status-${record.prepaid_status}` : ''
+  )
+  prepaid.append(prepaidTitle, prepaidValues)
+
   const footer = document.createElement('div')
   footer.className = 'team-attendance-record-footer'
   const correction = document.createElement('div')
@@ -642,7 +711,7 @@ function createAttendanceCard(record) {
     ? `${reviewStatus} by ${record.corrected_by_name || 'administrator'}${record.corrected_at ? ` · ${formatDateTime(record.corrected_at, record.employee_timezone, true)}` : ''}${record.correction_reason ? ` · ${record.correction_reason}` : ''}`
     : `Correction status: ${reviewStatus}`
   footer.appendChild(correction)
-  card.append(top, middle, createTimeline(record), stats)
+  card.append(top, middle, createTimeline(record), stats, prepaid)
   if (record.is_corrected || record.correction_reason || record.admin_notes) card.appendChild(footer)
   return card
 }
@@ -878,13 +947,34 @@ async function loadAttendance() {
   const range = validateDateRange()
   setMessage(elements.filterMessage, 'Loading authorized attendance records...')
 
-  const { data, error } = await supabase.rpc('workforce_list_team_attendance', {
-    p_start_date: range.start,
-    p_end_date: range.end
-  })
+  const [attendanceResult, prepaidResult] = await Promise.all([
+    supabase.rpc('workforce_list_team_attendance', {
+      p_start_date: range.start,
+      p_end_date: range.end
+    }),
+    supabase.rpc('workforce_list_team_attendance_prepaid', {
+      p_start_date: range.start,
+      p_end_date: range.end
+    })
+  ])
 
-  if (error) throw error
-  attendanceRows = data || []
+  if (attendanceResult.error) throw attendanceResult.error
+  if (prepaidResult.error) throw prepaidResult.error
+
+  const prepaidByAttendance = new Map(
+    (prepaidResult.data || []).map(row => [row.attendance_id, row])
+  )
+  attendanceRows = (attendanceResult.data || []).map(row => ({
+    prepaid_clock_in: null,
+    prepaid_clock_out: null,
+    prepaid_minutes: null,
+    actual_eligible_minutes: null,
+    applied_prepaid_minutes: 0,
+    remaining_prepaid_minutes: null,
+    prepaid_status: null,
+    ...row,
+    ...(prepaidByAttendance.get(row.attendance_id) || {})
+  }))
   mergeAttendanceReferences(attendanceRows)
   renderTable()
   setMessage(elements.filterMessage, `Attendance loaded for ${formatDate(range.start)} through ${formatDate(range.end)}.`, 'success')

@@ -26,6 +26,13 @@ test('Step 10 page contains every required attendance column and filter', async 
     'Total overtime',
     'Late minutes',
     'Undertime',
+    'Prepaid login',
+    'Prepaid logout',
+    'Prepaid time',
+    'Actual eligible',
+    'Applied to prepaid',
+    'Remaining prepaid',
+    'Prepaid status',
     'Status',
     'Correction status',
     'Last corrected by',
@@ -174,7 +181,7 @@ test('Team Attendance shows a compact filtered total billed hours summary', asyn
 
   assert.match(page, /Total billed hours/)
   assert.match(page, /id="teamAttendanceBilledHours"/)
-  assert.match(page, /styles\/team-attendance\.css\?v=9/)
+  assert.match(page, /styles\/team-attendance\.css\?v=10/)
   assert.match(script, /billedHours: document\.getElementById\('teamAttendanceBilledHours'\)/)
   assert.match(script, /row\.total_worked_minutes/)
   assert.match(script, /elements\.billedHours\.textContent = formatMinutes/)
