@@ -22,6 +22,16 @@ const ATTENDANCE_EXCEPTION_CODES = new Set([
   'missing_attendance'
 ])
 
+const PREPLOT_EXCEPTION_CODES = new Set([
+  'schedule_changed_after_preplot_approval',
+  'preplot_missing_payroll_approval',
+  'invalid_preplot_minutes',
+  'prepaid_balance_missing_source',
+  'duplicate_prepaid_balance',
+  'unaudited_prepaid_balance',
+  'unresolved_prepaid_balance'
+])
+
 const state = {
   periodId: new URLSearchParams(window.location.search).get('id') || '',
   period: null,
@@ -499,6 +509,20 @@ function teamAttendanceUrl(employeeId, workDate) {
   return `./team-attendance.html?${params}`
 }
 
+function agentRatesUrl(employeeId, workDate) {
+  const params = new URLSearchParams()
+  if (employeeId) params.set('employee', employeeId)
+  if (workDate) params.set('effectiveDate', workDate)
+  params.set('source', 'payroll-exception')
+  return `./agent-rates.html?${params}`
+}
+
+function preplotTarget(scheduleId) {
+  return scheduleId
+    ? `#payroll-preplot-${scheduleId}`
+    : '#payrollPreplotTitle'
+}
+
 function renderMetrics() {
   const employeeCount = state.employees.length
   const rateReadyCount =
@@ -592,6 +616,7 @@ function renderPreplots() {
   const fragment = document.createDocumentFragment()
   for (const candidate of state.preplots) {
     const row = document.createElement('tr')
+    row.id = `payroll-preplot-${candidate.schedule_id}`
     if (candidate.approval_status === 'approved') {
       row.classList.add('payroll-preplot-approved-row')
     }
@@ -670,13 +695,28 @@ function renderPreplots() {
       )
     }
     if (prepaidBalance) {
-      statusCell.append(
-        element(
-          'small',
-          'payroll-cell-note payroll-prepaid-balance-note',
+      const balanceNote = element(
+        'small',
+        'payroll-cell-note payroll-prepaid-balance-note'
+      )
+      balanceNote.append(
+        document.createTextNode(
           `${formatHours(prepaidBalance.settled_minutes)}h rendered · ${formatHours(prepaidBalance.remaining_minutes)}h remaining`
         )
       )
+      if (Number(prepaidBalance.remaining_minutes || 0) > 0) {
+        balanceNote.append(document.createTextNode(' · '))
+        const reviewLink = element(
+          'a',
+          'payroll-prepaid-review-link',
+          'Review balance'
+        )
+        reviewLink.href = '#payrollExceptionReviewTitle'
+        reviewLink.dataset.exceptionFilter = 'unresolved_prepaid_balance'
+        reviewLink.title = 'Show this period’s unresolved prepaid balances'
+        balanceNote.append(reviewLink)
+      }
+      statusCell.append(balanceNote)
     }
 
     row.append(
@@ -717,6 +757,7 @@ function addExceptionChip(fragment, count, label) {
 
 function renderExceptions() {
   const blockingExceptions = state.exceptions.filter(issue => issue.is_blocking)
+  const warningExceptions = state.exceptions.filter(issue => !issue.is_blocking)
   const hasExceptions = blockingExceptions.length > 0
 
   elements.exceptionSummary.className =
@@ -726,7 +767,9 @@ function renderExceptions() {
     : 'No blocking payroll exceptions detected'
   elements.exceptionText.textContent = hasExceptions
     ? 'Resolve every blocking issue before payroll calculation and finalization.'
-    : 'Rates, attendance, schedules, imports, and period dates passed the current checks.'
+    : warningExceptions.length
+      ? `${warningExceptions.length} non-blocking carry-forward ${warningExceptions.length === 1 ? 'item remains' : 'items remain'} visible for follow-up.`
+      : 'Rates, attendance, schedules, imports, and period dates passed the current checks.'
 
   const counts = new Map()
   for (const issue of blockingExceptions) {
@@ -768,9 +811,40 @@ function exceptionAction(issue) {
   if (issue.exception_code === 'missing_rate') {
     if (!state.canManageRates) return null
     return {
-      href: './agent-rates.html',
+      href: agentRatesUrl(issue.employee_user_id, issue.work_date),
       label: 'Open rates',
-      title: 'Open effective-dated rate management'
+      title: 'Open this employee in effective-dated rate management'
+    }
+  }
+
+  if (issue.exception_code === 'duplicate_hour_allocation') {
+    if (
+      state.canViewAttendance &&
+      issue.employee_user_id &&
+      issue.work_date
+    ) {
+      return {
+        href: teamAttendanceUrl(issue.employee_user_id, issue.work_date),
+        label: 'Open attendance',
+        title: `Review the allocated attendance on ${formatDate(issue.work_date)}`
+      }
+    }
+    return {
+      href: preplotTarget(),
+      label: 'Review pre-plot',
+      title: 'Review prepaid balances for this payroll period'
+    }
+  }
+
+  if (PREPLOT_EXCEPTION_CODES.has(issue.exception_code)) {
+    return {
+      href: preplotTarget(issue.schedule_id),
+      label: issue.exception_code === 'unresolved_prepaid_balance'
+        ? 'Review balance'
+        : 'Review pre-plot',
+      title: issue.schedule_id
+        ? 'Open the related prepaid schedule'
+        : 'Open prepaid schedule review'
     }
   }
 
@@ -1100,7 +1174,9 @@ function renderEmployees() {
       )
     }
     const exceptionCount = state.exceptions.filter(
-      issue => issue.employee_user_id === employee.employee_user_id
+      issue =>
+        issue.is_blocking &&
+        issue.employee_user_id === employee.employee_user_id
     ).length
     if (exceptionCount) {
       statusCell.append(
@@ -1505,6 +1581,17 @@ elements.preplotBody.addEventListener('change', event => {
     state.selectedPreplots.delete(checkbox.dataset.scheduleId)
   }
   renderPreplots()
+})
+elements.preplotBody.addEventListener('click', event => {
+  const link = event.target.closest('[data-exception-filter]')
+  if (!link) return
+  event.preventDefault()
+  state.exceptionFilter = link.dataset.exceptionFilter || 'all'
+  renderExceptionReview()
+  document.getElementById('payrollExceptionReviewTitle')?.scrollIntoView({
+    behavior: 'smooth',
+    block: 'start'
+  })
 })
 elements.preplotReason.addEventListener('input', renderPreplots)
 elements.approvePreplotsButton.addEventListener(

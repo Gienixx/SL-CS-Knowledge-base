@@ -4,6 +4,9 @@ import { requireWorkforcePermission } from './workforce-permissions.js?v=1'
 const PAID_HOURS_PER_DAY = 8
 const WORK_DAYS_PER_MONTH = 22
 const PAID_HOURS_PER_MONTH = PAID_HOURS_PER_DAY * WORK_DAYS_PER_MONTH
+const pageParams = new URLSearchParams(window.location.search)
+const requestedEmployeeId = pageParams.get('employee') || ''
+const requestedEffectiveDate = pageParams.get('effectiveDate') || ''
 
 const state = {
   employees: [],
@@ -564,7 +567,9 @@ async function loadDirectory({ preserveSelection = true } = {}) {
   refreshButton.disabled = true
   setMessage(pageMessage, 'Loading authorized rate records…')
 
-  const previousSelection = preserveSelection ? state.selectedEmployeeId : ''
+  const previousSelection = preserveSelection
+    ? state.selectedEmployeeId
+    : requestedEmployeeId
   const { data, error } = await supabase.rpc('payroll_get_agent_rate_directory')
 
   state.loading = false
@@ -717,7 +722,10 @@ document.getElementById('hourlyRate').addEventListener(
   'input',
   updateCalculatedBaseRates
 )
-document.getElementById('rateEffectiveDate').value = localToday()
+document.getElementById('rateEffectiveDate').value =
+  /^\d{4}-\d{2}-\d{2}$/.test(requestedEffectiveDate)
+    ? requestedEffectiveDate
+    : localToday()
 
 async function initializeAgentRates() {
   try {

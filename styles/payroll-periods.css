@@ -512,6 +512,21 @@ body { margin: 0; background-image: none; }
   font-weight: 700;
 }
 
+.payroll-prepaid-review-link {
+  color: var(--payroll-blue);
+  text-decoration: none;
+}
+
+.payroll-prepaid-review-link:hover,
+.payroll-prepaid-review-link:focus-visible {
+  text-decoration: underline;
+}
+
+.payroll-preplot-table tr:target {
+  background: #fff8e8;
+  box-shadow: inset 3px 0 0 var(--payroll-amber);
+}
+
 .payroll-preplot-type,
 .payroll-preplot-status {
   display: inline-flex;

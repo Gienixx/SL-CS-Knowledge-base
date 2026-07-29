@@ -181,7 +181,7 @@ test('agent rates uses the supplied compact card design', async () => {
   ])
 
   assert.match(page, /styles\/agent-rates\.css\?v=7/)
-  assert.match(page, /scripts\/agent-rates\.js\?v=5/)
+  assert.match(page, /scripts\/agent-rates\.js\?v=6/)
   assert.match(page, /class="rate-metrics"/)
   assert.match(page, /class="rate-conversion-banner unavailable"/)
   assert.match(page, /class="rate-workspace"/)

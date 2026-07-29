@@ -90,8 +90,8 @@ test('payroll period displays filterable exceptions and permission-safe actions'
     assert.match(page, new RegExp(`id="${id}"`))
   }
 
-  assert.match(page, /scripts\/payroll-period\.js\?v=7/)
-  assert.match(page, /styles\/payroll-periods\.css\?v=7/)
+  assert.match(page, /scripts\/payroll-period\.js\?v=8/)
+  assert.match(page, /styles\/payroll-periods\.css\?v=8/)
   assert.match(
     script,
     /supabase\.rpc\('payroll_get_period_exceptions'/

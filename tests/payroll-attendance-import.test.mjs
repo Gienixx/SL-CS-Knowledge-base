@@ -121,8 +121,8 @@ test('payroll period page imports and displays snapshot status', async () => {
     assert.match(page, new RegExp(`id="${id}"`))
   }
 
-  assert.match(page, /scripts\/payroll-period\.js\?v=7/)
-  assert.match(page, /styles\/payroll-periods\.css\?v=7/)
+  assert.match(page, /scripts\/payroll-period\.js\?v=8/)
+  assert.match(page, /styles\/payroll-periods\.css\?v=8/)
   assert.match(
     script,
     /supabase\.rpc\('payroll_get_period_attendance_import_status'/
