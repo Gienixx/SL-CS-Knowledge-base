@@ -180,6 +180,12 @@ body {
   font-size: 10px;
   font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
 }
+.payslip-document-title small {
+  display: block;
+  margin-top: 5px;
+  color: var(--slip-muted);
+  font-size: 8px;
+}
 
 .payslip-info-grid {
   display: grid;

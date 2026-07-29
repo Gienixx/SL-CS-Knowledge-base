@@ -476,9 +476,10 @@ Phase 2 becomes the primary payroll process only when:
 | 7 | Complete | The atomic USD calculator uses approved attendance and prepaid snapshots, effective-dated rates, exact-minute conversion, half-up cent rounding, FIFO prepaid offsets, normal overtime, special-day guarantees and work premiums, itemized totals, recalculation versions, audit logs, and negative-net protection. Draft totals remain private to payroll processors |
 | 8 | Complete | Core attendance and rate exceptions, all prepaid source/version/minute/audit/allocation checks, approved pre-plot exemptions, calculated Team Attendance prepaid columns, non-blocking carry-forward warnings, and exact permission-safe resolution links are implemented |
 | 9 | Complete | Authorized payroll creators can add, edit, or remove manual earnings and deductions from calculated draft records. Every action requires a reason, rebuilds employee totals atomically, preserves a complete before/after audit event, keeps correction notes private, rejects negative net pay, and is blocked after payroll leaves draft or reopened status |
-| 10 | Complete | Review recalculates stored employee totals and records calculation, snapshot, rate, rounding, and prepaid-balance evidence. Final approval reruns every gate, records reviewer/approver/timestamp, increments the finalization version, and locks periods, records, items, snapshots, destination allocations, payslips, and audit history. Controlled reopening requires separate permission and a reason, preserves prior evidence, and forces full recalculation. Once Step 12 creates PDFs, periods with generated payslips remain blocked from reopening until that step's controlled regeneration path is used |
+| 10 | Complete | Review recalculates stored employee totals and records calculation, snapshot, rate, rounding, and prepaid-balance evidence. Final approval reruns every gate, records reviewer/approver/timestamp, increments the finalization version, and locks periods, records, items, snapshots, destination allocations, payslips, and audit history. Controlled reopening requires separate permission and a reason, preserves prior evidence, and forces full recalculation. Once a PDF exists, that payroll remains blocked from reopening; later payroll corrections must use a future adjustment, while PDF-only regeneration appends a new immutable document version without changing finalized payroll |
 | 11 | Complete | Finalized payroll now has a private A4 payslip preview with a stable payslip number, employee and period details, itemized earnings and deductions, prepaid balances, totals, and approval information. Payroll-wide viewers can inspect the effective rates used; agents using own-payslip access receive no rate or other-employee data. Private adjustment reasons and correction notes are excluded |
-| 12–13 | Not started | Generate versioned server-side PDFs in private Storage, then add the agent's own-payslip list and signed download flow |
+| 12 | Complete | Finalized payslips can be rendered server-side with the fixed `A4-V1` template, hashed with SHA-256, uploaded only to the private PDF-only `payroll-payslips` bucket, registered as append-only immutable document versions, and downloaded through two-minute signed URLs. Each generation is permission-checked and audited. The employee PDF omits rate fields so own-payslip access cannot reveal rates; payroll users retain rate verification in the secured Step 11 preview |
+| 13 | Not started | Add the agent's own-payslip list using the secured preview and signed-download services |
 | 14–15 | Not started | Test two linked periods, not a single isolated period |
 
 ## Next implementation order
@@ -544,7 +545,28 @@ Step 11 is deployed without finalizing the production July payroll:
   rate removal, stable numbering, and cross-employee denial. The July 1–15
   production period remains in Draft.
 
-1. Implement Step 12 server-side A4 PDF generation, private Storage, versioned
-   files, and temporary signed URLs.
-2. Continue with agent self-service access and the two-period parallel test in
-   Steps 13 through 15.
+Step 12 is implemented without generating a production payslip:
+
+- The server renders a fixed A4 PDF from finalized immutable Step 10 and Step
+  11 values. Long itemized payslips continue cleanly across A4 pages with
+  repeated headers and page numbers.
+- Employee PDF files contain finalized earnings, deductions, totals, prepaid
+  balances, and approval evidence, but no rates, correction notes, adjustment
+  reasons, or browser console output.
+- Files are restricted to PDF, capped at 5 MB, hashed with SHA-256, and stored
+  in the private `payroll-payslips` bucket. There is no public Storage policy.
+- Every generation or regeneration appends an immutable document version and
+  a payroll audit event. Prior versions and files remain preserved.
+- Downloads are authorized against the requested payslip before the server
+  returns a private signed URL that expires after two minutes.
+- The Cloudflare Pages Functions bundle compiled successfully. A rendered
+  two-page sample passed A4 sizing, pagination, alignment, totals, and
+  rate/private-note exclusion checks.
+- Live rollback-only checks confirmed that a missing private upload cannot be
+  registered and an agent cannot generate PDFs. The July 1–15 production
+  period remains in Draft with no payslip or PDF version.
+
+1. Implement Step 13 `my-payslips.html` with each agent's own finalized
+   payslip list, preview, download, and print actions.
+2. Continue with the two-period parallel and controlled payroll tests in Steps
+   14 and 15.

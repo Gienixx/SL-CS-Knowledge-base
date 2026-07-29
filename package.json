@@ -11,6 +11,7 @@
     "test:workforce-permissions": "node --test tests/workforce-permission-matrix.test.mjs"
   },
   "dependencies": {
-    "@supabase/supabase-js": "^2.53.0"
+    "@supabase/supabase-js": "^2.53.0",
+    "pdf-lib": "1.17.1"
   }
 }

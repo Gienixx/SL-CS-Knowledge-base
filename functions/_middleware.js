@@ -33,6 +33,11 @@ const PROTECTED_ROUTES = Object.freeze({
     methods: ['GET'],
     permission: 'manage_agent_rates',
     requireAdmin: false
+  },
+  '/api/payslips/generate': {
+    methods: ['POST'],
+    permission: 'export_payslips',
+    requireAdmin: false
   }
 })
 

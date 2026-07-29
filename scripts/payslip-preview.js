@@ -1,5 +1,8 @@
 import { supabase } from './supabaseClient.js?v=10'
-import { loadCurrentWorkforceAccess } from './workforce-permissions.js?v=1'
+import {
+  hasWorkforcePermission,
+  loadCurrentWorkforceAccess
+} from './workforce-permissions.js?v=1'
 
 const recordId =
   new URLSearchParams(window.location.search).get('record') || ''
@@ -10,12 +13,21 @@ const elements = {
   sheet: document.getElementById('payslipSheet'),
   backLink: document.getElementById('payslipBackLink'),
   refresh: document.getElementById('refreshPayslipButton'),
+  generatePdf: document.getElementById('generatePayslipPdfButton'),
+  downloadPdf: document.getElementById('downloadPayslipPdfButton'),
   print: document.getElementById('printPayslipButton'),
   ratesSection: document.getElementById('payslipRatesSection'),
   ratesRestricted: document.getElementById('payslipRatesRestricted'),
   ratesBody: document.getElementById('payslipRatesBody'),
   earningsBody: document.getElementById('payslipEarningsBody'),
   deductionsBody: document.getElementById('payslipDeductionsBody')
+}
+
+const state = {
+  accessToken: '',
+  canGeneratePdf: false,
+  preview: null,
+  pdfBusy: false
 }
 
 const moneyFormatter = new Intl.NumberFormat('en-US', {
@@ -78,6 +90,17 @@ function setMessage(value = '', type = '') {
   elements.message.textContent = value
   elements.message.classList.toggle('error', type === 'error')
   elements.message.hidden = !value
+}
+
+function setPdfBusy(busy) {
+  state.pdfBusy = busy
+  elements.generatePdf.disabled = busy
+  elements.downloadPdf.disabled = busy
+  elements.refresh.disabled = busy
+}
+
+async function responseJson(response) {
+  return response.json().catch(() => null)
 }
 
 function earningCategory(code) {
@@ -223,6 +246,9 @@ function renderPreview(preview) {
   const deductions = Array.isArray(preview.deductions)
     ? preview.deductions
     : []
+  const pdf = preview.pdf || {}
+
+  state.preview = preview
 
   document.title = `${employee.full_name || 'Employee'} Payslip | SocialLoop CS Base`
   elements.subtitle.textContent =
@@ -237,6 +263,12 @@ function renderPreview(preview) {
   )
   text('payslipPaymentDate', formatDate(period.payment_date))
   text('payslipCurrency', period.currency_code || 'USD')
+  text(
+    'payslipPdfStatus',
+    pdf.generated
+      ? `Private PDF stored${pdf.generated_at ? ` · ${formatDateTime(pdf.generated_at)}` : ''}`
+      : 'PDF not generated'
+  )
 
   renderRates(rates, Boolean(preview.can_view_rates))
   renderEarnings(earnings, Boolean(preview.can_view_rates))
@@ -282,6 +314,11 @@ function renderPreview(preview) {
       : '← Home'
   elements.sheet.hidden = false
   elements.print.hidden = false
+  elements.generatePdf.hidden = !state.canGeneratePdf
+  elements.generatePdf.textContent = pdf.generated
+    ? 'Generate new PDF version'
+    : 'Generate PDF'
+  elements.downloadPdf.hidden = !pdf.generated
   setMessage()
 }
 
@@ -309,6 +346,91 @@ async function loadPayslip() {
   renderPreview(data || {})
 }
 
+async function generatePdf() {
+  if (state.pdfBusy || !state.canGeneratePdf || !state.accessToken) return
+
+  if (
+    state.preview?.pdf?.generated &&
+    !window.confirm(
+      'Generate a new immutable PDF version for this finalized payslip?'
+    )
+  ) {
+    return
+  }
+
+  setPdfBusy(true)
+  setMessage('Generating and storing the private A4 payslip PDF…')
+  try {
+    const response = await fetch('./api/payslips/generate', {
+      method: 'POST',
+      headers: {
+        Accept: 'application/json',
+        Authorization: `Bearer ${state.accessToken}`,
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify({ payrollRecordId: recordId }),
+      cache: 'no-store'
+    })
+    const result = await responseJson(response)
+
+    if (!response.ok) {
+      throw new Error(
+        result?.error || 'The payslip PDF could not be generated.'
+      )
+    }
+
+    setMessage(
+      `Private PDF version ${result.documentVersion} was generated successfully.`
+    )
+    await loadPayslip()
+  } catch (error) {
+    setMessage(
+      error?.message || 'The payslip PDF could not be generated.',
+      'error'
+    )
+  } finally {
+    setPdfBusy(false)
+  }
+}
+
+async function downloadPdf() {
+  if (state.pdfBusy || !state.accessToken) return
+
+  setPdfBusy(true)
+  setMessage('Creating a temporary private download…')
+  try {
+    const response = await fetch('./api/payslips/signed-url', {
+      method: 'POST',
+      headers: {
+        Accept: 'application/json',
+        Authorization: `Bearer ${state.accessToken}`,
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify({ payrollRecordId: recordId }),
+      cache: 'no-store'
+    })
+    const result = await responseJson(response)
+
+    if (!response.ok || !result?.signedUrl) {
+      throw new Error(
+        result?.error || 'The temporary PDF download is unavailable.'
+      )
+    }
+
+    setMessage(
+      `Opening private PDF version ${result.documentVersion}. The link expires in ${result.expiresIn} seconds.`
+    )
+    window.location.assign(result.signedUrl)
+  } catch (error) {
+    setMessage(
+      error?.message || 'The temporary PDF download is unavailable.',
+      'error'
+    )
+  } finally {
+    setPdfBusy(false)
+  }
+}
+
 async function initialize() {
   if (!isValidUuid(recordId)) {
     window.location.replace('./payroll-dashboard.html')
@@ -322,6 +444,11 @@ async function initialize() {
       )
       return
     }
+    state.accessToken = access.session?.access_token || ''
+    state.canGeneratePdf = hasWorkforcePermission(
+      access,
+      'export_payslips'
+    )
     document.body.classList.remove('payslip-access-pending')
     await loadPayslip()
   } catch {
@@ -334,6 +461,8 @@ async function initialize() {
 }
 
 elements.refresh.addEventListener('click', loadPayslip)
+elements.generatePdf.addEventListener('click', generatePdf)
+elements.downloadPdf.addEventListener('click', downloadPdf)
 elements.print.addEventListener('click', () => window.print())
 
 initialize()

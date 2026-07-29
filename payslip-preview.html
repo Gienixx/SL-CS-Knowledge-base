@@ -18,6 +18,8 @@
       <nav class="payslip-toolbar-actions" aria-label="Payslip actions">
         <a id="payslipBackLink" class="payslip-button secondary" href="./payroll-dashboard.html">← Back</a>
         <button id="refreshPayslipButton" class="payslip-button secondary" type="button">↻ Refresh</button>
+        <button id="generatePayslipPdfButton" class="payslip-button secondary" type="button" hidden>Generate PDF</button>
+        <button id="downloadPayslipPdfButton" class="payslip-button secondary" type="button" hidden>Download PDF</button>
         <button id="printPayslipButton" class="payslip-button primary" type="button" hidden>Print preview</button>
       </nav>
     </header>
@@ -37,6 +39,7 @@
           <span>Finalized</span>
           <h2>Employee payslip</h2>
           <p id="payslipNumber">—</p>
+          <small id="payslipPdfStatus">PDF not generated</small>
         </div>
       </header>
 
