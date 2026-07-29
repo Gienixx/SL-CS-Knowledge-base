@@ -433,6 +433,14 @@ body { margin: 0; background-image: none; }
   align-items: center;
 }
 
+.payroll-calculation-actions {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 8px;
+  flex: 0 0 auto;
+}
+
 .payroll-calculation-stats {
   display: grid;
   grid-template-columns: repeat(4, minmax(0, 1fr));
@@ -578,6 +586,139 @@ body { margin: 0; background-image: none; }
   margin-top: 2px;
   color: var(--payroll-muted);
   font-size: 8.5px;
+}
+
+.payroll-adjustment-heading {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 18px;
+  margin: 22px 0 12px;
+  padding-top: 18px;
+  border-top: 1px solid var(--payroll-border);
+}
+
+.payroll-adjustment-heading h3 {
+  margin: 0 0 4px;
+  color: var(--payroll-text);
+  font-size: 14px;
+}
+
+.payroll-adjustment-heading p {
+  margin: 0;
+  color: var(--payroll-copy);
+  font-size: 10.5px;
+  line-height: 1.45;
+}
+
+.payroll-adjustment-table {
+  width: 100%;
+  min-width: 1100px;
+  border-collapse: collapse;
+  table-layout: fixed;
+  font-size: 11px;
+}
+
+.payroll-adjustment-table th {
+  padding: 9px 11px;
+  border-bottom: 1px solid var(--payroll-border);
+  color: var(--payroll-muted);
+  background: #faf9fd;
+  font-size: 9px;
+  font-weight: 700;
+  text-align: left;
+  text-transform: uppercase;
+}
+
+.payroll-adjustment-table td {
+  padding: 11px;
+  border-bottom: 1px solid var(--payroll-border);
+  color: var(--payroll-copy);
+  line-height: 1.4;
+  vertical-align: middle;
+}
+
+.payroll-adjustment-table tr:last-child td {
+  border-bottom: 0;
+}
+
+.payroll-adjustment-table th:nth-child(1) { width: 18%; }
+.payroll-adjustment-table th:nth-child(2) { width: 11%; }
+.payroll-adjustment-table th:nth-child(3) { width: 20%; }
+.payroll-adjustment-table th:nth-child(4) { width: 9%; }
+.payroll-adjustment-table th:nth-child(5) { width: 20%; }
+.payroll-adjustment-table th:nth-child(6) { width: 13%; }
+.payroll-adjustment-table th:nth-child(7) { width: 9%; }
+
+.payroll-adjustment-type {
+  font-size: 10px;
+  font-weight: 750;
+}
+
+.payroll-adjustment-type.earning {
+  color: var(--payroll-green);
+}
+
+.payroll-adjustment-type.deduction,
+.payroll-deduction {
+  color: var(--payroll-red) !important;
+}
+
+.payroll-adjustment-actions {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+}
+
+.payroll-adjustment-action {
+  padding: 0;
+  border: 0;
+  color: var(--payroll-blue);
+  background: transparent;
+  cursor: pointer;
+  font: inherit;
+  font-size: 10px;
+  font-weight: 700;
+}
+
+.payroll-adjustment-action.remove {
+  color: var(--payroll-red);
+}
+
+.payroll-adjustment-action:hover,
+.payroll-adjustment-action:focus-visible {
+  text-decoration: underline;
+}
+
+.payroll-adjustment-dialog {
+  max-width: 660px;
+}
+
+.payroll-adjustment-form-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 13px;
+  margin-top: 18px;
+}
+
+.payroll-adjustment-wide {
+  grid-column: 1 / -1;
+}
+
+.payroll-adjustment-privacy {
+  margin: 12px 0 0;
+  padding: 10px 12px;
+  border-radius: 9px;
+  color: var(--payroll-blue);
+  background: var(--payroll-blue-soft);
+  font-size: 10px;
+  line-height: 1.4;
+}
+
+.payroll-button.danger {
+  color: #fff;
+  border-color: var(--payroll-red);
+  background: var(--payroll-red);
 }
 
 .payroll-preplot-heading { align-items: center; }
@@ -1061,9 +1202,12 @@ body { margin: 0; background-image: none; }
   .payroll-page-header,
   .payroll-section-heading,
   .payroll-period-summary,
-  .payroll-exception-summary { flex-direction: column; }
+  .payroll-exception-summary,
+  .payroll-adjustment-heading { flex-direction: column; }
   .payroll-header-actions { width: 100%; justify-content: flex-start; }
   .payroll-header-actions .payroll-button { flex: 1; }
+  .payroll-calculation-actions { width: 100%; justify-content: flex-start; }
+  .payroll-calculation-actions .payroll-button { flex: 1; }
   .payroll-exception-controls { width: 100%; justify-content: flex-start; flex-wrap: wrap; }
   .payroll-exception-controls .payroll-control { flex: 1; width: auto; }
   .payroll-metrics,
@@ -1072,12 +1216,14 @@ body { margin: 0; background-image: none; }
   .payroll-preplot-stats,
   .payroll-preplot-actions,
   .payroll-prepaid-form-grid,
+  .payroll-adjustment-form-grid,
   .payroll-period-form,
   .payroll-period-date-grid,
   .payroll-period-row { grid-template-columns: 1fr; }
   .payroll-card { padding: 16px; }
   .payroll-preplot-heading-actions { width: 100%; justify-content: space-between; }
   .payroll-prepaid-wide { grid-column: auto; }
+  .payroll-adjustment-wide { grid-column: auto; }
   .payroll-dialog { width: calc(100% - 20px); max-height: calc(100vh - 20px); }
   .payroll-dialog-form { padding: 17px; }
   .payroll-dialog-actions { flex-direction: column-reverse; }

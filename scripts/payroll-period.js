@@ -41,6 +41,7 @@ const state = {
   selectedPreplots: new Set(),
   exceptions: [],
   calculations: [],
+  adjustments: [],
   exceptionFilter: 'all',
   missingAttendance: new Map(),
   importStatuses: new Map(),
@@ -53,6 +54,9 @@ const state = {
   loading: false,
   importing: false,
   calculating: false,
+  savingAdjustment: false,
+  adjustmentMode: 'add',
+  selectedAdjustment: null,
   approvingPreplots: false,
   savingPrepaid: false,
   prepaidCandidate: null
@@ -129,7 +133,43 @@ const elements = {
   calculatedDeductions: document.getElementById(
     'payrollCalculatedDeductions'
   ),
-  calculatedNet: document.getElementById('payrollCalculatedNet')
+  calculatedNet: document.getElementById('payrollCalculatedNet'),
+  addAdjustmentButton: document.getElementById(
+    'addPayrollAdjustmentButton'
+  ),
+  adjustmentBody: document.getElementById('payrollAdjustmentBody'),
+  adjustmentCount: document.getElementById('payrollAdjustmentCount'),
+  adjustmentDialog: document.getElementById('payrollAdjustmentDialog'),
+  adjustmentForm: document.getElementById('payrollAdjustmentForm'),
+  adjustmentDialogTitle: document.getElementById(
+    'payrollAdjustmentDialogTitle'
+  ),
+  adjustmentDialogText: document.getElementById(
+    'payrollAdjustmentDialogText'
+  ),
+  adjustmentEmployee: document.getElementById(
+    'payrollAdjustmentEmployee'
+  ),
+  adjustmentType: document.getElementById('payrollAdjustmentType'),
+  adjustmentAmount: document.getElementById('payrollAdjustmentAmount'),
+  adjustmentDescription: document.getElementById(
+    'payrollAdjustmentDescription'
+  ),
+  adjustmentReasonLabel: document.getElementById(
+    'payrollAdjustmentReasonLabel'
+  ),
+  adjustmentReason: document.getElementById('payrollAdjustmentReason'),
+  adjustmentNotes: document.getElementById('payrollAdjustmentNotes'),
+  adjustmentMessage: document.getElementById('payrollAdjustmentMessage'),
+  saveAdjustmentButton: document.getElementById(
+    'savePayrollAdjustmentButton'
+  ),
+  closeAdjustmentButton: document.getElementById(
+    'closePayrollAdjustmentDialogButton'
+  ),
+  cancelAdjustmentButton: document.getElementById(
+    'cancelPayrollAdjustmentButton'
+  )
 }
 
 const dateFormatter = new Intl.DateTimeFormat('en-PH', {
@@ -531,6 +571,18 @@ function renderPeriod() {
     : blockingCount
       ? `Resolve ${blockingCount} blocking ${blockingCount === 1 ? 'exception' : 'exceptions'} before calculating`
       : 'Rebuild employee totals from the current approved snapshots'
+
+  elements.addAdjustmentButton.hidden = !state.canCalculatePayroll
+  elements.addAdjustmentButton.disabled =
+    state.loading ||
+    state.savingAdjustment ||
+    !importable ||
+    !state.calculations.length
+  elements.addAdjustmentButton.title = !state.calculations.length
+    ? 'Calculate draft payroll before adding adjustments'
+    : importable
+      ? 'Add an audited manual earning or deduction'
+      : 'Adjustments are allowed only while payroll is editable'
 }
 
 function employeeHasAttendanceIssue(employee) {
@@ -1237,6 +1289,121 @@ function renderCalculations() {
   elements.calculationBody.replaceChildren(fragment)
 }
 
+function renderAdjustments() {
+  const adjustments = state.adjustments
+  elements.adjustmentCount.textContent =
+    `${adjustments.length} ${adjustments.length === 1 ? 'adjustment' : 'adjustments'}`
+
+  if (!adjustments.length) {
+    const row = document.createElement('tr')
+    const cell = element(
+      'td',
+      'payroll-table-empty',
+      state.calculations.length
+        ? 'No manual adjustments have been added.'
+        : 'Calculate draft payroll before adding adjustments.'
+    )
+    cell.colSpan = 7
+    row.append(cell)
+    elements.adjustmentBody.replaceChildren(row)
+    return
+  }
+
+  const editable = ['draft', 'reopened'].includes(
+    state.period?.period_status
+  )
+  const fragment = document.createDocumentFragment()
+  for (const adjustment of adjustments) {
+    const row = document.createElement('tr')
+    const employeeCell = element('td', 'payroll-employee-cell')
+    employeeCell.append(
+      element(
+        'strong',
+        '',
+        adjustment.employee_name || adjustment.employee_email
+      ),
+      element(
+        'small',
+        '',
+        [adjustment.employee_number, adjustment.employee_email]
+          .filter(Boolean)
+          .join(' · ')
+      )
+    )
+
+    const changedCell = document.createElement('td')
+    changedCell.append(
+      element(
+        'span',
+        '',
+        adjustment.last_changed_at
+          ? new Intl.DateTimeFormat('en-PH', {
+              dateStyle: 'medium',
+              timeStyle: 'short'
+            }).format(new Date(adjustment.last_changed_at))
+          : '—'
+      ),
+      element(
+        'small',
+        'payroll-cell-note',
+        [
+          adjustment.last_changed_by_name ||
+            adjustment.created_by_name,
+          `Version ${Number(adjustment.adjustment_version || 1)}`
+        ].filter(Boolean).join(' · ')
+      )
+    )
+
+    const actionCell = element('td', 'payroll-adjustment-actions')
+    if (state.canCalculatePayroll && editable) {
+      const editButton = element(
+        'button',
+        'payroll-adjustment-action',
+        'Edit'
+      )
+      editButton.type = 'button'
+      editButton.dataset.adjustmentAction = 'edit'
+      editButton.dataset.adjustmentId = adjustment.payroll_item_id
+
+      const removeButton = element(
+        'button',
+        'payroll-adjustment-action remove',
+        'Remove'
+      )
+      removeButton.type = 'button'
+      removeButton.dataset.adjustmentAction = 'remove'
+      removeButton.dataset.adjustmentId = adjustment.payroll_item_id
+      actionCell.append(editButton, removeButton)
+    } else {
+      actionCell.append(
+        element('span', 'payroll-exception-action-unavailable', 'Read only')
+      )
+    }
+
+    row.append(
+      employeeCell,
+      element(
+        'td',
+        `payroll-adjustment-type ${adjustment.item_type}`,
+        adjustment.item_type === 'earning'
+          ? 'Manual earning'
+          : 'Manual deduction'
+      ),
+      element('td', '', adjustment.description),
+      element(
+        'td',
+        `payroll-money ${adjustment.item_type === 'deduction' ? 'payroll-deduction' : ''}`,
+        formatMoney(adjustment.amount)
+      ),
+      element('td', '', adjustment.adjustment_reason),
+      changedCell,
+      actionCell
+    )
+    fragment.append(row)
+  }
+  elements.adjustmentBody.replaceChildren(fragment)
+}
+
 function rateStatus(employee) {
   const wrap = element('div')
   wrap.append(
@@ -1471,6 +1638,7 @@ function renderAll() {
   renderExceptionReview()
   renderImportStatus()
   renderCalculations()
+  renderAdjustments()
   renderEmployees()
 }
 
@@ -1489,7 +1657,8 @@ async function loadPeriod() {
     exceptionsResult,
     preplotsResult,
     prepaidBalancesResult,
-    calculationResult
+    calculationResult,
+    adjustmentsResult
   ] =
     await Promise.all([
       supabase.rpc('payroll_get_period_dashboard'),
@@ -1513,6 +1682,9 @@ async function loadPeriod() {
       }),
       supabase.rpc('payroll_get_period_calculation', {
         p_payroll_period_id: state.periodId
+      }),
+      supabase.rpc('payroll_get_period_adjustments', {
+        p_payroll_period_id: state.periodId
       })
     ])
 
@@ -1527,7 +1699,8 @@ async function loadPeriod() {
     exceptionsResult.error ||
     preplotsResult.error ||
     prepaidBalancesResult.error ||
-    calculationResult.error
+    calculationResult.error ||
+    adjustmentsResult.error
   ) {
     setMessage(
       'Payroll readiness could not be loaded. Refresh or contact a system administrator.',
@@ -1550,6 +1723,7 @@ async function loadPeriod() {
   state.prepaidBalances = prepaidBalancesResult.data || []
   state.exceptions = exceptionsResult.data || []
   state.calculations = calculationResult.data || []
+  state.adjustments = adjustmentsResult.data || []
   state.missingAttendance = new Map()
   for (const entry of missingAttendanceResult.data || []) {
     const rows = state.missingAttendance.get(entry.employee_user_id) || []
@@ -1564,6 +1738,173 @@ async function loadPeriod() {
   )
   renderAll()
   setMessage('')
+}
+
+function setAdjustmentMessage(message = '', type = '') {
+  elements.adjustmentMessage.textContent = message
+  elements.adjustmentMessage.classList.toggle('error', type === 'error')
+  elements.adjustmentMessage.classList.toggle(
+    'success',
+    type === 'success'
+  )
+}
+
+function closeAdjustmentDialog() {
+  if (state.savingAdjustment) return
+  if (typeof elements.adjustmentDialog.close === 'function') {
+    elements.adjustmentDialog.close()
+  } else {
+    elements.adjustmentDialog.removeAttribute('open')
+  }
+  state.selectedAdjustment = null
+  state.adjustmentMode = 'add'
+}
+
+function openAdjustmentDialog(mode = 'add', adjustment = null) {
+  if (
+    !state.canCalculatePayroll ||
+    !['draft', 'reopened'].includes(state.period?.period_status) ||
+    !state.calculations.length
+  ) {
+    return
+  }
+
+  state.adjustmentMode = mode
+  state.selectedAdjustment = adjustment
+  elements.adjustmentForm.reset()
+  setAdjustmentMessage('')
+
+  const options = [
+    new Option('Select an employee', '')
+  ]
+  for (const calculation of state.calculations) {
+    options.push(new Option(
+      [
+        calculation.employee_name || calculation.employee_email,
+        calculation.employee_number
+      ].filter(Boolean).join(' · '),
+      calculation.payroll_record_id
+    ))
+  }
+  elements.adjustmentEmployee.replaceChildren(...options)
+
+  if (adjustment) {
+    elements.adjustmentEmployee.value = adjustment.payroll_record_id
+    elements.adjustmentType.value = adjustment.item_type
+    elements.adjustmentAmount.value =
+      Number(adjustment.amount || 0).toFixed(2)
+    elements.adjustmentDescription.value = adjustment.description || ''
+    elements.adjustmentNotes.value =
+      adjustment.private_correction_notes || ''
+  } else {
+    elements.adjustmentType.value = 'earning'
+  }
+
+  const removing = mode === 'remove'
+  const editing = mode === 'edit'
+  elements.adjustmentEmployee.disabled = editing || removing
+  elements.adjustmentType.disabled = removing
+  elements.adjustmentAmount.disabled = removing
+  elements.adjustmentDescription.disabled = removing
+  elements.adjustmentReason.value = editing
+    ? adjustment.adjustment_reason || ''
+    : ''
+  elements.adjustmentReasonLabel.textContent = removing
+    ? 'Removal reason'
+    : 'Adjustment reason'
+  elements.adjustmentReason.placeholder = removing
+    ? 'Required reason for removing this adjustment'
+    : 'Required reason for this payroll change'
+  elements.adjustmentDialogTitle.textContent = removing
+    ? 'Remove manual adjustment'
+    : editing
+      ? 'Edit manual adjustment'
+      : 'Add manual adjustment'
+  elements.adjustmentDialogText.textContent = removing
+    ? 'The adjustment will be removed from payroll totals, while its complete history remains in the private audit log.'
+    : 'The description will appear on the employee’s payroll record.'
+  elements.saveAdjustmentButton.textContent = removing
+    ? 'Remove adjustment'
+    : editing
+      ? 'Save changes'
+      : 'Save adjustment'
+  elements.saveAdjustmentButton.classList.toggle('danger', removing)
+  elements.saveAdjustmentButton.disabled = false
+
+  if (typeof elements.adjustmentDialog.showModal === 'function') {
+    elements.adjustmentDialog.showModal()
+  } else {
+    elements.adjustmentDialog.setAttribute('open', '')
+  }
+}
+
+async function savePayrollAdjustment(event) {
+  event.preventDefault()
+  if (
+    state.savingAdjustment ||
+    !state.canCalculatePayroll ||
+    !['draft', 'reopened'].includes(state.period?.period_status)
+  ) {
+    return
+  }
+
+  if (!elements.adjustmentForm.reportValidity()) return
+
+  state.savingAdjustment = true
+  elements.saveAdjustmentButton.disabled = true
+  elements.cancelAdjustmentButton.disabled = true
+  elements.closeAdjustmentButton.disabled = true
+  setAdjustmentMessage(
+    state.adjustmentMode === 'remove'
+      ? 'Removing adjustment and rebuilding payroll totals…'
+      : 'Saving adjustment and rebuilding payroll totals…'
+  )
+
+  let result
+  if (state.adjustmentMode === 'remove') {
+    result = await supabase.rpc('payroll_remove_adjustment', {
+      p_payroll_item_id: state.selectedAdjustment.payroll_item_id,
+      p_removal_reason: elements.adjustmentReason.value.trim(),
+      p_correction_notes: elements.adjustmentNotes.value.trim() || null
+    })
+  } else {
+    result = await supabase.rpc('payroll_save_adjustment', {
+      p_payroll_record_id: elements.adjustmentEmployee.value,
+      p_payroll_item_id:
+        state.selectedAdjustment?.payroll_item_id || null,
+      p_item_type: elements.adjustmentType.value,
+      p_description: elements.adjustmentDescription.value.trim(),
+      p_amount: Number(elements.adjustmentAmount.value),
+      p_adjustment_reason: elements.adjustmentReason.value.trim(),
+      p_correction_notes: elements.adjustmentNotes.value.trim() || null
+    })
+  }
+
+  state.savingAdjustment = false
+  elements.cancelAdjustmentButton.disabled = false
+  elements.closeAdjustmentButton.disabled = false
+
+  if (result.error) {
+    elements.saveAdjustmentButton.disabled = false
+    setAdjustmentMessage(
+      result.error.message ||
+        'The payroll adjustment could not be saved.',
+      'error'
+    )
+    return
+  }
+
+  const completedMode = state.adjustmentMode
+  closeAdjustmentDialog()
+  await loadPeriod()
+  setMessage(
+    completedMode === 'remove'
+      ? 'The manual adjustment was removed and payroll totals were rebuilt. Its audit history was preserved.'
+      : completedMode === 'edit'
+        ? 'The manual adjustment and payroll totals were updated.'
+        : 'The manual adjustment was added and payroll totals were updated.',
+    'success'
+  )
 }
 
 async function calculateDraftPayroll() {
@@ -1855,6 +2196,32 @@ async function initialize() {
 elements.refresh.addEventListener('click', loadPeriod)
 elements.importButton.addEventListener('click', importApprovedAttendance)
 elements.calculateButton.addEventListener('click', calculateDraftPayroll)
+elements.addAdjustmentButton.addEventListener('click', () => {
+  openAdjustmentDialog('add')
+})
+elements.adjustmentBody.addEventListener('click', event => {
+  const button = event.target.closest('[data-adjustment-action]')
+  if (!button) return
+  const adjustment = state.adjustments.find(
+    item => item.payroll_item_id === button.dataset.adjustmentId
+  )
+  if (!adjustment) return
+  openAdjustmentDialog(button.dataset.adjustmentAction, adjustment)
+})
+elements.adjustmentForm.addEventListener('submit', savePayrollAdjustment)
+elements.closeAdjustmentButton.addEventListener(
+  'click',
+  closeAdjustmentDialog
+)
+elements.cancelAdjustmentButton.addEventListener(
+  'click',
+  closeAdjustmentDialog
+)
+elements.adjustmentDialog.addEventListener('click', event => {
+  if (event.target === elements.adjustmentDialog) {
+    closeAdjustmentDialog()
+  }
+})
 elements.preplotBody.addEventListener('change', event => {
   const checkbox = event.target.closest('.payroll-preplot-checkbox')
   if (!checkbox) return

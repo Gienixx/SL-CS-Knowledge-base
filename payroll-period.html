@@ -6,7 +6,7 @@
   <title>Payroll Period | SocialLoop CS Base</title>
   <link rel="stylesheet" href="./styles/button-theme.css?v=1">
   <link rel="stylesheet" href="./styles/workforce-admin.css?v=8">
-  <link rel="stylesheet" href="./styles/payroll-periods.css?v=9">
+  <link rel="stylesheet" href="./styles/payroll-periods.css?v=10">
 </head>
 <body class="payroll-access-pending">
   <main class="payroll-page">
@@ -249,9 +249,14 @@
           <h2 id="payrollCalculationTitle">Employee payroll totals</h2>
           <p>Calculate from approved snapshots and the rate effective on each work date. Prepaid allocations prevent the same minutes from being paid twice.</p>
         </div>
-        <button id="calculatePayrollButton" class="payroll-button payroll-button-primary" type="button" hidden>
-          Calculate draft payroll
-        </button>
+        <div class="payroll-calculation-actions">
+          <button id="addPayrollAdjustmentButton" class="payroll-button payroll-button-secondary" type="button" hidden>
+            + Add adjustment
+          </button>
+          <button id="calculatePayrollButton" class="payroll-button payroll-button-primary" type="button" hidden>
+            Calculate draft payroll
+          </button>
+        </div>
       </div>
 
       <div class="payroll-calculation-stats" aria-label="Draft payroll totals">
@@ -281,7 +286,92 @@
           </tbody>
         </table>
       </div>
+
+      <div class="payroll-adjustment-heading">
+        <div>
+          <h3>Manual adjustments</h3>
+          <p>Manual earnings and deductions require a reason. Descriptions appear to the employee; correction notes remain private to payroll users.</p>
+        </div>
+        <span id="payrollAdjustmentCount" class="payroll-count-pill">0 adjustments</span>
+      </div>
+
+      <div class="payroll-table-wrap">
+        <table class="payroll-adjustment-table">
+          <thead>
+            <tr>
+              <th>Employee</th>
+              <th>Type</th>
+              <th>Employee-visible description</th>
+              <th>Amount</th>
+              <th>Reason</th>
+              <th>Last changed</th>
+              <th>Actions</th>
+            </tr>
+          </thead>
+          <tbody id="payrollAdjustmentBody">
+            <tr><td colspan="7" class="payroll-table-empty">No manual adjustments have been added.</td></tr>
+          </tbody>
+        </table>
+      </div>
     </section>
+
+    <dialog id="payrollAdjustmentDialog" class="payroll-dialog payroll-adjustment-dialog" aria-labelledby="payrollAdjustmentDialogTitle">
+      <form id="payrollAdjustmentForm" class="payroll-dialog-form">
+        <header class="payroll-dialog-header">
+          <div>
+            <p class="payroll-eyebrow">Draft payroll</p>
+            <h2 id="payrollAdjustmentDialogTitle">Add manual adjustment</h2>
+            <p id="payrollAdjustmentDialogText">The description will appear on the employee’s payroll record.</p>
+          </div>
+          <button id="closePayrollAdjustmentDialogButton" class="payroll-dialog-close" type="button" aria-label="Close">×</button>
+        </header>
+
+        <div class="payroll-adjustment-form-grid">
+          <label class="payroll-field payroll-adjustment-wide">
+            <span>Employee</span>
+            <select id="payrollAdjustmentEmployee" class="payroll-control" required>
+              <option value="">Select an employee</option>
+            </select>
+          </label>
+
+          <label class="payroll-field">
+            <span>Adjustment type</span>
+            <select id="payrollAdjustmentType" class="payroll-control" required>
+              <option value="earning">Manual earning</option>
+              <option value="deduction">Manual deduction</option>
+            </select>
+          </label>
+
+          <label class="payroll-field">
+            <span>Amount (USD)</span>
+            <input id="payrollAdjustmentAmount" class="payroll-control" type="number" min="0.01" max="99999999.99" step="0.01" inputmode="decimal" required>
+          </label>
+
+          <label class="payroll-field payroll-adjustment-wide">
+            <span>Employee-visible description</span>
+            <input id="payrollAdjustmentDescription" class="payroll-control" type="text" minlength="3" maxlength="200" placeholder="Example: Performance bonus" required>
+          </label>
+
+          <label class="payroll-field payroll-adjustment-wide">
+            <span id="payrollAdjustmentReasonLabel">Adjustment reason</span>
+            <textarea id="payrollAdjustmentReason" class="payroll-control" rows="3" minlength="3" maxlength="500" placeholder="Required reason for this payroll change" required></textarea>
+          </label>
+
+          <label class="payroll-field payroll-adjustment-wide">
+            <span>Private correction notes (optional)</span>
+            <textarea id="payrollAdjustmentNotes" class="payroll-control" rows="3" maxlength="2000" placeholder="Visible only to authorized payroll users"></textarea>
+          </label>
+        </div>
+
+        <p class="payroll-adjustment-privacy">Private correction notes are stored only in the payroll audit log and never appear on an employee payslip.</p>
+        <p id="payrollAdjustmentMessage" class="payroll-prepaid-message" role="status" aria-live="polite"></p>
+
+        <footer class="payroll-dialog-actions">
+          <button id="cancelPayrollAdjustmentButton" class="payroll-button payroll-button-secondary" type="button">Cancel</button>
+          <button id="savePayrollAdjustmentButton" class="payroll-button payroll-button-primary" type="submit">Save adjustment</button>
+        </footer>
+      </form>
+    </dialog>
 
     <section class="payroll-card payroll-exception-review-card" aria-labelledby="payrollExceptionReviewTitle">
       <div class="payroll-section-heading payroll-exception-review-heading">
@@ -345,6 +435,6 @@
     </section>
   </main>
 
-  <script type="module" src="./scripts/payroll-period.js?v=9"></script>
+  <script type="module" src="./scripts/payroll-period.js?v=10"></script>
 </body>
 </html>

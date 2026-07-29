@@ -328,6 +328,13 @@ Requirements:
 - Adjustments are allowed only while payroll is editable.
 - Automated prepaid-hour allocations are not manual deductions.
 - Government-deduction controls remain hidden and their value remains zero.
+- Adjustment amounts are positive USD values rounded to cents.
+- An adjustment cannot make employee net pay negative.
+- Employee-visible descriptions remain on the payroll item.
+- Private correction notes are stored only in payroll audit metadata and are
+  never exposed through employee payroll items.
+- Recalculating draft payroll preserves manual adjustments and rebuilds totals
+  from all current item lines.
 
 ### Step 10 — Approve and finalize payroll
 
@@ -468,7 +475,7 @@ Phase 2 becomes the primary payroll process only when:
 | 6 | Complete | Approval creates prepaid balances; approved attendance imports remain immutable; existing July attendance was reconciled against the imported balances using the same FIFO rules |
 | 7 | Complete | The atomic USD calculator uses approved attendance and prepaid snapshots, effective-dated rates, exact-minute conversion, half-up cent rounding, FIFO prepaid offsets, normal overtime, special-day guarantees and work premiums, itemized totals, recalculation versions, audit logs, and negative-net protection. Draft totals remain private to payroll processors |
 | 8 | Complete | Core attendance and rate exceptions, all prepaid source/version/minute/audit/allocation checks, approved pre-plot exemptions, calculated Team Attendance prepaid columns, non-blocking carry-forward warnings, and exact permission-safe resolution links are implemented |
-| 9 | Not started | Implement after the base calculator |
+| 9 | Complete | Authorized payroll creators can add, edit, or remove manual earnings and deductions from calculated draft records. Every action requires a reason, rebuilds employee totals atomically, preserves a complete before/after audit event, keeps correction notes private, rejects negative net pay, and is blocked after payroll leaves draft or reopened status |
 | 10 | Not started | Implement after calculation and adjustments |
 | 11–13 | Not started | Implement after finalization workflow |
 | 14–15 | Not started | Test two linked periods, not a single isolated period |
@@ -497,8 +504,14 @@ The Step 7 controlled calculation for July 1–15 is complete:
 - The July 16–31 period remains uncalculated because its 208 blocking
   attendance exceptions are correctly preventing calculation.
 
-1. Implement Step 9 draft earnings and deduction adjustments with mandatory
-   reasons and audit history.
-2. Continue with Step 10 approval and finalization only after adjustments are
-   reviewed.
-3. Continue with Steps 11 through 15 after the finalization workflow.
+Step 9 is deployed without adding any production adjustment:
+
+- The July 1–15 controlled payroll remains USD 7,466.06 gross and net.
+- No manual earning or deduction exists until an authorized payroll user adds
+  one for a documented business reason.
+- Rollback-only tests passed for add, edit, remove, private notes, total
+  rebuilding, negative-net rejection, audit history, and finalized lockout.
+
+1. Implement Step 10 review, approval, finalization, immutability, and
+   controlled reopening.
+2. Continue with Steps 11 through 15 after the finalization workflow.
