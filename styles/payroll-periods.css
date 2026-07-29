@@ -721,6 +721,140 @@ body { margin: 0; background-image: none; }
   background: var(--payroll-red);
 }
 
+.payroll-lifecycle-heading {
+  align-items: flex-start;
+}
+
+.payroll-lifecycle-actions {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: 9px;
+}
+
+.payroll-finalization-checks {
+  display: grid;
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+  gap: 10px;
+  margin: 19px 0;
+}
+
+.payroll-finalization-checks > div {
+  display: flex;
+  min-height: 98px;
+  gap: 10px;
+  padding: 14px;
+  border: 1px solid var(--payroll-border);
+  border-radius: 12px;
+  background: #fafafe;
+}
+
+.payroll-finalization-checks > div.ready {
+  border-color: rgba(24, 135, 92, .25);
+  background: var(--payroll-green-soft);
+}
+
+.payroll-finalization-checks > div.blocked {
+  border-color: rgba(178, 111, 15, .25);
+  background: var(--payroll-amber-soft);
+}
+
+.payroll-lifecycle-check-icon {
+  flex: 0 0 auto;
+  color: var(--payroll-muted);
+  font-weight: 800;
+}
+
+.payroll-finalization-checks .ready .payroll-lifecycle-check-icon {
+  color: var(--payroll-green);
+}
+
+.payroll-finalization-checks .blocked .payroll-lifecycle-check-icon {
+  color: var(--payroll-amber);
+}
+
+.payroll-finalization-checks strong,
+.payroll-finalization-checks small {
+  display: block;
+}
+
+.payroll-finalization-checks strong {
+  margin-bottom: 5px;
+  color: var(--payroll-ink);
+  font-size: .82rem;
+}
+
+.payroll-finalization-checks small {
+  color: var(--payroll-muted);
+  font-size: .72rem;
+  line-height: 1.45;
+}
+
+.payroll-lifecycle-evidence {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  overflow: hidden;
+  margin-bottom: 14px;
+  border: 1px solid var(--payroll-border);
+  border-radius: 12px;
+}
+
+.payroll-lifecycle-evidence > div {
+  min-width: 0;
+  padding: 14px 16px;
+  border-right: 1px solid var(--payroll-border);
+}
+
+.payroll-lifecycle-evidence > div:last-child {
+  border-right: 0;
+}
+
+.payroll-lifecycle-evidence span,
+.payroll-lifecycle-evidence strong,
+.payroll-lifecycle-evidence small {
+  display: block;
+}
+
+.payroll-lifecycle-evidence span {
+  margin-bottom: 5px;
+  color: var(--payroll-muted);
+  font-size: .69rem;
+  font-weight: 700;
+  letter-spacing: .06em;
+  text-transform: uppercase;
+}
+
+.payroll-lifecycle-evidence strong {
+  overflow: hidden;
+  color: var(--payroll-ink);
+  font-size: .82rem;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.payroll-lifecycle-evidence small {
+  margin-top: 4px;
+  color: var(--payroll-muted);
+  font-size: .72rem;
+}
+
+.payroll-lifecycle-confirmation-summary {
+  display: grid;
+  gap: 8px;
+  margin-bottom: 16px;
+  padding: 13px 15px;
+  border: 1px solid var(--payroll-border);
+  border-radius: 11px;
+  background: #fafafe;
+  color: var(--payroll-muted);
+  font-size: .78rem;
+  line-height: 1.5;
+}
+
+.payroll-lifecycle-confirmation-summary strong {
+  color: var(--payroll-ink);
+}
+
 .payroll-preplot-heading { align-items: center; }
 .payroll-preplot-heading-actions {
   display: flex;
@@ -1190,6 +1324,10 @@ body { margin: 0; background-image: none; }
   .payroll-import-stats { grid-template-columns: 1fr 1fr 1fr; }
   .payroll-calculation-stats { grid-template-columns: 1fr 1fr; }
   .payroll-preplot-stats { grid-template-columns: 1fr 1fr 1fr; }
+  .payroll-finalization-checks { grid-template-columns: 1fr 1fr; }
+  .payroll-lifecycle-evidence { grid-template-columns: 1fr 1fr; }
+  .payroll-lifecycle-evidence > div:nth-child(2) { border-right: 0; }
+  .payroll-lifecycle-evidence > div:nth-child(-n+2) { border-bottom: 1px solid var(--payroll-border); }
   .payroll-period-form { grid-template-columns: 1fr 1fr; }
   .payroll-override-field { grid-column: 1 / -1; }
   .payroll-period-form .payroll-button { min-height: 40px; }
@@ -1208,12 +1346,16 @@ body { margin: 0; background-image: none; }
   .payroll-header-actions .payroll-button { flex: 1; }
   .payroll-calculation-actions { width: 100%; justify-content: flex-start; }
   .payroll-calculation-actions .payroll-button { flex: 1; }
+  .payroll-lifecycle-actions { width: 100%; justify-content: flex-start; }
+  .payroll-lifecycle-actions .payroll-button { flex: 1; }
   .payroll-exception-controls { width: 100%; justify-content: flex-start; flex-wrap: wrap; }
   .payroll-exception-controls .payroll-control { flex: 1; width: auto; }
   .payroll-metrics,
   .payroll-import-stats,
   .payroll-calculation-stats,
   .payroll-preplot-stats,
+  .payroll-finalization-checks,
+  .payroll-lifecycle-evidence,
   .payroll-preplot-actions,
   .payroll-prepaid-form-grid,
   .payroll-adjustment-form-grid,
@@ -1224,6 +1366,12 @@ body { margin: 0; background-image: none; }
   .payroll-preplot-heading-actions { width: 100%; justify-content: space-between; }
   .payroll-prepaid-wide { grid-column: auto; }
   .payroll-adjustment-wide { grid-column: auto; }
+  .payroll-lifecycle-evidence > div,
+  .payroll-lifecycle-evidence > div:nth-child(2) {
+    border-right: 0;
+    border-bottom: 1px solid var(--payroll-border);
+  }
+  .payroll-lifecycle-evidence > div:last-child { border-bottom: 0; }
   .payroll-dialog { width: calc(100% - 20px); max-height: calc(100vh - 20px); }
   .payroll-dialog-form { padding: 17px; }
   .payroll-dialog-actions { flex-direction: column-reverse; }

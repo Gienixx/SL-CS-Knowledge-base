@@ -373,6 +373,107 @@
       </form>
     </dialog>
 
+    <section class="payroll-card payroll-lifecycle-card" aria-labelledby="payrollLifecycleTitle">
+      <div class="payroll-section-heading payroll-lifecycle-heading">
+        <div>
+          <p class="payroll-eyebrow">Step 10 · Approval and finalization</p>
+          <h2 id="payrollLifecycleTitle">Payroll approval</h2>
+          <p>Review confirms the calculation evidence. Finalization locks payroll records, item lines, snapshots, allocations, and payslip history.</p>
+        </div>
+        <div class="payroll-lifecycle-actions">
+          <button id="reviewPayrollButton" class="payroll-button payroll-button-secondary" type="button" hidden>
+            Submit for approval
+          </button>
+          <button id="finalizePayrollButton" class="payroll-button payroll-button-primary" type="button" hidden>
+            Approve and finalize
+          </button>
+          <button id="reopenPayrollButton" class="payroll-button danger" type="button" hidden>
+            Reopen payroll
+          </button>
+        </div>
+      </div>
+
+      <div id="payrollFinalizationChecks" class="payroll-finalization-checks" aria-label="Finalization checks">
+        <div data-lifecycle-check="calculation">
+          <span class="payroll-lifecycle-check-icon" aria-hidden="true">○</span>
+          <div><strong>Current calculations</strong><small>Every employee must have a current calculation.</small></div>
+        </div>
+        <div data-lifecycle-check="exceptions">
+          <span class="payroll-lifecycle-check-icon" aria-hidden="true">○</span>
+          <div><strong>No blocking exceptions</strong><small>All blocking attendance, rate, and prepaid issues must be cleared.</small></div>
+        </div>
+        <div data-lifecycle-check="snapshots">
+          <span class="payroll-lifecycle-check-icon" aria-hidden="true">○</span>
+          <div><strong>Snapshots confirmed</strong><small>Attendance and approved pre-plotted schedules are versioned.</small></div>
+        </div>
+        <div data-lifecycle-check="balances">
+          <span class="payroll-lifecycle-check-icon" aria-hidden="true">○</span>
+          <div><strong>Prepaid balances confirmed</strong><small>Opening, added, applied, and closing minutes will be preserved.</small></div>
+        </div>
+        <div data-lifecycle-check="rates">
+          <span class="payroll-lifecycle-check-icon" aria-hidden="true">○</span>
+          <div><strong>Rates and rounding confirmed</strong><small>USD rates effective on each work date use exact minutes and half-up cents.</small></div>
+        </div>
+      </div>
+
+      <div class="payroll-lifecycle-evidence">
+        <div>
+          <span>Reviewer</span>
+          <strong id="payrollReviewer">Not reviewed</strong>
+          <small id="payrollReviewedAt">—</small>
+        </div>
+        <div>
+          <span>Approver</span>
+          <strong id="payrollApprover">Not approved</strong>
+          <small id="payrollApprovedAt">—</small>
+        </div>
+        <div>
+          <span>Finalization</span>
+          <strong id="payrollFinalizationStatus">Not finalized</strong>
+          <small id="payrollFinalizedAt">—</small>
+        </div>
+        <div>
+          <span>Controlled reopening</span>
+          <strong id="payrollReopeningStatus">No reopening recorded</strong>
+          <small id="payrollReopenedAt">—</small>
+        </div>
+      </div>
+
+      <p id="payrollLifecycleStatus" class="payroll-import-status">Complete draft calculation before review.</p>
+    </section>
+
+    <dialog id="payrollLifecycleDialog" class="payroll-dialog payroll-lifecycle-dialog" aria-labelledby="payrollLifecycleDialogTitle">
+      <form id="payrollLifecycleForm" class="payroll-dialog-form">
+        <header class="payroll-dialog-header">
+          <div>
+            <p id="payrollLifecycleDialogEyebrow" class="payroll-eyebrow">Payroll approval</p>
+            <h2 id="payrollLifecycleDialogTitle">Submit payroll for approval</h2>
+            <p id="payrollLifecycleDialogText">This records the reviewer and calculation evidence.</p>
+          </div>
+          <button id="closePayrollLifecycleDialogButton" class="payroll-dialog-close" type="button" aria-label="Close">×</button>
+        </header>
+
+        <div id="payrollLifecycleConfirmationSummary" class="payroll-lifecycle-confirmation-summary"></div>
+
+        <label class="payroll-field">
+          <span id="payrollLifecycleReasonLabel">Review notes</span>
+          <textarea id="payrollLifecycleReason" class="payroll-control" rows="4" minlength="3" maxlength="2000" placeholder="Required notes for the payroll audit trail" required></textarea>
+        </label>
+
+        <label id="payrollLifecycleConfirmWrap" class="payroll-prepaid-confirm" hidden>
+          <input id="payrollLifecycleConfirm" type="checkbox">
+          <span id="payrollLifecycleConfirmText">I understand this action changes the payroll lifecycle.</span>
+        </label>
+
+        <p id="payrollLifecycleDialogMessage" class="payroll-prepaid-message" role="status" aria-live="polite"></p>
+
+        <footer class="payroll-dialog-actions">
+          <button id="cancelPayrollLifecycleButton" class="payroll-button payroll-button-secondary" type="button">Cancel</button>
+          <button id="savePayrollLifecycleButton" class="payroll-button payroll-button-primary" type="submit">Continue</button>
+        </footer>
+      </form>
+    </dialog>
+
     <section class="payroll-card payroll-exception-review-card" aria-labelledby="payrollExceptionReviewTitle">
       <div class="payroll-section-heading payroll-exception-review-heading">
         <div>

@@ -42,6 +42,7 @@ const state = {
   exceptions: [],
   calculations: [],
   adjustments: [],
+  lifecycle: null,
   exceptionFilter: 'all',
   missingAttendance: new Map(),
   importStatuses: new Map(),
@@ -51,10 +52,15 @@ const state = {
   canManageSchedules: false,
   canManageRates: false,
   canCalculatePayroll: false,
+  canReviewPayroll: false,
+  canFinalizePayroll: false,
+  canReopenPayroll: false,
   loading: false,
   importing: false,
   calculating: false,
   savingAdjustment: false,
+  savingLifecycle: false,
+  lifecycleMode: 'review',
   adjustmentMode: 'add',
   selectedAdjustment: null,
   approvingPreplots: false,
@@ -169,6 +175,49 @@ const elements = {
   ),
   cancelAdjustmentButton: document.getElementById(
     'cancelPayrollAdjustmentButton'
+  ),
+  reviewPayrollButton: document.getElementById('reviewPayrollButton'),
+  finalizePayrollButton: document.getElementById(
+    'finalizePayrollButton'
+  ),
+  reopenPayrollButton: document.getElementById('reopenPayrollButton'),
+  lifecycleStatus: document.getElementById('payrollLifecycleStatus'),
+  lifecycleDialog: document.getElementById('payrollLifecycleDialog'),
+  lifecycleForm: document.getElementById('payrollLifecycleForm'),
+  lifecycleDialogEyebrow: document.getElementById(
+    'payrollLifecycleDialogEyebrow'
+  ),
+  lifecycleDialogTitle: document.getElementById(
+    'payrollLifecycleDialogTitle'
+  ),
+  lifecycleDialogText: document.getElementById(
+    'payrollLifecycleDialogText'
+  ),
+  lifecycleSummary: document.getElementById(
+    'payrollLifecycleConfirmationSummary'
+  ),
+  lifecycleReasonLabel: document.getElementById(
+    'payrollLifecycleReasonLabel'
+  ),
+  lifecycleReason: document.getElementById('payrollLifecycleReason'),
+  lifecycleConfirmWrap: document.getElementById(
+    'payrollLifecycleConfirmWrap'
+  ),
+  lifecycleConfirm: document.getElementById('payrollLifecycleConfirm'),
+  lifecycleConfirmText: document.getElementById(
+    'payrollLifecycleConfirmText'
+  ),
+  lifecycleDialogMessage: document.getElementById(
+    'payrollLifecycleDialogMessage'
+  ),
+  saveLifecycleButton: document.getElementById(
+    'savePayrollLifecycleButton'
+  ),
+  closeLifecycleButton: document.getElementById(
+    'closePayrollLifecycleDialogButton'
+  ),
+  cancelLifecycleButton: document.getElementById(
+    'cancelPayrollLifecycleButton'
   )
 }
 
@@ -209,6 +258,23 @@ function formatHours(minutes) {
 
 function formatMoney(value) {
   return moneyFormatter.format(Number(value || 0))
+}
+
+function formatDateTime(value) {
+  if (!value) return '—'
+  try {
+    return new Intl.DateTimeFormat('en-PH', {
+      year: 'numeric',
+      month: 'short',
+      day: 'numeric',
+      hour: 'numeric',
+      minute: '2-digit',
+      timeZone: 'Asia/Manila',
+      timeZoneName: 'short'
+    }).format(new Date(value))
+  } catch {
+    return '—'
+  }
 }
 
 function setMessage(message = '', type = '') {
@@ -583,6 +649,163 @@ function renderPeriod() {
     : importable
       ? 'Add an audited manual earning or deduction'
       : 'Adjustments are allowed only while payroll is editable'
+}
+
+function setLifecycleCheck(name, ready, readyText, blockedText) {
+  const check = document.querySelector(
+    `[data-lifecycle-check="${name}"]`
+  )
+  if (!check) return
+  check.classList.toggle('ready', ready)
+  check.classList.toggle('blocked', !ready)
+  const icon = check.querySelector('.payroll-lifecycle-check-icon')
+  if (icon) icon.textContent = ready ? '✓' : '!'
+  const detail = check.querySelector('small')
+  if (detail) detail.textContent = ready ? readyText : blockedText
+}
+
+function renderLifecycle() {
+  const period = state.period
+  if (!period) return
+
+  const lifecycle = state.lifecycle || {}
+  const blockingCount = state.exceptions.filter(
+    issue => issue.is_blocking
+  ).length
+  const expectedRecords = Number(period.employee_count || 0)
+  const recalculationCount = [...state.importStatuses.values()].filter(
+    status => status.requires_recalculation
+  ).length
+  const calculationsReady =
+    state.calculations.length > 0 &&
+    (!expectedRecords || state.calculations.length === expectedRecords) &&
+    recalculationCount === 0
+  const exceptionsReady = blockingCount === 0
+  const snapshotIssue = state.exceptions.some(
+    issue =>
+      issue.is_blocking &&
+      (
+        ATTENDANCE_EXCEPTION_CODES.has(issue.exception_code) ||
+        PREPLOT_EXCEPTION_CODES.has(issue.exception_code)
+      )
+  )
+  const snapshotsReady = calculationsReady && !snapshotIssue
+  const balanceIssue = state.exceptions.some(
+    issue =>
+      issue.is_blocking &&
+      PREPLOT_EXCEPTION_CODES.has(issue.exception_code)
+  )
+  const balancesReady = calculationsReady && !balanceIssue
+  const rateIssue = state.exceptions.some(
+    issue =>
+      issue.is_blocking &&
+      (
+        issue.exception_code === 'missing_rate' ||
+        issue.exception_code === 'changed_rate_after_calculation'
+      )
+  )
+  const ratesReady = calculationsReady && !rateIssue
+  const readyForReview =
+    calculationsReady &&
+    exceptionsReady &&
+    snapshotsReady &&
+    balancesReady &&
+    ratesReady
+  const status = period.period_status
+
+  setLifecycleCheck(
+    'calculation',
+    calculationsReady,
+    `${state.calculations.length} employee calculation${state.calculations.length === 1 ? '' : 's'} are current.`,
+    recalculationCount
+      ? `${recalculationCount} employee record${recalculationCount === 1 ? '' : 's'} require recalculation.`
+      : 'Calculate every employee before review.'
+  )
+  setLifecycleCheck(
+    'exceptions',
+    exceptionsReady,
+    'No blocking payroll exceptions were detected.',
+    `${blockingCount} blocking exception${blockingCount === 1 ? '' : 's'} must be resolved.`
+  )
+  setLifecycleCheck(
+    'snapshots',
+    snapshotsReady,
+    'Attendance and pre-plotted schedule versions are confirmed.',
+    'Snapshot evidence is incomplete or has changed.'
+  )
+  setLifecycleCheck(
+    'balances',
+    balancesReady,
+    'Prepaid-minute balances are ready to preserve.',
+    'Resolve prepaid schedule or balance issues.'
+  )
+  setLifecycleCheck(
+    'rates',
+    ratesReady,
+    'Effective USD rates and explicit rounding rules are confirmed.',
+    'A rate is missing, changed, or not yet calculated.'
+  )
+
+  elements.reviewPayrollButton.hidden = !state.canReviewPayroll
+  elements.reviewPayrollButton.disabled =
+    state.loading ||
+    state.savingLifecycle ||
+    !['draft', 'reopened'].includes(status) ||
+    !readyForReview
+
+  elements.finalizePayrollButton.hidden = !state.canFinalizePayroll
+  elements.finalizePayrollButton.disabled =
+    state.loading ||
+    state.savingLifecycle ||
+    status !== 'review' ||
+    !exceptionsReady
+
+  elements.reopenPayrollButton.hidden =
+    !state.canReopenPayroll || status !== 'finalized'
+  elements.reopenPayrollButton.disabled =
+    state.loading || state.savingLifecycle
+
+  document.getElementById('payrollReviewer').textContent =
+    lifecycle.reviewed_by_name || 'Not reviewed'
+  document.getElementById('payrollReviewedAt').textContent =
+    formatDateTime(lifecycle.reviewed_at)
+  document.getElementById('payrollApprover').textContent =
+    lifecycle.approved_by_name || 'Not approved'
+  document.getElementById('payrollApprovedAt').textContent =
+    formatDateTime(lifecycle.approved_at)
+  document.getElementById('payrollFinalizationStatus').textContent =
+    lifecycle.finalized_by_name
+      ? `Finalized by ${lifecycle.finalized_by_name}`
+      : 'Not finalized'
+  document.getElementById('payrollFinalizedAt').textContent =
+    formatDateTime(lifecycle.finalized_at)
+  document.getElementById('payrollReopeningStatus').textContent =
+    lifecycle.reopened_by_name
+      ? `Reopened by ${lifecycle.reopened_by_name}`
+      : 'No reopening recorded'
+  document.getElementById('payrollReopenedAt').textContent =
+    formatDateTime(lifecycle.reopened_at)
+
+  elements.lifecycleStatus.className = 'payroll-import-status'
+  if (status === 'finalized') {
+    elements.lifecycleStatus.textContent =
+      `Finalized payroll is locked · Version ${Number(lifecycle.finalization_version || 1)}. Later corrections require a future adjustment or controlled reopening.`
+    elements.lifecycleStatus.classList.add('ready')
+  } else if (status === 'review') {
+    elements.lifecycleStatus.textContent =
+      'Review evidence is recorded. An authorized approver can run the final checks and lock payroll.'
+    elements.lifecycleStatus.classList.add('ready')
+  } else if (status === 'reopened') {
+    elements.lifecycleStatus.textContent =
+      'This payroll was reopened under audit control. Recalculate every employee before submitting it for approval again.'
+  } else if (readyForReview) {
+    elements.lifecycleStatus.textContent =
+      'All visible checks are clear. Submit payroll for approval to record the reviewer and full database evidence.'
+    elements.lifecycleStatus.classList.add('ready')
+  } else {
+    elements.lifecycleStatus.textContent =
+      'Complete the highlighted calculation and exception checks before review.'
+  }
 }
 
 function employeeHasAttendanceIssue(employee) {
@@ -1639,6 +1862,7 @@ function renderAll() {
   renderImportStatus()
   renderCalculations()
   renderAdjustments()
+  renderLifecycle()
   renderEmployees()
 }
 
@@ -1658,7 +1882,8 @@ async function loadPeriod() {
     preplotsResult,
     prepaidBalancesResult,
     calculationResult,
-    adjustmentsResult
+    adjustmentsResult,
+    lifecycleResult
   ] =
     await Promise.all([
       supabase.rpc('payroll_get_period_dashboard'),
@@ -1685,6 +1910,9 @@ async function loadPeriod() {
       }),
       supabase.rpc('payroll_get_period_adjustments', {
         p_payroll_period_id: state.periodId
+      }),
+      supabase.rpc('payroll_get_period_lifecycle', {
+        p_payroll_period_id: state.periodId
       })
     ])
 
@@ -1700,7 +1928,8 @@ async function loadPeriod() {
     preplotsResult.error ||
     prepaidBalancesResult.error ||
     calculationResult.error ||
-    adjustmentsResult.error
+    adjustmentsResult.error ||
+    lifecycleResult.error
   ) {
     setMessage(
       'Payroll readiness could not be loaded. Refresh or contact a system administrator.',
@@ -1724,6 +1953,7 @@ async function loadPeriod() {
   state.exceptions = exceptionsResult.data || []
   state.calculations = calculationResult.data || []
   state.adjustments = adjustmentsResult.data || []
+  state.lifecycle = lifecycleResult.data?.[0] || null
   state.missingAttendance = new Map()
   for (const entry of missingAttendanceResult.data || []) {
     const rows = state.missingAttendance.get(entry.employee_user_id) || []
@@ -1903,6 +2133,232 @@ async function savePayrollAdjustment(event) {
       : completedMode === 'edit'
         ? 'The manual adjustment and payroll totals were updated.'
         : 'The manual adjustment was added and payroll totals were updated.',
+    'success'
+  )
+}
+
+function setLifecycleDialogMessage(message = '', type = '') {
+  elements.lifecycleDialogMessage.textContent = message
+  elements.lifecycleDialogMessage.classList.toggle(
+    'error',
+    type === 'error'
+  )
+  elements.lifecycleDialogMessage.classList.toggle(
+    'success',
+    type === 'success'
+  )
+}
+
+function closeLifecycleDialog() {
+  if (state.savingLifecycle) return
+  if (typeof elements.lifecycleDialog.close === 'function') {
+    elements.lifecycleDialog.close()
+  } else {
+    elements.lifecycleDialog.removeAttribute('open')
+  }
+  elements.lifecycleForm.reset()
+  setLifecycleDialogMessage()
+}
+
+function lifecycleTotals() {
+  return state.calculations.reduce(
+    (totals, record) => ({
+      gross: totals.gross + Number(record.gross_pay || 0),
+      deductions:
+        totals.deductions + Number(record.total_deductions || 0),
+      net: totals.net + Number(record.net_pay || 0)
+    }),
+    { gross: 0, deductions: 0, net: 0 }
+  )
+}
+
+function openLifecycleDialog(mode) {
+  const status = state.period?.period_status
+  if (
+    state.savingLifecycle ||
+    (mode === 'review' &&
+      (
+        !state.canReviewPayroll ||
+        !['draft', 'reopened'].includes(status)
+      )) ||
+    (mode === 'finalize' &&
+      (!state.canFinalizePayroll || status !== 'review')) ||
+    (mode === 'reopen' &&
+      (!state.canReopenPayroll || status !== 'finalized'))
+  ) {
+    return
+  }
+
+  state.lifecycleMode = mode
+  elements.lifecycleForm.reset()
+  setLifecycleDialogMessage()
+
+  const totals = lifecycleTotals()
+  const blockingCount = state.exceptions.filter(
+    issue => issue.is_blocking
+  ).length
+  const summaries = [
+    element(
+      'div',
+      '',
+      `${state.calculations.length} employees · Gross ${formatMoney(totals.gross)} · Deductions ${formatMoney(totals.deductions)} · Net ${formatMoney(totals.net)}`
+    )
+  ]
+
+  if (mode === 'review') {
+    elements.lifecycleDialogEyebrow.textContent = 'Payroll review'
+    elements.lifecycleDialogTitle.textContent = 'Submit payroll for approval'
+    elements.lifecycleDialogText.textContent =
+      'The database will recalculate stored totals and verify exceptions, snapshots, prepaid balances, effective rates, and rounding rules.'
+    elements.lifecycleReasonLabel.textContent = 'Review notes'
+    elements.lifecycleReason.minLength = 3
+    elements.lifecycleReason.placeholder =
+      'Required review conclusion for the payroll audit trail'
+    elements.lifecycleConfirmWrap.hidden = true
+    elements.saveLifecycleButton.textContent = 'Record review'
+    elements.saveLifecycleButton.className =
+      'payroll-button payroll-button-primary'
+    summaries.push(
+      element(
+        'div',
+        '',
+        blockingCount
+          ? `${blockingCount} blocking exceptions remain.`
+          : 'No blocking exceptions are currently visible.'
+      )
+    )
+  } else if (mode === 'finalize') {
+    elements.lifecycleDialogEyebrow.textContent =
+      'Final payroll approval'
+    elements.lifecycleDialogTitle.textContent =
+      'Approve and finalize payroll'
+    elements.lifecycleDialogText.textContent =
+      'The server will run every final gate again before locking this payroll.'
+    elements.lifecycleReasonLabel.textContent = 'Approval notes'
+    elements.lifecycleReason.minLength = 3
+    elements.lifecycleReason.placeholder =
+      'Required approval conclusion for the payroll audit trail'
+    elements.lifecycleConfirmWrap.hidden = false
+    elements.lifecycleConfirmText.textContent =
+      'I confirm the employee totals, snapshots, rates, prepaid-minute balances, and rounding rules. I understand finalized payroll is immutable.'
+    elements.saveLifecycleButton.textContent = 'Approve and finalize'
+    elements.saveLifecycleButton.className =
+      'payroll-button payroll-button-primary'
+    summaries.push(
+      element(
+        'div',
+        '',
+        `Reviewed by ${state.lifecycle?.reviewed_by_name || 'an authorized reviewer'} · ${formatDateTime(state.lifecycle?.reviewed_at)}`
+      )
+    )
+  } else {
+    elements.lifecycleDialogEyebrow.textContent =
+      'Controlled reopening'
+    elements.lifecycleDialogTitle.textContent = 'Reopen finalized payroll'
+    elements.lifecycleDialogText.textContent =
+      'Reopening preserves the prior approval evidence in the audit trail and marks every employee for full recalculation.'
+    elements.lifecycleReasonLabel.textContent = 'Reopening reason'
+    elements.lifecycleReason.minLength = 5
+    elements.lifecycleReason.placeholder =
+      'Required reason for reopening finalized payroll'
+    elements.lifecycleConfirmWrap.hidden = false
+    elements.lifecycleConfirmText.textContent =
+      'I understand every employee must be recalculated, reviewed, and finalized again. Generated payslips require the controlled regeneration workflow.'
+    elements.saveLifecycleButton.textContent = 'Reopen payroll'
+    elements.saveLifecycleButton.className =
+      'payroll-button danger'
+    summaries.push(
+      element(
+        'div',
+        '',
+        `Finalized version ${Number(state.lifecycle?.finalization_version || 1)} · ${formatDateTime(state.lifecycle?.finalized_at)}`
+      )
+    )
+  }
+
+  elements.lifecycleSummary.replaceChildren(...summaries)
+  if (typeof elements.lifecycleDialog.showModal === 'function') {
+    elements.lifecycleDialog.showModal()
+  } else {
+    elements.lifecycleDialog.setAttribute('open', '')
+  }
+  elements.lifecycleReason.focus()
+}
+
+async function savePayrollLifecycle(event) {
+  event.preventDefault()
+  if (
+    state.savingLifecycle ||
+    !elements.lifecycleForm.reportValidity()
+  ) {
+    return
+  }
+
+  const requiresConfirmation =
+    state.lifecycleMode === 'finalize' ||
+    state.lifecycleMode === 'reopen'
+  if (requiresConfirmation && !elements.lifecycleConfirm.checked) {
+    setLifecycleDialogMessage(
+      'Confirm the lifecycle statement before continuing.',
+      'error'
+    )
+    return
+  }
+
+  state.savingLifecycle = true
+  elements.saveLifecycleButton.disabled = true
+  elements.cancelLifecycleButton.disabled = true
+  elements.closeLifecycleButton.disabled = true
+  setLifecycleDialogMessage(
+    state.lifecycleMode === 'review'
+      ? 'Recalculating totals and recording review evidence…'
+      : state.lifecycleMode === 'finalize'
+        ? 'Running final checks and locking payroll…'
+        : 'Preserving finalization evidence and reopening payroll…'
+  )
+
+  const reason = elements.lifecycleReason.value.trim()
+  let result
+  if (state.lifecycleMode === 'review') {
+    result = await supabase.rpc('payroll_review_period', {
+      p_payroll_period_id: state.periodId,
+      p_review_notes: reason
+    })
+  } else if (state.lifecycleMode === 'finalize') {
+    result = await supabase.rpc('payroll_finalize_period', {
+      p_payroll_period_id: state.periodId,
+      p_approval_notes: reason
+    })
+  } else {
+    result = await supabase.rpc('payroll_reopen_period', {
+      p_payroll_period_id: state.periodId,
+      p_reopen_reason: reason
+    })
+  }
+
+  state.savingLifecycle = false
+  elements.saveLifecycleButton.disabled = false
+  elements.cancelLifecycleButton.disabled = false
+  elements.closeLifecycleButton.disabled = false
+
+  if (result.error) {
+    setLifecycleDialogMessage(
+      result.error.message ||
+        'The payroll lifecycle action could not be completed.',
+      'error'
+    )
+    return
+  }
+
+  const completedMode = state.lifecycleMode
+  closeLifecycleDialog()
+  await loadPeriod()
+  setMessage(
+    completedMode === 'review'
+      ? 'Payroll review was recorded. The period is ready for an authorized final approver.'
+      : completedMode === 'finalize'
+        ? `Payroll was finalized and locked. Gross ${formatMoney(result.data?.gross_pay)} · Net ${formatMoney(result.data?.net_pay)}.`
+        : 'Payroll was reopened under audit control. Every employee is marked for recalculation.',
     'success'
   )
 }
@@ -2186,6 +2642,18 @@ async function initialize() {
       access,
       'create_payroll'
     )
+    state.canReviewPayroll = hasWorkforcePermission(
+      access,
+      'review_payroll'
+    )
+    state.canFinalizePayroll = hasWorkforcePermission(
+      access,
+      'finalize_payroll'
+    )
+    state.canReopenPayroll = hasWorkforcePermission(
+      access,
+      'reopen_payroll'
+    )
     document.body.classList.remove('payroll-access-pending')
     await loadPeriod()
   } catch {
@@ -2196,6 +2664,29 @@ async function initialize() {
 elements.refresh.addEventListener('click', loadPeriod)
 elements.importButton.addEventListener('click', importApprovedAttendance)
 elements.calculateButton.addEventListener('click', calculateDraftPayroll)
+elements.reviewPayrollButton.addEventListener('click', () => {
+  openLifecycleDialog('review')
+})
+elements.finalizePayrollButton.addEventListener('click', () => {
+  openLifecycleDialog('finalize')
+})
+elements.reopenPayrollButton.addEventListener('click', () => {
+  openLifecycleDialog('reopen')
+})
+elements.lifecycleForm.addEventListener('submit', savePayrollLifecycle)
+elements.closeLifecycleButton.addEventListener(
+  'click',
+  closeLifecycleDialog
+)
+elements.cancelLifecycleButton.addEventListener(
+  'click',
+  closeLifecycleDialog
+)
+elements.lifecycleDialog.addEventListener('click', event => {
+  if (event.target === elements.lifecycleDialog) {
+    closeLifecycleDialog()
+  }
+})
 elements.addAdjustmentButton.addEventListener('click', () => {
   openAdjustmentDialog('add')
 })

@@ -476,8 +476,8 @@ Phase 2 becomes the primary payroll process only when:
 | 7 | Complete | The atomic USD calculator uses approved attendance and prepaid snapshots, effective-dated rates, exact-minute conversion, half-up cent rounding, FIFO prepaid offsets, normal overtime, special-day guarantees and work premiums, itemized totals, recalculation versions, audit logs, and negative-net protection. Draft totals remain private to payroll processors |
 | 8 | Complete | Core attendance and rate exceptions, all prepaid source/version/minute/audit/allocation checks, approved pre-plot exemptions, calculated Team Attendance prepaid columns, non-blocking carry-forward warnings, and exact permission-safe resolution links are implemented |
 | 9 | Complete | Authorized payroll creators can add, edit, or remove manual earnings and deductions from calculated draft records. Every action requires a reason, rebuilds employee totals atomically, preserves a complete before/after audit event, keeps correction notes private, rejects negative net pay, and is blocked after payroll leaves draft or reopened status |
-| 10 | Not started | Implement after calculation and adjustments |
-| 11–13 | Not started | Implement after finalization workflow |
+| 10 | Complete | Review recalculates stored employee totals and records calculation, snapshot, rate, rounding, and prepaid-balance evidence. Final approval reruns every gate, records reviewer/approver/timestamp, increments the finalization version, and locks periods, records, items, snapshots, destination allocations, payslips, and audit history. Controlled reopening requires separate permission and a reason, preserves prior evidence, and forces full recalculation. Once Step 12 creates PDFs, periods with generated payslips remain blocked from reopening until that step's controlled regeneration path is used |
+| 11–13 | Not started | Begin the payslip preview using finalized Step 10 evidence |
 | 14–15 | Not started | Test two linked periods, not a single isolated period |
 
 ## Next implementation order
@@ -512,6 +512,21 @@ Step 9 is deployed without adding any production adjustment:
 - Rollback-only tests passed for add, edit, remove, private notes, total
   rebuilding, negative-net rejection, audit history, and finalized lockout.
 
-1. Implement Step 10 review, approval, finalization, immutability, and
-   controlled reopening.
-2. Continue with Steps 11 through 15 after the finalization workflow.
+Step 10 is deployed without finalizing the production July payroll:
+
+- Review, approval, finalization, immutable locks, and controlled reopening are
+  available only through their separate payroll permissions.
+- Finalization evidence preserves every employee calculation version, rates
+  used, rounding rules, attendance and schedule snapshot counts, and each
+  employee's opening, added, applied, and closing prepaid minutes.
+- Rollback-only integration tests completed review, finalization, direct
+  mutation lock checks, and reopening. The July 1–15 production period remains
+  in Draft with no approval or finalization record.
+- Attendance and schedule corrections cannot silently rewrite finalized
+  payroll. Later eligible work continues through append-only future-period
+  reconciliation, while other corrections require a future adjustment or the
+  controlled reopening process.
+
+1. Implement Step 11 finalized payslip preview.
+2. Continue with PDF generation, private agent access, and the two-period
+   parallel test in Steps 12 through 15.
