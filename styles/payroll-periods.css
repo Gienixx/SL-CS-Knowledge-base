@@ -588,6 +588,20 @@ body { margin: 0; background-image: none; }
   font-size: 8.5px;
 }
 
+.payroll-payslip-preview-link {
+  display: inline-flex;
+  margin-top: 8px;
+  color: var(--payroll-purple);
+  font-size: 10px;
+  font-weight: 750;
+  text-decoration: none;
+}
+
+.payroll-payslip-preview-link:hover,
+.payroll-payslip-preview-link:focus-visible {
+  text-decoration: underline;
+}
+
 .payroll-adjustment-heading {
   display: flex;
   align-items: center;

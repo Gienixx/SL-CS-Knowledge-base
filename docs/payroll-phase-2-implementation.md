@@ -477,7 +477,8 @@ Phase 2 becomes the primary payroll process only when:
 | 8 | Complete | Core attendance and rate exceptions, all prepaid source/version/minute/audit/allocation checks, approved pre-plot exemptions, calculated Team Attendance prepaid columns, non-blocking carry-forward warnings, and exact permission-safe resolution links are implemented |
 | 9 | Complete | Authorized payroll creators can add, edit, or remove manual earnings and deductions from calculated draft records. Every action requires a reason, rebuilds employee totals atomically, preserves a complete before/after audit event, keeps correction notes private, rejects negative net pay, and is blocked after payroll leaves draft or reopened status |
 | 10 | Complete | Review recalculates stored employee totals and records calculation, snapshot, rate, rounding, and prepaid-balance evidence. Final approval reruns every gate, records reviewer/approver/timestamp, increments the finalization version, and locks periods, records, items, snapshots, destination allocations, payslips, and audit history. Controlled reopening requires separate permission and a reason, preserves prior evidence, and forces full recalculation. Once Step 12 creates PDFs, periods with generated payslips remain blocked from reopening until that step's controlled regeneration path is used |
-| 11–13 | Not started | Begin the payslip preview using finalized Step 10 evidence |
+| 11 | Complete | Finalized payroll now has a private A4 payslip preview with a stable payslip number, employee and period details, itemized earnings and deductions, prepaid balances, totals, and approval information. Payroll-wide viewers can inspect the effective rates used; agents using own-payslip access receive no rate or other-employee data. Private adjustment reasons and correction notes are excluded |
+| 12–13 | Not started | Generate versioned server-side PDFs in private Storage, then add the agent's own-payslip list and signed download flow |
 | 14–15 | Not started | Test two linked periods, not a single isolated period |
 
 ## Next implementation order
@@ -527,6 +528,23 @@ Step 10 is deployed without finalizing the production July payroll:
   reconciliation, while other corrections require a future adjustment or the
   controlled reopening process.
 
-1. Implement Step 11 finalized payslip preview.
-2. Continue with PDF generation, private agent access, and the two-period
-   parallel test in Steps 12 through 15.
+Step 11 is deployed without finalizing the production July payroll:
+
+- The finalized payroll page links each employee record to a fixed A4 payslip
+  preview.
+- The preview uses only immutable Step 10 totals, item lines, rate references,
+  prepaid-balance evidence, and approval information.
+- A stable payslip number is derived from the payment date, employee number,
+  payroll record, and finalization version until Step 12 stores the generated
+  PDF record.
+- Payroll-authorized viewers can verify rates. Agents with own-payslip access
+  receive the same finalized earnings and totals without rates, private notes,
+  or access to another employee.
+- A rollback-only live test passed payroll-viewer access, own-agent access,
+  rate removal, stable numbering, and cross-employee denial. The July 1–15
+  production period remains in Draft.
+
+1. Implement Step 12 server-side A4 PDF generation, private Storage, versioned
+   files, and temporary signed URLs.
+2. Continue with agent self-service access and the two-period parallel test in
+   Steps 13 through 15.

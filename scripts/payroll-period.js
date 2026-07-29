@@ -1506,6 +1506,16 @@ function renderCalculations() {
     )
     const detailCell = document.createElement('td')
     detailCell.append(calculationDetails(calculation))
+    if (state.period?.period_status === 'finalized') {
+      const previewLink = element(
+        'a',
+        'payroll-payslip-preview-link',
+        'Preview payslip'
+      )
+      previewLink.href =
+        `./payslip-preview.html?record=${encodeURIComponent(calculation.payroll_record_id)}`
+      detailCell.append(previewLink)
+    }
     row.append(detailCell)
     fragment.append(row)
   }

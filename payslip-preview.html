@@ -1,0 +1,181 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Payslip Preview | SocialLoop CS Base</title>
+  <link rel="stylesheet" href="./styles/button-theme.css?v=1">
+  <link rel="stylesheet" href="./styles/payslip-preview.css?v=1">
+</head>
+<body class="payslip-access-pending">
+  <main class="payslip-page">
+    <header class="payslip-toolbar">
+      <div>
+        <p class="payslip-eyebrow">Payroll · Finalized payslip</p>
+        <h1>Payslip preview</h1>
+        <p id="payslipPageSubtitle">Loading finalized payroll…</p>
+      </div>
+      <nav class="payslip-toolbar-actions" aria-label="Payslip actions">
+        <a id="payslipBackLink" class="payslip-button secondary" href="./payroll-dashboard.html">← Back</a>
+        <button id="refreshPayslipButton" class="payslip-button secondary" type="button">↻ Refresh</button>
+        <button id="printPayslipButton" class="payslip-button primary" type="button" hidden>Print preview</button>
+      </nav>
+    </header>
+
+    <p id="payslipPageMessage" class="payslip-page-message" role="status" aria-live="polite">Loading payslip preview…</p>
+
+    <article id="payslipSheet" class="payslip-sheet" aria-labelledby="payslipEmployeeName" hidden>
+      <header class="payslip-document-header">
+        <div class="payslip-brand">
+          <span class="payslip-brand-mark" aria-hidden="true">SL</span>
+          <div>
+            <strong>SocialLoop</strong>
+            <small>Customer Support</small>
+          </div>
+        </div>
+        <div class="payslip-document-title">
+          <span>Finalized</span>
+          <h2>Employee payslip</h2>
+          <p id="payslipNumber">—</p>
+        </div>
+      </header>
+
+      <section class="payslip-info-grid" aria-label="Employee and payroll period information">
+        <div>
+          <p class="payslip-section-label">Employee information</p>
+          <h3 id="payslipEmployeeName">—</h3>
+          <dl>
+            <div><dt>Employee ID</dt><dd id="payslipEmployeeNumber">—</dd></div>
+            <div><dt>Email</dt><dd id="payslipEmployeeEmail">—</dd></div>
+          </dl>
+        </div>
+        <div>
+          <p class="payslip-section-label">Payroll information</p>
+          <dl>
+            <div><dt>Payroll period</dt><dd id="payslipPeriod">—</dd></div>
+            <div><dt>Payment date</dt><dd id="payslipPaymentDate">—</dd></div>
+            <div><dt>Currency</dt><dd id="payslipCurrency">USD</dd></div>
+          </dl>
+        </div>
+      </section>
+
+      <section id="payslipRatesSection" class="payslip-section" aria-labelledby="payslipRatesTitle">
+        <div class="payslip-section-heading">
+          <div>
+            <p class="payslip-section-label">Effective-dated payroll rates</p>
+            <h3 id="payslipRatesTitle">Rates used</h3>
+          </div>
+          <span id="payslipRateCount" class="payslip-count">0 rates</span>
+        </div>
+        <div class="payslip-table-wrap">
+          <table class="payslip-table payslip-rates-table">
+            <thead>
+              <tr>
+                <th>Effective date</th>
+                <th>Hourly</th>
+                <th>Daily</th>
+                <th>Monthly</th>
+                <th>Overtime</th>
+                <th>Holiday</th>
+              </tr>
+            </thead>
+            <tbody id="payslipRatesBody"></tbody>
+          </table>
+        </div>
+      </section>
+
+      <div id="payslipRatesRestricted" class="payslip-rates-restricted" hidden>
+        Rate information is restricted to authorized payroll users.
+      </div>
+
+      <section class="payslip-section" aria-labelledby="payslipEarningsTitle">
+        <div class="payslip-section-heading">
+          <div>
+            <p class="payslip-section-label">Itemized pay</p>
+            <h3 id="payslipEarningsTitle">Earnings</h3>
+          </div>
+        </div>
+        <div class="payslip-table-wrap">
+          <table class="payslip-table">
+            <thead>
+              <tr>
+                <th>Category</th>
+                <th>Description</th>
+                <th>Work date</th>
+                <th>Hours</th>
+                <th class="payslip-rate-column">Rate</th>
+                <th>Amount</th>
+              </tr>
+            </thead>
+            <tbody id="payslipEarningsBody"></tbody>
+          </table>
+        </div>
+      </section>
+
+      <section class="payslip-section" aria-labelledby="payslipDeductionsTitle">
+        <div class="payslip-section-heading">
+          <div>
+            <p class="payslip-section-label">Employee-visible deductions</p>
+            <h3 id="payslipDeductionsTitle">Deductions</h3>
+          </div>
+        </div>
+        <div class="payslip-table-wrap">
+          <table class="payslip-table">
+            <thead>
+              <tr>
+                <th>Description</th>
+                <th>Work date</th>
+                <th>Hours</th>
+                <th class="payslip-rate-column">Rate</th>
+                <th>Amount</th>
+              </tr>
+            </thead>
+            <tbody id="payslipDeductionsBody"></tbody>
+          </table>
+        </div>
+      </section>
+
+      <div class="payslip-bottom-grid">
+        <section class="payslip-prepaid-card" aria-labelledby="payslipPrepaidTitle">
+          <p class="payslip-section-label">Prepaid-hour reconciliation</p>
+          <h3 id="payslipPrepaidTitle">Prepaid hours</h3>
+          <dl>
+            <div><dt>Opening balance</dt><dd id="payslipPrepaidOpening">0h</dd></div>
+            <div><dt>Added this payroll</dt><dd id="payslipPrepaidAdded">0h</dd></div>
+            <div><dt>Applied to prior balances</dt><dd id="payslipPrepaidApplied">0h</dd></div>
+            <div class="closing"><dt>Closing balance</dt><dd id="payslipPrepaidClosing">0h</dd></div>
+          </dl>
+        </section>
+
+        <section class="payslip-totals-card" aria-labelledby="payslipTotalsTitle">
+          <p class="payslip-section-label">Pay summary</p>
+          <h3 id="payslipTotalsTitle">Payroll totals</h3>
+          <dl>
+            <div><dt>Regular earnings</dt><dd id="payslipRegularTotal">$0.00</dd></div>
+            <div><dt>Prepaid earnings</dt><dd id="payslipPrepaidTotal">$0.00</dd></div>
+            <div><dt>Overtime and special-day earnings</dt><dd id="payslipSpecialTotal">$0.00</dd></div>
+            <div><dt>Other earnings</dt><dd id="payslipOtherTotal">$0.00</dd></div>
+            <div class="gross"><dt>Gross pay</dt><dd id="payslipGrossTotal">$0.00</dd></div>
+            <div><dt>Total deductions</dt><dd id="payslipDeductionTotal">$0.00</dd></div>
+            <div class="net"><dt>Net pay</dt><dd id="payslipNetTotal">$0.00</dd></div>
+          </dl>
+        </section>
+      </div>
+
+      <footer class="payslip-approval">
+        <div>
+          <p class="payslip-section-label">Approval information</p>
+          <div class="payslip-approval-grid">
+            <div><span>Reviewed by</span><strong id="payslipReviewedBy">—</strong><small id="payslipReviewedAt">—</small></div>
+            <div><span>Approved by</span><strong id="payslipApprovedBy">—</strong><small id="payslipApprovedAt">—</small></div>
+            <div><span>Finalized by</span><strong id="payslipFinalizedBy">—</strong><small id="payslipFinalizedAt">—</small></div>
+          </div>
+        </div>
+        <p class="payslip-final-note">This preview is generated from immutable finalized payroll records. Private payroll notes are excluded.</p>
+      </footer>
+    </article>
+  </main>
+
+  <script type="module" src="./scripts/payslip-preview.js?v=1"></script>
+</body>
+</html>
