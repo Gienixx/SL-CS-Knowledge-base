@@ -132,7 +132,7 @@ test('payroll review links prepaid, attendance, and rate exceptions to exact tar
   )
   assert.match(periodStyles, /\.payroll-preplot-table tr:target/)
   assert.match(periodPage, /non-blocking prepaid carry-forward balances/)
-  assert.match(periodPage, /scripts\/payroll-period\.js\?v=8/)
+  assert.match(periodPage, /scripts\/payroll-period\.js\?v=9/)
   assert.match(
     rateScript,
     /const requestedEmployeeId = pageParams\.get\('employee'\)/

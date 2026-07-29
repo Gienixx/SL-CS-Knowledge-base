@@ -6,7 +6,7 @@
   <title>Payroll Period | SocialLoop CS Base</title>
   <link rel="stylesheet" href="./styles/button-theme.css?v=1">
   <link rel="stylesheet" href="./styles/workforce-admin.css?v=8">
-  <link rel="stylesheet" href="./styles/payroll-periods.css?v=8">
+  <link rel="stylesheet" href="./styles/payroll-periods.css?v=9">
 </head>
 <body class="payroll-access-pending">
   <main class="payroll-page">
@@ -242,6 +242,47 @@
       <p id="payrollImportStatus" class="payroll-import-status">No attendance snapshots have been imported yet.</p>
     </section>
 
+    <section class="payroll-card payroll-calculation-card" aria-labelledby="payrollCalculationTitle">
+      <div class="payroll-section-heading payroll-calculation-heading">
+        <div>
+          <p class="payroll-eyebrow">Step 7 · Draft calculation</p>
+          <h2 id="payrollCalculationTitle">Employee payroll totals</h2>
+          <p>Calculate from approved snapshots and the rate effective on each work date. Prepaid allocations prevent the same minutes from being paid twice.</p>
+        </div>
+        <button id="calculatePayrollButton" class="payroll-button payroll-button-primary" type="button" hidden>
+          Calculate draft payroll
+        </button>
+      </div>
+
+      <div class="payroll-calculation-stats" aria-label="Draft payroll totals">
+        <div><span>Employees calculated</span><strong id="payrollCalculatedEmployeeCount">0</strong></div>
+        <div><span>Gross pay</span><strong id="payrollCalculatedGross">$0.00</strong></div>
+        <div><span>Deductions</span><strong id="payrollCalculatedDeductions">$0.00</strong></div>
+        <div><span>Net pay</span><strong id="payrollCalculatedNet">$0.00</strong></div>
+      </div>
+
+      <p id="payrollCalculationStatus" class="payroll-import-status">Draft payroll has not been calculated.</p>
+
+      <div class="payroll-table-wrap payroll-calculation-wrap">
+        <table class="payroll-calculation-table">
+          <thead>
+            <tr>
+              <th>Employee</th>
+              <th>Paid time</th>
+              <th>Earnings</th>
+              <th>Gross</th>
+              <th>Deductions</th>
+              <th>Net</th>
+              <th>Details</th>
+            </tr>
+          </thead>
+          <tbody id="payrollCalculationBody">
+            <tr><td colspan="7" class="payroll-table-empty">Calculate the period to review employee totals.</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </section>
+
     <section class="payroll-card payroll-exception-review-card" aria-labelledby="payrollExceptionReviewTitle">
       <div class="payroll-section-heading payroll-exception-review-heading">
         <div>
@@ -304,6 +345,6 @@
     </section>
   </main>
 
-  <script type="module" src="./scripts/payroll-period.js?v=8"></script>
+  <script type="module" src="./scripts/payroll-period.js?v=9"></script>
 </body>
 </html>

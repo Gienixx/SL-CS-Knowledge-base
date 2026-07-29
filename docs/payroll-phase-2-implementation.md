@@ -259,6 +259,12 @@ Calculation order:
 
 Net pay must not become negative. Any unresolved amount requires payroll review.
 
+Late and undertime minutes are preserved as informational deduction lines, but
+are not deducted a second time because approved regular earnings already use
+only the minutes actually rendered. Internal arrangements, unpaid absence
+amounts, and other deductions are added through the audited Step 9 manual
+adjustment workflow. Government and statutory deductions remain unsupported.
+
 ### Step 8 — Review payroll exceptions
 
 Display:
@@ -452,15 +458,15 @@ Phase 2 becomes the primary payroll process only when:
 
 ## Current implementation status
 
-| Step | Status | Required before Step 7 |
+| Step | Status | Next requirement |
 | --- | --- | --- |
 | 1 | Complete | Reconciliation tables, schedule versioning, special-day snapshot fields, RLS, constraints, and indexes implemented |
 | 2 | Complete | None |
 | 3 | Complete and updated for own-payslip access | Continue regression testing |
-| 4 | Complete | Confirm calculator uses work-date rates |
+| 4 | Complete | Calculator now selects the immutable rate effective on each original work date |
 | 5 | Complete | Early-payment controls, eligible schedule review, immutable approval, and audit logging are implemented. The payroll-period page now includes **Add prepaid schedule**, calculated hours, existing-schedule loading, schedule-manager handoff, permission-aware creation or updates, exact-version approval, and server validation that never writes attendance. The 59 validated July 2026 ordinary pre-plots remain imported and visible |
 | 6 | Complete | Approval creates prepaid balances; approved attendance imports remain immutable; existing July attendance was reconciled against the imported balances using the same FIFO rules |
-| 7 | Partially implemented | FIFO minute reconciliation and carry-forward are live and verified for exact, partial, multi-day, overtime, and special-day scenarios; monetary payroll calculation remains |
+| 7 | Complete | The atomic USD calculator uses approved attendance and prepaid snapshots, effective-dated rates, exact-minute conversion, half-up cent rounding, FIFO prepaid offsets, normal overtime, special-day guarantees and work premiums, itemized totals, recalculation versions, audit logs, and negative-net protection. Draft totals remain private to payroll processors |
 | 8 | Complete | Core attendance and rate exceptions, all prepaid source/version/minute/audit/allocation checks, approved pre-plot exemptions, calculated Team Attendance prepaid columns, non-blocking carry-forward warnings, and exact permission-safe resolution links are implemented |
 | 9 | Not started | Implement after the base calculator |
 | 10 | Not started | Implement after calculation and adjustments |
@@ -481,6 +487,18 @@ The July 2026 source-data bootstrap is complete:
   three-day carry-forward, regular-plus-overtime settlement, and rest-day and
   holiday exclusion.
 
-1. Implement the remaining Step 7 monetary payroll calculator on top of the
-   verified FIFO minute-allocation ledger.
-2. Continue with Steps 9 through 15 after the calculator is verified.
+The Step 7 controlled calculation for July 1–15 is complete:
+
+- 10 employee records and 262 calculation lines were generated.
+- 25,800 prepaid minutes were paid and exactly 25,800 allocated minutes were
+  removed from later payable attendance, preventing duplicate payment.
+- Stored gross and net pay are both USD 7,466.06 before Step 9 adjustments.
+- Stored record totals exactly match the detailed earnings and deduction lines.
+- The July 16–31 period remains uncalculated because its 208 blocking
+  attendance exceptions are correctly preventing calculation.
+
+1. Implement Step 9 draft earnings and deduction adjustments with mandatory
+   reasons and audit history.
+2. Continue with Step 10 approval and finalization only after adjustments are
+   reviewed.
+3. Continue with Steps 11 through 15 after the finalization workflow.

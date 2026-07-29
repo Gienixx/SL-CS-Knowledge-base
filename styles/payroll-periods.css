@@ -429,6 +429,157 @@ body { margin: 0; background-image: none; }
   color: var(--payroll-green);
 }
 
+.payroll-calculation-heading {
+  align-items: center;
+}
+
+.payroll-calculation-stats {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 10px;
+}
+
+.payroll-calculation-stats > div {
+  padding: 12px 14px;
+  border-radius: 10px;
+  background: var(--payroll-bg);
+}
+
+.payroll-calculation-stats span,
+.payroll-calculation-stats strong {
+  display: block;
+}
+
+.payroll-calculation-stats span {
+  margin-bottom: 4px;
+  color: var(--payroll-muted);
+  font-size: 9px;
+  font-weight: 700;
+  text-transform: uppercase;
+}
+
+.payroll-calculation-stats strong {
+  color: var(--payroll-text);
+  font-size: 18px;
+}
+
+.payroll-calculation-wrap {
+  margin-top: 14px;
+}
+
+.payroll-calculation-table {
+  width: 100%;
+  min-width: 1120px;
+  border-collapse: collapse;
+  table-layout: fixed;
+  font-size: 11px;
+}
+
+.payroll-calculation-table th {
+  padding: 9px 11px;
+  border-bottom: 1px solid var(--payroll-border);
+  color: var(--payroll-muted);
+  background: #faf9fd;
+  font-size: 9px;
+  font-weight: 700;
+  text-align: left;
+  text-transform: uppercase;
+}
+
+.payroll-calculation-table td {
+  padding: 11px;
+  border-bottom: 1px solid var(--payroll-border);
+  color: var(--payroll-copy);
+  vertical-align: top;
+}
+
+.payroll-calculation-table tr:last-child td {
+  border-bottom: 0;
+}
+
+.payroll-calculation-table th:nth-child(1) { width: 18%; }
+.payroll-calculation-table th:nth-child(2) { width: 16%; }
+.payroll-calculation-table th:nth-child(3) { width: 24%; }
+.payroll-calculation-table th:nth-child(4),
+.payroll-calculation-table th:nth-child(5),
+.payroll-calculation-table th:nth-child(6) { width: 10%; }
+.payroll-calculation-table th:nth-child(7) { width: 12%; }
+
+.payroll-calculation-time,
+.payroll-calculation-earnings {
+  line-height: 1.45;
+}
+
+.payroll-money {
+  color: var(--payroll-text) !important;
+  font-variant-numeric: tabular-nums;
+  font-weight: 700;
+  white-space: nowrap;
+}
+
+.payroll-net-pay {
+  color: var(--payroll-green) !important;
+}
+
+.payroll-calculation-details {
+  position: relative;
+}
+
+.payroll-calculation-details summary {
+  width: fit-content;
+  color: var(--payroll-blue);
+  cursor: pointer;
+  font-size: 10px;
+  font-weight: 700;
+}
+
+.payroll-calculation-lines {
+  display: grid;
+  gap: 8px;
+  width: 360px;
+  margin-top: 9px;
+  padding: 10px;
+  border: 1px solid var(--payroll-border);
+  border-radius: 9px;
+  background: #fff;
+  box-shadow: 0 8px 24px rgba(38, 31, 71, .1);
+}
+
+.payroll-calculation-line {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+  padding-bottom: 7px;
+  border-bottom: 1px solid var(--payroll-border);
+}
+
+.payroll-calculation-line:last-child {
+  padding-bottom: 0;
+  border-bottom: 0;
+}
+
+.payroll-calculation-line span,
+.payroll-calculation-line strong,
+.payroll-calculation-line small {
+  display: block;
+}
+
+.payroll-calculation-line span {
+  min-width: 0;
+}
+
+.payroll-calculation-line strong {
+  color: var(--payroll-text);
+  font-size: 10px;
+}
+
+.payroll-calculation-line small {
+  margin-top: 2px;
+  color: var(--payroll-muted);
+  font-size: 8.5px;
+}
+
 .payroll-preplot-heading { align-items: center; }
 .payroll-preplot-heading-actions {
   display: flex;
@@ -896,6 +1047,7 @@ body { margin: 0; background-image: none; }
 @media (max-width: 900px) {
   .payroll-metrics { grid-template-columns: 1fr 1fr; }
   .payroll-import-stats { grid-template-columns: 1fr 1fr 1fr; }
+  .payroll-calculation-stats { grid-template-columns: 1fr 1fr; }
   .payroll-preplot-stats { grid-template-columns: 1fr 1fr 1fr; }
   .payroll-period-form { grid-template-columns: 1fr 1fr; }
   .payroll-override-field { grid-column: 1 / -1; }
@@ -916,6 +1068,7 @@ body { margin: 0; background-image: none; }
   .payroll-exception-controls .payroll-control { flex: 1; width: auto; }
   .payroll-metrics,
   .payroll-import-stats,
+  .payroll-calculation-stats,
   .payroll-preplot-stats,
   .payroll-preplot-actions,
   .payroll-prepaid-form-grid,

@@ -40,6 +40,7 @@ const state = {
   prepaidBalances: [],
   selectedPreplots: new Set(),
   exceptions: [],
+  calculations: [],
   exceptionFilter: 'all',
   missingAttendance: new Map(),
   importStatuses: new Map(),
@@ -48,8 +49,10 @@ const state = {
   canApprovePreplots: false,
   canManageSchedules: false,
   canManageRates: false,
+  canCalculatePayroll: false,
   loading: false,
   importing: false,
+  calculating: false,
   approvingPreplots: false,
   savingPrepaid: false,
   prepaidCandidate: null
@@ -115,13 +118,31 @@ const elements = {
   exceptionChips: document.getElementById('payrollExceptionChips'),
   exceptionFilter: document.getElementById('payrollExceptionFilter'),
   exceptionCount: document.getElementById('payrollExceptionCount'),
-  exceptionBody: document.getElementById('payrollExceptionBody')
+  exceptionBody: document.getElementById('payrollExceptionBody'),
+  calculateButton: document.getElementById('calculatePayrollButton'),
+  calculationStatus: document.getElementById('payrollCalculationStatus'),
+  calculationBody: document.getElementById('payrollCalculationBody'),
+  calculatedEmployeeCount: document.getElementById(
+    'payrollCalculatedEmployeeCount'
+  ),
+  calculatedGross: document.getElementById('payrollCalculatedGross'),
+  calculatedDeductions: document.getElementById(
+    'payrollCalculatedDeductions'
+  ),
+  calculatedNet: document.getElementById('payrollCalculatedNet')
 }
 
 const dateFormatter = new Intl.DateTimeFormat('en-PH', {
   year: 'numeric',
   month: 'short',
   day: 'numeric'
+})
+
+const moneyFormatter = new Intl.NumberFormat('en-US', {
+  style: 'currency',
+  currency: 'USD',
+  minimumFractionDigits: 2,
+  maximumFractionDigits: 2
 })
 
 function formatDate(value) {
@@ -144,6 +165,10 @@ function formatShiftTime(value, timezone = 'America/New_York') {
 function formatHours(minutes) {
   const hours = Number(minutes || 0) / 60
   return Number.isInteger(hours) ? String(hours) : hours.toFixed(2)
+}
+
+function formatMoney(value) {
+  return moneyFormatter.format(Number(value || 0))
 }
 
 function setMessage(message = '', type = '') {
@@ -486,6 +511,26 @@ function renderPeriod() {
     : importable
       ? 'Add prepaid hours from a real source schedule'
       : 'Prepaid schedules can only be added to draft or reopened periods'
+
+  const blockingCount = state.exceptions.filter(
+    issue => issue.is_blocking
+  ).length
+  elements.calculateButton.hidden = !state.canCalculatePayroll
+  elements.calculateButton.disabled =
+    state.loading ||
+    state.calculating ||
+    !importable ||
+    blockingCount > 0
+  elements.calculateButton.textContent = state.calculating
+    ? 'Calculating…'
+    : state.calculations.length
+      ? 'Recalculate draft payroll'
+      : 'Calculate draft payroll'
+  elements.calculateButton.title = !importable
+    ? 'Only draft or reopened payroll periods can be calculated'
+    : blockingCount
+      ? `Resolve ${blockingCount} blocking ${blockingCount === 1 ? 'exception' : 'exceptions'} before calculating`
+      : 'Rebuild employee totals from the current approved snapshots'
 }
 
 function employeeHasAttendanceIssue(employee) {
@@ -1010,6 +1055,188 @@ function renderImportStatus() {
   }
 }
 
+function calculationLineSummary(calculation) {
+  const parts = [
+    `${formatHours(calculation.regular_minutes)}h regular`,
+    `${formatHours(calculation.prepaid_minutes)}h prepaid`
+  ]
+  const optionalMinutes = [
+    ['overtime', calculation.overtime_minutes],
+    ['rest day', calculation.rest_day_minutes],
+    ['holiday', calculation.holiday_minutes]
+  ]
+  for (const [label, minutes] of optionalMinutes) {
+    if (Number(minutes || 0)) {
+      parts.push(`${formatHours(minutes)}h ${label}`)
+    }
+  }
+  return parts.join(' · ')
+}
+
+function calculationEarningsSummary(calculation) {
+  const parts = []
+  const values = [
+    ['Regular', calculation.basic_pay],
+    ['Prepaid', calculation.prepaid_pay],
+    ['Overtime', calculation.overtime_pay],
+    ['Rest day', calculation.rest_day_pay],
+    ['Holiday', calculation.holiday_pay],
+    ['Other', calculation.other_earnings]
+  ]
+  for (const [label, amount] of values) {
+    if (Number(amount || 0)) {
+      parts.push(`${label} ${formatMoney(amount)}`)
+    }
+  }
+  return parts.length ? parts.join(' · ') : '$0.00'
+}
+
+function calculationDetails(calculation) {
+  const details = element('details', 'payroll-calculation-details')
+  const lines = Array.isArray(calculation.line_items)
+    ? calculation.line_items
+    : []
+  details.append(
+    element(
+      'summary',
+      '',
+      `${lines.length} ${lines.length === 1 ? 'line' : 'lines'}`
+    )
+  )
+
+  const list = element('div', 'payroll-calculation-lines')
+  if (!lines.length) {
+    list.append(element('span', '', 'No calculation lines.'))
+  } else {
+    for (const line of lines) {
+      const row = element('div', 'payroll-calculation-line')
+      const copy = element('span')
+      copy.append(
+        element('strong', '', line.description || line.item_code),
+        element(
+          'small',
+          '',
+          [
+            line.work_date ? formatDate(line.work_date) : '',
+            Number(line.quantity || 0)
+              ? `${Number(line.quantity).toFixed(2)} × ${formatMoney(line.unit_rate)}`
+              : line.informational_only
+                ? 'Informational only'
+                : ''
+          ].filter(Boolean).join(' · ')
+        )
+      )
+      row.append(copy, element('strong', '', formatMoney(line.amount)))
+      list.append(row)
+    }
+  }
+  details.append(list)
+  return details
+}
+
+function renderCalculations() {
+  const calculations = state.calculations
+  const totals = calculations.reduce(
+    (sum, calculation) => ({
+      gross: sum.gross + Number(calculation.gross_pay || 0),
+      deductions:
+        sum.deductions + Number(calculation.total_deductions || 0),
+      net: sum.net + Number(calculation.net_pay || 0)
+    }),
+    { gross: 0, deductions: 0, net: 0 }
+  )
+
+  elements.calculatedEmployeeCount.textContent = calculations.length
+  elements.calculatedGross.textContent = formatMoney(totals.gross)
+  elements.calculatedDeductions.textContent =
+    formatMoney(totals.deductions)
+  elements.calculatedNet.textContent = formatMoney(totals.net)
+  elements.calculationStatus.className = 'payroll-import-status'
+
+  if (!calculations.length) {
+    elements.calculationStatus.textContent =
+      'Draft payroll has not been calculated.'
+    const row = document.createElement('tr')
+    const cell = element(
+      'td',
+      'payroll-table-empty',
+      'Calculate the period to review employee totals.'
+    )
+    cell.colSpan = 7
+    row.append(cell)
+    elements.calculationBody.replaceChildren(row)
+    return
+  }
+
+  const latestCalculation = calculations.reduce(
+    (latest, calculation) =>
+      String(calculation.calculated_at || '') >
+      String(latest.calculated_at || '')
+        ? calculation
+        : latest,
+    calculations[0]
+  )
+  const calculatedAt = latestCalculation.calculated_at
+    ? new Intl.DateTimeFormat('en-PH', {
+        dateStyle: 'medium',
+        timeStyle: 'short'
+      }).format(new Date(latestCalculation.calculated_at))
+    : '—'
+  elements.calculationStatus.textContent =
+    `${calculations.length} employee ${calculations.length === 1 ? 'record is' : 'records are'} calculated in USD · Version ${Number(latestCalculation.calculation_version || 1)} · ${calculatedAt}.`
+  elements.calculationStatus.classList.add('ready')
+
+  const fragment = document.createDocumentFragment()
+  for (const calculation of calculations) {
+    const row = document.createElement('tr')
+    const employeeCell = element('td', 'payroll-employee-cell')
+    employeeCell.append(
+      element(
+        'strong',
+        '',
+        calculation.employee_name || calculation.employee_email
+      ),
+      element(
+        'small',
+        '',
+        [calculation.employee_number, calculation.employee_email]
+          .filter(Boolean)
+          .join(' · ')
+      )
+    )
+
+    row.append(
+      employeeCell,
+      element(
+        'td',
+        'payroll-calculation-time',
+        calculationLineSummary(calculation)
+      ),
+      element(
+        'td',
+        'payroll-calculation-earnings',
+        calculationEarningsSummary(calculation)
+      ),
+      element('td', 'payroll-money', formatMoney(calculation.gross_pay)),
+      element(
+        'td',
+        'payroll-money',
+        formatMoney(calculation.total_deductions)
+      ),
+      element(
+        'td',
+        'payroll-money payroll-net-pay',
+        formatMoney(calculation.net_pay)
+      )
+    )
+    const detailCell = document.createElement('td')
+    detailCell.append(calculationDetails(calculation))
+    row.append(detailCell)
+    fragment.append(row)
+  }
+  elements.calculationBody.replaceChildren(fragment)
+}
+
 function rateStatus(employee) {
   const wrap = element('div')
   wrap.append(
@@ -1243,6 +1470,7 @@ function renderAll() {
   renderExceptions()
   renderExceptionReview()
   renderImportStatus()
+  renderCalculations()
   renderEmployees()
 }
 
@@ -1260,7 +1488,8 @@ async function loadPeriod() {
     importStatusResult,
     exceptionsResult,
     preplotsResult,
-    prepaidBalancesResult
+    prepaidBalancesResult,
+    calculationResult
   ] =
     await Promise.all([
       supabase.rpc('payroll_get_period_dashboard'),
@@ -1281,6 +1510,9 @@ async function loadPeriod() {
       }),
       supabase.rpc('payroll_get_period_prepaid_hours', {
         p_payroll_period_id: state.periodId
+      }),
+      supabase.rpc('payroll_get_period_calculation', {
+        p_payroll_period_id: state.periodId
       })
     ])
 
@@ -1294,7 +1526,8 @@ async function loadPeriod() {
     importStatusResult.error ||
     exceptionsResult.error ||
     preplotsResult.error ||
-    prepaidBalancesResult.error
+    prepaidBalancesResult.error ||
+    calculationResult.error
   ) {
     setMessage(
       'Payroll readiness could not be loaded. Refresh or contact a system administrator.',
@@ -1316,6 +1549,7 @@ async function loadPeriod() {
   state.preplots = preplotsResult.data || []
   state.prepaidBalances = prepaidBalancesResult.data || []
   state.exceptions = exceptionsResult.data || []
+  state.calculations = calculationResult.data || []
   state.missingAttendance = new Map()
   for (const entry of missingAttendanceResult.data || []) {
     const rows = state.missingAttendance.get(entry.employee_user_id) || []
@@ -1330,6 +1564,50 @@ async function loadPeriod() {
   )
   renderAll()
   setMessage('')
+}
+
+async function calculateDraftPayroll() {
+  const blockingCount = state.exceptions.filter(
+    issue => issue.is_blocking
+  ).length
+  if (
+    state.calculating ||
+    !state.canCalculatePayroll ||
+    blockingCount ||
+    !['draft', 'reopened'].includes(state.period?.period_status)
+  ) {
+    return
+  }
+
+  state.calculating = true
+  elements.calculateButton.disabled = true
+  elements.refresh.disabled = true
+  renderPeriod()
+  setMessage('Calculating employee payroll from approved snapshots…')
+
+  const { data, error } = await supabase.rpc('payroll_calculate_draft', {
+    p_payroll_period_id: state.periodId
+  })
+
+  state.calculating = false
+  elements.refresh.disabled = false
+
+  if (error) {
+    renderPeriod()
+    setMessage(
+      error.message ||
+        'Draft payroll could not be calculated. Review the period exceptions.',
+      'error'
+    )
+    return
+  }
+
+  await loadPeriod()
+  const employeeCount = Number(data?.employee_count || 0)
+  setMessage(
+    `${employeeCount} employee ${employeeCount === 1 ? 'record was' : 'records were'} calculated. Gross ${formatMoney(data?.gross_pay)} · Net ${formatMoney(data?.net_pay)}.`,
+    'success'
+  )
 }
 
 async function importApprovedAttendance() {
@@ -1563,6 +1841,10 @@ async function initialize() {
       access,
       'manage_agent_rates'
     )
+    state.canCalculatePayroll = hasWorkforcePermission(
+      access,
+      'create_payroll'
+    )
     document.body.classList.remove('payroll-access-pending')
     await loadPeriod()
   } catch {
@@ -1572,6 +1854,7 @@ async function initialize() {
 
 elements.refresh.addEventListener('click', loadPeriod)
 elements.importButton.addEventListener('click', importApprovedAttendance)
+elements.calculateButton.addEventListener('click', calculateDraftPayroll)
 elements.preplotBody.addEventListener('change', event => {
   const checkbox = event.target.closest('.payroll-preplot-checkbox')
   if (!checkbox) return
