@@ -1,0 +1,104 @@
+.my-payslips-access-pending .my-payslips-page {
+  visibility: hidden;
+}
+
+.my-payslips-page {
+  max-width: 1420px;
+}
+
+.my-payslips-table {
+  min-width: 1260px;
+}
+
+.my-payslips-table td {
+  height: 76px;
+}
+
+.my-payslips-table th:nth-child(5),
+.my-payslips-table th:nth-child(6),
+.my-payslips-table th:nth-child(7),
+.my-payslips-table td:nth-child(5),
+.my-payslips-table td:nth-child(6),
+.my-payslips-table td:nth-child(7) {
+  text-align: right;
+}
+
+.my-payslips-number {
+  display: block;
+  color: #14142b;
+  font-weight: 800;
+  white-space: nowrap;
+}
+
+.my-payslips-money {
+  color: #14142b;
+  font-variant-numeric: tabular-nums;
+  font-weight: 750;
+  white-space: nowrap;
+}
+
+.my-payslips-money.net {
+  color: #1b8d6d;
+  font-weight: 850;
+}
+
+.my-payslips-prepaid {
+  display: grid;
+  gap: 3px;
+  color: #52526b;
+  font-size: .72rem;
+  white-space: nowrap;
+}
+
+.my-payslips-prepaid strong {
+  color: #14142b;
+  font-size: .78rem;
+}
+
+.my-payslips-actions {
+  display: flex;
+  gap: 7px;
+  white-space: nowrap;
+}
+
+.my-payslips-action {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 32px;
+  padding: 6px 10px;
+  border: 1px solid #e2e1f0;
+  border-radius: 8px;
+  color: #52526b;
+  background: #fff;
+  font: inherit;
+  font-size: .72rem;
+  font-weight: 750;
+  text-decoration: none;
+}
+
+.my-payslips-action.primary {
+  border-color: transparent;
+  color: #6c5ce0;
+  background: #edeafb;
+}
+
+.my-payslips-action:hover:not(:disabled) {
+  border-color: #c8c3e4;
+  color: #14142b;
+}
+
+.my-payslips-action:disabled {
+  cursor: not-allowed;
+  opacity: .48;
+}
+
+.my-payslips-card > .wf-message.error {
+  color: #c43f38;
+}
+
+@media (max-width: 680px) {
+  .my-payslips-actions {
+    flex-wrap: wrap;
+  }
+}

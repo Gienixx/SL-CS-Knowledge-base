@@ -6,6 +6,8 @@ import {
 
 const recordId =
   new URLSearchParams(window.location.search).get('record') || ''
+const printRequested =
+  new URLSearchParams(window.location.search).get('print') === '1'
 
 const elements = {
   message: document.getElementById('payslipPageMessage'),
@@ -27,7 +29,8 @@ const state = {
   accessToken: '',
   canGeneratePdf: false,
   preview: null,
-  pdfBusy: false
+  pdfBusy: false,
+  printStarted: false
 }
 
 const moneyFormatter = new Intl.NumberFormat('en-US', {
@@ -307,11 +310,11 @@ function renderPreview(preview) {
   elements.backLink.href =
     preview.viewer_scope === 'payroll' && period.payroll_period_id
       ? `./payroll-period.html?id=${encodeURIComponent(period.payroll_period_id)}`
-      : './home.html'
+      : './my-payslips.html'
   elements.backLink.textContent =
     preview.viewer_scope === 'payroll'
       ? '← Payroll period'
-      : '← Home'
+      : '← My payslips'
   elements.sheet.hidden = false
   elements.print.hidden = false
   elements.generatePdf.hidden = !state.canGeneratePdf
@@ -320,6 +323,11 @@ function renderPreview(preview) {
     : 'Generate PDF'
   elements.downloadPdf.hidden = !pdf.generated
   setMessage()
+
+  if (printRequested && !state.printStarted) {
+    state.printStarted = true
+    window.requestAnimationFrame(() => window.print())
+  }
 }
 
 async function loadPayslip() {

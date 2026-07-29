@@ -479,7 +479,7 @@ Phase 2 becomes the primary payroll process only when:
 | 10 | Complete | Review recalculates stored employee totals and records calculation, snapshot, rate, rounding, and prepaid-balance evidence. Final approval reruns every gate, records reviewer/approver/timestamp, increments the finalization version, and locks periods, records, items, snapshots, destination allocations, payslips, and audit history. Controlled reopening requires separate permission and a reason, preserves prior evidence, and forces full recalculation. Once a PDF exists, that payroll remains blocked from reopening; later payroll corrections must use a future adjustment, while PDF-only regeneration appends a new immutable document version without changing finalized payroll |
 | 11 | Complete | Finalized payroll now has a private A4 payslip preview with a stable payslip number, employee and period details, itemized earnings and deductions, prepaid balances, totals, and approval information. Payroll-wide viewers can inspect the effective rates used; agents using own-payslip access receive no rate or other-employee data. Private adjustment reasons and correction notes are excluded |
 | 12 | Complete | Finalized payslips can be rendered server-side with the fixed `A4-V1` template, hashed with SHA-256, uploaded only to the private PDF-only `payroll-payslips` bucket, registered as append-only immutable document versions, and downloaded through two-minute signed URLs. Each generation is permission-checked and audited. The employee PDF omits rate fields so own-payslip access cannot reveal rates; payroll users retain rate verification in the secured Step 11 preview |
-| 13 | Not started | Add the agent's own-payslip list using the secured preview and signed-download services |
+| 13 | Complete | Agents now have a permission-gated **My payslips** page for their own finalized payroll only, with prepaid-hour summaries, private preview, temporary signed PDF download, and print actions. The server-side list excludes rates, private notes, storage paths, and detailed reconciliation data |
 | 14–15 | Not started | Test two linked periods, not a single isolated period |
 
 ## Next implementation order
@@ -566,7 +566,25 @@ Step 12 is implemented without generating a production payslip:
   registered and an agent cannot generate PDFs. The July 1–15 production
   period remains in Draft with no payslip or PDF version.
 
-1. Implement Step 13 `my-payslips.html` with each agent's own finalized
-   payslip list, preview, download, and print actions.
-2. Continue with the two-period parallel and controlled payroll tests in Steps
-   14 and 15.
+Step 13 is implemented without finalizing production payroll:
+
+- **My payslips** is available from each permitted employee's Home sidebar and
+  lists only the current authenticated employee's finalized payroll records.
+- Each row shows its payroll period, payment date, gross pay, deductions, net
+  pay, prepaid-hour summary, finalization information, and private-PDF status.
+- Employees can open the secured Step 11 preview, download the latest Step 12
+  PDF through a two-minute signed URL, or open the preview directly in print
+  mode.
+- The list function requires `view_own_payslips` and checks the current
+  workforce identity again in PostgreSQL. It returns no rates, private
+  correction or adjustment notes, storage paths, other employee data, or
+  detailed prepaid reconciliation ledger.
+- Live verification confirmed the anonymous role cannot call the list,
+  authenticated access remains permission guarded, and an active agent
+  receives an empty finalized list while production contains only Draft
+  payroll. No production payroll, payslip, PDF version, or Storage object was
+  created.
+
+1. Run the two-period parallel payroll comparison in Step 14.
+2. Continue to the two linked controlled payroll periods in Step 15 only after
+   all Step 14 differences are corrected.

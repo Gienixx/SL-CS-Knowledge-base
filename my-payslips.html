@@ -1,0 +1,99 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>My Payslips | SocialLoop CS Base</title>
+  <link rel="stylesheet" href="./styles/button-theme.css?v=1">
+  <link rel="stylesheet" href="./styles/workforce-admin.css?v=2">
+  <link rel="stylesheet" href="./styles/my-payslips.css?v=1">
+</head>
+<body class="my-payslips-access-pending">
+  <main class="wf-page my-payslips-page">
+    <header class="wf-topbar">
+      <div class="wf-title">
+        <h1>My Payslips</h1>
+        <p>View, download, or print your finalized payroll documents.</p>
+      </div>
+      <nav class="wf-nav" aria-label="Payslip navigation">
+        <a class="wf-link" href="./home.html">← Back to Home</a>
+      </nav>
+    </header>
+
+    <section class="wf-summary-grid" aria-label="Payslip summary">
+      <article class="wf-summary">
+        <span class="wf-stat-icon violet" aria-hidden="true">
+          <svg viewBox="0 0 24 24"><path d="M6 3h12v18H6zM9 8h6M9 12h6M9 16h4"/></svg>
+        </span>
+        <span class="wf-stat-copy">
+          <span>Finalized payslips</span>
+          <strong id="myPayslipCount">—</strong>
+        </span>
+      </article>
+      <article class="wf-summary">
+        <span class="wf-stat-icon mint" aria-hidden="true">
+          <svg viewBox="0 0 24 24"><path d="M5 5h14v14H5zM8 3v4M16 3v4M5 9h14"/></svg>
+        </span>
+        <span class="wf-stat-copy">
+          <span>Latest payment</span>
+          <strong id="myPayslipLatestPayment">—</strong>
+        </span>
+      </article>
+      <article class="wf-summary">
+        <span class="wf-stat-icon gold" aria-hidden="true">
+          <svg viewBox="0 0 24 24"><path d="M12 3v18M17 7.5c0-1.4-1.8-2.5-4-2.5s-4 1.1-4 2.5 1.8 2.5 4 2.5 4 1.1 4 2.5-1.8 2.5-4 2.5-4-1.1-4-2.5"/></svg>
+        </span>
+        <span class="wf-stat-copy">
+          <span>Latest net pay</span>
+          <strong id="myPayslipLatestNet">—</strong>
+        </span>
+      </article>
+      <article class="wf-summary">
+        <span class="wf-stat-icon coral" aria-hidden="true">
+          <svg viewBox="0 0 24 24"><path d="M7 3h10v5H7zM6 17H4V9h16v8h-2M7 14h10v7H7z"/></svg>
+        </span>
+        <span class="wf-stat-copy">
+          <span>PDFs ready</span>
+          <strong id="myPayslipPdfCount">—</strong>
+        </span>
+      </article>
+    </section>
+
+    <section class="wf-card my-payslips-card">
+      <div class="wf-card-header">
+        <div>
+          <h2>Finalized payroll</h2>
+          <p class="wf-message">Only your own finalized payslips appear here. PDF links are private and expire shortly after opening.</p>
+        </div>
+        <div class="wf-actions">
+          <button class="wf-btn secondary" id="refreshMyPayslipsButton" type="button">Refresh</button>
+        </div>
+      </div>
+
+      <div class="wf-table-wrap">
+        <table class="wf-table my-payslips-table">
+          <thead>
+            <tr>
+              <th>Payslip</th>
+              <th>Payroll period</th>
+              <th>Payment date</th>
+              <th>Prepaid hours</th>
+              <th>Gross pay</th>
+              <th>Deductions</th>
+              <th>Net pay</th>
+              <th>PDF</th>
+              <th>Actions</th>
+            </tr>
+          </thead>
+          <tbody id="myPayslipsTableBody">
+            <tr><td colspan="9" class="wf-empty">Loading your finalized payslips…</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <p id="myPayslipsMessage" class="wf-message" aria-live="polite"></p>
+    </section>
+  </main>
+
+  <script type="module" src="./scripts/my-payslips.js?v=1"></script>
+</body>
+</html>

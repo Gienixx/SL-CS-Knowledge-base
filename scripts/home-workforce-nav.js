@@ -8,6 +8,7 @@ async function configureHomeWorkforceNavigation() {
   const myScheduleButton = document.getElementById('homeMyScheduleBtn')
   const attendanceButton = document.getElementById('homeAttendanceBtn')
   const leaveRequestsButton = document.getElementById('homeLeaveRequestsBtn')
+  const myPayslipsButton = document.getElementById('homeMyPayslipsBtn')
   const teamAttendanceButton = document.getElementById('homeTeamAttendanceBtn')
   const workforceManagementButton = document.getElementById(
     'homeWorkforceManagementBtn'
@@ -20,6 +21,7 @@ async function configureHomeWorkforceNavigation() {
     !myScheduleButton &&
     !attendanceButton &&
     !leaveRequestsButton &&
+    !myPayslipsButton &&
     !teamAttendanceButton &&
     !workforceManagementButton &&
     !payrollDashboardButton
@@ -43,6 +45,10 @@ async function configureHomeWorkforceNavigation() {
       access,
       'view_team_attendance'
     )
+    const canViewOwnPayslips = hasWorkforcePermission(
+      access,
+      'view_own_payslips'
+    )
 
     const canManageEmployees =
       access.is_admin === true &&
@@ -64,6 +70,10 @@ async function configureHomeWorkforceNavigation() {
 
     if (leaveRequestsButton) {
       leaveRequestsButton.hidden = !access.allowed
+    }
+
+    if (myPayslipsButton) {
+      myPayslipsButton.hidden = !canViewOwnPayslips
     }
 
     if (teamAttendanceButton) {
