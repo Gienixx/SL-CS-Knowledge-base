@@ -480,7 +480,8 @@ Phase 2 becomes the primary payroll process only when:
 | 11 | Complete | Finalized payroll now has a private A4 payslip preview with a stable payslip number, employee and period details, itemized earnings and deductions, prepaid balances, totals, and approval information. Payroll-wide viewers can inspect the effective rates used; agents using own-payslip access receive no rate or other-employee data. Private adjustment reasons and correction notes are excluded |
 | 12 | Complete | Finalized payslips can be rendered server-side with the fixed `A4-V1` template, hashed with SHA-256, uploaded only to the private PDF-only `payroll-payslips` bucket, registered as append-only immutable document versions, and downloaded through two-minute signed URLs. Each generation is permission-checked and audited. The employee PDF omits rate fields so own-payslip access cannot reveal rates; payroll users retain rate verification in the secured Step 11 preview |
 | 13 | Complete | Agents now have a permission-gated **My payslips** page for their own finalized payroll only, with prepaid-hour summaries, private preview, temporary signed PDF download, and print actions. The server-side list excludes rates, private notes, storage paths, and detailed reconciliation data |
-| 14–15 | Not started | Test two linked periods, not a single isolated period |
+| 14 | In progress | July 1–15 is calculated with no blocking exceptions and the rollback-only prepaid scenarios passed again on July 30. Restore the approved manual workbook, resolve July 16–31 attendance and rate blockers, then complete the employee-by-employee comparison |
+| 15 | Not started | Begin only after every Step 14 discrepancy is corrected and approval is documented |
 
 ## Next implementation order
 
@@ -585,6 +586,33 @@ Step 13 is implemented without finalizing production payroll:
   payroll. No production payroll, payslip, PDF version, or Storage object was
   created.
 
-1. Run the two-period parallel payroll comparison in Step 14.
-2. Continue to the two linked controlled payroll periods in Step 15 only after
-   all Step 14 differences are corrected.
+Step 14 started on July 30, 2026:
+
+- July 1–15 has 10 calculated records, no blocking exceptions, USD 7,466.06
+  gross and net pay, and 25,800 prepaid minutes fully applied.
+- The rollback-only exact-match, partial-work, multi-day carry-forward,
+  overtime-settlement, and special-day-exclusion scenarios passed again with
+  no persistent synthetic records.
+- July 16–31 is not ready for calculation. Its completed attendance still
+  requires payroll approval, four July 30 shifts are currently open, five
+  attendance entries are missing, and one effective-dated rate is missing.
+- July 16–31 is configured with a July 31 payment date. The payroll owner must
+  confirm the actual early payment date before the period is changed or July
+  31 is approved as prepaid.
+- The approved `2026 Support Timesheet.xlsx` manual source is no longer
+  available at its former Downloads path or in the current attachments. It
+  must be restored before employee-by-employee manual variances can be
+  calculated.
+- The detailed run record and completion controls are in
+  `docs/payroll-step-14-parallel-test.md`.
+
+1. Restore the approved manual workbook and identify the official manual
+   payroll total columns.
+2. Confirm the July 16–31 payment date and whether the two test profiles should
+   be excluded.
+3. Approve completed July 16–31 attendance, close current shifts, resolve the
+   five missing entries, and add the missing rate only if the affected profile
+   is a legitimate paid employee.
+4. Recalculate both periods, complete every employee comparison and scenario,
+   and correct all differences.
+5. Continue to Step 15 only after Step 14 approval is signed and dated.
