@@ -87,22 +87,28 @@ The two-period test must prove:
   `test test` testing-only profile. The separate `Test` profile remains
   included pending a separate owner decision.
 - Calculated records: 0.
-- Review-required attendance: 103 records across 9 employees. Each currently
-  appears as both an incomplete-attendance and unapproved-attendance blocking
-  exception because payroll readiness requires approval.
-- Open clock-outs on July 30: 4.
-- Missing attendance entries: 4, all for Almar schedules dated July 28–31.
+- Payment date: July 27, corrected from July 31 after owner confirmation. The
+  four-day early payment uses the required documented override because the
+  standard window is three days.
+- Attendance approval: 99 completed review-required records were approved on
+  July 30 with one prior approved record, leaving 100 approved records.
+- Open clock-outs on July 30: 4. These remain pending because incomplete
+  attendance cannot be approved.
+- Missing attendance entries: 0 after Almar's July 28–31 schedules were
+  approved as prepaid schedule snapshots.
 - Almar's July 27–31 schedules were corrected from the payroll owner's source
   times. July 27 now exactly matches the corrected 6:00 AM–12:00 AM
-  attendance. July 28–31 remain schedule-only until attendance is recorded or
-  an eligible prepaid workflow is approved.
+  attendance. The exact July 28–31 schedule versions are now approved prepaid
+  entries and created four 1,080-minute carry-forward balances.
 - Blocking schedule overlap: Almar's owner-provided July 29 shift ends at
   8:00 AM on July 30, while the July 30 shift starts at 6:00 AM. The exact
-  source schedule therefore contains a two-hour overlap and needs an owner
-  decision before payroll calculation.
+  source schedule therefore contains a two-hour overlap. The owner's
+  instruction to proceed with the supplied hours is audited, but the blocking
+  integrity check remains until one exact time is corrected.
 - Missing-rate exceptions: 0 after excluding the testing-only profile.
-- Valid carry-forward warnings: 33 unresolved prepaid balances across 8
-  employees. These warnings are non-blocking when the balances are valid.
+- Valid carry-forward warnings: 37 unresolved prepaid balances, including
+  Almar's four newly approved balances. These warnings are non-blocking when
+  the balances are valid.
 - Production status remains Draft.
 
 ### Testing-only payroll exclusion
@@ -140,20 +146,17 @@ need to be evidenced in the two-period comparison.
    import is no longer present at its prior Downloads path or in the available
    workspace attachments. It must be reattached or restored before manual
    totals can be compared.
-2. July 16–31 cannot be calculated until completed attendance is approved,
-   current open shifts are closed, and missing attendance is resolved or
-   approved as prepaid.
+2. July 16–31 cannot be calculated until the four current open shifts are
+   closed and approved.
 3. The `test test` profile is resolved and excluded from payroll. The payroll
    owner must still confirm whether the separate `Test` profile is a legitimate
    paid employee for these periods.
-4. July 16–31 currently has a July 31 payment date. That leaves no work date
-   after payment and therefore no date eligible for the period's prepaid
-   schedule workflow. If payroll is actually paid two or three days early, the
-   payroll owner must confirm the correct payment date before any period date
-   is changed or July 31 is treated as prepaid.
+4. The payment date is resolved as July 27 with an audited four-day early
+   payment override.
 5. The owner-provided July 29 and July 30 Almar schedules overlap by two hours.
-   One of those times must be corrected or the overlap explicitly resolved
-   before calculation.
+   The acknowledgement is audited, but one exact source time must still be
+   corrected before calculation because the system does not silently waive
+   overlapping schedules.
 
 ## Completion evidence
 
