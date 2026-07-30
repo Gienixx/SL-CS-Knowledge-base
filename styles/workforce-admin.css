@@ -195,7 +195,6 @@ body{background:#f6f5fb;font-family:'Inter',sans-serif;color:#14142b}
 .wf-row-btn{border-color:#eae8f5;border-radius:9px;color:#52526b}
 .wf-row-actions .wf-row-btn:first-child{border:0;background:#edeafb;color:#6c5ce0}
 .wf-row-actions{position:relative;align-items:center;flex-wrap:nowrap}
-.wf-profile-edit{min-width:48px;border:0!important;border-radius:8px!important;background:#edeafb!important;color:#6c5ce0!important}
 .wf-kebab{display:grid;place-items:center;width:30px;min-width:30px;height:30px;padding:0;border:1px solid #e2e1f0;border-radius:8px;background:#fff;color:#52526b;font-weight:800}
 .wf-action-menu{position:absolute;z-index:30;top:34px;right:0;display:none;width:175px;padding:6px;border:1px solid #eae8f5;border-radius:10px;background:#fff;box-shadow:0 18px 40px -20px rgba(20,20,43,.35)}
 .wf-action-menu.open{display:grid}

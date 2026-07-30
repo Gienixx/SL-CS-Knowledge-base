@@ -318,15 +318,6 @@ function renderEmployees() {
 
     const actionCell = document.createElement('td')
     actionCell.className = 'wf-row-actions'
-    if (!profile.account_deleted_at) {
-      const editButton = document.createElement('button')
-      editButton.type = 'button'
-      editButton.className = 'wf-row-btn wf-profile-edit'
-      editButton.textContent = 'Edit'
-      editButton.addEventListener('click', () => openEmployee(profile.user_id))
-      actionCell.appendChild(editButton)
-    }
-
     const menuButton = document.createElement('button')
     menuButton.type = 'button'
     menuButton.className = 'wf-kebab'
@@ -347,6 +338,19 @@ function renderEmployees() {
       profile.account_deleted_at == null &&
       ['active', 'on_leave'].includes(profile.employment_status) &&
       profile.onboarding_status === 'invited'
+    if (!profile.account_deleted_at) {
+      const editButton = document.createElement('button')
+      editButton.type = 'button'
+      editButton.className = 'wf-row-btn'
+      editButton.textContent = 'Edit'
+      editButton.addEventListener('click', event => {
+        event.stopPropagation()
+        actionMenu.classList.remove('open')
+        menuButton.setAttribute('aria-expanded', 'false')
+        openEmployee(profile.user_id)
+      })
+      actionMenu.appendChild(editButton)
+    }
     if (canResendInvitation) {
       const resendButton = document.createElement('button')
       resendButton.type = 'button'
