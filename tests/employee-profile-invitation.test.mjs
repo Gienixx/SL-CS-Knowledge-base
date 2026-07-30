@@ -23,7 +23,7 @@ test('Employee Profiles owns the complete invitation form', async () => {
   assert.match(script, /permissions: readInvitePermissions\(\)/)
 })
 
-test('eligible invited and active employees receive a server-owned resend action', async () => {
+test('only invited employees receive a server-owned resend action', async () => {
   const [html, script, endpoint, middleware] = await Promise.all([
     read('workforce.html'),
     read('scripts/workforce.js'),
@@ -38,13 +38,14 @@ test('eligible invited and active employees receive a server-owned resend action
   assert.match(script, /profile\.employee_id/)
   assert.match(script, /authenticatedRequest\('\/resend-invite'/)
   assert.match(script, /actionMenu\.appendChild\(resendButton\)/)
-  assert.match(script, /\['invited', 'active'\]\.includes\(profile\.onboarding_status\)/)
+  assert.match(script, /profile\.onboarding_status === 'invited'/)
+  assert.doesNotMatch(script, /\['invited', 'active'\]\.includes\(profile\.onboarding_status\)/)
   assert.match(script, /\['active', 'on_leave'\]\.includes\(profile\.employment_status\)/)
   assert.match(endpoint, /if \(!profile\)/)
-  assert.match(endpoint, /\['invited', 'active'\]\.includes\(profile\.onboarding_status\)/)
+  assert.match(endpoint, /profile\.onboarding_status !== 'invited'/)
+  assert.doesNotMatch(endpoint, /employee_access_link_sent/)
   assert.match(endpoint, /profile\.account_deleted_at/)
   assert.match(endpoint, /auth\/v1\/recover/)
   assert.match(endpoint, /employee_invitation_resent/)
-  assert.match(endpoint, /employee_access_link_sent/)
   assert.match(middleware, /'\/resend-invite'/)
 })

@@ -91,10 +91,10 @@ export async function onRequestPost(context) {
         error: 'Deleted employee accounts cannot receive another invitation.'
       }, 409)
     }
-    if (!['invited', 'active'].includes(profile.onboarding_status) ||
+    if (profile.onboarding_status !== 'invited' ||
         !['active', 'on_leave'].includes(profile.employment_status)) {
       return jsonResponse({
-        error: 'Reactivate this employee before sending another account setup link.'
+        error: 'Only employees with a pending invitation can be sent another invite.'
       }, 409)
     }
 
@@ -125,9 +125,7 @@ export async function onRequestPost(context) {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           actor_user_id: authorization.access.user_id,
-          action: profile.onboarding_status === 'invited'
-            ? 'employee_invitation_resent'
-            : 'employee_access_link_sent',
+          action: 'employee_invitation_resent',
           entity_type: 'profiles',
           entity_id: profile.user_id,
           after_data: {
@@ -135,9 +133,7 @@ export async function onRequestPost(context) {
             email: profile.email,
             onboarding_status: profile.onboarding_status
           },
-          reason: profile.onboarding_status === 'invited'
-            ? 'Invitation resent from Employee Profiles'
-            : 'Account setup link sent from Employee Profiles'
+          reason: 'Invitation resent from Employee Profiles'
         })
       }
     )

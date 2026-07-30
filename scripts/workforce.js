@@ -331,7 +331,7 @@ function renderEmployees() {
     const canResendInvitation = profile.is_system_admin !== true &&
       profile.account_deleted_at == null &&
       ['active', 'on_leave'].includes(profile.employment_status) &&
-      ['invited', 'active'].includes(profile.onboarding_status)
+      profile.onboarding_status === 'invited'
     if (canResendInvitation) {
       const resendButton = document.createElement('button')
       resendButton.type = 'button'
