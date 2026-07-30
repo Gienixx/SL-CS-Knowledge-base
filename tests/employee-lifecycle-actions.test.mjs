@@ -18,7 +18,8 @@ test('Step 7 adds protected employee lifecycle actions without deleting workforc
   assert.match(migration, /p_user_id = auth\.uid\(\)/)
   assert.match(migration, /employment_status = v_after_status/)
   assert.doesNotMatch(migration, /delete\s+from\s+public\.(attendance|user_schedules|workforce_audit_logs)/i)
-  assert.match(endpoint, /should_soft_delete=true/)
+  assert.doesNotMatch(endpoint, /should_soft_delete=true/)
+  assert.match(endpoint, /auth\/v1\/admin\/users/)
   assert.match(endpoint, /allowNotFound: true/)
   assert.match(endpoint, /confirmation !== 'DELETE'/)
   assert.match(client, /'Deactivate', 'deactivate'/)
@@ -27,6 +28,19 @@ test('Step 7 adds protected employee lifecycle actions without deleting workforc
   assert.match(client, /\.is\('account_deleted_at', null\)/)
   assert.match(middleware, /'\/employee-lifecycle'/)
   assert.match(verification, /deleted_system_owners/)
+})
+
+test('deleting an account releases its email while retaining workforce history', async () => {
+  const migration = await read(
+    'supabase/migrations/20260730173046_release_deleted_employee_email.sql'
+  )
+
+  assert.match(migration, /v_deleted_email := 'deleted-' \|\| replace\(p_user_id::text, '-', ''\) \|\| '@deleted\.invalid'/)
+  assert.match(migration, /delete from public\.login[\s\S]*lower\(email\) = lower\(v_profile\.email\)/)
+  assert.match(migration, /update public\.workforce_identity_links[\s\S]*where profile_user_id = p_user_id/)
+  assert.match(migration, /email_released/)
+  assert.match(migration, /where account_deleted_at is not null/)
+  assert.doesNotMatch(migration, /delete from public\.profiles/)
 })
 
 test('lifecycle cleanup cannot indirectly update the protected owner', async () => {

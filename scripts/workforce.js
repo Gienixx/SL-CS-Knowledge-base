@@ -328,7 +328,11 @@ function renderEmployees() {
       actionMenu.classList.toggle('open')
       menuButton.setAttribute('aria-expanded', String(actionMenu.classList.contains('open')))
     })
-    if (profile.onboarding_status === 'invited') {
+    const canResendInvitation = profile.is_system_admin !== true &&
+      profile.account_deleted_at == null &&
+      ['active', 'on_leave'].includes(profile.employment_status) &&
+      ['invited', 'active'].includes(profile.onboarding_status)
+    if (canResendInvitation) {
       const resendButton = document.createElement('button')
       resendButton.type = 'button'
       resendButton.className = 'wf-row-btn'
@@ -502,13 +506,13 @@ async function sendEmployeeInvitation(event) {
 
 async function resendInvitation(profile, button) {
   setLoading(button, true, 'Sending...', 'Resend invite')
-  setMessage(pageMessage, `Sending a new invitation to ${profile.email}...`)
+  setMessage(pageMessage, `Sending a new account setup link to ${profile.email}...`)
   try {
     await authenticatedRequest('/resend-invite', {
       method: 'POST',
       body: JSON.stringify({ userId: profile.user_id })
     })
-    setMessage(pageMessage, `Invitation resent to ${profile.email}.`, 'success')
+    setMessage(pageMessage, `Account setup link sent to ${profile.email}.`, 'success')
     await loadWorkforceData()
   } catch (error) {
     setMessage(pageMessage, errorMessage(error), 'error')

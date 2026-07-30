@@ -70,7 +70,7 @@ export async function onRequestPost(context) {
     const profileUrl = new URL(`${authorization.supabaseUrl}/rest/v1/profiles`)
     profileUrl.searchParams.set(
       'select',
-      'user_id,email,employee_id,full_name,onboarding_status,invited_at,is_system_admin'
+      'user_id,email,employee_id,full_name,onboarding_status,employment_status,invited_at,is_system_admin,account_deleted_at'
     )
     profileUrl.searchParams.set('user_id', `eq.${userId}`)
     profileUrl.searchParams.set('limit', '1')
@@ -86,9 +86,15 @@ export async function onRequestPost(context) {
     if (profile.is_system_admin === true) {
       return jsonResponse({ error: 'The protected system owner cannot be modified.' }, 403)
     }
-    if (profile.onboarding_status !== 'invited') {
+    if (profile.account_deleted_at || profile.employment_status === 'terminated') {
       return jsonResponse({
-        error: 'Only employees with a pending invitation can be sent another invite.'
+        error: 'Deleted employee accounts cannot receive another invitation.'
+      }, 409)
+    }
+    if (!['invited', 'active'].includes(profile.onboarding_status) ||
+        !['active', 'on_leave'].includes(profile.employment_status)) {
+      return jsonResponse({
+        error: 'Reactivate this employee before sending another account setup link.'
       }, 409)
     }
 
@@ -119,7 +125,9 @@ export async function onRequestPost(context) {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           actor_user_id: authorization.access.user_id,
-          action: 'employee_invitation_resent',
+          action: profile.onboarding_status === 'invited'
+            ? 'employee_invitation_resent'
+            : 'employee_access_link_sent',
           entity_type: 'profiles',
           entity_id: profile.user_id,
           after_data: {
@@ -127,7 +135,9 @@ export async function onRequestPost(context) {
             email: profile.email,
             onboarding_status: profile.onboarding_status
           },
-          reason: 'Invitation resent from Employee Profiles'
+          reason: profile.onboarding_status === 'invited'
+            ? 'Invitation resent from Employee Profiles'
+            : 'Account setup link sent from Employee Profiles'
         })
       }
     )
@@ -135,6 +145,7 @@ export async function onRequestPost(context) {
     return jsonResponse({
       success: true,
       invitationSent: true,
+      onboardingStatus: profile.onboarding_status,
       employeeId: profile.employee_id
     })
   } catch (error) {

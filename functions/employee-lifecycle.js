@@ -80,7 +80,7 @@ export async function onRequestPost(context) {
 
     if (action === 'delete') {
       await request(
-        `${authorization.supabaseUrl}/auth/v1/admin/users/${encodeURIComponent(userId)}?should_soft_delete=true`,
+        `${authorization.supabaseUrl}/auth/v1/admin/users/${encodeURIComponent(userId)}`,
         authorization.serviceRoleKey,
         { method: 'DELETE', allowNotFound: true }
       )
