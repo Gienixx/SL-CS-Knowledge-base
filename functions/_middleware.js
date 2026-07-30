@@ -14,6 +14,11 @@ const PROTECTED_ROUTES = Object.freeze({
     permission: 'manage_employees',
     requireAdmin: true
   },
+  '/reinvite-deleted-employee': {
+    methods: ['POST'],
+    permission: 'manage_employees',
+    requireAdmin: true
+  },
   '/update-employee': {
     methods: ['POST'],
     permission: 'manage_employees',

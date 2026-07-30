@@ -56,6 +56,25 @@ async function updateAuth(authorization, userId, values) {
   )
 }
 
+async function loadLinkedAuthUserIds(authorization, profileUserId) {
+  const linkUrl = new URL(
+    `${authorization.supabaseUrl}/rest/v1/workforce_identity_links`
+  )
+  linkUrl.searchParams.set('select', 'auth_user_id')
+  linkUrl.searchParams.set('profile_user_id', `eq.${profileUserId}`)
+  linkUrl.searchParams.set('is_active', 'eq.true')
+  const links = await request(
+    linkUrl,
+    authorization.serviceRoleKey
+  )
+  const authUserIds = [...new Set(
+    (Array.isArray(links) ? links : [])
+      .map(link => String(link.auth_user_id || '').trim())
+      .filter(Boolean)
+  )]
+  return authUserIds.length ? authUserIds : [profileUserId]
+}
+
 export async function onRequestPost(context) {
   let authorization
   let databaseChanged = false
@@ -75,19 +94,24 @@ export async function onRequestPost(context) {
       throw new LifecycleError('Type DELETE to confirm permanent account removal.', 400)
     }
 
+    const authUserIds = await loadLinkedAuthUserIds(authorization, userId)
     const result = await changeDatabaseLifecycle(authorization, userId, action, body?.reason)
     databaseChanged = true
 
     if (action === 'delete') {
-      await request(
-        `${authorization.supabaseUrl}/auth/v1/admin/users/${encodeURIComponent(userId)}`,
-        authorization.serviceRoleKey,
-        { method: 'DELETE', allowNotFound: true }
-      )
+      for (const authUserId of authUserIds) {
+        await request(
+          `${authorization.supabaseUrl}/auth/v1/admin/users/${encodeURIComponent(authUserId)}`,
+          authorization.serviceRoleKey,
+          { method: 'DELETE', allowNotFound: true }
+        )
+      }
     } else {
-      await updateAuth(authorization, userId, {
-        ban_duration: action === 'deactivate' ? '876000h' : 'none'
-      })
+      for (const authUserId of authUserIds) {
+        await updateAuth(authorization, authUserId, {
+          ban_duration: action === 'deactivate' ? '876000h' : 'none'
+        })
+      }
     }
 
     return reply({ success: true, lifecycle: result })

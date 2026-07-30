@@ -178,7 +178,9 @@ function userCell(profile) {
   const name = document.createElement('strong')
   name.textContent = profile.full_name || '—'
   const meta = document.createElement('small')
-  meta.textContent = [profile.email, profile.employee_id].filter(Boolean).join(' · ')
+  meta.textContent = profile.account_deleted_at
+    ? ['Archived sign-in', profile.employee_id].filter(Boolean).join(' · ')
+    : [profile.email, profile.employee_id].filter(Boolean).join(' · ')
   details.append(name, meta)
   wrap.append(avatar, details)
   cell.appendChild(wrap)
@@ -204,16 +206,20 @@ function teamCell(teamId) {
 function renderSummary() {
   document.getElementById('totalProfiles').textContent = profiles.length
   document.getElementById('activeAgents').textContent = profiles.filter(profile =>
+    profile.account_deleted_at == null &&
     profile.is_agent === true &&
     profile.onboarding_status === 'active' &&
     ['active', 'on_leave'].includes(profile.employment_status)
   ).length
   document.getElementById('administratorCount').textContent = profiles.filter(profile =>
+    profile.account_deleted_at == null &&
     profile.base_role === 'admin' &&
     profile.onboarding_status === 'active' &&
     ['active', 'on_leave'].includes(profile.employment_status)
   ).length
-  document.getElementById('unassignedCount').textContent = profiles.filter(profile => !profile.team_id).length
+  document.getElementById('unassignedCount').textContent = profiles.filter(profile =>
+    profile.account_deleted_at == null && !profile.team_id
+  ).length
 }
 
 function filteredProfiles() {
@@ -229,9 +235,13 @@ function filteredProfiles() {
     ].some(value => normalizeText(value).toLowerCase().includes(search))
 
     const matchesStatus = !status || (
-      status === 'invited'
-        ? profile.onboarding_status === 'invited'
-        : profile.employment_status === status
+      status === 'archived'
+        ? profile.account_deleted_at != null
+        : profile.account_deleted_at == null && (
+          status === 'invited'
+            ? profile.onboarding_status === 'invited'
+            : profile.employment_status === status
+        )
     )
     const matchesTeam = !selectedTeam || (
       selectedTeam === 'unassigned'
@@ -289,7 +299,9 @@ function renderEmployees() {
     ))
 
     const statusCell = document.createElement('td')
-    if (profile.onboarding_status === 'invited') {
+    if (profile.account_deleted_at) {
+      statusCell.appendChild(badge('Archived', 'muted'))
+    } else if (profile.onboarding_status === 'invited') {
       statusCell.appendChild(badge('Invited', 'warning'))
     } else {
       statusCell.appendChild(badge(
@@ -306,12 +318,14 @@ function renderEmployees() {
 
     const actionCell = document.createElement('td')
     actionCell.className = 'wf-row-actions'
-    const editButton = document.createElement('button')
-    editButton.type = 'button'
-    editButton.className = 'wf-row-btn wf-profile-edit'
-    editButton.textContent = 'Edit'
-    editButton.addEventListener('click', () => openEmployee(profile.user_id))
-    actionCell.appendChild(editButton)
+    if (!profile.account_deleted_at) {
+      const editButton = document.createElement('button')
+      editButton.type = 'button'
+      editButton.className = 'wf-row-btn wf-profile-edit'
+      editButton.textContent = 'Edit'
+      editButton.addEventListener('click', () => openEmployee(profile.user_id))
+      actionCell.appendChild(editButton)
+    }
 
     const menuButton = document.createElement('button')
     menuButton.type = 'button'
@@ -346,12 +360,24 @@ function renderEmployees() {
       })
       actionMenu.appendChild(resendButton)
     }
-    if (profile.employment_status === 'inactive') {
+    if (profile.account_deleted_at) {
+      const reinviteButton = document.createElement('button')
+      reinviteButton.type = 'button'
+      reinviteButton.className = 'wf-row-btn'
+      reinviteButton.textContent = 'Reinvite employee'
+      reinviteButton.addEventListener('click', event => {
+        event.stopPropagation()
+        actionMenu.classList.remove('open')
+        menuButton.setAttribute('aria-expanded', 'false')
+        reinviteDeletedEmployee(profile, reinviteButton)
+      })
+      actionMenu.appendChild(reinviteButton)
+    } else if (profile.employment_status === 'inactive') {
       actionMenu.appendChild(lifecycleButton(profile, 'Reactivate', 'reactivate'))
     } else if (profile.employment_status !== 'terminated') {
       actionMenu.appendChild(lifecycleButton(profile, 'Deactivate', 'deactivate'))
     }
-    if (!profile.account_deleted_at) {
+    if (profile.account_deleted_at == null) {
       actionMenu.appendChild(lifecycleButton(profile, 'Delete account', 'delete', true))
     }
     actionCell.append(menuButton, actionMenu)
@@ -522,6 +548,47 @@ async function resendInvitation(profile, button) {
   }
 }
 
+async function reinviteDeletedEmployee(profile, button) {
+  const email = normalizeText(window.prompt(
+    `Enter the original email address for ${profile.full_name}. The archived employee ID ${profile.employee_id} will remain unchanged.`
+  )).toLowerCase()
+  if (!email) {
+    setMessage(pageMessage, 'Deleted employee reinvitation cancelled.')
+    return
+  }
+  if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+    setMessage(pageMessage, 'Enter a valid email address.', 'error')
+    return
+  }
+  if (!window.confirm(
+    `Send a restoration invitation to ${email}? The employee remains archived until the recipient accepts the link.`
+  )) return
+
+  setLoading(button, true, 'Sending...', 'Reinvite employee')
+  setMessage(
+    pageMessage,
+    `Sending a restoration invitation for ${profile.employee_id}...`
+  )
+  try {
+    const result = await authenticatedRequest('/reinvite-deleted-employee', {
+      method: 'POST',
+      body: JSON.stringify({ userId: profile.user_id, email })
+    })
+    setMessage(
+      pageMessage,
+      result.invitationResent
+        ? `Restoration invitation resent to ${email}. The employee remains archived until the link is accepted.`
+        : `Restoration invitation sent to ${email}. The employee remains archived until the link is accepted.`,
+      'success'
+    )
+    await loadWorkforceData()
+  } catch (error) {
+    setMessage(pageMessage, errorMessage(error), 'error')
+  } finally {
+    setLoading(button, false, 'Sending...', 'Reinvite employee')
+  }
+}
+
 function lifecycleButton(profile, label, action, destructive = false) {
   const button = document.createElement('button')
   button.type = 'button'
@@ -615,7 +682,6 @@ async function loadWorkforceData() {
         .from('profiles')
         .select('user_id, full_name, email, employee_id, employment_status, onboarding_status, invited_at, invitation_last_sent_at, account_deleted_at, base_role, is_agent, is_system_admin, team_id, supervisor_id, can_edit_articles, can_manage_payroll, timezone, updated_at')
         .eq('is_system_admin', false)
-        .is('account_deleted_at', null)
         .order('full_name'),
       supabase
         .from('teams')

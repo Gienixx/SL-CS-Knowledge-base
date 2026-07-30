@@ -45,6 +45,12 @@ The `zz_login_workforce_identity_link` trigger runs after login synchronization 
 
 The `profiles_workforce_identity_link` trigger handles profiles created or updated outside the ordinary login flow. It also disables stale automatic email links after an email reassignment. Correctly created future users should not require legacy alias repair.
 
+## Deleted employee restoration
+
+Migration `20260730181438_reinvite_deleted_employee_after_acceptance.sql` uses identity links to reconnect a newly invited Supabase Auth UUID to the original workforce profile UUID. Sending the invitation does not reactivate the profile. The link becomes active only when the recipient accepts the invitation, and normal first-login password completion then activates onboarding.
+
+This preserves the original employee ID and all historical attendance and payroll ownership without creating a second employee profile.
+
 ## Deployment
 
 Run the files in this exact order in Supabase SQL Editor:

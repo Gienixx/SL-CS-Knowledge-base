@@ -15,3 +15,16 @@ The current flow is:
 9. If workforce provisioning fails, the unified `/create-user` service rolls back the Auth account.
 
 The production site URL, including `change-password.html`, must be included in Supabase Auth redirect URLs. The Supabase invite template should tell the recipient to accept the invitation and create their password. Resent invitations use the recovery template because the Auth account already exists.
+
+## Reinviting a deleted employee
+
+Deleted employees appear as **Archived** in Workforce Management. An authorized administrator can use **Reinvite employee** and confirm the employee's original email.
+
+The restoration is intentionally staged:
+
+1. Sending or resending the setup link creates a private pending restoration request. The employee profile remains archived.
+2. When the recipient accepts the Supabase link, the new Auth account is linked to the original workforce profile and employee ID. Historical attendance, payroll, schedules, permissions, and audit records continue to belong to that same profile.
+3. The restored profile appears as **Invited** while the recipient creates a password.
+4. After the recipient creates their password, onboarding changes to **Active**.
+
+Deleted email addresses remain absent from the active `profiles` and `login` identity tables. The controlled restoration registry stores only a SHA-256 email hash, not a plaintext former email.

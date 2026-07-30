@@ -82,15 +82,26 @@ async function loadSnapshot(authorization, userId) {
   permissionUrl.searchParams.set('select', 'permission_key,is_granted')
   permissionUrl.searchParams.set('user_id', `eq.${userId}`)
 
-  const [profiles, permissionRows, authResult] = await Promise.all([
+  const linkUrl = new URL(`${authorization.supabaseUrl}/rest/v1/workforce_identity_links`)
+  linkUrl.searchParams.set('select', 'auth_user_id,profile_user_id,is_active,updated_at')
+  linkUrl.searchParams.set('profile_user_id', `eq.${userId}`)
+  linkUrl.searchParams.set('is_active', 'eq.true')
+  linkUrl.searchParams.set('order', 'updated_at.desc')
+  linkUrl.searchParams.set('limit', '1')
+
+  const [profiles, permissionRows, identityLinks] = await Promise.all([
     supabaseRequest(profileUrl, authorization.serviceRoleKey),
     supabaseRequest(permissionUrl, authorization.serviceRoleKey),
-    supabaseRequest(
-      `${authorization.supabaseUrl}/auth/v1/admin/users/${encodeURIComponent(userId)}`,
-      authorization.serviceRoleKey
-    )
+    supabaseRequest(linkUrl, authorization.serviceRoleKey)
   ])
   const profile = Array.isArray(profiles) ? profiles[0] : null
+  const authUserId = Array.isArray(identityLinks) && identityLinks[0]?.auth_user_id
+    ? identityLinks[0].auth_user_id
+    : userId
+  const authResult = await supabaseRequest(
+    `${authorization.supabaseUrl}/auth/v1/admin/users/${encodeURIComponent(authUserId)}`,
+    authorization.serviceRoleKey
+  )
   const authUser = authResult?.user || authResult
   if (!profile || !authUser?.id) {
     throw new EmployeeUpdateError('The employee identity could not be found.', 404)
@@ -105,6 +116,7 @@ async function loadSnapshot(authorization, userId) {
   return {
     profile,
     authUser,
+    authUserId,
     login: Array.isArray(loginRows) ? loginRows[0] : null,
     permissions: Object.fromEntries(
       WORKFORCE_PERMISSION_KEYS.map(key => [
@@ -169,13 +181,14 @@ async function setEmploymentStatus(authorization, userId, employmentStatus) {
 
 async function verifyIdentity(
   authorization,
-  userId,
+  profileUserId,
+  authUserId,
   email,
   employmentStatus
 ) {
   const profileUrl = new URL(`${authorization.supabaseUrl}/rest/v1/profiles`)
   profileUrl.searchParams.set('select', 'user_id,email,employment_status,base_role')
-  profileUrl.searchParams.set('user_id', `eq.${userId}`)
+  profileUrl.searchParams.set('user_id', `eq.${profileUserId}`)
   profileUrl.searchParams.set('email', `eq.${email}`)
   profileUrl.searchParams.set('employment_status', `eq.${employmentStatus}`)
   profileUrl.searchParams.set('limit', '1')
@@ -187,14 +200,14 @@ async function verifyIdentity(
 
   const linkUrl = new URL(`${authorization.supabaseUrl}/rest/v1/workforce_identity_links`)
   linkUrl.searchParams.set('select', 'auth_user_id,profile_user_id,is_active')
-  linkUrl.searchParams.set('auth_user_id', `eq.${userId}`)
-  linkUrl.searchParams.set('profile_user_id', `eq.${userId}`)
+  linkUrl.searchParams.set('auth_user_id', `eq.${authUserId}`)
+  linkUrl.searchParams.set('profile_user_id', `eq.${profileUserId}`)
   linkUrl.searchParams.set('is_active', 'eq.true')
   linkUrl.searchParams.set('limit', '1')
 
   const permissionUrl = new URL(`${authorization.supabaseUrl}/rest/v1/user_permissions`)
   permissionUrl.searchParams.set('select', 'is_granted')
-  permissionUrl.searchParams.set('user_id', `eq.${userId}`)
+  permissionUrl.searchParams.set('user_id', `eq.${profileUserId}`)
   permissionUrl.searchParams.set('permission_key', 'eq.edit_articles')
   permissionUrl.searchParams.set('limit', '1')
 
@@ -225,7 +238,7 @@ async function verifyIdentity(
 
 async function restoreSnapshot(authorization, snapshot, currentEmail) {
   const oldEmail = normalizeEmail(snapshot.profile.email)
-  await updateAuthEmail(authorization, snapshot.profile.user_id, oldEmail)
+  await updateAuthEmail(authorization, snapshot.authUserId, oldEmail)
   await updateCompatibilityIdentity(
     authorization,
     normalizeEmail(currentEmail),
@@ -298,7 +311,7 @@ export async function onRequestPost(context) {
 
     mutationStarted = true
     const emailChanged = email !== normalizeEmail(snapshot.profile.email)
-    if (emailChanged) await updateAuthEmail(authorization, userId, email)
+    if (emailChanged) await updateAuthEmail(authorization, snapshot.authUserId, email)
 
     await updateCompatibilityIdentity(
       authorization,
@@ -328,6 +341,7 @@ export async function onRequestPost(context) {
     await verifyIdentity(
       authorization,
       userId,
+      snapshot.authUserId,
       email,
       employmentStatus
     )
