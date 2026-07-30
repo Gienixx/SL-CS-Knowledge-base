@@ -3,123 +3,244 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="color-scheme" content="light dark">
   <title>Attendance | SocialLoop CS Base</title>
   <link rel="stylesheet" href="./styles/button-theme.css?v=1">
   <link rel="stylesheet" href="./styles/workforce-admin.css?v=2">
-  <link rel="stylesheet" href="./styles/attendance.css?v=1">
+  <link rel="stylesheet" href="./styles/attendance.css?v=2">
 </head>
-<body>
-  <main class="wf-page attendance-page">
-    <header class="wf-topbar">
-      <div class="wf-title">
-        <h1>Attendance</h1>
-        <p>Clock in, clock out, review your available shift, and view your attendance history.</p>
-      </div>
-      <nav class="wf-nav" aria-label="Attendance navigation">
-        <a class="wf-link" href="./my-schedule.html">My Schedule</a>
-        <a id="attendanceWorkforceLink" class="wf-link" href="./workforce.html" hidden>Workforce Management</a>
-        <a class="wf-link" href="./home.html">← Back to Home</a>
-      </nav>
-    </header>
+<body class="attendance-shell">
+  <input
+    id="attendanceThemeToggle"
+    class="attendance-theme-input"
+    type="checkbox"
+    aria-label="Use light attendance theme"
+    checked
+  >
 
-    <section class="attendance-hero" aria-labelledby="attendanceTodayTitle">
-      <div class="attendance-clock-panel">
-        <p class="attendance-eyebrow">Current local time</p>
-        <time id="attendanceLiveClock" class="attendance-live-clock">—</time>
-        <p id="attendanceTimeZone" class="attendance-timezone">America/New_York</p>
-      </div>
-
-      <div class="attendance-today-panel">
-        <div class="attendance-today-heading">
-          <div>
-            <p class="attendance-eyebrow">Current attendance</p>
-            <h2 id="attendanceTodayTitle">Loading attendance...</h2>
+  <div class="attendance-app">
+    <main class="wf-page attendance-page">
+      <header class="wf-topbar attendance-topbar">
+        <div class="attendance-brand">
+          <span class="attendance-brand-mark" aria-hidden="true">SL</span>
+          <span class="attendance-brand-rule" aria-hidden="true"></span>
+          <div class="wf-title">
+            <h1>Attendance Control</h1>
+            <p>Your shift status, clock actions, and recent records.</p>
           </div>
-          <span id="attendanceTodayBadge" class="wf-badge muted">Loading</span>
         </div>
 
-        <dl class="attendance-today-details">
-          <div><dt>Work date</dt><dd id="attendanceTodayDate">—</dd></div>
-          <div><dt>Assigned shift</dt><dd id="attendanceTodayShift">—</dd></div>
-          <div><dt>Clock in</dt><dd id="attendanceTodayClockIn">—</dd></div>
-          <div><dt>Clock out</dt><dd id="attendanceTodayClockOut">—</dd></div>
-          <div><dt>Worked time</dt><dd id="attendanceTodayWorked">—</dd></div>
-          <div><dt>Attendance status</dt><dd id="attendanceTodayStatus">—</dd></div>
-        </dl>
-
-        <div id="attendanceScheduleChooser" class="attendance-schedule-chooser" hidden>
-          <label class="wf-field">
-            <span>Available shift or work date</span>
-            <select id="attendanceScheduleSelect" class="wf-control"></select>
+        <nav class="wf-nav attendance-nav" aria-label="Attendance navigation">
+          <label class="attendance-theme-toggle" for="attendanceThemeToggle" title="Switch color theme">
+            <svg class="attendance-theme-sun" viewBox="0 0 24 24" aria-hidden="true">
+              <circle cx="12" cy="12" r="3.5"></circle>
+              <path d="M12 2v2.2M12 19.8V22M4.9 4.9l1.6 1.6m11 11 1.6 1.6M2 12h2.2M19.8 12H22M4.9 19.1l1.6-1.6m11-11 1.6-1.6"></path>
+            </svg>
+            <svg class="attendance-theme-moon" viewBox="0 0 24 24" aria-hidden="true">
+              <path d="M20 15.2A8 8 0 0 1 8.8 4 8.5 8.5 0 1 0 20 15.2Z"></path>
+            </svg>
+            <span class="attendance-theme-name attendance-theme-name-light">Light</span>
+            <span class="attendance-theme-name attendance-theme-name-dark">Dark</span>
           </label>
-          <p id="attendanceScheduleHelp" class="attendance-help"></p>
+
+          <a class="wf-link" href="./my-schedule.html">
+            <svg viewBox="0 0 24 24" aria-hidden="true">
+              <rect x="3" y="5" width="18" height="16" rx="2"></rect>
+              <path d="M7 3v4m10-4v4M3 10h18M7 14h2m3 0h2m3 0h1M7 18h2m3 0h2"></path>
+            </svg>
+            <span>My Schedule</span>
+          </a>
+          <a id="attendanceWorkforceLink" class="wf-link" href="./workforce.html" hidden>
+            <svg viewBox="0 0 24 24" aria-hidden="true">
+              <circle cx="9" cy="8" r="3"></circle>
+              <circle cx="17" cy="10" r="2"></circle>
+              <path d="M3 20a6 6 0 0 1 12 0m1-5a4 4 0 0 1 5 4"></path>
+            </svg>
+            <span>Workforce</span>
+          </a>
+          <a class="wf-link" href="./home.html">
+            <svg viewBox="0 0 24 24" aria-hidden="true">
+              <path d="m3 11 9-8 9 8"></path>
+              <path d="M5 10v11h14V10M9 21v-7h6v7"></path>
+            </svg>
+            <span>Back to Home</span>
+          </a>
+        </nav>
+      </header>
+
+      <section class="attendance-console" aria-labelledby="attendanceTodayTitle">
+        <div class="attendance-clock-panel">
+          <div class="attendance-orbit attendance-orbit-outer" aria-hidden="true">
+            <i></i><i></i><i></i>
+          </div>
+          <div class="attendance-orbit attendance-orbit-middle" aria-hidden="true">
+            <i></i><i></i>
+          </div>
+          <div class="attendance-clock-face">
+            <span class="attendance-clock-ticks" aria-hidden="true"></span>
+            <div class="attendance-clock-content">
+              <p class="attendance-eyebrow">Current local time</p>
+              <time id="attendanceLiveClock" class="attendance-live-clock">—</time>
+              <p id="attendanceTimeZone" class="attendance-timezone">America/New_York</p>
+              <span class="attendance-clock-divider" aria-hidden="true"></span>
+              <p class="attendance-clock-caption"><span class="attendance-live-dot"></span>Live attendance</p>
+            </div>
+          </div>
         </div>
 
-        <div id="attendanceScheduleNotice" class="attendance-notice" hidden></div>
-        <p class="attendance-help">Clock-in is available before a published or changed shift, and is also available for rest days, holidays, and dates without a released shift. Rest-day work is recorded as RDOT; no-shift work is also recorded as RDOT; holiday work is recorded as overtime. All overtime is limited to 20 hours in total per scheduled work date or no-shift work date.</p>
+        <div class="attendance-today-panel">
+          <div class="attendance-today-heading">
+            <div class="attendance-status-heading">
+              <span class="attendance-status-light" aria-hidden="true"></span>
+              <div>
+                <p class="attendance-eyebrow">Current attendance</p>
+                <h2 id="attendanceTodayTitle">Loading attendance...</h2>
+              </div>
+            </div>
+            <span id="attendanceTodayBadge" class="wf-badge muted">Loading</span>
+          </div>
 
-        <div class="attendance-actions">
-          <button id="attendanceClockInButton" class="wf-btn attendance-action-primary" type="button" disabled>Clock In</button>
-          <button id="attendanceClockOutButton" class="wf-btn secondary attendance-action-secondary" type="button" disabled>Clock Out</button>
-          <button id="attendanceRefreshButton" class="wf-row-btn" type="button">Refresh</button>
+          <dl class="attendance-today-details">
+            <div>
+              <dt><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="5" width="18" height="16" rx="2"></rect><path d="M7 3v4m10-4v4M3 10h18"></path></svg>Work date</dt>
+              <dd id="attendanceTodayDate">—</dd>
+            </div>
+            <div>
+              <dt><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="9"></circle><path d="M12 7v5l3 2"></path></svg>Assigned shift</dt>
+              <dd id="attendanceTodayShift">—</dd>
+            </div>
+            <div>
+              <dt><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M10 5H5v14h5M13 8l-4 4 4 4M9 12h11"></path></svg>Clock in</dt>
+              <dd id="attendanceTodayClockIn">—</dd>
+            </div>
+            <div>
+              <dt><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M14 5h5v14h-5M11 8l4 4-4 4M15 12H4"></path></svg>Clock out</dt>
+              <dd id="attendanceTodayClockOut">—</dd>
+            </div>
+            <div>
+              <dt><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="13" r="8"></circle><path d="M9 2h6M12 5V2m0 7v4l3 2"></path></svg>Worked time</dt>
+              <dd id="attendanceTodayWorked">—</dd>
+            </div>
+            <div>
+              <dt><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="9"></circle><path d="m8 12 2.5 2.5L16 9"></path></svg>Attendance status</dt>
+              <dd id="attendanceTodayStatus">—</dd>
+            </div>
+          </dl>
+
+          <div class="attendance-context">
+            <div id="attendanceScheduleChooser" class="attendance-schedule-chooser" hidden>
+              <label class="wf-field">
+                <span>Available shift or work date</span>
+                <select id="attendanceScheduleSelect" class="wf-control"></select>
+              </label>
+              <p id="attendanceScheduleHelp" class="attendance-help"></p>
+            </div>
+
+            <div id="attendanceScheduleNotice" class="attendance-notice" hidden></div>
+
+            <details class="attendance-policy">
+              <summary>Clock-in and overtime guidance</summary>
+              <p class="attendance-help">Clock-in is available before a published or changed shift, and is also available for rest days, holidays, and dates without a released shift. Rest-day work is recorded as RDOT; no-shift work is also recorded as RDOT; holiday work is recorded as overtime. All overtime is limited to 20 hours in total per scheduled work date or no-shift work date.</p>
+            </details>
+          </div>
+
+          <div class="attendance-actions">
+            <button id="attendanceClockInButton" class="wf-btn attendance-action-primary" type="button" disabled>Clock In</button>
+            <button id="attendanceClockOutButton" class="wf-btn secondary attendance-action-secondary" type="button" disabled>Clock Out</button>
+            <button id="attendanceRefreshButton" class="wf-row-btn" type="button">Refresh</button>
+          </div>
+          <p id="attendanceActionMessage" class="wf-message attendance-action-message" aria-live="polite"></p>
         </div>
-        <p id="attendanceActionMessage" class="wf-message" aria-live="polite"></p>
+      </section>
+
+      <div class="attendance-lower-grid">
+        <section class="wf-card attendance-snapshot" aria-labelledby="attendanceSnapshotTitle">
+          <div class="wf-card-header">
+            <div>
+              <p class="attendance-card-kicker">Month to date</p>
+              <h2 id="attendanceSnapshotTitle">Month snapshot</h2>
+            </div>
+            <svg class="attendance-card-icon" viewBox="0 0 24 24" aria-hidden="true">
+              <rect x="3" y="5" width="18" height="16" rx="2"></rect>
+              <path d="M7 3v4m10-4v4M3 10h18"></path>
+            </svg>
+          </div>
+
+          <div class="wf-summary-grid attendance-summary-grid" aria-label="Attendance summary">
+            <article class="wf-summary">
+              <span>Records</span>
+              <strong id="attendanceMonthCount">—</strong>
+            </article>
+            <article class="wf-summary">
+              <span>Present</span>
+              <strong id="attendancePresentCount">—</strong>
+            </article>
+            <article class="wf-summary">
+              <span>Late</span>
+              <strong id="attendanceLateCount">—</strong>
+            </article>
+            <article class="wf-summary">
+              <span>Total worked</span>
+              <strong id="attendanceWorkedTotal">—</strong>
+            </article>
+          </div>
+
+          <div class="attendance-snapshot-legend" aria-hidden="true">
+            <span><i class="present"></i>Present</span>
+            <span><i class="late"></i>Late</span>
+            <span><i class="absent"></i>Absent</span>
+          </div>
+        </section>
+
+        <section class="wf-card attendance-history-card">
+          <div class="wf-card-header">
+            <div>
+              <p class="attendance-card-kicker">Personal records</p>
+              <h2>Attendance log</h2>
+              <p class="wf-message">Review clock times, status, and attendance adjustments.</p>
+            </div>
+            <div class="attendance-history-controls">
+              <label class="wf-field">
+                <span>Month</span>
+                <input id="attendanceHistoryMonth" class="wf-control" type="month">
+              </label>
+              <label class="wf-field">
+                <span>Status</span>
+                <select id="attendanceHistoryStatus" class="wf-control">
+                  <option value="">All statuses</option>
+                  <option value="present">Present</option>
+                  <option value="absent">Absent</option>
+                  <option value="on_leave">On leave</option>
+                  <option value="excused">Excused</option>
+                </select>
+              </label>
+            </div>
+          </div>
+
+          <div class="wf-table-wrap">
+            <table class="wf-table attendance-table">
+              <thead>
+                <tr>
+                  <th>Date</th>
+                  <th>Assigned shift</th>
+                  <th>Clock in</th>
+                  <th>Clock out</th>
+                  <th>Worked</th>
+                  <th>Status</th>
+                  <th>Adjustments</th>
+                  <th>Notes</th>
+                </tr>
+              </thead>
+              <tbody id="attendanceHistoryBody">
+                <tr><td colspan="8" class="wf-empty">Loading attendance history...</td></tr>
+              </tbody>
+            </table>
+          </div>
+          <p id="attendanceHistoryMessage" class="wf-message" aria-live="polite"></p>
+        </section>
       </div>
-    </section>
-
-    <section class="wf-summary-grid attendance-summary-grid" aria-label="Attendance summary">
-      <article class="wf-summary"><span>Records this month</span><strong id="attendanceMonthCount">—</strong></article>
-      <article class="wf-summary"><span>Shifts present</span><strong id="attendancePresentCount">—</strong></article>
-      <article class="wf-summary"><span>Late records</span><strong id="attendanceLateCount">—</strong></article>
-      <article class="wf-summary"><span>Total worked</span><strong id="attendanceWorkedTotal">—</strong></article>
-    </section>
-
-    <section class="wf-card">
-      <div class="wf-card-header">
-        <div>
-          <h2>Attendance History</h2>
-          <p class="wf-message" style="margin-top:5px;">Review your recorded clock times, status, and attendance adjustments.</p>
-        </div>
-        <div class="attendance-history-controls">
-          <label class="wf-field">
-            <span>Month</span>
-            <input id="attendanceHistoryMonth" class="wf-control" type="month">
-          </label>
-          <label class="wf-field">
-            <span>Status</span>
-            <select id="attendanceHistoryStatus" class="wf-control">
-              <option value="">All statuses</option>
-              <option value="present">Present</option>
-              <option value="absent">Absent</option>
-              <option value="on_leave">On leave</option>
-              <option value="excused">Excused</option>
-            </select>
-          </label>
-        </div>
-      </div>
-
-      <div class="wf-table-wrap">
-        <table class="wf-table attendance-table">
-          <thead>
-            <tr>
-              <th>Date</th>
-              <th>Assigned shift</th>
-              <th>Clock in</th>
-              <th>Clock out</th>
-              <th>Worked</th>
-              <th>Status</th>
-              <th>Adjustments</th>
-              <th>Notes</th>
-            </tr>
-          </thead>
-          <tbody id="attendanceHistoryBody">
-            <tr><td colspan="8" class="wf-empty">Loading attendance history...</td></tr>
-          </tbody>
-        </table>
-      </div>
-      <p id="attendanceHistoryMessage" class="wf-message" aria-live="polite"></p>
-    </section>
-  </main>
+    </main>
+  </div>
 
   <script type="module" src="./scripts/attendance.js?v=4"></script>
 </body>

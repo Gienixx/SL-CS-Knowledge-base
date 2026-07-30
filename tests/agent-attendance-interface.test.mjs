@@ -13,6 +13,33 @@ test('attendance page exposes agent clock actions and history', async () => {
   assert.match(html, /scripts\/attendance\.js/)
 })
 
+test('attendance redesign preserves functional hooks and accessible theme controls', async () => {
+  const [html, styles] = await Promise.all([
+    read('attendance.html'),
+    read('styles/attendance.css')
+  ])
+
+  for (const id of [
+    'attendanceLiveClock',
+    'attendanceScheduleSelect',
+    'attendanceRefreshButton',
+    'attendanceHistoryMonth',
+    'attendanceHistoryStatus',
+    'attendanceMonthCount',
+    'attendancePresentCount',
+    'attendanceLateCount',
+    'attendanceWorkedTotal'
+  ]) {
+    assert.match(html, new RegExp(`id="${id}"`))
+  }
+
+  assert.match(html, /class="attendance-console"/)
+  assert.match(html, /id="attendanceThemeToggle"[\s\S]*aria-label="Use light attendance theme"/)
+  assert.match(styles, /#attendanceThemeToggle:checked ~ \.attendance-app/)
+  assert.match(styles, /@media \(max-width: 680px\)/)
+  assert.match(styles, /@media \(prefers-reduced-motion: reduce\)/)
+})
+
 test('attendance client uses workforce access scope and secure RPC functions', async () => {
   const script = await read('scripts/attendance.js')
 
