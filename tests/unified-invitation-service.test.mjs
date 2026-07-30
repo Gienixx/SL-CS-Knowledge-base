@@ -5,9 +5,10 @@ import test from 'node:test'
 const read = path => readFile(new URL(`../${path}`, import.meta.url), 'utf8')
 
 test('invitation is server-owned and hides temporary credentials', async () => {
-  const [endpoint, browser] = await Promise.all([
+  const [endpoint, browser, html] = await Promise.all([
     read('functions/create-user.js'),
-    read('scripts/workforce.js')
+    read('scripts/workforce.js'),
+    read('workforce.html')
   ])
 
   assert.match(endpoint, /requireWorkforcePermission/)
@@ -15,9 +16,11 @@ test('invitation is server-owned and hides temporary credentials', async () => {
   assert.match(endpoint, /auth\/v1\/invite/)
   assert.match(endpoint, /workforce_service_create_invitation/)
   assert.match(endpoint, /deleteAuthUser/)
+  assert.doesNotMatch(endpoint, /body\.password/)
   assert.doesNotMatch(endpoint, /password\s*:/)
   assert.doesNotMatch(browser, /resetPasswordForEmail\(\s*email/)
   assert.doesNotMatch(browser, /password:\s*createTemporaryCredential/)
+  assert.doesNotMatch(html, /id="invite[^"]*password/i)
 })
 
 test('transactional provisioning creates the complete invited employee contract', async () => {

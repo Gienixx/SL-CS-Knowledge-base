@@ -36,18 +36,28 @@ test('invited profiles are rejected by the shared workforce gate', async () => {
   assert.match(verification, /shared workforce access gate does not require onboarding activation/i)
 })
 
-test('creating the invited Auth password activates the workforce profile', async () => {
-  const [migration, passwordPage, passwordScript] = await Promise.all([
-    read('supabase/migrations/20260718111240_activate_profile_after_invite_password.sql'),
+test('first sign-in plus a user-created password activates the workforce profile', async () => {
+  const [migration, verification, passwordPage, passwordScript, createUser] = await Promise.all([
+    read('supabase/migrations/20260730174539_complete_onboarding_after_first_sign_in.sql'),
+    read('supabase/verification/first_sign_in_onboarding_check.sql'),
     read('change-password.html'),
-    read('scripts/change-password.js')
+    read('scripts/change-password.js'),
+    read('functions/create-user.js')
   ])
 
+  assert.match(migration, /drop trigger if exists auth_user_activate_invited_profile/i)
   assert.match(migration, /after update of encrypted_password on auth\.users/i)
+  assert.match(migration, /new\.last_sign_in_at is null/i)
   assert.match(migration, /onboarding_status = 'active'/)
   assert.match(migration, /onboarding_status = 'invited'/)
   assert.match(migration, /employee_invitation_accepted/)
+  assert.match(migration, /system-generated temporary password/i)
+  assert.match(verification, /onboarding status does not match Auth evidence/i)
+  assert.match(createUser, /auth\/v1\/invite/)
+  assert.doesNotMatch(createUser, /body\.password/)
+  assert.doesNotMatch(createUser, /password\s*:\s*(?!newPasswordInput)/)
   assert.match(passwordScript, /Create your password/)
+  assert.match(passwordScript, /supabase\.auth\.updateUser\(\{[\s\S]*password: newPasswordInput\.value/)
   assert.match(passwordScript, /password_change_completed: true/)
   assert.doesNotMatch(passwordPage, /temporary password/i)
   assert.doesNotMatch(passwordScript, /temporary password/i)
