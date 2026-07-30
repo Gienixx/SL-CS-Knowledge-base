@@ -100,16 +100,16 @@
 .attendance-page {
   position: relative;
   z-index: 1;
-  width: min(1500px, calc(100% - 24px));
+  width: min(1420px, calc(100% - 24px));
   max-width: none;
-  padding: 10px 0 30px;
+  padding: 7px 0 22px;
 }
 
 .attendance-topbar {
   align-items: center;
-  min-height: 74px;
+  min-height: 62px;
   margin: 0;
-  padding: 10px 12px 12px;
+  padding: 6px 10px 8px;
   border-bottom: 1px solid var(--att-border);
 }
 
@@ -123,13 +123,13 @@
 .attendance-brand-mark {
   display: grid;
   place-items: center;
-  width: 50px;
-  height: 50px;
+  width: 42px;
+  height: 42px;
   border: 2px solid var(--att-gold);
   border-radius: 50%;
   color: var(--att-gold);
   font-family: "Arial Narrow", "Roboto Condensed", Arial, sans-serif;
-  font-size: 1.35rem;
+  font-size: 1.1rem;
   font-weight: 500;
   letter-spacing: -.05em;
   box-shadow: 0 0 22px rgba(255, 181, 46, .09);
@@ -138,7 +138,7 @@
 
 .attendance-brand-rule {
   width: 1px;
-  height: 42px;
+  height: 34px;
   background: var(--att-border);
 }
 
@@ -146,16 +146,16 @@
   margin: 0;
   color: var(--att-heading);
   font-family: Georgia, "Times New Roman", serif;
-  font-size: clamp(1.35rem, 2.3vw, 1.75rem);
+  font-size: clamp(1.25rem, 2vw, 1.58rem);
   font-weight: 700;
   letter-spacing: -.025em;
 }
 
 .attendance-topbar .wf-title p {
-  margin: 5px 0 0;
+  margin: 3px 0 0;
   color: var(--att-muted);
   font-family: "Cascadia Code", "SFMono-Regular", Consolas, monospace;
-  font-size: .72rem;
+  font-size: .66rem;
   line-height: 1.35;
 }
 
@@ -169,8 +169,8 @@
   display: inline-flex;
   align-items: center;
   gap: 9px;
-  min-height: 42px;
-  padding: 8px 13px;
+  min-height: 36px;
+  padding: 6px 11px;
   border: 0;
   border-radius: 9px;
   background: transparent;
@@ -232,8 +232,8 @@
 .attendance-console {
   display: grid;
   grid-template-columns: minmax(360px, .92fr) minmax(590px, 1.48fr);
-  min-height: 500px;
-  margin-top: 12px;
+  min-height: 390px;
+  margin-top: 8px;
   border: 1px solid var(--att-border);
   border-radius: 8px;
   background: var(--att-surface);
@@ -246,8 +246,8 @@
   position: relative;
   display: grid;
   place-items: center;
-  min-height: 500px;
-  padding: 36px;
+  min-height: 390px;
+  padding: 24px;
   border-right: 1px solid var(--att-border);
   overflow: hidden;
   isolation: isolate;
@@ -262,16 +262,16 @@
 }
 
 .attendance-clock-panel::before {
-  width: 460px;
-  height: 460px;
+  width: 350px;
+  height: 350px;
   border: 1px solid rgba(255, 181, 46, .26);
   border-radius: 50%;
   box-shadow: inset 0 0 90px rgba(29, 68, 112, .12);
 }
 
 .attendance-clock-panel::after {
-  width: 530px;
-  height: 220px;
+  width: 410px;
+  height: 170px;
   border: 1px dashed color-mix(in srgb, var(--att-gold) 38%, transparent);
   border-radius: 50%;
   transform: rotate(16deg);
@@ -281,7 +281,7 @@
   position: relative;
   display: grid;
   place-items: center;
-  width: min(76vw, 354px);
+  width: min(70vw, 278px);
   aspect-ratio: 1;
   border: 2px solid color-mix(in srgb, var(--att-blue) 58%, transparent);
   border-radius: 50%;
@@ -327,10 +327,10 @@
 
 .attendance-live-clock {
   display: block;
-  margin: 12px 0 3px;
+  margin: 9px 0 3px;
   color: var(--att-heading);
   font-family: "Cascadia Code", "SFMono-Regular", Consolas, monospace;
-  font-size: clamp(2.25rem, 4.2vw, 3.65rem);
+  font-size: clamp(2rem, 3.5vw, 2.9rem);
   font-weight: 500;
   letter-spacing: -.06em;
   line-height: 1;
@@ -339,10 +339,10 @@
 }
 
 .attendance-timezone {
-  margin: 9px 0 0;
+  margin: 7px 0 0;
   color: var(--att-blue);
   font-family: "Cascadia Code", "SFMono-Regular", Consolas, monospace;
-  font-size: .77rem;
+  font-size: .7rem;
   font-weight: 500;
 }
 
@@ -350,7 +350,7 @@
   display: block;
   width: 70%;
   height: 1px;
-  margin: 24px auto 16px;
+  margin: 17px auto 12px;
   background: var(--att-border);
 }
 
@@ -378,7 +378,7 @@
 .attendance-status-light {
   width: 12px;
   height: 12px;
-  margin-top: 16px;
+  margin-top: 12px;
 }
 
 .attendance-orbit {
@@ -400,8 +400,8 @@
 }
 
 .attendance-orbit-outer {
-  width: 450px;
-  height: 450px;
+  width: 344px;
+  height: 344px;
   transform: rotate(-15deg);
 }
 
@@ -410,8 +410,8 @@
 .attendance-orbit-outer i:nth-child(3) { right: 10px; bottom: 120px; opacity: .65; }
 
 .attendance-orbit-middle {
-  width: 430px;
-  height: 172px;
+  width: 336px;
+  height: 134px;
   transform: rotate(13deg);
   border-style: dashed;
   border-color: color-mix(in srgb, var(--att-blue) 36%, transparent);
@@ -423,7 +423,7 @@
 .attendance-today-panel {
   display: flex;
   flex-direction: column;
-  padding: 32px 30px 20px;
+  padding: 21px 24px 14px;
 }
 
 .attendance-today-heading {
@@ -431,7 +431,7 @@
   align-items: flex-start;
   justify-content: space-between;
   gap: 16px;
-  margin-bottom: 17px;
+  margin-bottom: 8px;
 }
 
 .attendance-status-heading {
@@ -444,7 +444,7 @@
   margin: 5px 0 0;
   color: var(--att-heading);
   font-family: Georgia, "Times New Roman", serif;
-  font-size: clamp(1.85rem, 3.2vw, 2.8rem);
+  font-size: clamp(1.65rem, 2.7vw, 2.25rem);
   font-weight: 600;
   letter-spacing: .005em;
   line-height: 1.1;
@@ -462,9 +462,9 @@
 }
 
 .attendance-app .attendance-today-heading .wf-badge {
-  min-height: 39px;
+  min-height: 34px;
   margin: 1px 0 0;
-  padding: 8px 13px;
+  padding: 6px 10px;
   border-color: currentColor;
   background: transparent;
 }
@@ -482,23 +482,23 @@
 
 .attendance-today-details > div {
   position: relative;
-  min-height: 86px;
-  padding: 15px 12px 13px 49px;
+  min-height: 66px;
+  padding: 10px 10px 9px 44px;
   border-bottom: 1px solid var(--att-border);
 }
 
 .attendance-today-details > div:nth-child(odd) {
-  margin-right: 20px;
+  margin-right: 16px;
 }
 
 .attendance-today-details > div:nth-child(even) {
-  padding-left: 63px;
+  padding-left: 53px;
 }
 
 .attendance-today-details dt svg,
 .attendance-card-icon {
-  width: 27px;
-  height: 27px;
+  width: 23px;
+  height: 23px;
   fill: none;
   stroke: currentColor;
   stroke-width: 1.65;
@@ -508,13 +508,13 @@
 
 .attendance-today-details dt svg {
   position: absolute;
-  top: 17px;
+  top: 11px;
   left: 8px;
   color: var(--att-blue);
 }
 
 .attendance-today-details > div:nth-child(even) dt svg {
-  left: 22px;
+  left: 17px;
 }
 
 .attendance-today-details dt {
@@ -524,18 +524,18 @@
 }
 
 .attendance-today-details dd {
-  margin: 6px 0 0;
+  margin: 4px 0 0;
   color: var(--att-heading);
   font-family: "Cascadia Code", "SFMono-Regular", Consolas, monospace;
-  font-size: .87rem;
+  font-size: .79rem;
   font-weight: 500;
   line-height: 1.35;
 }
 
 .attendance-context {
   display: grid;
-  gap: 9px;
-  margin-top: 14px;
+  gap: 6px;
+  margin-top: 9px;
 }
 
 .attendance-schedule-chooser,
@@ -552,7 +552,7 @@
   gap: 14px;
   align-items: end;
   margin: 0;
-  padding: 11px 12px;
+  padding: 8px 10px;
 }
 
 .attendance-schedule-chooser[hidden],
@@ -574,8 +574,8 @@
 }
 
 .attendance-app .wf-control {
-  min-height: 36px;
-  padding: 7px 10px;
+  min-height: 32px;
+  padding: 5px 9px;
   border: 1px solid var(--att-border);
   border-radius: 6px;
   background: var(--att-surface-solid);
@@ -600,7 +600,7 @@
 
 .attendance-notice {
   margin: 0;
-  padding: 9px 11px;
+  padding: 7px 9px;
   border-color: color-mix(in srgb, var(--att-gold) 42%, transparent);
   color: var(--att-heading);
   font-size: .69rem;
@@ -615,11 +615,11 @@
 }
 
 .attendance-policy {
-  padding: 0 11px;
+  padding: 0 9px;
 }
 
 .attendance-policy summary {
-  padding: 9px 0;
+  padding: 7px 0;
   color: var(--att-blue);
   font-family: "Cascadia Code", "SFMono-Regular", Consolas, monospace;
   font-size: .62rem;
@@ -634,22 +634,22 @@
 .attendance-actions {
   display: grid;
   grid-template-columns: minmax(115px, .8fr) minmax(180px, 1.35fr) minmax(110px, .8fr);
-  gap: 12px;
+  gap: 9px;
   margin-top: auto;
-  padding-top: 17px;
+  padding-top: 10px;
 }
 
 .attendance-app .attendance-actions button {
   position: relative;
   min-width: 0;
-  min-height: 54px;
+  min-height: 44px;
   padding: 0 14px 0 42px;
   border: 1px solid var(--att-border-strong) !important;
   border-radius: 7px !important;
   background: transparent !important;
   color: var(--att-blue) !important;
   box-shadow: none !important;
-  font-size: .93rem;
+  font-size: .84rem;
   font-weight: 750;
 }
 
@@ -695,8 +695,8 @@
 }
 
 .attendance-action-message {
-  min-height: 18px;
-  margin: 8px 0 0;
+  min-height: 14px;
+  margin: 5px 0 0;
   font-size: .66rem;
 }
 
@@ -726,9 +726,9 @@
 }
 
 .attendance-app .wf-card-header {
-  min-height: 64px;
+  min-height: 56px;
   margin: 0;
-  padding: 14px 18px;
+  padding: 10px 14px;
   border-bottom: 1px solid var(--att-border);
 }
 
@@ -736,7 +736,7 @@
   margin: 3px 0 0;
   color: var(--att-heading);
   font-family: Georgia, "Times New Roman", serif;
-  font-size: 1.12rem;
+  font-size: 1.02rem;
   font-weight: 600;
   letter-spacing: .01em;
 }
@@ -750,13 +750,13 @@
   grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: 0;
   margin: 0;
-  padding: 7px 16px 4px;
+  padding: 4px 12px 2px;
 }
 
 .attendance-app .attendance-summary-grid .wf-summary {
   display: block;
-  min-height: 78px;
-  padding: 13px 10px;
+  min-height: 62px;
+  padding: 10px 8px;
   border: 0;
   border-bottom: 1px solid var(--att-border);
   border-radius: 0;
@@ -797,8 +797,8 @@
   align-items: center;
   justify-content: space-around;
   gap: 8px;
-  min-height: 50px;
-  padding: 10px 12px;
+  min-height: 42px;
+  padding: 7px 10px;
   border-top: 1px solid var(--att-border);
   color: var(--att-muted);
   font-size: .61rem;
@@ -835,8 +835,8 @@
 
 .attendance-history-controls {
   display: grid;
-  grid-template-columns: minmax(142px, 180px) minmax(142px, 180px);
-  gap: 9px;
+  grid-template-columns: repeat(3, minmax(124px, 156px));
+  gap: 7px;
   flex: none;
 }
 
@@ -847,13 +847,13 @@
 }
 
 .attendance-table {
-  min-width: 1080px;
+  min-width: 980px;
   background: transparent;
 }
 
 .attendance-app .wf-table th {
-  height: 42px;
-  padding: 10px 15px;
+  height: 34px;
+  padding: 7px 11px;
   border-color: var(--att-border);
   background: color-mix(in srgb, var(--att-surface-soft) 68%, transparent);
   color: var(--att-blue);
@@ -864,8 +864,8 @@
 }
 
 .attendance-app .wf-table td {
-  height: 58px;
-  padding: 10px 15px;
+  height: 48px;
+  padding: 7px 11px;
   border-color: var(--att-border);
   color: var(--att-text);
   font-family: "Cascadia Code", "SFMono-Regular", Consolas, monospace;
@@ -900,14 +900,55 @@
   line-height: 1.45;
 }
 
-.attendance-history-card > .wf-message {
-  min-height: 36px;
-  margin: 0;
-  padding: 9px 16px;
+.attendance-history-footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  min-height: 42px;
+  padding: 6px 10px 6px 14px;
   border-top: 1px solid var(--att-border);
+}
+
+.attendance-history-footer > .wf-message {
+  min-height: 0;
+  margin: 0;
+  padding: 0;
   font-family: "Cascadia Code", "SFMono-Regular", Consolas, monospace;
   font-size: .6rem;
   font-weight: 500;
+}
+
+.attendance-history-pagination {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex: none;
+}
+
+.attendance-history-pagination span {
+  min-width: 74px;
+  color: var(--att-muted);
+  font-family: "Cascadia Code", "SFMono-Regular", Consolas, monospace;
+  font-size: .6rem;
+  text-align: center;
+}
+
+.attendance-app .attendance-history-pagination .wf-row-btn {
+  min-height: 28px;
+  padding: 4px 9px;
+  border: 1px solid var(--att-border);
+  border-radius: 5px;
+  background: transparent;
+  color: var(--att-blue);
+  box-shadow: none;
+  font-size: .61rem;
+}
+
+.attendance-app .attendance-history-pagination .wf-row-btn:disabled {
+  color: var(--att-muted);
+  opacity: .45;
+  cursor: not-allowed;
 }
 
 .attendance-app .wf-empty {
@@ -920,26 +961,26 @@
   }
 
   .attendance-clock-panel {
-    min-height: 520px;
-    padding: 24px;
+    min-height: 410px;
+    padding: 20px;
   }
 
   .attendance-clock-panel::before,
   .attendance-orbit-outer {
-    width: 390px;
-    height: 390px;
+    width: 320px;
+    height: 320px;
   }
 
   .attendance-orbit-middle {
-    width: 380px;
-  }
-
-  .attendance-clock-face {
     width: 310px;
   }
 
+  .attendance-clock-face {
+    width: 258px;
+  }
+
   .attendance-today-panel {
-    padding: 27px 23px 18px;
+    padding: 20px 20px 13px;
   }
 
   .attendance-lower-grid {
@@ -978,19 +1019,19 @@
   }
 
   .attendance-clock-panel {
-    min-height: 390px;
+    min-height: 310px;
     border-right: 0;
     border-bottom: 1px solid var(--att-border);
   }
 
   .attendance-clock-panel::before,
   .attendance-orbit-outer {
-    width: 360px;
-    height: 360px;
+    width: 290px;
+    height: 290px;
   }
 
   .attendance-clock-face {
-    width: 290px;
+    width: 234px;
   }
 
   .attendance-lower-grid {
@@ -1002,7 +1043,7 @@
   }
 
   .attendance-app .attendance-summary-grid .wf-summary {
-    min-height: 70px;
+    min-height: 62px;
     border-right: 1px solid var(--att-border);
     border-bottom: 0;
   }
@@ -1020,8 +1061,8 @@
 
   .attendance-topbar {
     flex-direction: row;
-    min-height: 64px;
-    padding: 7px 3px 10px;
+    min-height: 56px;
+    padding: 5px 3px 7px;
   }
 
   .attendance-brand {
@@ -1029,9 +1070,9 @@
   }
 
   .attendance-brand-mark {
-    width: 40px;
-    height: 40px;
-    font-size: 1rem;
+    width: 36px;
+    height: 36px;
+    font-size: .9rem;
   }
 
   .attendance-brand-rule,
@@ -1063,36 +1104,36 @@
   }
 
   .attendance-clock-panel {
-    min-height: 330px;
-    padding: 18px;
+    min-height: 272px;
+    padding: 14px;
   }
 
   .attendance-clock-panel::before,
   .attendance-orbit-outer {
-    width: 300px;
-    height: 300px;
+    width: 240px;
+    height: 240px;
   }
 
   .attendance-clock-panel::after,
   .attendance-orbit-middle {
-    width: 310px;
-    height: 130px;
+    width: 260px;
+    height: 110px;
   }
 
   .attendance-clock-face {
-    width: 245px;
+    width: 200px;
   }
 
   .attendance-live-clock {
-    font-size: 2rem;
+    font-size: 1.75rem;
   }
 
   .attendance-clock-divider {
-    margin-top: 18px;
+    margin-top: 13px;
   }
 
   .attendance-today-panel {
-    padding: 21px 16px 15px;
+    padding: 15px 13px 11px;
   }
 
   .attendance-today-heading {
@@ -1124,14 +1165,14 @@
   .attendance-today-details > div,
   .attendance-today-details > div:nth-child(even),
   .attendance-today-details > div:nth-child(odd) {
-    min-height: 66px;
+    min-height: 56px;
     margin: 0;
-    padding: 10px 0 10px 46px;
+    padding: 8px 0 8px 41px;
   }
 
   .attendance-today-details dt svg,
   .attendance-today-details > div:nth-child(even) dt svg {
-    top: 11px;
+    top: 8px;
     left: 5px;
   }
 
@@ -1145,7 +1186,7 @@
 
   .attendance-app .attendance-actions button {
     width: 100%;
-    min-height: 48px;
+    min-height: 42px;
   }
 
   .attendance-app #attendanceRefreshButton {
@@ -1177,6 +1218,20 @@
   .attendance-history-controls {
     grid-template-columns: 1fr 1fr;
     width: 100%;
+  }
+
+  .attendance-history-controls .wf-field:last-child {
+    grid-column: 1 / -1;
+  }
+
+  .attendance-history-footer {
+    align-items: stretch;
+    flex-direction: column;
+    gap: 6px;
+  }
+
+  .attendance-history-pagination {
+    justify-content: space-between;
   }
 }
 

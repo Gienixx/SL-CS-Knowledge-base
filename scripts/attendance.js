@@ -6,6 +6,7 @@ import {
 
 const RELEASED_SCHEDULE_STATUSES = Object.freeze(['published', 'changed'])
 const REQUEST_TIMEOUT_MS = 15000
+const HISTORY_PAGE_SIZE = 5
 const ATTENDANCE_STATUS_LABELS = Object.freeze({
   present: 'Present',
   absent: 'Absent',
@@ -33,9 +34,13 @@ const elements = {
   refreshButton: document.getElementById('attendanceRefreshButton'),
   actionMessage: document.getElementById('attendanceActionMessage'),
   historyMonth: document.getElementById('attendanceHistoryMonth'),
+  historyPeriod: document.getElementById('attendanceHistoryPeriod'),
   historyStatus: document.getElementById('attendanceHistoryStatus'),
   historyBody: document.getElementById('attendanceHistoryBody'),
-  historyMessage: document.getElementById('attendanceHistoryMessage')
+  historyMessage: document.getElementById('attendanceHistoryMessage'),
+  historyPrevious: document.getElementById('attendanceHistoryPrevious'),
+  historyNext: document.getElementById('attendanceHistoryNext'),
+  historyPageStatus: document.getElementById('attendanceHistoryPageStatus')
 }
 
 let access = null
@@ -43,6 +48,8 @@ let profileIds = []
 let visibleSchedules = []
 let recentAttendance = []
 let historyRows = []
+let historyPage = 1
+let activeHistoryRange = null
 let busy = false
 let clockTimer = null
 
@@ -95,6 +102,17 @@ function monthRange(value) {
   const endDate = parseDateKey(start)
   endDate.setUTCMonth(endDate.getUTCMonth() + 1, 0)
   return { start, end: endDate.toISOString().slice(0, 10) }
+}
+
+function defaultHistoryPeriod(dateKey = localDateKey()) {
+  return Number(String(dateKey).slice(-2)) <= 15 ? 'first' : 'second'
+}
+
+function historyRange(value, period = defaultHistoryPeriod()) {
+  const month = monthRange(value)
+  return period === 'second'
+    ? { start: `${month.start.slice(0, 8)}16`, end: month.end }
+    : { start: month.start, end: `${month.start.slice(0, 8)}15` }
 }
 
 function formatDate(value, includeWeekday = true) {
@@ -513,18 +531,22 @@ function createAdjustmentsCell(record) {
 function renderHistory() {
   const selectedStatus = elements.historyStatus.value
   const rows = historyRows.filter(record => !selectedStatus || record.attendance_status === selectedStatus)
+  const pageCount = Math.max(1, Math.ceil(rows.length / HISTORY_PAGE_SIZE))
+  historyPage = Math.min(Math.max(1, historyPage), pageCount)
+  const pageStart = (historyPage - 1) * HISTORY_PAGE_SIZE
+  const visibleRows = rows.slice(pageStart, pageStart + HISTORY_PAGE_SIZE)
   elements.historyBody.replaceChildren()
 
-  if (!rows.length) {
+  if (!visibleRows.length) {
     const row = document.createElement('tr')
     const cell = document.createElement('td')
     cell.colSpan = 8
     cell.className = 'wf-empty'
-    cell.textContent = 'No attendance records match the selected month and status.'
+    cell.textContent = 'No attendance records match the selected period and status.'
     row.appendChild(cell)
     elements.historyBody.appendChild(row)
   } else {
-    rows.forEach(record => {
+    visibleRows.forEach(record => {
       const row = document.createElement('tr')
       const schedule = record.work_schedules || null
       const scheduleNote = schedule?.is_rest_day
@@ -551,6 +573,20 @@ function renderHistory() {
       )
       elements.historyBody.appendChild(row)
     })
+  }
+
+  elements.historyPrevious.disabled = historyPage <= 1
+  elements.historyNext.disabled = historyPage >= pageCount
+  elements.historyPageStatus.textContent = `Page ${historyPage} of ${pageCount}`
+
+  const rangeLabel = activeHistoryRange
+    ? `${formatDate(activeHistoryRange.start, false)}–${formatDate(activeHistoryRange.end, false)}`
+    : 'Selected period'
+  if (!rows.length) {
+    setHistoryMessage(`${rangeLabel} · No matching attendance records.`)
+  } else {
+    const visibleEnd = Math.min(pageStart + HISTORY_PAGE_SIZE, rows.length)
+    setHistoryMessage(`${rangeLabel} · Showing ${pageStart + 1}–${visibleEnd} of ${rows.length} record${rows.length === 1 ? '' : 's'}.`)
   }
 
   const presentRows = historyRows.filter(record => record.attendance_status === 'present')
@@ -596,7 +632,9 @@ async function loadToday() {
 }
 
 async function loadHistory() {
-  const range = monthRange(elements.historyMonth.value)
+  const range = historyRange(elements.historyMonth.value, elements.historyPeriod.value)
+  activeHistoryRange = range
+  historyPage = 1
   setHistoryMessage('Loading attendance history...')
 
   const { data, error } = await supabase
@@ -612,7 +650,6 @@ async function loadHistory() {
   if (error) throw error
   historyRows = data || []
   renderHistory()
-  setHistoryMessage(`${historyRows.length} attendance record${historyRows.length === 1 ? '' : 's'} loaded.`)
 }
 
 function setBusy(value, label = '') {
@@ -719,6 +756,7 @@ async function initialize() {
 
   elements.timeZone.textContent = access.timezone || 'America/New_York'
   elements.historyMonth.value = localDateKey().slice(0, 7)
+  elements.historyPeriod.value = defaultHistoryPeriod()
 
   const workforceLink = document.getElementById('attendanceWorkforceLink')
   workforceLink.hidden = !(access.is_admin === true && hasWorkforcePermission(access, 'manage_employees'))
@@ -734,7 +772,29 @@ async function initialize() {
       setHistoryMessage(errorMessage(error), 'error')
     }
   })
-  elements.historyStatus.addEventListener('change', renderHistory)
+  elements.historyPeriod.addEventListener('change', async () => {
+    try {
+      await loadHistory()
+    } catch (error) {
+      setHistoryMessage(errorMessage(error), 'error')
+    }
+  })
+  elements.historyStatus.addEventListener('change', () => {
+    historyPage = 1
+    renderHistory()
+  })
+  elements.historyPrevious.addEventListener('click', () => {
+    if (historyPage <= 1) return
+    historyPage -= 1
+    renderHistory()
+  })
+  elements.historyNext.addEventListener('click', () => {
+    const selectedStatus = elements.historyStatus.value
+    const matchingRows = historyRows.filter(record => !selectedStatus || record.attendance_status === selectedStatus)
+    if (historyPage >= Math.max(1, Math.ceil(matchingRows.length / HISTORY_PAGE_SIZE))) return
+    historyPage += 1
+    renderHistory()
+  })
 
   updateLiveClock()
   clockTimer = window.setInterval(updateLiveClock, 1000)

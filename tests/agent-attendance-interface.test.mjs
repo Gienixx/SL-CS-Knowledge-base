@@ -24,7 +24,11 @@ test('attendance redesign preserves functional hooks and accessible theme contro
     'attendanceScheduleSelect',
     'attendanceRefreshButton',
     'attendanceHistoryMonth',
+    'attendanceHistoryPeriod',
     'attendanceHistoryStatus',
+    'attendanceHistoryPrevious',
+    'attendanceHistoryNext',
+    'attendanceHistoryPageStatus',
     'attendanceMonthCount',
     'attendancePresentCount',
     'attendanceLateCount',
@@ -38,6 +42,25 @@ test('attendance redesign preserves functional hooks and accessible theme contro
   assert.match(styles, /#attendanceThemeToggle:checked ~ \.attendance-app/)
   assert.match(styles, /@media \(max-width: 680px\)/)
   assert.match(styles, /@media \(prefers-reduced-motion: reduce\)/)
+})
+
+test('attendance history defaults to a half-month and paginates five entries at a time', async () => {
+  const [html, script, styles] = await Promise.all([
+    read('attendance.html'),
+    read('scripts/attendance.js'),
+    read('styles/attendance.css')
+  ])
+
+  assert.match(html, /<option value="first">Days 1–15<\/option>/)
+  assert.match(html, /<option value="second">Days 16–end<\/option>/)
+  assert.match(script, /const HISTORY_PAGE_SIZE = 5/)
+  assert.match(script, /Number\(String\(dateKey\)\.slice\(-2\)\) <= 15 \? 'first' : 'second'/)
+  assert.match(script, /rows\.slice\(pageStart, pageStart \+ HISTORY_PAGE_SIZE\)/)
+  assert.match(script, /\.gte\('work_date', range\.start\)/)
+  assert.match(script, /\.lte\('work_date', range\.end\)/)
+  assert.match(styles, /\.attendance-console \{[\s\S]*min-height: 390px/)
+  assert.match(styles, /\.attendance-app \.wf-table td \{[\s\S]*height: 48px/)
+  assert.match(styles, /\.attendance-history-footer \{[\s\S]*display: flex/)
 })
 
 test('attendance client uses workforce access scope and secure RPC functions', async () => {
