@@ -85,3 +85,17 @@ test('linked Auth IDs remain editable and deletable after restoration', async ()
   assert.match(lifecycle, /for \(const authUserId of authUserIds\)/)
   assert.match(lifecycle, /auth\/v1\/admin\/users\/\$\{encodeURIComponent\(authUserId\)\}/)
 })
+
+test('compatibility login sync reuses a reinvited employee stable profile ID', async () => {
+  const migration = await read(
+    'supabase/migrations/20260731090000_resolve_linked_profile_during_login_sync.sql'
+  )
+
+  assert.match(migration, /create or replace function public\.workforce_sync_login_record\(\)/i)
+  assert.match(migration, /where identity_link\.auth_user_id = v_auth_user_id/i)
+  assert.match(migration, /identity_link\.is_active is true/i)
+  assert.match(migration, /v_profile_user_id := coalesce\(v_profile_user_id, v_auth_user_id\)/i)
+  assert.match(migration, /insert into public\.profiles[\s\S]*v_profile_user_id/i)
+  assert.match(migration, /insert into public\.user_permissions[\s\S]*v_profile_user_id/i)
+  assert.doesNotMatch(migration, /values \(\s*v_auth_user_id,\s*v_name/i)
+})
