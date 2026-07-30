@@ -34,7 +34,10 @@ test('only invited employees receive a server-owned resend action', async () => 
   assert.match(html, /<th>User<\/th>/)
   assert.doesNotMatch(html, /<th>.*UUID.*<\/th>/i)
   assert.match(script, /onboarding_status/)
-  assert.match(script, /badge\('Invited', 'warning'\)/)
+  assert.match(
+    script,
+    /if \(profile\.onboarding_status === 'invited'\) \{[\s\S]*?badge\('Invited', 'warning'\)[\s\S]*?\} else \{[\s\S]*?STATUS_LABELS\[profile\.employment_status\]/
+  )
   assert.match(script, /profile\.employee_id/)
   assert.match(script, /authenticatedRequest\('\/resend-invite'/)
   assert.match(script, /actionMenu\.appendChild\(resendButton\)/)

@@ -291,11 +291,12 @@ function renderEmployees() {
     const statusCell = document.createElement('td')
     if (profile.onboarding_status === 'invited') {
       statusCell.appendChild(badge('Invited', 'warning'))
+    } else {
+      statusCell.appendChild(badge(
+        STATUS_LABELS[profile.employment_status] || profile.employment_status,
+        statusModifier(profile.employment_status)
+      ))
     }
-    statusCell.appendChild(badge(
-      STATUS_LABELS[profile.employment_status] || profile.employment_status,
-      statusModifier(profile.employment_status)
-    ))
 
     const permissionCell = document.createElement('td')
     permissionCell.className = 'wf-permission-cell'
