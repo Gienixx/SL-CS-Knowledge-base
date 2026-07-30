@@ -13,6 +13,18 @@ const ATTENDANCE_STATUS_LABELS = Object.freeze({
   on_leave: 'On leave',
   excused: 'Excused'
 })
+const CORRECTION_REASON_LABELS = Object.freeze({
+  forgot_clock_in: 'Forgot to clock in',
+  forgot_to_clock_in: 'Forgot to clock in',
+  forgot_clock_out: 'Forgot to clock out',
+  forgot_to_clock_out: 'Forgot to clock out',
+  system_issue: 'System issue',
+  connection_issue: 'Connection issue',
+  incorrect_schedule: 'Incorrect schedule',
+  approved_overtime: 'Approved overtime',
+  manager_confirmed: 'Manager confirmed',
+  other: 'Other'
+})
 
 const elements = {
   liveClock: document.getElementById('attendanceLiveClock'),
@@ -134,6 +146,22 @@ function formatTime(value, timezone = access?.timezone || 'America/New_York') {
     minute: '2-digit',
     second: '2-digit'
   }).format(new Date(value))
+}
+
+function formatCorrectionReason(value) {
+  const rawReason = String(value || '').trim().replace(/^reason\s*:\s*/i, '')
+  if (!rawReason) return '—'
+
+  const reasonCode = rawReason.split(/\s*(?::|·|\|)\s*/, 1)[0]
+    .trim()
+    .toLowerCase()
+    .replace(/[\s-]+/g, '_')
+  if (CORRECTION_REASON_LABELS[reasonCode]) return CORRECTION_REASON_LABELS[reasonCode]
+
+  const readableReason = reasonCode.replace(/_+/g, ' ').trim()
+  return readableReason
+    ? `${readableReason.charAt(0).toUpperCase()}${readableReason.slice(1)}`
+    : '—'
 }
 
 function isSpecialDay(schedule) {
@@ -556,10 +584,9 @@ function renderHistory() {
           : schedule?.status === 'changed'
             ? 'Changed schedule'
             : ''
-      const notes = [record.admin_notes, record.correction_reason].filter(Boolean).join(' · ')
       const noteCell = document.createElement('td')
       noteCell.className = 'attendance-note-cell'
-      noteCell.textContent = notes || '—'
+      noteCell.textContent = formatCorrectionReason(record.correction_reason)
 
       row.append(
         createTextCell(formatDate(record.work_date), record.corrected_at ? 'Corrected by an administrator' : ''),

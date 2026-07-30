@@ -74,6 +74,16 @@ test('attendance client uses workforce access scope and secure RPC functions', a
   assert.match(script, /\.in\('user_id', profileIds\)/)
 })
 
+test('attendance notes show one human-readable correction reason', async () => {
+  const script = await read('scripts/attendance.js')
+
+  assert.match(script, /forgot_to_clock_out: 'Forgot to clock out'/)
+  assert.match(script, /replace\(\/\^reason\\s\*:\\s\*\/i, ''\)/)
+  assert.match(script, /split\(\/\\s\*\(\?:\:\|·\|\\\|\)\\s\*\//)
+  assert.match(script, /noteCell\.textContent = formatCorrectionReason\(record\.correction_reason\)/)
+  assert.doesNotMatch(script, /\[record\.admin_notes, record\.correction_reason\]/)
+})
+
 test('attendance summary does not fall back to an ended prior-day schedule', async () => {
   const script = await read('scripts/attendance.js')
 
