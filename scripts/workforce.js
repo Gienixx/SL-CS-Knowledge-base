@@ -58,6 +58,18 @@ function errorMessage(error) {
   return error?.message || 'An unexpected error occurred.'
 }
 
+function formatInvitationSentAt(value) {
+  if (!value) return ''
+  const date = new Date(value)
+  if (Number.isNaN(date.getTime())) return ''
+  return new Intl.DateTimeFormat('en-PH', {
+    month: 'short',
+    day: 'numeric',
+    hour: 'numeric',
+    minute: '2-digit'
+  }).format(date)
+}
+
 async function authenticatedRequest(endpoint, options = {}) {
   const { data: sessionData, error: sessionError } = await supabase.auth.getSession()
   if (sessionError) throw sessionError
@@ -301,6 +313,13 @@ function renderEmployees() {
     const statusCell = document.createElement('td')
     if (profile.account_deleted_at) {
       statusCell.appendChild(badge('Archived', 'muted'))
+      const invitationSentAt = formatInvitationSentAt(profile.invitation_last_sent_at)
+      if (invitationSentAt) {
+        const inviteNote = document.createElement('small')
+        inviteNote.className = 'wf-status-note success'
+        inviteNote.textContent = `Restoration pending · Link last sent ${invitationSentAt}`
+        statusCell.appendChild(inviteNote)
+      }
     } else if (profile.onboarding_status === 'invited') {
       statusCell.appendChild(badge('Invited', 'warning'))
     } else {
@@ -578,6 +597,7 @@ async function reinviteDeletedEmployee(profile, button) {
       method: 'POST',
       body: JSON.stringify({ userId: profile.user_id, email })
     })
+    await loadWorkforceData()
     setMessage(
       pageMessage,
       result.invitationResent
@@ -585,7 +605,6 @@ async function reinviteDeletedEmployee(profile, button) {
         : `Restoration invitation sent to ${email}. The employee remains archived until the link is accepted.`,
       'success'
     )
-    await loadWorkforceData()
   } catch (error) {
     setMessage(pageMessage, errorMessage(error), 'error')
   } finally {

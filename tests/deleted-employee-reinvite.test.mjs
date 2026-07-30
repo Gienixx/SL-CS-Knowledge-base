@@ -59,15 +59,19 @@ test('future deletions retain a hash for controlled reinvitation and no live ema
 })
 
 test('workforce UI exposes archived employees only for controlled reinvitation', async () => {
-  const [client, html] = await Promise.all([
+  const [client, html, styles] = await Promise.all([
     read('scripts/workforce.js'),
-    read('workforce.html')
+    read('workforce.html'),
+    read('styles/workforce-admin.css')
   ])
 
   assert.match(html, /option value="archived">Archived/)
   assert.match(client, /badge\('Archived', 'muted'\)/)
   assert.match(client, /Reinvite employee/)
   assert.match(client, /\/reinvite-deleted-employee/)
+  assert.match(client, /Restoration pending · Link last sent/)
+  assert.match(client, /await loadWorkforceData\(\)[\s\S]*Restoration invitation resent/)
+  assert.match(styles, /\.wf-status-note/)
   assert.match(client, /remains archived until the link is accepted/i)
   assert.doesNotMatch(client, /\.is\('account_deleted_at', null\)/)
 })
@@ -98,4 +102,19 @@ test('compatibility login sync reuses a reinvited employee stable profile ID', a
   assert.match(migration, /insert into public\.profiles[\s\S]*v_profile_user_id/i)
   assert.match(migration, /insert into public\.user_permissions[\s\S]*v_profile_user_id/i)
   assert.doesNotMatch(migration, /values \(\s*v_auth_user_id,\s*v_name/i)
+})
+
+test('deleted employee reinvite delivery time remains visible after refresh', async () => {
+  const migration = await read(
+    'supabase/migrations/20260731101500_persist_deleted_employee_reinvite_timestamp.sql'
+  )
+
+  assert.match(migration, /after insert or update of last_sent_at/i)
+  assert.match(migration, /invitation_last_sent_at = new\.last_sent_at/i)
+  assert.match(migration, /account_deleted_at is not null/i)
+  assert.match(migration, /distinct on \(profile_user_id\)/i)
+  assert.match(
+    migration,
+    /revoke all on function private\.workforce_sync_deleted_employee_reinvite_timestamp\(\)[\s\S]*from public, anon, authenticated/i
+  )
 })
