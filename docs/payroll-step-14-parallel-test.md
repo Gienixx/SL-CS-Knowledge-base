@@ -83,19 +83,38 @@ The two-period test must prove:
 ### Period 2 — July 16–31
 
 - Status: not ready for calculation.
-- Employees loaded: 11 payroll records, including two test profiles that must
-  be explicitly included or excluded by the payroll owner.
+- Employees loaded: 10 payroll records after the payroll owner excluded the
+  `test test` testing-only profile. The separate `Test` profile remains
+  included pending a separate owner decision.
 - Calculated records: 0.
 - Review-required attendance: 103 records across 9 employees. Each currently
   appears as both an incomplete-attendance and unapproved-attendance blocking
   exception because payroll readiness requires approval.
 - Open clock-outs on July 30: 4.
-- Missing attendance entries: 5 across 2 profiles, consisting of four Almar
-  schedules dated July 28–31 and one `test test` schedule dated July 27.
-- Missing rate: the `test test` profile has no rate effective on July 31.
+- Missing attendance entries: 4, all for Almar schedules dated July 28–31.
+- Almar's July 27–31 schedules were corrected from the payroll owner's source
+  times. July 27 now exactly matches the corrected 6:00 AM–12:00 AM
+  attendance. July 28–31 remain schedule-only until attendance is recorded or
+  an eligible prepaid workflow is approved.
+- Blocking schedule overlap: Almar's owner-provided July 29 shift ends at
+  8:00 AM on July 30, while the July 30 shift starts at 6:00 AM. The exact
+  source schedule therefore contains a two-hour overlap and needs an owner
+  decision before payroll calculation.
+- Missing-rate exceptions: 0 after excluding the testing-only profile.
 - Valid carry-forward warnings: 33 unresolved prepaid balances across 8
   employees. These warnings are non-blocking when the balances are valid.
 - Production status remains Draft.
+
+### Testing-only payroll exclusion
+
+- `test test` remains an active workforce account for non-payroll testing.
+- A separate payroll-eligibility control now prevents the profile from being
+  loaded into future payroll periods.
+- Its untouched July 16–31 draft payroll shell was removed.
+- The exclusion reason and removed draft record ID were written to the payroll
+  audit history.
+- New payroll records are database-blocked for excluded profiles, including
+  records attempted outside the normal period-creation screen.
 
 ### Rollback-only scenario test
 
@@ -122,17 +141,19 @@ need to be evidenced in the two-period comparison.
    workspace attachments. It must be reattached or restored before manual
    totals can be compared.
 2. July 16–31 cannot be calculated until completed attendance is approved,
-   current open shifts are closed, missing attendance is resolved or approved
-   as prepaid, and the missing effective-dated rate is added.
-3. The payroll owner must confirm whether the `Test` and `test test` profiles
-   are legitimate paid employees for these periods. If they are test accounts,
-   their payroll records should be voided or excluded through an approved,
-   audited payroll workflow instead of assigning invented rates or attendance.
+   current open shifts are closed, and missing attendance is resolved or
+   approved as prepaid.
+3. The `test test` profile is resolved and excluded from payroll. The payroll
+   owner must still confirm whether the separate `Test` profile is a legitimate
+   paid employee for these periods.
 4. July 16–31 currently has a July 31 payment date. That leaves no work date
    after payment and therefore no date eligible for the period's prepaid
    schedule workflow. If payroll is actually paid two or three days early, the
    payroll owner must confirm the correct payment date before any period date
    is changed or July 31 is treated as prepaid.
+5. The owner-provided July 29 and July 30 Almar schedules overlap by two hours.
+   One of those times must be corrected or the overlap explicitly resolved
+   before calculation.
 
 ## Completion evidence
 
