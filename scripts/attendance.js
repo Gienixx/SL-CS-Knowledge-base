@@ -64,6 +64,8 @@ let historyPage = 1
 let activeHistoryRange = null
 let busy = false
 let clockTimer = null
+let activeLocalDate = ''
+let localDateRefreshPending = false
 
 function errorMessage(error) {
   if (/abort|timeout/i.test(`${error?.name || ''} ${error?.message || ''}`)) {
@@ -479,6 +481,17 @@ function renderToday() {
 
 function updateLiveClock() {
   const now = new Date()
+  const nextLocalDate = localDateKey(now)
+
+  if (!activeLocalDate) {
+    activeLocalDate = nextLocalDate
+  } else if (nextLocalDate !== activeLocalDate) {
+    activeLocalDate = nextLocalDate
+    localDateRefreshPending = true
+    elements.historyMonth.value = nextLocalDate.slice(0, 7)
+    elements.historyPeriod.value = defaultHistoryPeriod(nextLocalDate)
+  }
+
   elements.liveClock.textContent = new Intl.DateTimeFormat('en-US', {
     timeZone: access?.timezone || 'America/New_York',
     hour: 'numeric',
@@ -489,6 +502,11 @@ function updateLiveClock() {
   const record = openAttendanceRecord()
   if (record) elements.todayWorked.textContent = formatMinutes(workedMinutes(record, now))
   updateActionState()
+
+  if (localDateRefreshPending && !busy) {
+    localDateRefreshPending = false
+    void refreshAll()
+  }
 }
 
 function createTextCell(primary, secondary = '') {

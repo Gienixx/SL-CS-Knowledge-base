@@ -93,6 +93,20 @@ test('attendance summary does not fall back to an ended prior-day schedule', asy
   assert.doesNotMatch(script, /: visibleSchedules\.length === 0/)
 })
 
+test('attendance automatically refreshes when the agent work date changes', async () => {
+  const [html, script] = await Promise.all([
+    read('attendance.html'),
+    read('scripts/attendance.js')
+  ])
+
+  assert.match(html, /scripts\/attendance\.js\?v=6/)
+  assert.match(script, /const nextLocalDate = localDateKey\(now\)/)
+  assert.match(script, /nextLocalDate !== activeLocalDate/)
+  assert.match(script, /localDateRefreshPending = true/)
+  assert.match(script, /elements\.historyPeriod\.value = defaultHistoryPeriod\(nextLocalDate\)/)
+  assert.match(script, /if \(localDateRefreshPending && !busy\)[\s\S]*void refreshAll\(\)/)
+})
+
 test('attendance migration is identity-link aware and calculates shift adjustments', async () => {
   const migration = await read('supabase/migrations-legacy/2026070801_agent_attendance_interface.sql')
 
