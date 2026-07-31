@@ -13,6 +13,8 @@
   <link rel="stylesheet" href="./styles/home-workforce-calendar.css?v=3" media="not all" />
   <link rel="stylesheet" href="./styles/home-google-calendar.css?v=1" media="not all" />
   <link rel="stylesheet" href="./styles/home-reference-redesign.css?v=17" />
+  <link rel="stylesheet" href="./styles/site-theme.css?v=1" />
+  <script src="./scripts/site-theme.js?v=1"></script>
 </head>
 <body>
   <div class="app home-layout">
@@ -54,6 +56,28 @@
         <div class="who">
           <span id="homeUserAvatar" class="avatar">CS</span>
           <span><strong id="homeUserName">Support Team</strong><small id="homeUserRole">Team member</small></span>
+          <button
+            id="siteSettingsButton"
+            class="site-settings-button"
+            type="button"
+            aria-label="Appearance settings"
+            aria-controls="siteSettingsMenu"
+            aria-expanded="false"
+            title="Appearance settings"
+          >
+            <svg viewBox="0 0 24 24" aria-hidden="true">
+              <circle cx="12" cy="12" r="3"></circle>
+              <path d="M19.4 15a1.8 1.8 0 0 0 .4 2l.1.1-2.8 2.8-.1-.1a1.8 1.8 0 0 0-2-.4 1.8 1.8 0 0 0-1.1 1.6v.2h-4V21A1.8 1.8 0 0 0 8.8 19.4a1.8 1.8 0 0 0-2 .4l-.1.1-2.8-2.8.1-.1a1.8 1.8 0 0 0 .4-2A1.8 1.8 0 0 0 2.8 14h-.2v-4h.2A1.8 1.8 0 0 0 4.4 9a1.8 1.8 0 0 0-.4-2l-.1-.1 2.8-2.8.1.1a1.8 1.8 0 0 0 2 .4A1.8 1.8 0 0 0 9.8 3V2.8h4V3A1.8 1.8 0 0 0 15 4.6a1.8 1.8 0 0 0 2-.4l.1-.1 2.8 2.8-.1.1a1.8 1.8 0 0 0-.4 2 1.8 1.8 0 0 0 1.6 1h.2v4H21a1.8 1.8 0 0 0-1.6 1Z"></path>
+            </svg>
+          </button>
+        </div>
+        <div id="siteSettingsMenu" class="site-settings-menu" role="dialog" aria-label="Appearance settings" hidden>
+          <strong>Appearance</strong>
+          <small>Choose how SocialLoop looks.</small>
+          <div class="site-theme-choices" aria-label="Website theme">
+            <button class="site-theme-choice" type="button" data-theme-choice="light" aria-pressed="true">Light</button>
+            <button class="site-theme-choice" type="button" data-theme-choice="dark" aria-pressed="false">Dark</button>
+          </div>
         </div>
         <button id="homeLogoutBtn" class="logout" type="button">Log out</button>
       </div>
