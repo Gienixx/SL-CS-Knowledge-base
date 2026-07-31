@@ -7,7 +7,7 @@ const read = path => readFile(new URL(`../${path}`, import.meta.url), 'utf8')
 test('attendance page loads the unrestricted pre-shift client', async () => {
   const html = await read('attendance.html')
 
-  assert.match(html, /scripts\/attendance\.js\?v=6/)
+  assert.match(html, /scripts\/attendance\.js\?v=7/)
   assert.doesNotMatch(html, /attendance-clock-in-window\.js/)
   assert.match(html, /Clock-in is available before a published or changed shift/)
   assert.match(html, /20 hours in total per scheduled work date/)
@@ -21,7 +21,7 @@ test('attendance client loads yesterday through tomorrow without a 15-minute gat
   assert.match(script, /rangeStart = offsetDateKey\(today, -1\)/)
   assert.match(script, /rangeEnd = offsetDateKey\(today, 1\)/)
   assert.match(script, /if \(nowMs < startsAt\.getTime\(\)\) return \{ state: 'early'/)
-  assert.match(script, /\['early', 'active'\]\.includes/)
+  assert.match(script, /'next-day-special',[\s\S]*'special',[\s\S]*'early',[\s\S]*'active'/)
   assert.match(script, /subject to the 20-hour work-date limit/)
 })
 

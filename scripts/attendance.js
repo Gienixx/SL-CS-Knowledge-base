@@ -224,16 +224,36 @@ function scheduleForAttendance(record) {
   return record.work_schedules || scheduleById(record.schedule_id)
 }
 
+function hasCompletedAttendanceForDate(workDate) {
+  return recentAttendance.some(record =>
+    record.work_date === workDate &&
+    Boolean(record.clock_in) &&
+    Boolean(record.clock_out)
+  )
+}
+
 function scheduleAvailability(schedule, now = new Date()) {
   if (!schedule) return { state: 'unavailable', startsAt: null, endsAt: null }
 
   if (isSpecialDay(schedule)) {
     const today = localDateKey(now)
     const yesterday = offsetDateKey(today, -1)
+    const tomorrow = offsetDateKey(today, 1)
     const endsAt = schedule.shift_end ? new Date(schedule.shift_end) : null
 
     if (schedule.shift_date === today) {
       return { state: 'special', startsAt: null, endsAt }
+    }
+
+    if (
+      schedule.shift_date === tomorrow &&
+      hasCompletedAttendanceForDate(today)
+    ) {
+      return {
+        state: 'next-day-special',
+        startsAt: schedule.shift_start ? new Date(schedule.shift_start) : null,
+        endsAt
+      }
     }
 
     if (
@@ -297,7 +317,10 @@ function attendanceForSelectedSchedule() {
 }
 
 function currentAttendanceRecord() {
-  return openAttendanceRecord() || attendanceForSelectedSchedule() || recentAttendance
+  const openRecord = openAttendanceRecord()
+  if (openRecord) return openRecord
+  if (selectedSchedule()) return attendanceForSelectedSchedule()
+  return recentAttendance
     .slice()
     .sort((a, b) => new Date(b.clock_in || b.created_at) - new Date(a.clock_in || a.created_at))[0] || null
 }
@@ -347,10 +370,18 @@ function renderScheduleChooser() {
     })
 
     const optionValues = [...elements.scheduleSelect.options].map(option => option.value)
-    const availableSchedule = selectableSchedules.find(schedule =>
-      ['early', 'active'].includes(scheduleAvailability(schedule, now).state) ||
-      scheduleAvailability(schedule, now).state === 'special'
-    )
+    const availableSchedule = selectableSchedules.find(schedule => {
+      const alreadyRecorded = recentAttendance.some(record =>
+        record.schedule_id === schedule.id && Boolean(record.clock_in)
+      )
+      const availability = scheduleAvailability(schedule, now)
+      return !alreadyRecorded && [
+        'next-day-special',
+        'special',
+        'early',
+        'active'
+      ].includes(availability.state)
+    })
     const preferred = optionValues.includes(previous)
       ? previous
       : availableSchedule?.id || selectableSchedules[0].id
@@ -408,7 +439,11 @@ function updateScheduleHelp() {
   }
 
   const availability = scheduleAvailability(schedule)
-  if (availability.state === 'special') {
+  if (availability.state === 'next-day-special') {
+    elements.scheduleHelp.textContent = schedule.is_rest_day
+      ? 'Today’s attendance is complete. You can clock in early for tomorrow’s rest day, and all credited worked minutes will count as RDOT.'
+      : 'Today’s attendance is complete. You can clock in early for tomorrow’s holiday, and all credited worked minutes will count as overtime.'
+  } else if (availability.state === 'special') {
     elements.scheduleHelp.textContent = schedule.is_rest_day
       ? 'Clock-in is available for this rest day. All credited worked minutes count as RDOT, subject to the 20-hour work-date limit.'
       : 'Clock-in is available for this holiday. All credited worked minutes count as overtime, subject to the 20-hour work-date limit.'
@@ -433,7 +468,7 @@ function updateActionState() {
   const selectedRecord = attendanceForSelectedSchedule()
   const availability = schedule ? scheduleAvailability(schedule) : null
   const scheduleClockInOpen = schedule
-    ? ['special', 'early', 'active'].includes(availability.state)
+    ? ['next-day-special', 'special', 'early', 'active'].includes(availability.state)
     : true
   const selectedCompleted = Boolean(selectedRecord?.clock_in && selectedRecord.clock_out)
 
