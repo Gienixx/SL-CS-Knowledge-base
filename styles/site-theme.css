@@ -842,7 +842,11 @@ html[data-site-theme="dark"] .wf-view-switcher button {
   background: transparent;
 }
 
-html[data-site-theme="dark"] .wf-view-switcher button:hover:not(.active) {
+html[data-site-theme="dark"] .wf-view-switcher button:not(.active) {
+  border-bottom-color: transparent;
+}
+
+html[data-site-theme="dark"] .wf-view-switcher button:hover {
   color: var(--site-heading);
   background: transparent;
 }

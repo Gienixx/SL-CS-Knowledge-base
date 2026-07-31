@@ -154,7 +154,8 @@ body.modal-open{overflow:hidden}
 body{background:#f6f5fb;font-family:'Inter',sans-serif;color:#14142b}
 .wf-page{width:min(1320px,calc(100% - 40px));padding-top:26px}
 .wf-view-switcher{display:flex;width:100%;min-height:44px;align-items:flex-end;gap:4px;margin-bottom:20px;padding:0;border:0;border-bottom:1px solid var(--wf-border);border-radius:0;background:transparent;box-shadow:none}
-.wf-view-switcher button{min-height:43px;padding:0 15px;border:0;border-bottom:2px solid transparent;border-radius:0;background:transparent;color:var(--wf-muted);font-weight:600;font-size:.72rem;box-shadow:none;cursor:pointer}
+.wf-view-switcher button{min-height:43px;padding:0 15px;border:0;border-bottom:2px solid transparent;border-radius:0;background:transparent;color:var(--wf-muted);font-weight:600;font-size:.72rem;box-shadow:none;cursor:pointer;transition:color .16s ease,border-color .16s ease}
+.wf-view-switcher button:not(.active){border-bottom-color:transparent}
 .wf-view-switcher button:hover{color:var(--wf-navy);background:transparent}
 .wf-view-switcher button.active{border-bottom-color:var(--wf-gold);background:transparent;color:var(--wf-navy);box-shadow:none}
 .wf-view-switcher button:focus-visible{outline:2px solid var(--wf-navy);outline-offset:-3px}
