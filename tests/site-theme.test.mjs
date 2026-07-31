@@ -5,6 +5,24 @@ import test from 'node:test'
 const root = new URL('../', import.meta.url)
 const read = path => readFile(new URL(path, root), 'utf8')
 
+function relativeLuminance(hex) {
+  const channels = hex
+    .replace('#', '')
+    .match(/.{2}/g)
+    .map(value => Number.parseInt(value, 16) / 255)
+    .map(value => value <= 0.04045
+      ? value / 12.92
+      : ((value + 0.055) / 1.055) ** 2.4)
+
+  return (0.2126 * channels[0]) + (0.7152 * channels[1]) + (0.0722 * channels[2])
+}
+
+function contrastRatio(first, second) {
+  const brightest = Math.max(relativeLuminance(first), relativeLuminance(second))
+  const darkest = Math.min(relativeLuminance(first), relativeLuminance(second))
+  return (brightest + 0.05) / (darkest + 0.05)
+}
+
 test('every website page loads the shared attendance theme', async () => {
   const files = (await readdir(root, { withFileTypes: true }))
     .filter(entry => entry.isFile() && entry.name.endsWith('.html'))
@@ -13,7 +31,7 @@ test('every website page loads the shared attendance theme', async () => {
   assert.ok(files.length > 20)
   for (const file of files) {
     const page = await read(file)
-    assert.match(page, /styles\/site-theme\.css\?v=1/, `${file} should load the shared theme`)
+    assert.match(page, /styles\/site-theme\.css\?v=\d+/, `${file} should load the shared theme`)
     assert.match(page, /scripts\/site-theme\.js\?v=1/, `${file} should load the theme controller`)
   }
 })
@@ -85,4 +103,33 @@ test('theme preference persists and remains synchronized with Attendance', async
     stylesheet,
     /html\[data-site-theme="dark"\] \.wf-team-cell/
   )
+})
+
+test('Knowledge Base articles retain readable dark surfaces', async () => {
+  const page = await read('KB.html')
+  const stylesheet = await read('styles/site-theme.css')
+  const darkTokens = stylesheet.match(
+    /html\[data-site-theme="dark"\] \{([\s\S]*?)\n\}/
+  )?.[1] || ''
+  const token = name => darkTokens.match(
+    new RegExp(`${name}:\\s*(#[0-9a-f]{6})`, 'i')
+  )?.[1]
+
+  assert.match(page, /id="kbSearch"/)
+  assert.match(page, /styles\/site-theme\.css\?v=2/)
+  assert.match(
+    stylesheet,
+    /html\[data-site-theme="dark"\] body:has\(#kbSearch\) \{[\s\S]*--panel-bg: var\(--site-surface-solid\)[\s\S]*--text-primary: var\(--site-text\)/
+  )
+  assert.match(
+    stylesheet,
+    /body:has\(#kbSearch\) :is\([\s\S]*\.article-body \.step-card,[\s\S]*\.article-body \.rich-table-wrapper[\s\S]*background: var\(--site-surface-soft\) !important/
+  )
+  assert.match(
+    stylesheet,
+    /body:has\(#kbSearch\) \.article-body \.article-inline-link \{[\s\S]*color: var\(--site-blue\) !important/
+  )
+  assert.ok(contrastRatio(token('--site-surface-solid'), token('--site-text')) >= 4.5)
+  assert.ok(contrastRatio(token('--site-surface-solid'), token('--site-heading')) >= 4.5)
+  assert.ok(contrastRatio(token('--site-surface-solid'), token('--site-muted')) >= 4.5)
 })

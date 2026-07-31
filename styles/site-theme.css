@@ -533,6 +533,97 @@ html[data-site-theme="dark"] .delete-dialog {
   background: var(--site-surface-solid);
 }
 
+/* Published Knowledge Base articles keep the same dark surface and contrast hierarchy. */
+html[data-site-theme="dark"] body:has(#kbSearch) {
+  --page-bg: var(--site-bg);
+  --panel-bg: var(--site-surface-solid);
+  --border: var(--site-border);
+  --border-strong: color-mix(in srgb, var(--site-blue) 48%, var(--site-border));
+  --text-primary: var(--site-text);
+  --text-secondary: var(--site-muted);
+  --text-muted: color-mix(in srgb, var(--site-muted) 82%, transparent);
+  --pill-bg: var(--site-blue-soft);
+  --pill-text: var(--site-blue);
+  --cashout-bg: var(--site-green-soft);
+  --cashout-text: var(--site-green);
+  --link-bg: var(--site-amber-soft);
+  --link-text: var(--site-gold);
+  --logo-bg: var(--site-gold);
+  --logo-text: #071321;
+}
+
+html[data-site-theme="dark"] body:has(#kbSearch) :is(
+  .sidebar,
+  .detail
+) {
+  border-color: var(--site-border);
+  background: linear-gradient(
+    180deg,
+    rgba(9, 26, 45, .96),
+    rgba(6, 20, 36, .96)
+  );
+  box-shadow: var(--site-shadow);
+}
+
+html[data-site-theme="dark"] body:has(#kbSearch) :is(
+  .article-body .step-card,
+  .article-body .response-template-card,
+  .article-body .nested-rich-unit,
+  .article-body .rule-card,
+  .article-body .statement-card,
+  .article-body .rich-table-wrapper
+) {
+  border-color: var(--site-border) !important;
+  color: var(--site-text) !important;
+  background: var(--site-surface-soft) !important;
+  box-shadow: 0 10px 24px rgba(0, 0, 0, .12) !important;
+}
+
+html[data-site-theme="dark"] body:has(#kbSearch) .article-body .callout-card {
+  border-color: var(--site-border) !important;
+  border-left-color: var(--site-gold) !important;
+  color: var(--site-text) !important;
+  background: linear-gradient(
+    135deg,
+    color-mix(in srgb, var(--site-gold) 9%, var(--site-surface-soft)),
+    var(--site-surface-soft)
+  ) !important;
+  box-shadow: 0 10px 24px rgba(0, 0, 0, .12) !important;
+}
+
+html[data-site-theme="dark"] body:has(#kbSearch) :is(
+  .article-body .step-badge,
+  .article-body .rule-number
+) {
+  border-color: color-mix(in srgb, var(--site-gold) 42%, transparent) !important;
+  color: var(--site-gold) !important;
+  background: var(--site-amber-soft) !important;
+}
+
+html[data-site-theme="dark"] body:has(#kbSearch) :is(
+  .article-body .rich-table th,
+  .article-body .rich-table td
+) {
+  border-color: var(--site-border) !important;
+}
+
+html[data-site-theme="dark"] body:has(#kbSearch) .article-body .rich-table th {
+  color: var(--site-blue) !important;
+  background: var(--site-blue-soft) !important;
+}
+
+html[data-site-theme="dark"] body:has(#kbSearch) .article-body .article-inline-link {
+  color: var(--site-blue) !important;
+  text-decoration-color: color-mix(in srgb, var(--site-blue) 55%, transparent) !important;
+}
+
+html[data-site-theme="dark"] body:has(#kbSearch) .back-to-top {
+  border-color: color-mix(in srgb, var(--site-gold) 60%, var(--site-border));
+  color: var(--site-gold);
+  background: var(--site-surface-solid);
+  box-shadow: 0 10px 26px rgba(0, 0, 0, .24);
+}
+
 /* Payroll list rows should not fall back to white in the dark theme. */
 html[data-site-theme="dark"] .payroll-period-row {
   border-color: var(--site-border);
@@ -740,9 +831,10 @@ html[data-site-theme="dark"] .event-type.rest-day {
 
 /* Workforce and Schedule Management dark highlights. */
 html[data-site-theme="dark"] .wf-view-switcher {
-  border-color: var(--site-border);
-  background: var(--site-surface-solid);
-  box-shadow: 0 12px 28px rgba(0, 0, 0, .16);
+  border: 0;
+  border-bottom: 1px solid var(--site-border);
+  background: transparent;
+  box-shadow: none;
 }
 
 html[data-site-theme="dark"] .wf-view-switcher button {
@@ -751,14 +843,15 @@ html[data-site-theme="dark"] .wf-view-switcher button {
 }
 
 html[data-site-theme="dark"] .wf-view-switcher button:hover:not(.active) {
-  color: var(--site-blue);
-  background: var(--site-blue-soft);
+  color: var(--site-heading);
+  background: transparent;
 }
 
 html[data-site-theme="dark"] .wf-view-switcher button.active {
-  color: var(--site-blue);
-  background: color-mix(in srgb, var(--site-blue) 14%, var(--site-surface-soft));
-  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--site-blue) 38%, transparent);
+  border-bottom-color: var(--site-gold);
+  color: var(--site-heading);
+  background: transparent;
+  box-shadow: none;
 }
 
 html[data-site-theme="dark"] .wf-schedule-grid-table th {

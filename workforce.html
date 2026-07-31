@@ -8,17 +8,17 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@500&family=Sora:wght@600;700;800&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="./styles/button-theme.css?v=1">
-  <link rel="stylesheet" href="./styles/workforce-admin.css?v=10">
-  <link rel="stylesheet" href="./styles/site-theme.css?v=1">
+  <link rel="stylesheet" href="./styles/workforce-admin.css?v=11">
+  <link rel="stylesheet" href="./styles/site-theme.css?v=2">
   <script src="./scripts/site-theme.js?v=1"></script>
 </head>
 <body>
   <main class="wf-page">
-    <nav class="wf-view-switcher" aria-label="Workforce management views">
-      <button class="active" id="workforceViewButton" type="button" aria-controls="workforceView" aria-selected="true">Workforce Management</button>
-      <button id="scheduleViewButton" type="button" aria-controls="scheduleManagementSection" aria-selected="false" hidden>Schedule Management</button>
+    <nav class="wf-view-switcher" role="tablist" aria-label="Workforce management views">
+      <button class="active" id="workforceViewButton" type="button" role="tab" aria-controls="workforceView" aria-selected="true" tabindex="0">Workforce Management</button>
+      <button id="scheduleViewButton" type="button" role="tab" aria-controls="scheduleManagementSection" aria-selected="false" tabindex="-1" hidden>Schedule Management</button>
     </nav>
-    <div id="workforceView">
+    <div id="workforceView" role="tabpanel" aria-labelledby="workforceViewButton">
     <header class="wf-topbar">
       <div class="wf-title">
         <h1>Workforce Management</h1>
@@ -106,7 +106,7 @@
     </section>
     </div>
 
-    <section class="wf-card wf-management-view" id="scheduleManagementSection" hidden>
+    <section class="wf-card wf-management-view" id="scheduleManagementSection" role="tabpanel" aria-labelledby="scheduleViewButton" hidden>
       <div class="wf-card-header">
         <div>
           <h2>Schedule Management</h2>
@@ -465,6 +465,6 @@
 
   <script type="module" src="./scripts/workforce.js?v=18"></script>
   <script type="module" src="./scripts/workforce-schedules-entry.js?v=9"></script>
-  <script type="module" src="./scripts/workforce-view-switcher.js?v=1"></script>
+  <script type="module" src="./scripts/workforce-view-switcher.js?v=2"></script>
 </body>
 </html>

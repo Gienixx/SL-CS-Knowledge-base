@@ -11,7 +11,26 @@ function showManagementView(view) {
   scheduleButton.classList.toggle('active', showSchedules)
   workforceButton.setAttribute('aria-selected', String(!showSchedules))
   scheduleButton.setAttribute('aria-selected', String(showSchedules))
+  workforceButton.tabIndex = showSchedules ? -1 : 0
+  scheduleButton.tabIndex = showSchedules ? 0 : -1
 }
 
 workforceButton?.addEventListener('click', () => showManagementView('workforce'))
 scheduleButton?.addEventListener('click', () => showManagementView('schedules'))
+
+function handleTabKeydown(event) {
+  if (!['ArrowLeft', 'ArrowRight'].includes(event.key)) return
+
+  const visibleTabs = [workforceButton, scheduleButton].filter(button => !button.hidden)
+  if (visibleTabs.length < 2) return
+
+  event.preventDefault()
+  const nextTab = event.currentTarget === workforceButton
+    ? scheduleButton
+    : workforceButton
+  nextTab.click()
+  nextTab.focus()
+}
+
+workforceButton?.addEventListener('keydown', handleTabKeydown)
+scheduleButton?.addEventListener('keydown', handleTabKeydown)

@@ -153,9 +153,11 @@ body.modal-open{overflow:hidden}
 /* Workforce management shell */
 body{background:#f6f5fb;font-family:'Inter',sans-serif;color:#14142b}
 .wf-page{width:min(1320px,calc(100% - 40px));padding-top:26px}
-.wf-view-switcher{display:flex;width:max-content;gap:6px;margin-bottom:20px;padding:4px;border:1px solid #dedbea;border-radius:12px;background:#fff;box-shadow:0 10px 26px -16px rgba(20,20,43,.28)}
-.wf-view-switcher button{min-height:36px;padding:8px 16px;border:0;border-radius:9px;background:transparent;color:#14142b;font-weight:750;font-size:.8rem;box-shadow:none}
-.wf-view-switcher button.active{background:#14142b;color:#fff;box-shadow:none}
+.wf-view-switcher{display:flex;width:100%;min-height:44px;align-items:flex-end;gap:4px;margin-bottom:20px;padding:0;border:0;border-bottom:1px solid var(--wf-border);border-radius:0;background:transparent;box-shadow:none}
+.wf-view-switcher button{min-height:43px;padding:0 15px;border:0;border-bottom:2px solid transparent;border-radius:0;background:transparent;color:var(--wf-muted);font-weight:600;font-size:.72rem;box-shadow:none;cursor:pointer}
+.wf-view-switcher button:hover{color:var(--wf-navy);background:transparent}
+.wf-view-switcher button.active{border-bottom-color:var(--wf-gold);background:transparent;color:var(--wf-navy);box-shadow:none}
+.wf-view-switcher button:focus-visible{outline:2px solid var(--wf-navy);outline-offset:-3px}
 .wf-view-switcher button[hidden]{display:none}
 .wf-link,.wf-btn{min-height:40px;padding:9px 16px;border-radius:10px;font-size:.78rem;box-shadow:none}
 .wf-link{border:1.5px solid #eae8f5;background:#fff;color:#1d1d3d}
@@ -229,8 +231,8 @@ body{background:#f6f5fb;font-family:'Inter',sans-serif;color:#14142b}
 
 @media(max-width:680px){
   .wf-page{width:min(100% - 24px,1320px)}
-  .wf-view-switcher{width:100%}
-  .wf-view-switcher button{flex:1;padding-inline:8px}
+  .wf-view-switcher{width:100%;overflow-x:auto}
+  .wf-view-switcher button{flex:0 0 auto;padding-inline:12px}
   .wf-table th,.wf-table td,.wf-compact-table td{padding-inline:12px}
 }
 .wf-row-btn.danger{border-color:#b42318;color:#b42318}.wf-row-btn.danger:hover{background:#fff1f0}
