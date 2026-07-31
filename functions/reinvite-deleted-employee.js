@@ -31,6 +31,13 @@ function normalizeUuid(value) {
     : null
 }
 
+function maskEmail(value) {
+  const email = normalizeEmail(value)
+  const [localPart, domain] = email.split('@')
+  if (!localPart || !domain) return ''
+  return `${localPart.slice(0, 1)}${'*'.repeat(Math.max(3, localPart.length - 1))}@${domain}`
+}
+
 async function parseResponse(response) {
   const text = await response.text()
   if (!text) return null
@@ -122,7 +129,7 @@ export async function onRequestPost(context) {
         400
       )
     }
-    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email) || email.length > 320) {
+    if (email && (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email) || email.length > 320)) {
       throw new DeletedEmployeeReinviteError(
         'Enter the deleted employee’s original email address.',
         400
@@ -138,6 +145,13 @@ export async function onRequestPost(context) {
         p_email: email
       }
     )
+    const deliveryEmail = normalizeEmail(candidate?.delivery_email || email)
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(deliveryEmail) || deliveryEmail.length > 320) {
+      throw new DeletedEmployeeReinviteError(
+        'The restoration invitation does not have a valid delivery address.',
+        502
+      )
+    }
     const redirectUrl = new URL(
       '/change-password.html?invite=1&restore=1',
       context.request.url
@@ -151,7 +165,7 @@ export async function onRequestPost(context) {
         {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ email })
+          body: JSON.stringify({ email: deliveryEmail })
         }
       )
 
@@ -162,7 +176,7 @@ export async function onRequestPost(context) {
           p_actor_auth_user_id: authorization.user.id,
           p_profile_user_id: profileUserId,
           p_auth_user_id: candidate.auth_user_id,
-          p_email: email
+          p_email: deliveryEmail
         }
       )
     } else {
@@ -173,7 +187,7 @@ export async function onRequestPost(context) {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
-            email,
+            email: deliveryEmail,
             data: {
               name: candidate?.full_name,
               full_name: candidate?.full_name,
@@ -198,7 +212,7 @@ export async function onRequestPost(context) {
           p_actor_auth_user_id: authorization.user.id,
           p_profile_user_id: profileUserId,
           p_auth_user_id: createdAuthUserId,
-          p_email: email
+          p_email: deliveryEmail
         }
       )
       createdAuthUserId = null
@@ -211,7 +225,8 @@ export async function onRequestPost(context) {
       restorationPending: true,
       profileStillArchived: true,
       employeeId: restoration?.employee_id || candidate?.employee_id,
-      fullName: candidate?.full_name
+      fullName: candidate?.full_name,
+      deliveryEmailMasked: maskEmail(deliveryEmail)
     })
   } catch (error) {
     if (createdAuthUserId && authorization) {

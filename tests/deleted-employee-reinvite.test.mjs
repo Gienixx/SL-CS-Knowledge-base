@@ -68,10 +68,14 @@ test('workforce UI exposes archived employees only for controlled reinvitation',
   assert.match(html, /option value="archived">Archived/)
   assert.match(client, /badge\('Archived', 'muted'\)/)
   assert.match(client, /Reinvite employee/)
+  assert.match(client, /Resend restoration link/)
   assert.match(client, /\/reinvite-deleted-employee/)
   assert.match(client, /Restoration pending · Link last sent/)
   assert.match(client, /await loadWorkforceData\(\)[\s\S]*Restoration invitation resent/)
   assert.match(styles, /\.wf-status-note/)
+  assert.match(client, /restoration_invite_pending/)
+  assert.match(client, /window\.alert\(successMessage\)/)
+  assert.match(client, /Restoration invitation was not sent/)
   assert.match(client, /remains archived until the link is accepted/i)
   assert.doesNotMatch(client, /\.is\('account_deleted_at', null\)/)
 })
@@ -117,4 +121,23 @@ test('deleted employee reinvite delivery time remains visible after refresh', as
     migration,
     /revoke all on function private\.workforce_sync_deleted_employee_reinvite_timestamp\(\)[\s\S]*from public, anon, authenticated/i
   )
+})
+
+test('pending deleted employee reinvites resend without re-entering stored email', async () => {
+  const [migration, endpoint, client, html] = await Promise.all([
+    read('supabase/migrations/20260731103000_make_pending_reinvite_resend_reliable.sql'),
+    read('functions/reinvite-deleted-employee.js'),
+    read('scripts/workforce.js'),
+    read('workforce.html')
+  ])
+
+  assert.match(migration, /add column if not exists restoration_invite_pending boolean/i)
+  assert.match(migration, /from auth\.users auth_user[\s\S]*auth_user\.id = v_open_request\.auth_user_id/i)
+  assert.match(migration, /'delivery_email', v_delivery_email/i)
+  assert.match(migration, /restoration_invite_pending = new\.status = 'pending'/i)
+  assert.match(endpoint, /candidate\?\.delivery_email \|\| email/)
+  assert.match(endpoint, /deliveryEmailMasked: maskEmail\(deliveryEmail\)/)
+  assert.match(client, /hasPendingRestoration[\s\S]*Resend restoration link/)
+  assert.match(client, /\.\.\.\(email \? \{ email \} : \{\}\)/)
+  assert.match(html, /scripts\/workforce\.js\?v=18/)
 })

@@ -314,7 +314,7 @@ function renderEmployees() {
     if (profile.account_deleted_at) {
       statusCell.appendChild(badge('Archived', 'muted'))
       const invitationSentAt = formatInvitationSentAt(profile.invitation_last_sent_at)
-      if (invitationSentAt) {
+      if (profile.restoration_invite_pending === true && invitationSentAt) {
         const inviteNote = document.createElement('small')
         inviteNote.className = 'wf-status-note success'
         inviteNote.textContent = `Restoration pending · Link last sent ${invitationSentAt}`
@@ -384,15 +384,18 @@ function renderEmployees() {
       actionMenu.appendChild(resendButton)
     }
     if (profile.account_deleted_at) {
+      const hasPendingRestoration = profile.restoration_invite_pending === true
       const reinviteButton = document.createElement('button')
       reinviteButton.type = 'button'
       reinviteButton.className = 'wf-row-btn'
-      reinviteButton.textContent = 'Reinvite employee'
+      reinviteButton.textContent = hasPendingRestoration
+        ? 'Resend restoration link'
+        : 'Reinvite employee'
       reinviteButton.addEventListener('click', event => {
         event.stopPropagation()
         actionMenu.classList.remove('open')
         menuButton.setAttribute('aria-expanded', 'false')
-        reinviteDeletedEmployee(profile, reinviteButton)
+        reinviteDeletedEmployee(profile, reinviteButton, hasPendingRestoration)
       })
       actionMenu.appendChild(reinviteButton)
     } else if (profile.employment_status === 'inactive') {
@@ -571,23 +574,31 @@ async function resendInvitation(profile, button) {
   }
 }
 
-async function reinviteDeletedEmployee(profile, button) {
-  const email = normalizeText(window.prompt(
-    `Enter the original email address for ${profile.full_name}. The archived employee ID ${profile.employee_id} will remain unchanged.`
-  )).toLowerCase()
-  if (!email) {
-    setMessage(pageMessage, 'Deleted employee reinvitation cancelled.')
-    return
+async function reinviteDeletedEmployee(profile, button, hasPendingRestoration = false) {
+  let email = ''
+  if (hasPendingRestoration) {
+    if (!window.confirm(
+      `Resend the pending restoration link for ${profile.full_name}?`
+    )) return
+  } else {
+    email = normalizeText(window.prompt(
+      `Enter the original email address for ${profile.full_name}. The archived employee ID ${profile.employee_id} will remain unchanged.`
+    )).toLowerCase()
+    if (!email) {
+      setMessage(pageMessage, 'Deleted employee reinvitation cancelled.')
+      return
+    }
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+      setMessage(pageMessage, 'Enter a valid email address.', 'error')
+      return
+    }
+    if (!window.confirm(
+      `Send a restoration invitation to ${email}? The employee remains archived until the recipient accepts the link.`
+    )) return
   }
-  if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
-    setMessage(pageMessage, 'Enter a valid email address.', 'error')
-    return
-  }
-  if (!window.confirm(
-    `Send a restoration invitation to ${email}? The employee remains archived until the recipient accepts the link.`
-  )) return
 
-  setLoading(button, true, 'Sending...', 'Reinvite employee')
+  const readyLabel = hasPendingRestoration ? 'Resend restoration link' : 'Reinvite employee'
+  setLoading(button, true, 'Sending...', readyLabel)
   setMessage(
     pageMessage,
     `Sending a restoration invitation for ${profile.employee_id}...`
@@ -595,20 +606,30 @@ async function reinviteDeletedEmployee(profile, button) {
   try {
     const result = await authenticatedRequest('/reinvite-deleted-employee', {
       method: 'POST',
-      body: JSON.stringify({ userId: profile.user_id, email })
+      body: JSON.stringify({
+        userId: profile.user_id,
+        ...(email ? { email } : {})
+      })
     })
     await loadWorkforceData()
+    const destination = result.deliveryEmailMasked
+      ? ` to ${result.deliveryEmailMasked}`
+      : ''
+    const successMessage = result.invitationResent
+      ? `Restoration invitation resent${destination}. The employee remains archived until the link is accepted.`
+      : `Restoration invitation sent${destination}. The employee remains archived until the link is accepted.`
     setMessage(
       pageMessage,
-      result.invitationResent
-        ? `Restoration invitation resent to ${email}. The employee remains archived until the link is accepted.`
-        : `Restoration invitation sent to ${email}. The employee remains archived until the link is accepted.`,
+      successMessage,
       'success'
     )
+    window.alert(successMessage)
   } catch (error) {
-    setMessage(pageMessage, errorMessage(error), 'error')
+    const message = errorMessage(error)
+    setMessage(pageMessage, message, 'error')
+    window.alert(`Restoration invitation was not sent. ${message}`)
   } finally {
-    setLoading(button, false, 'Sending...', 'Reinvite employee')
+    setLoading(button, false, 'Sending...', readyLabel)
   }
 }
 
@@ -703,7 +724,7 @@ async function loadWorkforceData() {
     const [profileResult, teamResult] = await Promise.all([
       supabase
         .from('profiles')
-        .select('user_id, full_name, email, employee_id, employment_status, onboarding_status, invited_at, invitation_last_sent_at, account_deleted_at, base_role, is_agent, is_system_admin, team_id, supervisor_id, can_edit_articles, can_manage_payroll, timezone, updated_at')
+        .select('user_id, full_name, email, employee_id, employment_status, onboarding_status, invited_at, invitation_last_sent_at, restoration_invite_pending, account_deleted_at, base_role, is_agent, is_system_admin, team_id, supervisor_id, can_edit_articles, can_manage_payroll, timezone, updated_at')
         .eq('is_system_admin', false)
         .order('full_name'),
       supabase
