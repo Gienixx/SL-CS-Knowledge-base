@@ -18,7 +18,7 @@ function installToolbarStyles() {
       width: 1px;
       height: 28px;
       margin: 0 2px;
-      background: rgba(36, 27, 93, 0.12);
+      background: var(--site-border, rgba(36, 27, 93, 0.12));
     }
 
     .toolbar-icon-button,
@@ -30,10 +30,10 @@ function installToolbarStyles() {
       align-items: center;
       justify-content: center;
       padding: 0;
-      border: 1px solid rgba(36, 27, 93, 0.12);
+      border: 1px solid var(--site-border, rgba(36, 27, 93, 0.12));
       border-radius: 9px;
       color: var(--sl-navy);
-      background: rgba(255, 255, 255, 0.94);
+      background: var(--site-surface-solid, rgba(255, 255, 255, 0.94));
       font: inherit;
       font-size: 0.88rem;
       font-weight: 800;
@@ -78,8 +78,8 @@ function installToolbarStyles() {
     .toolbar-icon-button.template-icon {
       margin-left: auto;
       color: #fff;
-      border-color: var(--sl-navy);
-      background: var(--sl-navy);
+      border-color: var(--site-blue-strong, var(--sl-navy));
+      background: var(--site-blue-strong, var(--sl-navy));
     }
 
     .toolbar-menu {
@@ -116,14 +116,23 @@ function installToolbarStyles() {
       display: grid;
       gap: 4px;
       padding: 7px;
-      border: 1px solid rgba(36, 27, 93, 0.13);
+      border: 1px solid var(--site-border, rgba(36, 27, 93, 0.13));
       border-radius: 12px;
-      background: rgba(255, 255, 255, 0.99);
-      box-shadow: 0 16px 34px rgba(36, 27, 93, 0.15);
+      background: var(--site-surface-solid, rgba(255, 255, 255, 0.99));
+      box-shadow: var(--site-shadow, 0 16px 34px rgba(36, 27, 93, 0.15));
     }
 
     .toolbar-menu.special-menu .toolbar-menu-panel {
       min-width: 250px;
+    }
+
+    .toolbar-menu.emoji-menu .toolbar-menu-panel {
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      min-width: 250px;
+    }
+
+    .toolbar-menu.emoji-menu .toolbar-menu-item-icon {
+      font-size: 1.05rem;
     }
 
     .toolbar-menu-item {
@@ -160,7 +169,7 @@ function installToolbarStyles() {
     .toolbar-menu-separator {
       height: 1px;
       margin: 3px 4px;
-      background: rgba(36, 27, 93, 0.09);
+      background: var(--site-border, rgba(36, 27, 93, 0.09));
     }
 
     @media (max-width: 700px) {
@@ -270,7 +279,34 @@ export function setupGroupedArticleToolbar({ toolbar, onFormat }) {
         <path d="M14 11a5 5 0 0 0-7.1-.1l-2 2A5 5 0 0 0 12 20l1.1-1.1"></path>
       </svg>
     `,
-    title: 'Add a link to selected text (Ctrl/Cmd+K)'
+    title: 'Link selected text to an article or website (Ctrl/Cmd+K)'
+  })
+  const imageButton = createIconButton({
+    format: 'image',
+    icon: `
+      <svg viewBox="0 0 24 24" aria-hidden="true">
+        <rect x="3" y="4" width="18" height="16" rx="2"></rect>
+        <circle cx="8.5" cy="9" r="1.5"></circle>
+        <path d="m4 17 4.5-4.5 3 3 2-2L20 19"></path>
+      </svg>
+    `,
+    title: 'Insert an image inside the article'
+  })
+
+  const emojiMenu = createMenu({
+    icon: '<span aria-hidden="true">☺</span>',
+    title: 'Insert emoji',
+    className: 'emoji-menu',
+    items: [
+      { format: 'emoji:💡', icon: '💡', label: 'Idea' },
+      { format: 'emoji:✅', icon: '✅', label: 'Complete' },
+      { format: 'emoji:⚠️', icon: '⚠️', label: 'Warning' },
+      { format: 'emoji:📌', icon: '📌', label: 'Important' },
+      { format: 'emoji:💬', icon: '💬', label: 'Message' },
+      { format: 'emoji:🔗', icon: '🔗', label: 'Link' },
+      { format: 'emoji:🎉', icon: '🎉', label: 'Celebrate' },
+      { format: 'emoji:🛠️', icon: '🛠️', label: 'Tool' }
+    ]
   })
 
   const stylesMenu = createMenu({
@@ -347,6 +383,8 @@ export function setupGroupedArticleToolbar({ toolbar, onFormat }) {
     italicButton,
     underlineButton,
     linkButton,
+    imageButton,
+    emojiMenu,
     divider,
     stylesMenu,
     checklistMenu,

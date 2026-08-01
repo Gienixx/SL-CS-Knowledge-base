@@ -3,7 +3,8 @@ import test from 'node:test'
 import {
   findArticleByRouteValue,
   getArticleHref,
-  getArticleRouteValue
+  getArticleRouteValue,
+  getArticleSectionIds
 } from '../scripts/article-route.js'
 
 const articles = [
@@ -40,5 +41,22 @@ test('article routing resolves title slugs and legacy numeric links', () => {
   assert.equal(
     findArticleByRouteValue(articles, 'missing-article'),
     null
+  )
+})
+
+test('article section IDs are readable and duplicate safe', () => {
+  assert.deepEqual(
+    getArticleSectionIds([
+      'Overview',
+      'Mobile App Sign Up',
+      'Overview',
+      'Café Support'
+    ]),
+    [
+      'overview',
+      'mobile-app-sign-up',
+      'overview-2',
+      'cafe-support'
+    ]
   )
 })

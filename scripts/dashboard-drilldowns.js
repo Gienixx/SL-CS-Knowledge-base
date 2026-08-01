@@ -97,7 +97,7 @@ function ensureDrilldownStyles() {
 
     .dashboard-detail-link:focus-visible,
     .dashboard-report-link:focus-visible {
-      outline: 3px solid rgba(56, 47, 144, 0.34);
+      outline: 3px solid var(--site-focus, rgba(56, 47, 144, 0.34));
       outline-offset: 3px;
     }
 
@@ -120,27 +120,55 @@ function ensureDrilldownStyles() {
     .driver-legend-row.dashboard-detail-link:focus-visible,
     .distribution-legend-row.dashboard-detail-link:hover,
     .distribution-legend-row.dashboard-detail-link:focus-visible {
-      border-color: rgba(56, 47, 144, 0.28);
-      background-color: #f7f6fc;
-      box-shadow: 0 8px 18px rgba(29, 26, 52, 0.08);
+      border-color: color-mix(
+        in srgb,
+        var(--site-blue, #382f90) 46%,
+        var(--site-border, rgba(56, 47, 144, 0.18))
+      );
+      background-color: var(--site-blue-soft, #f7f6fc);
+      box-shadow: var(--site-shadow, 0 8px 18px rgba(29, 26, 52, 0.08));
       transform: translateY(-1px);
     }
 
     .dashboard-report-link::after {
       content: 'View details';
       display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      align-self: center;
       margin-top: 0.55rem;
-      font-size: 0.72rem;
-      font-weight: 700;
-      letter-spacing: 0.04em;
-      text-transform: uppercase;
-      color: #382f90;
+      font-size: 0.62rem;
+      font-weight: 800;
+      line-height: 1;
+      letter-spacing: 0.01em;
+      color: var(--site-heading, #382f90);
+      transition: color 160ms ease;
+    }
+
+    .dashboard-report-link:hover::after,
+    .dashboard-report-link:focus-visible::after {
+      color: var(--site-blue, #382f90);
+    }
+
+    .dashboard-report-link:active::after {
+      color: var(--site-gold, #f5ad3d);
+    }
+
+    .dashboard-report-link[aria-disabled='true'] {
+      cursor: not-allowed;
+    }
+
+    .dashboard-report-link[aria-disabled='true']::after {
+      color: var(--site-muted, #777083);
+      opacity: 0.58;
     }
 
     .driver-pie-slice.dashboard-detail-link:focus-visible,
     .distribution-pie-slice.dashboard-detail-link:focus-visible {
       outline: none;
-      filter: drop-shadow(0 0 5px rgba(56, 47, 144, 0.55));
+      filter: drop-shadow(
+        0 0 5px color-mix(in srgb, var(--site-blue, #382f90) 58%, transparent)
+      );
     }
 
     @media (prefers-reduced-motion: reduce) {
@@ -149,6 +177,10 @@ function ensureDrilldownStyles() {
       .productivity-row.dashboard-detail-link,
       .driver-legend-row.dashboard-detail-link,
       .distribution-legend-row.dashboard-detail-link {
+        transition: none;
+      }
+
+      .dashboard-report-link::after {
         transition: none;
       }
     }

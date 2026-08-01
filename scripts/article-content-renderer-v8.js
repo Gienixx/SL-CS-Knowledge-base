@@ -54,9 +54,103 @@ function installArticleLinkStyles() {
       outline-offset: 3px;
       border-radius: 3px;
     }
+
+    .article-inline-image {
+      display: grid;
+      gap: 8px;
+      max-width: 100%;
+      margin-top: 18px;
+      margin-bottom: 18px;
+    }
+
+    .article-inline-image img {
+      display: block;
+      width: 100%;
+      height: auto;
+      border: 1px solid var(--site-border, rgba(36, 27, 93, 0.14));
+      border-radius: 14px;
+      background: var(--site-surface-soft, rgba(255, 255, 255, 0.7));
+    }
+
+    .article-inline-image figcaption {
+      color: var(--site-muted, var(--sl-muted));
+      font-size: 0.82rem;
+      line-height: 1.45;
+    }
+
+    .article-image-align-left {
+      margin-right: auto;
+      text-align: left;
+    }
+
+    .article-image-align-center {
+      margin-right: auto;
+      margin-left: auto;
+      text-align: center;
+    }
+
+    .article-image-align-right {
+      margin-left: auto;
+      text-align: right;
+    }
+
+    .article-image-width-small { width: min(320px, 100%); }
+    .article-image-width-medium { width: min(520px, 100%); }
+    .article-image-width-large { width: min(760px, 100%); }
+    .article-image-width-full { width: 100%; }
   `
 
   document.head.appendChild(style)
+}
+
+function parseInlineImageSyntax(text) {
+  const match = String(text || '').trim().match(
+    /^!\[([^\]\n]{1,180})\]\((https?:\/\/[^\s)]+)(?:\s+"([^"\n]{1,240})")?\)\{align=(left|center|right)\s+width=(small|medium|large|full)\}$/i
+  )
+
+  if (!match) return null
+
+  try {
+    const url = new URL(match[2])
+    if (!['http:', 'https:'].includes(url.protocol)) return null
+
+    return {
+      alt: match[1].trim(),
+      url: url.href,
+      caption: match[3]?.trim() || '',
+      alignment: match[4].toLowerCase(),
+      width: match[5].toLowerCase()
+    }
+  } catch {
+    return null
+  }
+}
+
+function replaceInlineImages(element) {
+  for (const paragraph of includeRoot(element, 'p')) {
+    const imageData = parseInlineImageSyntax(paragraph.textContent)
+    if (!imageData) continue
+
+    const figure = document.createElement('figure')
+    figure.className =
+      `article-inline-image article-image-align-${imageData.alignment} ` +
+      `article-image-width-${imageData.width}`
+
+    const image = document.createElement('img')
+    image.src = imageData.url
+    image.alt = imageData.alt
+    image.loading = 'lazy'
+    image.decoding = 'async'
+    figure.appendChild(image)
+
+    if (imageData.caption) {
+      const caption = document.createElement('figcaption')
+      caption.textContent = imageData.caption
+      figure.appendChild(caption)
+    }
+
+    paragraph.replaceWith(figure)
+  }
 }
 
 function createArticleLink(label, href) {
@@ -177,10 +271,12 @@ function replaceInlineLinks(element) {
 }
 
 export function stripInlineFormatting(text) {
-  return stripBaseInlineFormatting(text).replace(
-    /\[([^\]\n]+)\]\(([^)\n]+)\)/g,
-    '$1'
-  )
+  return stripBaseInlineFormatting(text)
+    .replace(
+      /!\[([^\]\n]+)\]\(([^)\n]+)\)\{align=(?:left|center|right)\s+width=(?:small|medium|large|full)\}/gi,
+      '$1'
+    )
+    .replace(/\[([^\]\n]+)\]\(([^)\n]+)\)/g, '$1')
 }
 
 export function createExcerpt(units, rawContent) {
@@ -192,6 +288,7 @@ export function createExcerpt(units, rawContent) {
 export function renderArticleUnit(unit, nested = false) {
   installArticleLinkStyles()
   const element = renderBaseArticleUnit(unit, nested)
+  replaceInlineImages(element)
   replaceInlineLinks(element)
   return element
 }

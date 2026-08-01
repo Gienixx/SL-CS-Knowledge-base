@@ -8,7 +8,7 @@ import {
   removeArticleImage,
   setupArticleImageField,
   uploadArticleImage
-} from './article-image-upload.js?v=1'
+} from './article-image-upload.js?v=2'
 
 function installPreviewStyles() {
   if (document.getElementById('articleEditorPreviewStyles')) {
@@ -41,11 +41,8 @@ function installPreviewStyles() {
       padding: 22px;
       border: 1px solid var(--sl-border);
       border-radius: 22px;
-      background: linear-gradient(
-        180deg,
-        rgba(255, 255, 255, 0.97),
-        rgba(250, 246, 238, 0.98)
-      );
+      color: var(--site-text, var(--sl-text));
+      background: var(--site-surface-solid, var(--sl-card));
       box-shadow: var(--sl-shadow);
     }
 
@@ -126,11 +123,7 @@ function installPreviewStyles() {
       padding: 18px;
       border: 1px solid rgba(36, 27, 93, 0.1);
       border-radius: 14px;
-      background: linear-gradient(
-        180deg,
-        rgba(255, 255, 255, 0.98),
-        rgba(250, 246, 238, 0.96)
-      );
+      background: var(--site-surface-soft, var(--sl-cream-soft));
       box-shadow: 0 10px 24px rgba(36, 27, 93, 0.05);
       overflow: hidden;
     }
@@ -246,7 +239,7 @@ function installPreviewStyles() {
       padding: 13px;
       border: 1px solid rgba(36, 27, 93, 0.1);
       border-radius: 11px;
-      background: rgba(255, 255, 255, 0.82);
+      background: var(--site-surface-soft, rgba(255, 255, 255, 0.82));
     }
 
     .article-preview-panel .rule-number {

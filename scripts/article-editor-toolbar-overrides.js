@@ -20,7 +20,8 @@ if (!document.getElementById('articleEditorToolbarOverrides')) {
     .content-input {
       position: relative;
       z-index: 1;
-      background: rgba(255, 255, 255, 0.96) !important;
+      color: var(--site-text, var(--sl-text)) !important;
+      background: var(--site-surface-solid, var(--sl-card)) !important;
     }
 
     @media (max-width: 700px) {

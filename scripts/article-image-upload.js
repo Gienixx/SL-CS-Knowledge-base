@@ -25,17 +25,30 @@ function installImageFieldStyles() {
       display: grid;
       gap: 10px;
       padding: 16px;
-      border: 1px dashed rgba(36, 27, 93, 0.2);
+      border: 1px dashed var(--site-border, rgba(36, 27, 93, 0.2));
       border-radius: 14px;
-      background: rgba(255, 255, 255, 0.76);
+      background: var(--site-surface-soft, rgba(255, 255, 255, 0.76));
     }
 
     .article-image-upload input[type="file"] {
       padding: 10px;
-      border: 1px solid rgba(36, 27, 93, 0.1);
+      border: 1px solid var(--site-border, rgba(36, 27, 93, 0.1));
       border-radius: 10px;
-      background: #fff;
+      color: var(--site-text, var(--sl-text));
+      background: var(--site-surface-solid, #fff);
       font-size: 0.9rem;
+      cursor: pointer;
+    }
+
+    .article-image-upload input[type="file"]::file-selector-button {
+      margin-right: 10px;
+      padding: 7px 11px;
+      border: 1px solid var(--site-border, rgba(36, 27, 93, 0.14));
+      border-radius: 7px;
+      color: var(--site-heading, var(--sl-navy));
+      background: var(--site-surface-soft, #f8f4eb);
+      font: inherit;
+      font-weight: 700;
       cursor: pointer;
     }
 
@@ -48,7 +61,7 @@ function installImageFieldStyles() {
     }
 
     .article-image-status[data-state="error"] {
-      color: #a42828;
+      color: var(--site-red, #a42828);
       font-weight: 650;
     }
 
@@ -57,7 +70,7 @@ function installImageFieldStyles() {
       overflow: hidden;
       border: 1px solid var(--sl-border);
       border-radius: 12px;
-      background: rgba(244, 238, 225, 0.7);
+      background: var(--site-surface-soft, rgba(244, 238, 225, 0.7));
     }
 
     .article-image-preview {

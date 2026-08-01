@@ -3,12 +3,13 @@ import {
   parseArticleContent,
   renderArticleUnit,
   stripInlineFormatting
-} from './article-content-renderer-v8.js?v=2'
+} from './article-content-renderer-v8.js?v=3'
 import {
   findArticleByRouteValue,
   getArticleHref,
-  getArticleRouteValue
-} from './article-route.js?v=1'
+  getArticleRouteValue,
+  getArticleSectionIds
+} from './article-route.js?v=2'
 import './article-nesting-styles.js?v=1'
 import './article-published-parser-styles.js?v=1'
 
@@ -51,7 +52,14 @@ const elements = {
   list: document.getElementById('kbList'),
   detail: document.getElementById('kbDetail'),
   search: document.getElementById('kbSearch'),
-  backToTop: document.getElementById('backToTop')
+  backToTop: document.getElementById('backToTop'),
+  referenceDialog: document.getElementById('articleReferenceDialog'),
+  referenceCategory: document.getElementById('articleReferenceCategory'),
+  referenceTitle: document.getElementById('articleReferenceTitle'),
+  referenceSummary: document.getElementById('articleReferenceSummary'),
+  referenceClose: document.getElementById('closeArticleReferenceDialog'),
+  referenceView: document.getElementById('viewFullArticleReference'),
+  referenceNewTab: document.getElementById('openArticleReferenceNewTab')
 }
 
 function getInitialCategory() {
@@ -69,16 +77,21 @@ function getRequestedArticleRoute() {
   ).trim()
 }
 
-function getKnowledgeBaseUrl({ articleTitle = '', category = '' } = {}) {
+function getKnowledgeBaseUrl({
+  articleTitle = '',
+  category = '',
+  section = ''
+} = {}) {
   const url = new URL('./KB.html', window.location.href)
 
   if (articleTitle) {
     url.searchParams.set('article', getArticleRouteValue(articleTitle))
+    if (section) url.hash = section
   } else if (category && category !== 'ALL') {
     url.searchParams.set('category', category)
   }
 
-  return `${url.pathname}${url.search}`
+  return `${url.pathname}${url.search}${url.hash}`
 }
 
 function updateKnowledgeBaseRoute(options, method = 'pushState') {
@@ -87,6 +100,209 @@ function updateKnowledgeBaseRoute(options, method = 'pushState') {
     '',
     getKnowledgeBaseUrl(options)
   )
+}
+
+function addArticleSectionAnchors(container) {
+  const headings = [...container.querySelectorAll('h2, h3')]
+  const sectionIds = getArticleSectionIds(
+    headings.map(heading => heading.textContent)
+  )
+
+  headings.forEach((heading, index) => {
+    heading.id = sectionIds[index]
+    heading.classList.add('article-section-heading')
+  })
+}
+
+function scrollToRequestedArticleSection() {
+  let sectionId = ''
+
+  try {
+    sectionId = decodeURIComponent(window.location.hash.slice(1))
+  } catch {
+    return false
+  }
+
+  if (!sectionId) return false
+  const section = document.getElementById(sectionId)
+  if (!section || !elements.detail.contains(section)) return false
+
+  const behavior = window.matchMedia('(prefers-reduced-motion: reduce)').matches
+    ? 'auto'
+    : 'smooth'
+
+  window.requestAnimationFrame(() => {
+    section.scrollIntoView({ behavior, block: 'start' })
+  })
+  return true
+}
+
+async function copyTextToClipboard(value) {
+  if (navigator.clipboard?.writeText) {
+    try {
+      await navigator.clipboard.writeText(value)
+      return
+    } catch {
+      // Fall back for browsers that expose Clipboard API but deny this call.
+    }
+  }
+
+  const temporaryInput = document.createElement('textarea')
+  temporaryInput.value = value
+  temporaryInput.readOnly = true
+  temporaryInput.style.position = 'fixed'
+  temporaryInput.style.opacity = '0'
+  document.body.appendChild(temporaryInput)
+  temporaryInput.select()
+
+  const copied = document.execCommand('copy')
+  temporaryInput.remove()
+
+  if (!copied) {
+    throw new Error('The browser did not allow clipboard access.')
+  }
+}
+
+function createCopyArticleLinkButton(article) {
+  const button = document.createElement('button')
+  button.type = 'button'
+  button.className = 'article-copy-button'
+  button.setAttribute('aria-label', `Copy link to ${article.title}`)
+
+  const icon = document.createElement('i')
+  icon.className = 'ti ti-link'
+  icon.setAttribute('aria-hidden', 'true')
+  const label = document.createElement('span')
+  label.textContent = 'Copy link'
+  button.append(icon, label)
+
+  button.addEventListener('click', async () => {
+    const articleUrl = new URL(getArticleHref(article), window.location.href).href
+    button.disabled = true
+
+    try {
+      await copyTextToClipboard(articleUrl)
+      button.dataset.state = 'success'
+      icon.className = 'ti ti-check'
+      label.textContent = 'Copied'
+    } catch (error) {
+      console.error('Unable to copy article link:', error)
+      button.dataset.state = 'error'
+      icon.className = 'ti ti-alert-circle'
+      label.textContent = 'Copy failed'
+    } finally {
+      window.setTimeout(() => {
+        button.disabled = false
+        delete button.dataset.state
+        icon.className = 'ti ti-link'
+        label.textContent = 'Copy link'
+      }, 1800)
+    }
+  })
+
+  return button
+}
+
+function getInternalArticleReference(link) {
+  if (!link?.href) return null
+
+  let url
+  try {
+    url = new URL(link.href, window.location.href)
+  } catch {
+    return null
+  }
+
+  const knowledgeBaseUrl = new URL('./KB.html', window.location.href)
+  if (
+    url.origin !== knowledgeBaseUrl.origin ||
+    url.pathname.toLowerCase() !== knowledgeBaseUrl.pathname.toLowerCase()
+  ) {
+    return null
+  }
+
+  const routeValue = (
+    url.searchParams.get('article') ||
+    url.searchParams.get('id') ||
+    ''
+  ).trim()
+  const article = findArticleByRouteValue(publishedArticles, routeValue)
+
+  if (!article) return null
+
+  const canonicalUrl = new URL(getArticleHref(article), window.location.href)
+  canonicalUrl.hash = url.hash
+
+  return {
+    article,
+    href: `${canonicalUrl.pathname}${canonicalUrl.search}${canonicalUrl.hash}`
+  }
+}
+
+function openArticleReferencePreview(reference) {
+  const { article, href } = reference
+  const requiredElements = [
+    elements.referenceDialog,
+    elements.referenceCategory,
+    elements.referenceTitle,
+    elements.referenceSummary,
+    elements.referenceView,
+    elements.referenceNewTab
+  ]
+
+  if (requiredElements.some(element => !element)) return
+
+  elements.referenceCategory.textContent =
+    categoryLabels[article.category.toUpperCase()] || article.category
+  elements.referenceTitle.textContent = article.title
+  elements.referenceSummary.textContent = stripInlineFormatting(
+    article.description
+  )
+  elements.referenceView.href = href
+  elements.referenceNewTab.href = href
+
+  if (!elements.referenceDialog.open) {
+    elements.referenceDialog.showModal()
+  }
+  elements.referenceClose?.focus()
+}
+
+function initializeArticleReferencePreview() {
+  elements.detail.addEventListener('click', event => {
+    const link = event.target.closest('a.article-inline-link')
+
+    if (
+      !link ||
+      event.defaultPrevented ||
+      event.button !== 0 ||
+      event.ctrlKey ||
+      event.metaKey ||
+      event.shiftKey ||
+      event.altKey
+    ) {
+      return
+    }
+
+    const reference = getInternalArticleReference(link)
+    if (!reference) return
+
+    event.preventDefault()
+    openArticleReferencePreview(reference)
+  })
+
+  elements.referenceClose?.addEventListener('click', () => {
+    elements.referenceDialog?.close()
+  })
+
+  elements.referenceNewTab?.addEventListener('click', () => {
+    elements.referenceDialog?.close()
+  })
+
+  elements.referenceDialog?.addEventListener('click', event => {
+    if (event.target === elements.referenceDialog) {
+      elements.referenceDialog.close()
+    }
+  })
 }
 
 function missingArticleColumn(error) {
@@ -318,7 +534,11 @@ function renderDetail(item) {
     return
   }
 
-  const detailParts = [tag, title, byline]
+  const titleRow = document.createElement('div')
+  titleRow.className = 'article-title-row'
+  titleRow.append(title, createCopyArticleLinkButton(item))
+
+  const detailParts = [tag, titleRow, byline]
   if (item.imageUrl) {
     const cover = document.createElement('img')
     cover.className = 'article-cover'
@@ -341,6 +561,8 @@ function renderDetail(item) {
     emptyContent.textContent = item.content || 'This article does not have content yet.'
     body.append(emptyContent)
   }
+
+  addArticleSectionAnchors(body)
 
   detailParts.push(body)
   elements.detail.append(...detailParts)
@@ -368,6 +590,7 @@ function initializeBackToTop() {
 
 document.addEventListener('DOMContentLoaded', async () => {
   initializeBackToTop()
+  initializeArticleReferencePreview()
   elements.search.addEventListener('input', () => {
     searchQuery = elements.search.value
     selectedId = ''
@@ -391,7 +614,10 @@ document.addEventListener('DOMContentLoaded', async () => {
       const canonicalRoute = getArticleRouteValue(requestedArticle.title)
       if (requestedArticleRoute !== canonicalRoute) {
         updateKnowledgeBaseRoute(
-          { articleTitle: requestedArticle.title },
+          {
+            articleTitle: requestedArticle.title,
+            section: window.location.hash
+          },
           'replaceState'
         )
       }
@@ -400,6 +626,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     }
 
     render()
+    scrollToRequestedArticleSection()
   } catch (error) {
     console.error('Unable to load knowledge base articles:', error)
     const message = document.createElement('div')
@@ -426,7 +653,10 @@ window.addEventListener('popstate', () => {
     const canonicalRoute = getArticleRouteValue(requestedArticle.title)
     if (requestedArticleRoute !== canonicalRoute) {
       updateKnowledgeBaseRoute(
-        { articleTitle: requestedArticle.title },
+        {
+          articleTitle: requestedArticle.title,
+          section: window.location.hash
+        },
         'replaceState'
       )
     }
@@ -436,4 +666,7 @@ window.addEventListener('popstate', () => {
   }
 
   render()
+  scrollToRequestedArticleSection()
 })
+
+window.addEventListener('hashchange', scrollToRequestedArticleSection)

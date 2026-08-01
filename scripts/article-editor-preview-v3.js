@@ -1,13 +1,13 @@
 import {
   setupArticleEditorPreview as setupBasePreview
-} from './article-editor-preview.js?v=2'
+} from './article-editor-preview.js?v=3'
 import {
   parseArticleContent,
   renderArticleUnit
-} from './article-content-renderer-v8.js?v=2'
+} from './article-content-renderer-v8.js?v=3'
 import './article-nesting-styles.js?v=1'
 import './article-preview-parser-styles.js?v=1'
-import './article-editor-toolbar-overrides.js?v=1'
+import './article-editor-toolbar-overrides.js?v=2'
 import './article-editor-layout-enhancer.js?v=1'
 import './article-editor-update-status.js?v=1'
 

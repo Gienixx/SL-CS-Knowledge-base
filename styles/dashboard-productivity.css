@@ -221,6 +221,36 @@
   color: #a33b3b;
 }
 
+html[data-site-theme="dark"] .productivity-summary-card {
+  border-color: var(--site-border);
+  background: var(--site-surface-solid);
+}
+
+html[data-site-theme="dark"] .productivity-row {
+  border-color: var(--site-border);
+  background-color: var(--site-surface-solid);
+}
+
+html[data-site-theme="dark"] .productivity-row:nth-child(1) {
+  border-color: color-mix(in srgb, var(--site-gold) 46%, var(--site-border));
+  background-color: color-mix(in srgb, var(--site-gold) 9%, var(--site-surface-solid));
+}
+
+html[data-site-theme="dark"] .productivity-bar-track {
+  background: color-mix(in srgb, var(--site-muted) 22%, var(--site-surface-soft));
+}
+
+html[data-site-theme="dark"] .productivity-row.dashboard-detail-link:hover,
+html[data-site-theme="dark"] .productivity-row.dashboard-detail-link:focus-visible {
+  border-color: color-mix(in srgb, var(--site-blue) 54%, var(--site-border));
+  background-color: color-mix(in srgb, var(--site-blue) 9%, var(--site-surface-solid));
+  box-shadow: 0 10px 24px rgba(0, 0, 0, .22);
+}
+
+html[data-site-theme="dark"] .productivity-state-error {
+  color: var(--site-red);
+}
+
 @media (max-width: 1180px) {
   .productivity-overview .section-content {
     padding: 14px;

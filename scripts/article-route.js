@@ -14,6 +14,17 @@ export function getArticleHref(article) {
   return `./KB.html?article=${encodeURIComponent(routeValue)}`
 }
 
+export function getArticleSectionIds(headings) {
+  const counts = new Map()
+
+  return headings.map(heading => {
+    const baseId = getArticleRouteValue(heading)
+    const count = (counts.get(baseId) || 0) + 1
+    counts.set(baseId, count)
+    return count === 1 ? baseId : `${baseId}-${count}`
+  })
+}
+
 export function findArticleByRouteValue(articles, value) {
   const routeValue = String(value ?? '').trim()
   if (!routeValue) return null

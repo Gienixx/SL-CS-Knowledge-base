@@ -10,7 +10,6 @@ import {
   loadAgentDimensionRows,
   loadFilterOptions,
   loadTargets,
-  logout,
   normalize,
   parseRange,
   previousRange,
@@ -47,7 +46,6 @@ function ui() {
     content: document.getElementById('reportContent'),
     title: document.getElementById('reportTitle'),
     subtitle: document.getElementById('reportSubtitle'),
-    logout: document.getElementById('reportLogoutLink'),
     form: document.getElementById('reportFilterForm'),
     range: document.getElementById('reportRange'),
     start: document.getElementById('reportStartDate'),
@@ -683,7 +681,6 @@ function showError(elements, error) {
 
 async function initialize() {
   const elements = ui()
-  elements.logout.addEventListener('click', event => { event.preventDefault(); logout() })
   try {
     const request = parseRequest()
     const user = await requireApprovedUser()

@@ -92,7 +92,10 @@ test('article editor and shared renderer expose link authoring', async () => {
     ])
 
   assert.match(toolbar, /format: 'link'/)
+  assert.doesNotMatch(toolbar, /format: 'article-link'/)
   assert.match(editor, /case 'link':\s+insertLink\(\)/)
+  assert.match(editor, /openInternalArticleLinkPicker\('external'\)/)
+  assert.doesNotMatch(editor, /case 'article-link'/)
   assert.match(editor, /pressedKey === 'k'/)
   assert.match(renderer, /findArticleLinks/)
   assert.match(renderer, /document\.createRange\(\)/)

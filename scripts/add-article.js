@@ -1,13 +1,17 @@
 import { supabase } from './supabaseClient.js'
 import {
   setupArticleEditorPreview
-} from './article-editor-preview-v3.js?v=3'
+} from './article-editor-preview-v3.js?v=5'
 import {
   setupGroupedArticleToolbar
-} from './article-editor-toolbar.js?v=2'
+} from './article-editor-toolbar.js?v=6'
+import {
+  setupInlineArticleImagePicker
+} from './article-inline-image-editor.js?v=1'
 import {
   normalizeArticleLinkHref
 } from './article-link-utils.js?v=2'
+import { getArticleHref } from './article-route.js?v=2'
 import { requireWorkforcePermission } from './workforce-permissions.js'
 
 const form = document.getElementById('articleForm')
@@ -19,8 +23,41 @@ const tagInput = document.getElementById('tag')
 const contentInput = document.getElementById('content')
 const submitButton = form?.querySelector('button[type="submit"]')
 const toolbar = document.querySelector('.format-toolbar')
+const internalArticleLinkDialog = document.getElementById(
+  'internalArticleLinkDialog'
+)
+const internalArticleLinkForm = document.getElementById(
+  'internalArticleLinkForm'
+)
+const internalArticleLinkSelect = document.getElementById(
+  'internalArticleLinkSelect'
+)
+const internalArticleLinkStatus = document.getElementById(
+  'internalArticleLinkStatus'
+)
+const internalArticleLinkPanel = document.getElementById(
+  'internalArticleLinkPanel'
+)
+const externalArticleLinkPanel = document.getElementById(
+  'externalArticleLinkPanel'
+)
+const externalArticleLinkUrl = document.getElementById(
+  'externalArticleLinkUrl'
+)
+const articleLinkTypeInputs = [
+  ...document.querySelectorAll('input[name="articleLinkType"]')
+]
+const insertInternalArticleLinkButton = document.getElementById(
+  'insertInternalArticleLinkButton'
+)
+const cancelInternalArticleLinkButton = document.getElementById(
+  'cancelInternalArticleLinkButton'
+)
 
 let authorInput = null
+let internalArticleLinkSelection = null
+let activeArticleLinkType = 'internal'
+let inlineArticleImagePicker = null
 
 function updateDescriptionCount() {
   if (!descriptionInput || !descriptionCount) {
@@ -91,41 +128,211 @@ function wrapSelectedText(
 }
 
 function insertLink() {
-  if (!contentInput) {
+  openInternalArticleLinkPicker('external')
+}
+
+function insertEmoji(emoji) {
+  if (!emoji) return
+  replaceSelection(emoji, emoji.length, 0)
+}
+
+function setInternalArticleLinkState(status, disabled) {
+  if (
+    internalArticleLinkStatus &&
+    activeArticleLinkType === 'internal'
+  ) {
+    internalArticleLinkStatus.textContent = status
+  }
+
+  if (internalArticleLinkSelect) {
+    internalArticleLinkSelect.disabled =
+      disabled || activeArticleLinkType !== 'internal'
+  }
+
+  if (
+    insertInternalArticleLinkButton &&
+    activeArticleLinkType === 'internal'
+  ) {
+    insertInternalArticleLinkButton.disabled = disabled
+  }
+}
+
+function getNormalizedExternalLink() {
+  const href = normalizeArticleLinkHref(externalArticleLinkUrl?.value)
+  return /^https?:\/\//i.test(href) ? href : ''
+}
+
+function updateExternalArticleLinkState() {
+  if (activeArticleLinkType !== 'external') return
+
+  const href = getNormalizedExternalLink()
+  internalArticleLinkStatus.textContent = href
+    ? 'Valid outside link. It will open in a new tab when published.'
+    : 'Paste a valid website address, such as https://example.com/help.'
+  insertInternalArticleLinkButton.disabled = !href
+}
+
+function setArticleLinkType(type, { loadArticles = true } = {}) {
+  activeArticleLinkType = type === 'external' ? 'external' : 'internal'
+
+  for (const input of articleLinkTypeInputs) {
+    input.checked = input.value === activeArticleLinkType
+  }
+
+  if (internalArticleLinkPanel) {
+    internalArticleLinkPanel.hidden = activeArticleLinkType !== 'internal'
+  }
+  if (externalArticleLinkPanel) {
+    externalArticleLinkPanel.hidden = activeArticleLinkType !== 'external'
+  }
+  if (externalArticleLinkUrl) {
+    externalArticleLinkUrl.disabled = activeArticleLinkType !== 'external'
+  }
+
+  if (activeArticleLinkType === 'external') {
+    if (internalArticleLinkSelect) internalArticleLinkSelect.disabled = true
+    updateExternalArticleLinkState()
+    externalArticleLinkUrl?.focus()
     return
   }
 
-  const selectedText = getSelectedText().trim()
-  const selectedHref = normalizeArticleLinkHref(selectedText)
-  const enteredLink = selectedHref
-    ? selectedText
-    : window.prompt(
-        'Enter the link URL (for example, https://example.com):',
-        'https://'
+  if (loadArticles && !internalArticleLinkSelect?.options.length) {
+    loadPublishedArticleOptions().catch(error => {
+      console.error('Unable to load published articles:', error)
+      setInternalArticleLinkState(
+        `Unable to load articles: ${getErrorMessage(error)}`,
+        true
       )
-
-  if (enteredLink === null) {
-    contentInput.focus()
+    })
     return
   }
 
-  const href = normalizeArticleLinkHref(enteredLink)
+  setInternalArticleLinkState(
+    'Choose the published article to link.',
+    !internalArticleLinkSelect?.options.length
+  )
+  internalArticleLinkSelect?.focus()
+}
+
+async function loadPublishedArticleOptions() {
+  if (!internalArticleLinkSelect) {
+    return
+  }
+
+  internalArticleLinkSelect.replaceChildren()
+  setInternalArticleLinkState('Loading published articles…', true)
+
+  const { data, error } = await supabase
+    .from('articles')
+    .select('id, title')
+    .eq('published', true)
+    .order('title', { ascending: true })
+
+  if (error) {
+    console.error('Unable to load published articles:', error)
+    setInternalArticleLinkState(
+      `Unable to load articles: ${getErrorMessage(error)}`,
+      true
+    )
+    return
+  }
+
+  const articles = (data || []).filter(article => article.title?.trim())
+
+  if (!articles.length) {
+    setInternalArticleLinkState('No published articles are available.', true)
+    return
+  }
+
+  for (const article of articles) {
+    const option = document.createElement('option')
+    option.value = getArticleHref(article)
+    option.textContent = article.title.trim()
+    internalArticleLinkSelect.appendChild(option)
+  }
+
+  setInternalArticleLinkState(
+    `${articles.length} published ${articles.length === 1 ? 'article' : 'articles'} available.`,
+    false
+  )
+  if (activeArticleLinkType === 'internal') {
+    internalArticleLinkSelect.focus()
+  }
+}
+
+function openInternalArticleLinkPicker(type = 'internal') {
+  if (
+    !contentInput ||
+    !internalArticleLinkDialog ||
+    !internalArticleLinkSelect
+  ) {
+    return
+  }
+
+  const start = contentInput.selectionStart
+  const end = contentInput.selectionEnd
+  internalArticleLinkSelection = {
+    start,
+    end,
+    label: contentInput.value.slice(start, end).trim()
+  }
+
+  const selectedHref = normalizeArticleLinkHref(
+    internalArticleLinkSelection.label
+  )
+  externalArticleLinkUrl.value = /^https?:\/\//i.test(selectedHref)
+    ? selectedHref
+    : ''
+
+  internalArticleLinkDialog.showModal()
+  setArticleLinkType(type, { loadArticles: false })
+
+  if (activeArticleLinkType === 'internal') {
+    loadPublishedArticleOptions().catch(error => {
+      console.error('Unable to load published articles:', error)
+      setInternalArticleLinkState(
+        `Unable to load articles: ${getErrorMessage(error)}`,
+        true
+      )
+    })
+  }
+}
+
+function insertInternalArticleLink() {
+  if (
+    !contentInput ||
+    !internalArticleLinkSelect ||
+    !internalArticleLinkSelection
+  ) {
+    return
+  }
+
+  const selectedOption = internalArticleLinkSelect.selectedOptions[0]
+  const href = activeArticleLinkType === 'external'
+    ? getNormalizedExternalLink()
+    : selectedOption?.value
 
   if (!href) {
-    window.alert(
-      'Enter a valid web link, email link, or relative page link.'
-    )
-    contentInput.focus()
+    updateExternalArticleLinkState()
     return
   }
 
-  const label = selectedText || String(enteredLink).trim()
+  const label =
+    internalArticleLinkSelection.label ||
+    (activeArticleLinkType === 'external'
+      ? externalArticleLinkUrl.value.trim()
+      : selectedOption.textContent.trim())
   const markdownHref = href
     .replaceAll('(', '%28')
     .replaceAll(')', '%29')
-  const replacement = `[${label}](${markdownHref})`
-
-  replaceSelection(replacement, 1, label.length)
+  contentInput.focus()
+  contentInput.setSelectionRange(
+    internalArticleLinkSelection.start,
+    internalArticleLinkSelection.end
+  )
+  replaceSelection(`[${label}](${markdownHref})`, 1, label.length)
+  internalArticleLinkDialog?.close()
+  internalArticleLinkSelection = null
 }
 
 function getLeadingSpacing() {
@@ -398,6 +605,11 @@ Before resolving the ticket, confirm the following:
 }
 
 function applyFormatting(format) {
+  if (format.startsWith('emoji:')) {
+    insertEmoji(format.slice('emoji:'.length))
+    return
+  }
+
   switch (format) {
     case 'bold':
       wrapSelectedText('**', '**', 'bold text')
@@ -410,6 +622,9 @@ function applyFormatting(format) {
       break
     case 'link':
       insertLink()
+      break
+    case 'image':
+      inlineArticleImagePicker?.open()
       break
     case 'section':
       insertHeading('## ', 'Section title')
@@ -471,6 +686,12 @@ function applyFormatting(format) {
 }
 
 function initializeEditorControls() {
+  inlineArticleImagePicker = setupInlineArticleImagePicker({
+    supabase,
+    contentInput,
+    replaceSelection
+  })
+
   setupGroupedArticleToolbar({
     toolbar,
     onFormat: applyFormatting
@@ -514,7 +735,7 @@ function initializeEditorControls() {
 
   if (help) {
     help.innerHTML =
-      '<strong>Formatting guide:</strong> Use the icon buttons for text emphasis and links. Select text and choose Link (or press Ctrl/Cmd+K) to attach a URL. Typed web addresses become clickable automatically. Open the grouped menus for headings, lists, checklists, and special article layouts. Place the cursor before a structured block’s closing <strong>:::</strong> to nest another format inside it.'
+      '<strong>Formatting guide:</strong> Use the icon buttons for text emphasis, links, inline images, and emojis. The image icon uploads an image with alternative text, an optional caption, alignment, and display size. Select text and choose the chain-link icon (or press Ctrl/Cmd+K), then choose a published Knowledge Base article or paste an outside website address. Use the smile icon to insert an emoji at the cursor, or paste any emoji directly. Typed web addresses become clickable automatically. Open the grouped menus for headings, lists, checklists, and special article layouts. Place the cursor before a structured block’s closing <strong>:::</strong> to nest another format inside it.'
   }
 
   descriptionInput?.addEventListener(
@@ -522,6 +743,32 @@ function initializeEditorControls() {
     updateDescriptionCount
   )
   updateDescriptionCount()
+
+  for (const input of articleLinkTypeInputs) {
+    input.addEventListener('change', () => {
+      if (input.checked) setArticleLinkType(input.value)
+    })
+  }
+
+  externalArticleLinkUrl?.addEventListener(
+    'input',
+    updateExternalArticleLinkState
+  )
+
+  internalArticleLinkForm?.addEventListener('submit', event => {
+    event.preventDefault()
+    insertInternalArticleLink()
+  })
+
+  cancelInternalArticleLinkButton?.addEventListener('click', () => {
+    internalArticleLinkDialog?.close()
+    contentInput?.focus()
+  })
+
+  internalArticleLinkDialog?.addEventListener('close', () => {
+    internalArticleLinkSelection = null
+    if (externalArticleLinkUrl) externalArticleLinkUrl.value = ''
+  })
 }
 
 function getErrorMessage(error) {

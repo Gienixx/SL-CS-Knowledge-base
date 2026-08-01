@@ -31,6 +31,20 @@ test('the workbook script targets the current synchronization endpoint', async (
   assert.match(script, /Daily Drivers/)
 })
 
+test('the workbook installs 9 PM and midnight Manila sync triggers', async () => {
+  const script = await read('apps-script/dashboard-trigger-migration.gs')
+
+  assert.match(script, /DASHBOARD_SYNC_TRIGGER_TIMEZONE = 'Asia\/Manila'/)
+  assert.match(script, /handler: 'syncDashboardAt9Pm'/)
+  assert.match(script, /hour: 21/)
+  assert.match(script, /handler: 'syncDashboardAtMidnight'/)
+  assert.match(script, /hour: 0/)
+  assert.match(script, /function migrateDashboardSyncTriggers\(\)/)
+  assert.match(script, /\.everyDays\(1\)/)
+  assert.match(script, /\.nearMinute\(schedule\.minute\)/)
+  assert.match(script, /retiredTriggerCount === 0/)
+})
+
 test('retired V3 and Zendesk synchronization routes are removed', async () => {
   for (const path of [
     'functions/api/sync-dashboard-v3.js',

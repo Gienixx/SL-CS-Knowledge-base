@@ -24,23 +24,7 @@
     .article-page {
       min-height: 100vh;
       padding: 40px 10%;
-      background:
-        radial-gradient(
-          circle at 12% 18%,
-          rgba(255, 194, 26, 0.20),
-          transparent 22rem
-        ),
-        radial-gradient(
-          circle at 86% 12%,
-          rgba(36, 27, 93, 0.10),
-          transparent 24rem
-        ),
-        linear-gradient(
-          180deg,
-          var(--sl-cream) 0%,
-          #fffdfa 48%,
-          var(--sl-cream-soft) 100%
-        );
+      background: transparent;
     }
 
     .article-shell {
@@ -72,12 +56,8 @@
       padding: 28px;
       border: 1px solid var(--sl-border);
       border-radius: 22px;
-      background:
-        linear-gradient(
-          180deg,
-          rgba(255, 255, 255, 0.96),
-          rgba(250, 246, 238, 0.98)
-        );
+      color: var(--sl-text);
+      background: var(--sl-card);
       box-shadow: var(--sl-shadow);
     }
 
@@ -106,7 +86,7 @@
       border-radius: 14px;
       outline: none;
       color: var(--sl-text);
-      background: rgba(255, 255, 255, 0.9);
+      background: var(--sl-card);
       font-family: "Poppins", Arial, sans-serif;
       font-size: 1rem;
     }
@@ -142,7 +122,7 @@
       overflow: hidden;
       border: 1px solid var(--sl-border);
       border-radius: 14px;
-      background: rgba(255, 255, 255, 0.9);
+      background: var(--sl-card);
     }
 
     .format-toolbar {
@@ -151,12 +131,8 @@
       align-items: center;
       gap: 8px;
       padding: 12px;
-      background:
-        linear-gradient(
-          180deg,
-          rgba(255, 255, 255, 0.98),
-          rgba(248, 243, 233, 0.96)
-        );
+      border-bottom: 1px solid var(--sl-border);
+      background: var(--site-surface-soft, var(--sl-cream-soft));
     }
 
     .format-button {
@@ -164,7 +140,7 @@
       padding: 7px 12px;
       border: 1px solid rgba(36, 27, 93, 0.12);
       border-radius: 9px;
-      background: rgba(255, 255, 255, 0.94);
+      background: var(--sl-card);
       color: var(--sl-navy);
       font-size: 0.84rem;
       font-weight: 700;
@@ -184,8 +160,8 @@
     .format-button.template-button {
       margin-left: auto;
       color: #fff;
-      background: var(--sl-navy);
-      border-color: var(--sl-navy);
+      background: var(--site-blue-strong, var(--sl-navy));
+      border-color: var(--site-blue-strong, var(--sl-navy));
     }
 
     .format-help {
@@ -218,7 +194,7 @@
       border: 1px solid rgba(255, 194, 26, 0.55);
       border-radius: 999px;
       color: #fff;
-      background: var(--sl-navy);
+      background: var(--site-blue-strong, var(--sl-navy));
       text-decoration: none;
       font-weight: 700;
       cursor: pointer;
@@ -230,8 +206,8 @@
     }
 
     .article-link {
-      color: var(--sl-navy);
-      background: rgba(255, 255, 255, 0.88);
+      color: var(--site-heading, var(--sl-navy));
+      background: var(--site-surface-solid, var(--sl-card));
     }
 
     .article-status {
@@ -239,6 +215,130 @@
       color: var(--sl-muted);
       font-weight: 600;
       line-height: 1.5;
+    }
+
+    .internal-article-link-dialog {
+      width: min(520px, calc(100vw - 32px));
+      padding: 0;
+      border: 1px solid var(--site-border, var(--sl-border));
+      border-radius: 18px;
+      color: var(--site-text, var(--sl-text));
+      background: var(--site-surface-solid, #fffdfa);
+      box-shadow: 0 24px 70px rgba(7, 19, 33, 0.24);
+    }
+
+    .internal-article-link-dialog::backdrop {
+      background: rgba(7, 19, 33, 0.62);
+      backdrop-filter: blur(3px);
+    }
+
+    .internal-article-link-form {
+      display: grid;
+      gap: 18px;
+      padding: 24px;
+    }
+
+    .internal-article-link-heading {
+      display: grid;
+      gap: 6px;
+    }
+
+    .internal-article-link-heading h2 {
+      margin: 0;
+      color: var(--site-heading, var(--sl-navy));
+      font-size: 1.3rem;
+    }
+
+    .internal-article-link-heading p,
+    .internal-article-link-status {
+      margin: 0;
+      color: var(--site-muted, var(--sl-muted));
+      font-size: 0.86rem;
+      line-height: 1.5;
+    }
+
+    .internal-article-link-field {
+      display: grid;
+      gap: 8px;
+      color: var(--site-heading, var(--sl-navy));
+      font-size: 0.9rem;
+      font-weight: 700;
+    }
+
+    .internal-article-link-field select,
+    .internal-article-link-field input {
+      width: 100%;
+      min-height: 46px;
+      padding: 10px 12px;
+      border: 1px solid var(--site-border, var(--sl-border));
+      border-radius: 11px;
+      color: var(--site-text, var(--sl-text));
+      background: var(--site-surface, #fff);
+      font: inherit;
+    }
+
+    .article-link-type-options {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 8px;
+      margin: 0;
+      padding: 0;
+      border: 0;
+    }
+
+    .article-link-type-option {
+      position: relative;
+      display: flex;
+      min-height: 42px;
+      align-items: center;
+      justify-content: center;
+      padding: 8px 12px;
+      border: 1px solid var(--site-border, var(--sl-border));
+      border-radius: 10px;
+      color: var(--site-muted, var(--sl-muted));
+      background: var(--site-surface, var(--sl-card));
+      font-size: 0.82rem;
+      font-weight: 700;
+      cursor: pointer;
+    }
+
+    .article-link-type-option:has(input:checked) {
+      border-color: var(--site-blue, var(--sl-navy));
+      color: var(--site-heading, var(--sl-navy));
+      background: var(--site-blue-soft, rgba(75, 91, 220, 0.11));
+    }
+
+    .article-link-type-option input {
+      position: absolute;
+      width: 1px;
+      height: 1px;
+      opacity: 0;
+      pointer-events: none;
+    }
+
+    .article-link-type-option:has(input:focus-visible) {
+      outline: 2px solid var(--site-blue, var(--sl-navy));
+      outline-offset: 2px;
+    }
+
+    .article-link-mode-panel[hidden] {
+      display: none;
+    }
+
+    .internal-article-link-actions {
+      display: flex;
+      justify-content: flex-end;
+      gap: 10px;
+    }
+
+    .internal-article-link-actions .article-btn {
+      border-radius: 11px;
+    }
+
+    .internal-article-link-actions .secondary {
+      border-color: var(--site-border, var(--sl-border));
+      color: var(--site-heading, var(--sl-navy));
+      background: var(--site-surface, #fff);
     }
 
     @media (max-width: 700px) {
@@ -466,9 +566,92 @@
     </div>
   </main>
 
+  <dialog
+    id="internalArticleLinkDialog"
+    class="internal-article-link-dialog"
+    aria-labelledby="internalArticleLinkTitle"
+  >
+    <form id="internalArticleLinkForm" class="internal-article-link-form">
+      <div class="internal-article-link-heading">
+        <h2 id="internalArticleLinkTitle">Insert a link</h2>
+        <p>
+          Link selected text to a published article or an outside website.
+        </p>
+      </div>
+
+      <fieldset class="article-link-type-options" aria-label="Link type">
+        <label class="article-link-type-option">
+          <input
+            type="radio"
+            name="articleLinkType"
+            value="internal"
+            checked
+          >
+          Knowledge Base article
+        </label>
+        <label class="article-link-type-option">
+          <input
+            type="radio"
+            name="articleLinkType"
+            value="external"
+          >
+          Outside link
+        </label>
+      </fieldset>
+
+      <div id="internalArticleLinkPanel" class="article-link-mode-panel">
+        <label class="internal-article-link-field" for="internalArticleLinkSelect">
+          Published article
+          <select id="internalArticleLinkSelect"></select>
+        </label>
+      </div>
+
+      <div
+        id="externalArticleLinkPanel"
+        class="article-link-mode-panel"
+        hidden
+      >
+        <label class="internal-article-link-field" for="externalArticleLinkUrl">
+          Website address
+          <input
+            id="externalArticleLinkUrl"
+            type="text"
+            inputmode="url"
+            autocomplete="url"
+            placeholder="https://example.com/help"
+          >
+        </label>
+      </div>
+
+      <p
+        id="internalArticleLinkStatus"
+        class="internal-article-link-status"
+        aria-live="polite"
+      ></p>
+
+      <div class="internal-article-link-actions">
+        <button
+          id="cancelInternalArticleLinkButton"
+          class="article-btn secondary"
+          type="button"
+        >
+          Cancel
+        </button>
+
+        <button
+          id="insertInternalArticleLinkButton"
+          class="article-btn"
+          type="submit"
+        >
+          Insert link
+        </button>
+      </div>
+    </form>
+  </dialog>
+
   <script
     type="module"
-    src="./scripts/add-article.js?v=8"
+    src="./scripts/add-article.js?v=14"
   ></script>
 </body>
 </html>

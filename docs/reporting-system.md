@@ -31,7 +31,17 @@ Configure these Google Apps Script properties:
 - `DASHBOARD_SYNC_URL` — the deployed site URL ending in `/api/sync-dashboard`
 - `SHEET_SYNC_SECRET` — the shared bearer secret configured in Cloudflare
 
-Run `syncAllDashboardData()` from the workbook script. Successful and failed runs are recorded in the reporting operations tables.
+Run `migrateDashboardSyncTriggers()` once from the workbook script to replace
+older reporting triggers with two daily Manila-time synchronizations:
+
+- approximately 9:00 PM Asia/Manila
+- approximately 12:00 AM Asia/Manila
+
+Google Apps Script time triggers can run within roughly 15 minutes of the
+configured minute. Run `inspectDashboardSyncTriggers()` afterward and confirm
+that `valid` is `true`. `syncAllDashboardData()` remains available for a manual
+synchronization. Successful and failed runs are recorded in the reporting
+operations tables.
 
 ## Operations
 

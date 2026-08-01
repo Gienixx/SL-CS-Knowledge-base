@@ -280,6 +280,177 @@
   color: #777083;
 }
 
+html[data-site-theme="dark"] .report-details-shell :is(
+  .report-filter-heading p,
+  .report-chart-heading p,
+  .report-filter-field span,
+  .report-chart-label,
+  .report-breakdown-value,
+  .report-summary-card span,
+  .report-summary-card small,
+  .detail-table-scroll-hint,
+  .detail-table-meta
+) {
+  color: var(--site-muted);
+}
+
+html[data-site-theme="dark"] .report-details-shell :is(
+  .report-source-badge,
+  .report-active-filters span,
+  .detail-range-summary,
+  .detail-table-meta
+) {
+  border-color: var(--site-border);
+  color: var(--site-blue);
+  background: var(--site-blue-soft);
+}
+
+html[data-site-theme="dark"] .report-details-shell .report-source-badge[data-source="zendesk"] {
+  border-color: color-mix(in srgb, var(--site-green) 38%, var(--site-border));
+  color: var(--site-green);
+  background: var(--site-green-soft);
+}
+
+html[data-site-theme="dark"] .report-details-shell .report-source-badge[data-source="error"] {
+  border-color: color-mix(in srgb, var(--site-red) 38%, var(--site-border));
+  color: var(--site-red);
+  background: var(--site-red-soft);
+}
+
+html[data-site-theme="dark"] .report-details-shell :is(
+  .report-filter-field select,
+  .report-filter-field input,
+  .report-reset-button
+) {
+  border-color: var(--site-border);
+  color: var(--site-text);
+  background: var(--site-surface-solid);
+}
+
+html[data-site-theme="dark"] .report-details-shell .report-reset-button:hover,
+html[data-site-theme="dark"] .report-details-shell .report-reset-button:focus-visible {
+  border-color: color-mix(in srgb, var(--site-blue) 54%, var(--site-border));
+  color: var(--site-heading);
+  background: var(--site-blue-soft);
+}
+
+html[data-site-theme="dark"] .report-details-shell :is(
+  .report-chart-empty,
+  .report-breakdown-row,
+  .report-summary-card,
+  .trend-chart
+) {
+  border-color: var(--site-border);
+  color: var(--site-text);
+  background: var(--site-surface-solid);
+}
+
+html[data-site-theme="dark"] .report-details-shell :is(
+  .report-breakdown-row:hover,
+  .report-breakdown-row:focus-visible
+) {
+  border-color: color-mix(in srgb, var(--site-blue) 54%, var(--site-border));
+  background: var(--site-blue-soft);
+}
+
+html[data-site-theme="dark"] .report-details-shell :is(
+  .report-breakdown-label,
+  .report-summary-card strong
+) {
+  color: var(--site-heading);
+}
+
+html[data-site-theme="dark"] .report-details-shell :is(
+  .report-breakdown-track,
+  .breakdown-track
+) {
+  background: color-mix(in srgb, var(--site-muted) 22%, var(--site-surface-soft));
+}
+
+html[data-site-theme="dark"] .report-details-shell :is(
+  .report-breakdown-bar,
+  .breakdown-bar
+) {
+  background: var(--site-blue);
+}
+
+html[data-site-theme="dark"] .report-details-shell :is(
+  .report-chart-grid,
+  .line-chart-grid-line
+) {
+  stroke: color-mix(in srgb, var(--site-muted) 24%, transparent);
+}
+
+html[data-site-theme="dark"] .report-details-shell :is(
+  .report-chart-axis,
+  .line-chart-axis-line
+) {
+  stroke: color-mix(in srgb, var(--site-muted) 52%, transparent);
+}
+
+html[data-site-theme="dark"] .report-details-shell .report-chart-label {
+  fill: var(--site-muted);
+}
+
+html[data-site-theme="dark"] .report-details-shell :is(
+  .report-chart-line-primary,
+  .report-chart-point-primary
+) {
+  stroke: var(--site-blue);
+}
+
+html[data-site-theme="dark"] .report-details-shell .report-chart-point-primary {
+  fill: var(--site-blue);
+}
+
+html[data-site-theme="dark"] .report-details-shell :is(
+  .detail-table,
+  .detail-table-scroll
+) {
+  border-color: var(--site-border);
+  color: var(--site-text);
+  background: var(--site-surface-solid);
+}
+
+html[data-site-theme="dark"] .report-details-shell .detail-table th {
+  border-color: var(--site-border);
+  color: var(--site-heading);
+  background: var(--site-surface-soft);
+}
+
+html[data-site-theme="dark"] .report-details-shell .detail-table td {
+  border-color: var(--site-border);
+  color: var(--site-text);
+}
+
+html[data-site-theme="dark"] .report-details-shell .detail-table th[scope="row"] {
+  color: var(--site-heading);
+  background: var(--site-neutral-soft);
+}
+
+html[data-site-theme="dark"] .report-details-shell :is(
+  .detail-table tbody tr:hover,
+  .detail-table tbody tr:focus-within
+) {
+  background: var(--site-blue-soft);
+}
+
+html[data-site-theme="dark"] .report-details-shell .detail-status-error {
+  border-color: color-mix(in srgb, var(--site-red) 38%, var(--site-border));
+  background: var(--site-red-soft);
+}
+
+html[data-site-theme="dark"] .report-details-shell .detail-status-error h2,
+html[data-site-theme="dark"] .report-details-shell .detail-filter-validation {
+  color: var(--site-red);
+}
+
+html[data-site-theme="dark"] .report-details-shell .detail-status-link {
+  border-color: var(--site-border);
+  color: var(--site-heading);
+  background: var(--site-surface-solid);
+}
+
 @media (max-width: 1050px) {
   .report-filter-form {
     grid-template-columns: repeat(2, minmax(0, 1fr));

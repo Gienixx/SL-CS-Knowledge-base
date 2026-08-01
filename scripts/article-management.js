@@ -2,10 +2,10 @@ import { supabase } from './supabaseClient.js'
 import {
   parseArticleContent,
   renderArticleUnit
-} from './article-content-renderer-v8.js?v=2'
+} from './article-content-renderer-v8.js?v=3'
 import {
   removeArticleImage
-} from './article-image-upload.js?v=1'
+} from './article-image-upload.js?v=2'
 import { getArticleHref } from './article-route.js?v=1'
 import { requireWorkforcePermission } from './workforce-permissions.js'
 import './article-nesting-styles.js?v=1'

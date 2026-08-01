@@ -1,47 +1,86 @@
-const DASHBOARD_SYNC_TRIGGER = Object.freeze({
-  currentHandler: 'syncAllDashboardData',
-  legacyHandler: 'syncDashboardData',
-  timezone: 'America/New_York',
-  hour: 12,
-  minute: 0
-})
+const DASHBOARD_SYNC_TRIGGER_TIMEZONE = 'Asia/Manila'
 
-function migrateDashboardSyncTrigger() {
+const DASHBOARD_SYNC_TRIGGER_SCHEDULES = Object.freeze([
+  Object.freeze({
+    handler: 'syncDashboardAt9Pm',
+    hour: 21,
+    minute: 0,
+    approximateTime: '9:00 PM Manila'
+  }),
+  Object.freeze({
+    handler: 'syncDashboardAtMidnight',
+    hour: 0,
+    minute: 0,
+    approximateTime: '12:00 AM Manila'
+  })
+])
+
+const RETIRED_DASHBOARD_SYNC_HANDLERS = Object.freeze([
+  'syncAllDashboardData',
+  'syncDashboardData'
+])
+
+function syncDashboardAt9Pm() {
+  return syncAllDashboardData()
+}
+
+function syncDashboardAtMidnight() {
+  return syncAllDashboardData()
+}
+
+function getManagedDashboardSyncHandlers_() {
+  return DASHBOARD_SYNC_TRIGGER_SCHEDULES
+    .map(function (schedule) {
+      return schedule.handler
+    })
+    .concat(RETIRED_DASHBOARD_SYNC_HANDLERS)
+}
+
+function migrateDashboardSyncTriggers() {
   const lock = LockService.getScriptLock()
   lock.waitLock(30000)
 
   try {
+    const managedHandlers = getManagedDashboardSyncHandlers_()
     const removedTriggers = []
 
-    ScriptApp.getProjectTriggers().forEach(trigger => {
+    ScriptApp.getProjectTriggers().forEach(function (trigger) {
       const handler = trigger.getHandlerFunction()
 
-      if (
-        handler !== DASHBOARD_SYNC_TRIGGER.currentHandler &&
-        handler !== DASHBOARD_SYNC_TRIGGER.legacyHandler
-      ) {
+      if (managedHandlers.indexOf(handler) === -1) {
         return
       }
 
       removedTriggers.push({
-        handler,
+        handler: handler,
         triggerId: trigger.getUniqueId()
       })
       ScriptApp.deleteTrigger(trigger)
     })
 
-    const createdTrigger = ScriptApp
-      .newTrigger(DASHBOARD_SYNC_TRIGGER.currentHandler)
-      .timeBased()
-      .atHour(DASHBOARD_SYNC_TRIGGER.hour)
-      .nearMinute(DASHBOARD_SYNC_TRIGGER.minute)
-      .everyDays(1)
-      .inTimezone(DASHBOARD_SYNC_TRIGGER.timezone)
-      .create()
+    const createdTriggers = DASHBOARD_SYNC_TRIGGER_SCHEDULES.map(
+      function (schedule) {
+        const trigger = ScriptApp
+          .newTrigger(schedule.handler)
+          .timeBased()
+          .atHour(schedule.hour)
+          .nearMinute(schedule.minute)
+          .everyDays(1)
+          .inTimezone(DASHBOARD_SYNC_TRIGGER_TIMEZONE)
+          .create()
+
+        return {
+          handler: schedule.handler,
+          approximateTime: schedule.approximateTime,
+          timezone: DASHBOARD_SYNC_TRIGGER_TIMEZONE,
+          triggerId: trigger.getUniqueId()
+        }
+      }
+    )
 
     const result = inspectDashboardSyncTriggers()
     result.removedTriggers = removedTriggers
-    result.createdTriggerId = createdTrigger.getUniqueId()
+    result.createdTriggers = createdTriggers
 
     console.log(JSON.stringify(result, null, 2))
     return result
@@ -51,39 +90,52 @@ function migrateDashboardSyncTrigger() {
 }
 
 function inspectDashboardSyncTriggers() {
+  const managedHandlers = getManagedDashboardSyncHandlers_()
   const matchingTriggers = ScriptApp.getProjectTriggers()
-    .filter(trigger => {
-      const handler = trigger.getHandlerFunction()
-      return (
-        handler === DASHBOARD_SYNC_TRIGGER.currentHandler ||
-        handler === DASHBOARD_SYNC_TRIGGER.legacyHandler
-      )
+    .filter(function (trigger) {
+      return managedHandlers.indexOf(trigger.getHandlerFunction()) !== -1
     })
-    .map(trigger => ({
-      handler: trigger.getHandlerFunction(),
-      eventType: String(trigger.getEventType()),
-      source: String(trigger.getTriggerSource()),
-      triggerId: trigger.getUniqueId()
-    }))
+    .map(function (trigger) {
+      return {
+        handler: trigger.getHandlerFunction(),
+        eventType: String(trigger.getEventType()),
+        source: String(trigger.getTriggerSource()),
+        triggerId: trigger.getUniqueId()
+      }
+    })
 
-  const currentTriggerCount = matchingTriggers.filter(
-    trigger => trigger.handler === DASHBOARD_SYNC_TRIGGER.currentHandler
-  ).length
-  const legacyTriggerCount = matchingTriggers.filter(
-    trigger => trigger.handler === DASHBOARD_SYNC_TRIGGER.legacyHandler
-  ).length
+  const scheduleChecks = DASHBOARD_SYNC_TRIGGER_SCHEDULES.map(
+    function (schedule) {
+      const count = matchingTriggers.filter(function (trigger) {
+        return trigger.handler === schedule.handler
+      }).length
+
+      return {
+        handler: schedule.handler,
+        approximateTime: schedule.approximateTime,
+        timezone: DASHBOARD_SYNC_TRIGGER_TIMEZONE,
+        triggerCount: count,
+        valid: count === 1
+      }
+    }
+  )
+
+  const retiredTriggerCount = matchingTriggers.filter(function (trigger) {
+    return RETIRED_DASHBOARD_SYNC_HANDLERS.indexOf(trigger.handler) !== -1
+  }).length
 
   const result = {
-    valid: currentTriggerCount === 1 && legacyTriggerCount === 0,
+    valid: scheduleChecks.every(function (schedule) {
+      return schedule.valid
+    }) && retiredTriggerCount === 0,
     expected: {
-      handler: DASHBOARD_SYNC_TRIGGER.currentHandler,
       frequency: 'daily',
-      approximateTime: '12:00 PM Eastern',
-      timezone: DASHBOARD_SYNC_TRIGGER.timezone
+      timezone: DASHBOARD_SYNC_TRIGGER_TIMEZONE,
+      schedules: DASHBOARD_SYNC_TRIGGER_SCHEDULES
     },
-    currentTriggerCount,
-    legacyTriggerCount,
-    matchingTriggers
+    scheduleChecks: scheduleChecks,
+    retiredTriggerCount: retiredTriggerCount,
+    matchingTriggers: matchingTriggers
   }
 
   console.log(JSON.stringify(result, null, 2))

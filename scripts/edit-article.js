@@ -3,7 +3,7 @@ import {
   getSelectedArticleImage,
   removeArticleImage,
   uploadArticleImage
-} from './article-image-upload.js?v=1'
+} from './article-image-upload.js?v=2'
 import { requireWorkforcePermission } from './workforce-permissions.js'
 
 const editArticleId = new URLSearchParams(

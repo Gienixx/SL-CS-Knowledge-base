@@ -309,10 +309,16 @@ acceptance_checks as (
     jsonb_build_object(
       'action', 'Run inspectDashboardSyncTriggers in Apps Script',
       'expected_valid', true,
-      'expected_currentTriggerCount', 1,
-      'expected_legacyTriggerCount', 0,
-      'expected_handler', 'syncAllDashboardData',
-      'expected_schedule', 'Daily around 12 PM America/New_York'
+      'expected_trigger_count', 2,
+      'expected_retiredTriggerCount', 0,
+      'expected_handlers', jsonb_build_array(
+        'syncDashboardAt9Pm',
+        'syncDashboardAtMidnight'
+      ),
+      'expected_schedule', jsonb_build_array(
+        'Daily around 9 PM Asia/Manila',
+        'Daily around 12 AM Asia/Manila'
+      )
     )
 )
 select
