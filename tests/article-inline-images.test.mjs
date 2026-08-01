@@ -36,7 +36,7 @@ test('Knowledge Base and previews safely render inline image metadata', async ()
     read('scripts/article-content-renderer-v8.js')
   ])
 
-  assert.match(page, /scripts\/kb\.js\?v=14/)
+  assert.match(page, /scripts\/kb\.js\?v=16/)
   assert.match(knowledgeBase, /article-content-renderer-v8\.js\?v=3/)
   assert.match(management, /article-content-renderer-v8\.js\?v=3/)
   assert.match(preview, /article-content-renderer-v8\.js\?v=3/)

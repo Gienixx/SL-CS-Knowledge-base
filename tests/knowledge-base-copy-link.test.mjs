@@ -10,7 +10,7 @@ test('published Knowledge Base articles expose a canonical copy-link action', as
     read('scripts/kb.js')
   ])
 
-  assert.match(page, /scripts\/kb\.js\?v=14/)
+  assert.match(page, /scripts\/kb\.js\?v=16/)
   assert.match(page, /\.article-title-row/)
   assert.match(page, /\.article-copy-button/)
   assert.match(page, /article-copy-button:focus-visible/)

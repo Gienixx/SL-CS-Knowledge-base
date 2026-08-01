@@ -73,7 +73,7 @@
     text-decoration:none;
   }
   .back-btn:hover{border-color:var(--border-strong)}
-  .back-btn:focus-visible,.search-wrap input:focus-visible,.filters button:focus-visible,.list-item:focus-visible,.detail-action:focus-visible,.article-copy-button:focus-visible,.back-to-top:focus-visible{
+  .back-btn:focus-visible,.search-wrap input:focus-visible,.category-toggle:focus-visible,.list-item:focus-visible,.detail-action:focus-visible,.article-copy-button:focus-visible,.back-to-top:focus-visible{
     outline:2px solid var(--pill-text);
     outline-offset:2px;
   }
@@ -111,22 +111,61 @@
     font-size:14px;
   }
   .search-wrap input::placeholder{color:var(--text-muted)}
-  .filters{display:flex;flex-wrap:wrap;gap:6px;margin-bottom:14px}
-  .filters button{
-    padding:4px 10px;
+  .list{display:grid;gap:6px}
+  .category-group{
+    overflow:hidden;
     border:.5px solid var(--border);
-    border-radius:20px;
+    border-radius:9px;
+    background:var(--panel-bg);
+  }
+  .category-toggle{
+    display:grid;
+    width:100%;
+    grid-template-columns:auto minmax(0,1fr) auto;
+    align-items:center;
+    gap:8px;
+    padding:9px 10px;
+    border:0;
     background:transparent;
-    color:var(--text-secondary);
-    font-size:12px;
+    color:var(--text-primary);
+    text-align:left;
     cursor:pointer;
   }
-  .filters button:hover,.filters button.active{
-    border-color:var(--border-strong);
+  .category-toggle:hover{background:var(--page-bg)}
+  .category-toggle[aria-expanded="true"]{
     background:var(--page-bg);
-    color:var(--text-primary);
+    color:var(--pill-text);
   }
-  .list{display:flex;flex-direction:column;gap:2px}
+  .category-chevron{
+    color:var(--text-muted);
+    font-size:15px;
+    transition:transform .16s ease;
+  }
+  .category-toggle[aria-expanded="true"] .category-chevron{transform:rotate(90deg)}
+  .category-name{font-size:13px;font-weight:600}
+  .category-count{
+    min-width:22px;
+    padding:2px 6px;
+    border-radius:999px;
+    background:var(--pill-bg);
+    color:var(--pill-text);
+    font-size:11px;
+    font-weight:600;
+    text-align:center;
+  }
+  .category-items{
+    display:flex;
+    flex-direction:column;
+    gap:2px;
+    padding:4px;
+    border-top:.5px solid var(--border);
+  }
+  .category-empty{
+    padding:10px 8px;
+    color:var(--text-muted);
+    font-size:12px;
+    line-height:1.45;
+  }
   .list-item{
     width:100%;
     padding:10px 12px;
@@ -165,7 +204,7 @@
     font-size:12px;
   }
   .tag-pill.cashouts{background:var(--cashout-bg);color:var(--cashout-text)}
-  .tag-pill.links{background:var(--link-bg);color:var(--link-text)}
+  .tag-pill.others{background:var(--link-bg);color:var(--link-text)}
   .detail h1{
     margin:0 0 8px;
     color:var(--text-primary);
@@ -218,6 +257,45 @@
     color:var(--text-primary);
     font-size:16px;
     line-height:1.7;
+  }
+  .official-links-group{margin-top:24px}
+  .official-links-heading{
+    margin:0 0 10px;
+    color:var(--text-primary);
+    font-size:15px;
+    font-weight:600;
+    letter-spacing:.02em;
+    text-transform:uppercase;
+  }
+  .official-links-list{
+    display:grid;
+    grid-template-columns:repeat(2,minmax(0,1fr));
+    gap:8px;
+  }
+  .official-link-item{
+    display:flex;
+    min-width:0;
+    align-items:center;
+    justify-content:space-between;
+    gap:10px;
+    padding:10px 12px;
+    border:.5px solid var(--border);
+    border-radius:8px;
+    background:var(--panel-bg);
+    color:var(--text-primary);
+    font-size:13px;
+    font-weight:500;
+    line-height:1.4;
+    text-decoration:none;
+  }
+  .official-link-item:hover{
+    border-color:var(--border-strong);
+    background:var(--page-bg);
+  }
+  .official-link-item i{flex:0 0 auto;color:var(--text-muted)}
+  .official-link-item:focus-visible{
+    outline:2px solid var(--pill-text);
+    outline-offset:2px;
   }
   .article-cover{
     display:block;
@@ -437,6 +515,7 @@
     body{padding:18px}
     .layout{grid-template-columns:1fr}
     .detail{min-height:220px;padding:22px}
+    .official-links-list{grid-template-columns:1fr}
     .back-to-top{right:18px;bottom:18px}
   }
   @media(max-width:420px){
@@ -471,8 +550,7 @@
       <label for="kbSearch" hidden>Search articles</label>
       <input id="kbSearch" type="search" placeholder="Search articles" autocomplete="off">
     </div>
-    <div id="kbFilters" class="filters" aria-label="Article categories"></div>
-    <div id="kbList" class="list" aria-live="polite">
+    <div id="kbList" class="list" aria-label="Article categories" aria-live="polite">
       <div class="empty-state">Loading articles…</div>
     </div>
   </section>
@@ -533,7 +611,7 @@
   <span class="back-to-top-icon" aria-hidden="true">↑</span>
 </button>
 
-<script type="module" src="./scripts/kb.js?v=14"></script>
+<script type="module" src="./scripts/kb.js?v=16"></script>
 <script type="module" src="./scripts/auth-guard.js"></script>
 </body>
 </html>

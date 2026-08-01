@@ -20,7 +20,7 @@ test('internal Knowledge Base links open an accessible article preview', async (
   assert.match(page, /id="openArticleReferenceNewTab"/)
   assert.match(page, /target="_blank"/)
   assert.match(page, /rel="noopener noreferrer"/)
-  assert.match(page, /scripts\/kb\.js\?v=14/)
+  assert.match(page, /scripts\/kb\.js\?v=16/)
 
   assert.match(script, /function getInternalArticleReference\(link\)/)
   assert.match(script, /findArticleByRouteValue\(publishedArticles, routeValue\)/)

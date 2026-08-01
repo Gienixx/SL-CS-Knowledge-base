@@ -15,40 +15,83 @@ import './article-published-parser-styles.js?v=1'
 
 const usefulLinks = [
   {
-    id: 'demo-compilations',
-    category: 'links',
-    title: 'Demo Compilations',
-    author: 'Support team',
-    date: 'Video collection',
-    description: 'Recorded demos and walkthroughs of the tools covered throughout the knowledge base.',
-    url: 'https://drive.google.com/drive/folders/1-XRG19rNkVpaG75W9puN3CNiJVJKlQYX'
-  },
-  {
-    id: 'meeting-compilations',
-    category: 'links',
-    title: 'Meeting Compilations',
-    author: 'Support team',
-    date: 'Video collection',
-    description: 'Recorded team meetings and discussions referenced by the support guides.',
-    url: 'https://drive.google.com/drive/folders/1nt6ozbXVdq-lhA9MVSXnsm6Bt50Hdrx5?usp=sharing'
+    id: 'official-links',
+    category: 'others',
+    title: 'Official Links',
+    author: 'CS Operations',
+    date: 'Tools and internal resources',
+    description: 'Official customer support tools, review portals, recordings, analytics dashboards, and internal resources.',
+    groups: [
+      {
+        title: 'CS Tools',
+        links: [
+          {
+            label: 'Zendesk',
+            url: 'https://eurekasurveys.zendesk.com/auth/v3/signin?auth_origin=4417991146772%2Cfalse%2Ctrue&brand_id=4417991146772&locale=1&return_to=https%3A%2F%2Feurekasurveys.zendesk.com%2F&theme=hc'
+          },
+          { label: 'Admin Tool', url: 'https://admin.eurekasurveys.com/' },
+          { label: 'Tremendous', url: 'https://app.tremendous.com/auth/login' },
+          { label: 'SendGrid', url: 'https://login.sendgrid.com/login/identifier' },
+          { label: 'Twilio Error Message', url: 'https://www.twilio.com/docs/api/errors' },
+          {
+            label: 'App Demo Recordings',
+            url: 'https://drive.google.com/drive/folders/1-XRG19rNkVpaG75W9puN3CNiJVJKlQYX'
+          },
+          { label: 'iOS Reviews', url: 'https://appstoreconnect.apple.com/login' },
+          { label: 'Google Play Reviews', url: 'https://play.google.com/console/developers' },
+          {
+            label: 'Lucid Marketplace Code',
+            url: 'https://support.cint.com/s/article/Marketplace-Response-Codes'
+          },
+          {
+            label: 'Lucid Client Code',
+            url: 'https://support.cint.com/s/article/Client-Response-Codes'
+          },
+          {
+            label: 'Cashout MixPanel',
+            url: 'https://mixpanel.com/project/2600928/view/3139772/app/boards#id=5212456'
+          },
+          {
+            label: 'Ticket MixPanel',
+            url: 'https://mixpanel.com/project/2600928/view/3139772/app/boards#id=9250520'
+          },
+          {
+            label: 'Demo Compilation',
+            url: 'https://drive.google.com/drive/folders/1-XRG19rNkVpaG75W9puN3CNiJVJKlQYX'
+          },
+          {
+            label: 'Meeting Compilation',
+            url: 'https://drive.google.com/drive/folders/1B7CM5s3Us3YSzmNbDAQdw6My7D_vSev4?usp=drive_link'
+          }
+        ]
+      },
+      {
+        title: 'CS Internal',
+        links: [
+          {
+            label: 'TimeSheet',
+            url: 'https://docs.google.com/spreadsheets/d/1IiFkxAru7GfpZYeO_7soOIEfi2XDjPfOMBcMfC-f7WY/edit?gid=484760849#gid=484760849'
+          }
+        ]
+      }
+    ]
   }
 ]
 
 const categoryLabels = {
-  ALL: 'All',
   TICKETS: 'Tickets',
   CASHOUTS: 'Cashouts',
-  LINKS: 'Links'
+  OTHERS: 'Others'
 }
 
 let publishedArticles = []
 let activeCategory = getInitialCategory()
+let expandedCategories = new Set([activeCategory])
 let requestedArticleRoute = getRequestedArticleRoute()
 let selectedId = ''
 let searchQuery = ''
 
 const elements = {
-  filters: document.getElementById('kbFilters'),
   list: document.getElementById('kbList'),
   detail: document.getElementById('kbDetail'),
   search: document.getElementById('kbSearch'),
@@ -64,7 +107,7 @@ const elements = {
 
 function getInitialCategory() {
   const category = new URLSearchParams(window.location.search).get('category')?.toUpperCase()
-  return Object.hasOwn(categoryLabels, category) ? category : 'ALL'
+  return Object.hasOwn(categoryLabels, category) ? category : 'TICKETS'
 }
 
 function getRequestedArticleRoute() {
@@ -87,7 +130,7 @@ function getKnowledgeBaseUrl({
   if (articleTitle) {
     url.searchParams.set('article', getArticleRouteValue(articleTitle))
     if (section) url.hash = section
-  } else if (category && category !== 'ALL') {
+  } else if (category) {
     url.searchParams.set('category', category)
   }
 
@@ -378,48 +421,39 @@ function mapArticle(row) {
   }
 }
 
-function itemsForActiveView() {
+function itemsForCategory(category) {
   const query = searchQuery.trim().toLowerCase()
-  const source = activeCategory === 'LINKS'
+  const source = category === 'OTHERS'
     ? usefulLinks
-    : publishedArticles.filter(article =>
-        activeCategory === 'ALL' || article.category === activeCategory.toLowerCase()
+    : publishedArticles.filter(
+        article => article.category === category.toLowerCase()
       )
 
   if (!query) return source
   return source.filter(item =>
-    (item.search || `${item.title} ${item.description} ${item.author}`).toLowerCase().includes(query)
+    [
+      item.title,
+      item.description,
+      item.author,
+      ...(item.groups || []).flatMap(group => [
+        group.title,
+        ...group.links.map(link => `${link.label} ${link.url}`)
+      ])
+    ].join(' ').toLowerCase().includes(query)
   )
 }
 
 function countForCategory(category) {
-  if (category === 'LINKS') return usefulLinks.length
-  if (category === 'ALL') return publishedArticles.length
+  if (category === 'OTHERS') return usefulLinks.length
   return publishedArticles.filter(article => article.category === category.toLowerCase()).length
 }
 
-function renderFilters() {
-  const buttons = Object.entries(categoryLabels).map(([category, label]) => {
-    const button = document.createElement('button')
-    const isActive = category === activeCategory
-    button.type = 'button'
-    button.dataset.category = category
-    button.classList.toggle('active', isActive)
-    button.setAttribute('aria-pressed', String(isActive))
-    button.textContent = `${label} (${countForCategory(category)})`
-    button.addEventListener('click', () => {
-      activeCategory = category
-      selectedId = ''
-      updateKnowledgeBaseRoute({ category })
-      render()
-    })
-    return button
-  })
-  elements.filters.replaceChildren(...buttons)
+function allVisibleItems() {
+  return Object.keys(categoryLabels).flatMap(itemsForCategory)
 }
 
 function itemMeta(item) {
-  if (item.category === 'links') return `${item.author} · ${item.date}`
+  if (item.category === 'others') return `${item.author} · ${item.date}`
   return `${item.updater}${item.date ? ` · ${item.date}` : ''}`
 }
 
@@ -436,25 +470,14 @@ function scrollToSelectedItem() {
   window.scrollTo({ top: 0, behavior })
 }
 
-function renderList(items) {
-  if (!items.length) {
-    const empty = document.createElement('div')
-    empty.className = 'empty-state'
-    empty.textContent = searchQuery.trim()
-      ? 'No articles match your search.'
-      : 'No articles in this category yet.'
-    elements.list.replaceChildren(empty)
-    return
-  }
-
-  const rows = items.map(item => {
+function createArticleListItem(item) {
     const row = document.createElement('button')
     const isSelected = item.id === selectedId
     row.type = 'button'
     row.className = 'list-item'
     row.classList.toggle('selected', isSelected)
     row.dataset.itemId = item.id
-    if (item.category !== 'links') row.dataset.articleId = item.id
+    if (item.category !== 'others') row.dataset.articleId = item.id
     row.setAttribute('aria-pressed', String(isSelected))
 
     const title = document.createElement('div')
@@ -466,21 +489,92 @@ function renderList(items) {
     row.append(title, meta)
     row.addEventListener('click', () => {
       selectedId = item.id
+      activeCategory = item.category.toUpperCase()
+      expandedCategories.add(activeCategory)
 
       updateKnowledgeBaseRoute(
-        item.category === 'links'
-          ? { category: 'LINKS' }
+        item.category === 'others'
+          ? { category: 'OTHERS' }
           : { articleTitle: item.title }
       )
 
-      renderList(items)
+      renderCategoryNavigation()
       renderDetail(item)
       scrollToSelectedItem()
     })
     return row
+}
+
+function createCategoryGroup(category, label) {
+  const group = document.createElement('section')
+  group.className = 'category-group'
+  group.dataset.category = category
+
+  const items = itemsForCategory(category)
+  const isExpanded = expandedCategories.has(category)
+  const panelId = `kbCategory${category}`
+
+  const toggle = document.createElement('button')
+  toggle.type = 'button'
+  toggle.className = 'category-toggle'
+  toggle.setAttribute('aria-expanded', String(isExpanded))
+  toggle.setAttribute('aria-controls', panelId)
+
+  const chevron = document.createElement('i')
+  chevron.className = 'ti ti-chevron-right category-chevron'
+  chevron.setAttribute('aria-hidden', 'true')
+  const name = document.createElement('span')
+  name.className = 'category-name'
+  name.textContent = label
+  const count = document.createElement('span')
+  count.className = 'category-count'
+  count.textContent = String(countForCategory(category))
+  toggle.append(chevron, name, count)
+
+  const panel = document.createElement('div')
+  panel.id = panelId
+  panel.className = 'category-items'
+  panel.hidden = !isExpanded
+
+  if (items.length) {
+    panel.append(...items.map(createArticleListItem))
+  } else {
+    const empty = document.createElement('div')
+    empty.className = 'category-empty'
+    empty.textContent = searchQuery.trim()
+      ? 'No matching articles.'
+      : 'No articles in this category yet.'
+    panel.appendChild(empty)
+  }
+
+  toggle.addEventListener('click', () => {
+    if (expandedCategories.has(category)) {
+      expandedCategories.delete(category)
+    } else {
+      expandedCategories.add(category)
+      activeCategory = category
+    }
+    renderCategoryNavigation()
   })
 
-  elements.list.replaceChildren(...rows)
+  group.append(toggle, panel)
+  return group
+}
+
+function renderCategoryNavigation() {
+  const groups = Object.entries(categoryLabels).map(([category, label]) =>
+    createCategoryGroup(category, label)
+  )
+
+  if (searchQuery.trim() && !allVisibleItems().length) {
+    const empty = document.createElement('div')
+    empty.className = 'empty-state'
+    empty.textContent = 'No articles match your search.'
+    elements.list.replaceChildren(empty)
+    return
+  }
+
+  elements.list.replaceChildren(...groups)
 }
 
 function renderDetail(item) {
@@ -513,22 +607,41 @@ function renderDetail(item) {
   byline.append(userIcon, meta)
 
   const body = document.createElement('div')
-  body.className = item.category === 'links' ? 'detail-body' : 'article-body'
+  body.className = item.category === 'others' ? 'detail-body' : 'article-body'
 
-  if (item.category === 'links') {
+  if (item.category === 'others') {
     const description = document.createElement('p')
     description.textContent = item.description
-    const action = document.createElement('a')
-    action.className = 'detail-action'
-    action.href = item.url
-    action.target = '_blank'
-    action.rel = 'noopener noreferrer'
-    action.append('Open resource')
-    const actionIcon = document.createElement('i')
-    actionIcon.className = 'ti ti-external-link'
-    actionIcon.setAttribute('aria-hidden', 'true')
-    action.append(actionIcon)
-    body.append(description, action)
+    body.appendChild(description)
+
+    for (const groupData of item.groups || []) {
+      const group = document.createElement('section')
+      group.className = 'official-links-group'
+      const heading = document.createElement('h2')
+      heading.className = 'official-links-heading'
+      heading.textContent = groupData.title
+      const list = document.createElement('div')
+      list.className = 'official-links-list'
+
+      for (const linkData of groupData.links) {
+        const link = document.createElement('a')
+        link.className = 'official-link-item'
+        link.href = linkData.url
+        link.target = '_blank'
+        link.rel = 'noopener noreferrer'
+        const label = document.createElement('span')
+        label.textContent = linkData.label
+        const icon = document.createElement('i')
+        icon.className = 'ti ti-external-link'
+        icon.setAttribute('aria-hidden', 'true')
+        link.append(label, icon)
+        list.appendChild(link)
+      }
+
+      group.append(heading, list)
+      body.appendChild(group)
+    }
+
     elements.detail.append(tag, title, byline, body)
     document.title = `${item.title} — Knowledge base`
     return
@@ -570,10 +683,9 @@ function renderDetail(item) {
 }
 
 function render() {
-  const items = itemsForActiveView()
+  const items = allVisibleItems()
   if (!items.some(item => item.id === selectedId)) selectedId = items[0]?.id || ''
-  renderFilters()
-  renderList(items)
+  renderCategoryNavigation()
   renderDetail(items.find(item => item.id === selectedId))
 }
 
@@ -594,11 +706,16 @@ document.addEventListener('DOMContentLoaded', async () => {
   elements.search.addEventListener('input', () => {
     searchQuery = elements.search.value
     selectedId = ''
+    if (searchQuery.trim()) {
+      expandedCategories = new Set(
+        Object.keys(categoryLabels).filter(
+          category => itemsForCategory(category).length
+        )
+      )
+    }
     updateKnowledgeBaseRoute({}, 'replaceState')
     render()
   })
-
-  renderFilters()
 
   try {
     publishedArticles = await fetchArticles()
@@ -611,6 +728,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     if (requestedArticle) {
       selectedId = requestedArticle.id
       activeCategory = requestedArticle.category.toUpperCase()
+      expandedCategories.add(activeCategory)
       const canonicalRoute = getArticleRouteValue(requestedArticle.title)
       if (requestedArticleRoute !== canonicalRoute) {
         updateKnowledgeBaseRoute(
@@ -622,7 +740,10 @@ document.addEventListener('DOMContentLoaded', async () => {
         )
       }
     } else {
-      selectedId = ''
+      selectedId =
+        itemsForCategory(activeCategory)[0]?.id ||
+        allVisibleItems()[0]?.id ||
+        ''
     }
 
     render()
@@ -650,6 +771,7 @@ window.addEventListener('popstate', () => {
   if (requestedArticle) {
     selectedId = requestedArticle.id
     activeCategory = requestedArticle.category.toUpperCase()
+    expandedCategories.add(activeCategory)
     const canonicalRoute = getArticleRouteValue(requestedArticle.title)
     if (requestedArticleRoute !== canonicalRoute) {
       updateKnowledgeBaseRoute(
@@ -661,8 +783,12 @@ window.addEventListener('popstate', () => {
       )
     }
   } else {
-    selectedId = ''
     activeCategory = getInitialCategory()
+    expandedCategories = new Set([activeCategory])
+    selectedId =
+      itemsForCategory(activeCategory)[0]?.id ||
+      allVisibleItems()[0]?.id ||
+      ''
   }
 
   render()

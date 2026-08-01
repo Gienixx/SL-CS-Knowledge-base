@@ -10,7 +10,7 @@ test('Knowledge Base supports direct section links after asynchronous rendering'
     read('scripts/kb.js')
   ])
 
-  assert.match(page, /scripts\/kb\.js\?v=14/)
+  assert.match(page, /scripts\/kb\.js\?v=16/)
   assert.match(page, /\.article-section-heading\{scroll-margin-top:24px\}/)
   assert.match(page, /\.article-section-heading:target/)
 
