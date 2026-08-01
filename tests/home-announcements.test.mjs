@@ -14,20 +14,38 @@ test('Home exposes Announcement Management to admins and announcement managers',
   assert.match(script, /hasWorkforcePermission\(access, 'manage_announcements'\)/)
 })
 
-test('Home separates announcements from Updates and changelogs', async () => {
+test('Home separates and paginates announcements and Updates independently', async () => {
   const page = await read('home.html')
   const script = await read('scripts/home.js')
+  const stylesheet = await read('styles/home-reference-redesign.css')
 
   assert.match(page, /id="announcementsFeedTitle">Announcements</)
   assert.match(page, /id="changelogFeedTitle">Updates and changelogs</)
   assert.match(page, /id="announcementRows"/)
   assert.match(page, /id="updateRows"/)
+  assert.match(page, /id="announcementPreviousPage"/)
+  assert.match(page, /id="announcementNextPage"/)
+  assert.match(page, /id="announcementPageStatus"[^>]*>Page 1 of 1</)
+  assert.match(page, /id="updatePreviousPage"/)
+  assert.match(page, /id="updateNextPage"/)
+  assert.match(page, /id="updatePageStatus"[^>]*>Page 1 of 1</)
+  assert.match(page, /10 per page/g)
   assert.match(script, /\.from\('team_announcements'\)/)
+  assert.match(script, /const ANNOUNCEMENT_PAGE_SIZE = 10/)
+  assert.match(script, /announcements:\s*\{[\s\S]*?page: 1[\s\S]*?updatesOnly: false/)
+  assert.match(script, /updates:\s*\{[\s\S]*?page: 1[\s\S]*?updatesOnly: true/)
   assert.match(script, /\.eq\('status', 'published'\)/)
   assert.match(script, /query\.eq\('category', 'Updates'\)/)
   assert.match(script, /query\.neq\('category', 'Updates'\)/)
+  assert.match(script, /\.select\(columns, \{ count: 'exact' \}\)/)
   assert.match(script, /\.order\('published_at', \{ ascending: false \}\)/)
-  assert.match(script, /\.limit\(5\)/)
+  assert.match(script, /\.order\('id', \{ ascending: false \}\)/)
+  assert.match(script, /\.range\(from, to\)/)
+  assert.match(script, /Math\.ceil\(feed\.count \/ ANNOUNCEMENT_PAGE_SIZE\)/)
+  assert.match(script, /moveAnnouncementFeedPage\('announcements', -1\)/)
+  assert.match(script, /moveAnnouncementFeedPage\('announcements', 1\)/)
+  assert.match(script, /moveAnnouncementFeedPage\('updates', -1\)/)
+  assert.match(script, /moveAnnouncementFeedPage\('updates', 1\)/)
   assert.match(script, /renderAnnouncementFeed\(\s*announcementBody,\s*announcements/)
   assert.match(script, /renderAnnouncementFeed\(\s*updateBody,\s*updates/)
   assert.match(script, /createTeamUpdate/)
@@ -38,6 +56,8 @@ test('Home separates announcements from Updates and changelogs', async () => {
   assert.match(page, /id="announcementDialogBody"/)
   assert.match(script, /openAnnouncementDialog\(announcement\)/)
   assert.match(script, /dialog\.showModal\(\)/)
+  assert.match(stylesheet, /\.team-update-pagination\s*\{/)
+  assert.match(stylesheet, /\.team-update-pagination\[hidden\]\s*\{\s*display:\s*none/)
 
   const rowFunction = script.match(
     /function createTeamUpdate\(announcement\) \{[\s\S]*?\n\}/
@@ -89,7 +109,7 @@ test('Announcement dialog uses the wider responsive layout', async () => {
   const page = await read('home.html')
   const stylesheet = await read('styles/home-reference-redesign.css')
 
-  assert.match(page, /home-reference-redesign\.css\?v=19/)
+  assert.match(page, /home-reference-redesign\.css\?v=20/)
   assert.match(stylesheet, /\.announcement-dialog\s*\{[^}]*width:\s*min\(900px, calc\(100vw - 64px\)\)/)
   assert.match(stylesheet, /@media \(max-width: 680px\)[\s\S]*\.announcement-dialog\s*\{[^}]*width:\s*calc\(100vw - 32px\)/)
 })

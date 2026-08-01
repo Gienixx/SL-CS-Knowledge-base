@@ -12,7 +12,7 @@
   <link rel="stylesheet" href="./styles/home-sidebar-collapse.css?v=2" media="not all" />
   <link rel="stylesheet" href="./styles/home-workforce-calendar.css?v=3" media="not all" />
   <link rel="stylesheet" href="./styles/home-google-calendar.css?v=1" media="not all" />
-  <link rel="stylesheet" href="./styles/home-reference-redesign.css?v=19" />
+  <link rel="stylesheet" href="./styles/home-reference-redesign.css?v=20" />
   <link rel="stylesheet" href="./styles/site-theme.css?v=5" />
   <script src="./scripts/site-theme.js?v=1"></script>
 </head>
@@ -142,16 +142,26 @@
               <section class="team-update-feed" aria-labelledby="announcementsFeedTitle">
                 <div class="team-update-feed-head">
                   <h3 id="announcementsFeedTitle">Announcements</h3>
-                  <span>Latest 5</span>
+                  <span>10 per page</span>
                 </div>
                 <div id="announcementRows" class="empty-state team-updates-body"></div>
+                <nav id="announcementPagination" class="team-update-pagination" aria-label="Announcements pages" hidden>
+                  <button id="announcementPreviousPage" type="button">Previous</button>
+                  <span id="announcementPageStatus" aria-live="polite">Page 1 of 1</span>
+                  <button id="announcementNextPage" type="button">Next</button>
+                </nav>
               </section>
               <section class="team-update-feed" aria-labelledby="changelogFeedTitle">
                 <div class="team-update-feed-head">
                   <h3 id="changelogFeedTitle">Updates and changelogs</h3>
-                  <span>Latest 5</span>
+                  <span>10 per page</span>
                 </div>
                 <div id="updateRows" class="empty-state team-updates-body"></div>
+                <nav id="updatePagination" class="team-update-pagination" aria-label="Updates and changelogs pages" hidden>
+                  <button id="updatePreviousPage" type="button">Previous</button>
+                  <span id="updatePageStatus" aria-live="polite">Page 1 of 1</span>
+                  <button id="updateNextPage" type="button">Next</button>
+                </nav>
               </section>
             </div>
           </section>
@@ -241,7 +251,7 @@
     </div>
   </dialog>
 
-  <script type="module" src="./scripts/home.js?v=10"></script>
+  <script type="module" src="./scripts/home.js?v=11"></script>
   <script type="module" src="./scripts/home-user-name.js?v=2"></script>
   <script type="module" src="./scripts/home-workforce-nav.js?v=8"></script>
   <script type="module" src="./scripts/home-workforce-calendar.js?v=6"></script>

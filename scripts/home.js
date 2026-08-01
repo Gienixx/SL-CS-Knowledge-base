@@ -18,7 +18,28 @@ import { renderAnnouncementHtml } from './announcement-rich-text.js?v=2'
 
 const SVG_NAMESPACE = 'http://www.w3.org/2000/svg'
 const HOME_HISTORY_LIMIT = 14
+const ANNOUNCEMENT_PAGE_SIZE = 10
 const announcementReactionById = new Map()
+const announcementFeedState = {
+  announcements: {
+    page: 1,
+    count: 0,
+    updatesOnly: false,
+    paginationId: 'announcementPagination',
+    previousId: 'announcementPreviousPage',
+    nextId: 'announcementNextPage',
+    statusId: 'announcementPageStatus'
+  },
+  updates: {
+    page: 1,
+    count: 0,
+    updatesOnly: true,
+    paginationId: 'updatePagination',
+    previousId: 'updatePreviousPage',
+    nextId: 'updateNextPage',
+    statusId: 'updatePageStatus'
+  }
+}
 let currentHomeUserId = ''
 let activeAnnouncement = null
 let announcementReactionsAvailable = true
@@ -259,6 +280,12 @@ function renderEmptyAnnouncementFeed(body, title, message) {
 }
 
 function renderAnnouncements() {
+  for (const feed of Object.values(announcementFeedState)) {
+    feed.page = 1
+    feed.count = 0
+    renderAnnouncementPagination(feed)
+  }
+
   renderEmptyAnnouncementFeed(
     document.getElementById('announcementRows'),
     'No announcements posted yet',
@@ -271,19 +298,22 @@ function renderAnnouncements() {
   )
 }
 
-function publishedAnnouncementQuery(columns, updatesOnly) {
+function publishedAnnouncementQuery(columns, feed) {
+  const from = (feed.page - 1) * ANNOUNCEMENT_PAGE_SIZE
+  const to = from + ANNOUNCEMENT_PAGE_SIZE - 1
   let query = supabase
     .from('team_announcements')
-    .select(columns)
+    .select(columns, { count: 'exact' })
     .eq('status', 'published')
-    .order('published_at', { ascending: false })
-    .limit(5)
 
-  query = updatesOnly
+  query = feed.updatesOnly
     ? query.eq('category', 'Updates')
     : query.neq('category', 'Updates')
 
   return query
+    .order('published_at', { ascending: false })
+    .order('id', { ascending: false })
+    .range(from, to)
 }
 
 async function loadPublishedAnnouncements() {
@@ -294,8 +324,8 @@ async function loadPublishedAnnouncements() {
   try {
     const columns = 'id, title, body, category, published_by_name, published_at, like_count, dislike_count'
     let [announcementResult, updateResult] = await Promise.all([
-      publishedAnnouncementQuery(columns, false),
-      publishedAnnouncementQuery(columns, true)
+      publishedAnnouncementQuery(columns, announcementFeedState.announcements),
+      publishedAnnouncementQuery(columns, announcementFeedState.updates)
     ])
 
     if (
@@ -305,13 +335,27 @@ async function loadPublishedAnnouncements() {
       announcementReactionsAvailable = false
       const fallbackColumns = 'id, title, body, category, published_by_name, published_at'
       ;[announcementResult, updateResult] = await Promise.all([
-        publishedAnnouncementQuery(fallbackColumns, false),
-        publishedAnnouncementQuery(fallbackColumns, true)
+        publishedAnnouncementQuery(fallbackColumns, announcementFeedState.announcements),
+        publishedAnnouncementQuery(fallbackColumns, announcementFeedState.updates)
       ])
     }
 
     if (announcementResult.error) throw announcementResult.error
     if (updateResult.error) throw updateResult.error
+
+    const announcementPageChanged = normalizeAnnouncementFeedPage(
+      announcementFeedState.announcements,
+      announcementResult.count
+    )
+    const updatePageChanged = normalizeAnnouncementFeedPage(
+      announcementFeedState.updates,
+      updateResult.count
+    )
+
+    if (announcementPageChanged || updatePageChanged) {
+      await loadPublishedAnnouncements()
+      return
+    }
 
     const announcements = Array.isArray(announcementResult.data) ? announcementResult.data : []
     const updates = Array.isArray(updateResult.data) ? updateResult.data : []
@@ -325,13 +369,15 @@ async function loadPublishedAnnouncements() {
       announcementBody,
       announcements,
       'No announcements posted yet',
-      'New team announcements will show up here.'
+      'New team announcements will show up here.',
+      announcementFeedState.announcements
     )
     renderAnnouncementFeed(
       updateBody,
       updates,
       'No updates posted yet',
-      'Product updates and changelogs will show up here.'
+      'Product updates and changelogs will show up here.',
+      announcementFeedState.updates
     )
   } catch (error) {
     console.error('Unable to load published announcements:', error)
@@ -339,7 +385,31 @@ async function loadPublishedAnnouncements() {
   }
 }
 
-function renderAnnouncementFeed(body, announcements, emptyTitle, emptyMessage) {
+function normalizeAnnouncementFeedPage(feed, count) {
+  feed.count = Number(count) || 0
+  const pageCount = Math.max(1, Math.ceil(feed.count / ANNOUNCEMENT_PAGE_SIZE))
+  const normalizedPage = Math.min(Math.max(feed.page, 1), pageCount)
+  const changed = normalizedPage !== feed.page
+  feed.page = normalizedPage
+  return changed
+}
+
+function renderAnnouncementPagination(feed) {
+  const pagination = document.getElementById(feed.paginationId)
+  const previous = document.getElementById(feed.previousId)
+  const next = document.getElementById(feed.nextId)
+  if (!pagination || !previous || !next) return
+
+  const pageCount = Math.max(1, Math.ceil(feed.count / ANNOUNCEMENT_PAGE_SIZE))
+  pagination.hidden = feed.count <= ANNOUNCEMENT_PAGE_SIZE
+  previous.disabled = feed.page <= 1
+  next.disabled = feed.page >= pageCount
+  setText(feed.statusId, `Page ${feed.page} of ${pageCount}`)
+}
+
+function renderAnnouncementFeed(body, announcements, emptyTitle, emptyMessage, feed) {
+  renderAnnouncementPagination(feed)
+
   if (!announcements.length) {
     renderEmptyAnnouncementFeed(body, emptyTitle, emptyMessage)
     return
@@ -370,6 +440,18 @@ function renderAnnouncementFeed(body, announcements, emptyTitle, emptyMessage) {
   }
 
   body.appendChild(list)
+}
+
+async function moveAnnouncementFeedPage(feedKey, offset) {
+  const feed = announcementFeedState[feedKey]
+  if (!feed) return
+
+  const pageCount = Math.max(1, Math.ceil(feed.count / ANNOUNCEMENT_PAGE_SIZE))
+  const nextPage = Math.min(Math.max(feed.page + offset, 1), pageCount)
+  if (nextPage === feed.page) return
+
+  feed.page = nextPage
+  await loadPublishedAnnouncements()
 }
 
 function isMissingAnnouncementReactionSchema(error) {
@@ -693,6 +775,22 @@ function installPageEvents() {
 
   document.querySelectorAll('[data-announcement-reaction]').forEach(button => {
     button.addEventListener('click', handleAnnouncementReaction)
+  })
+
+  document.getElementById('announcementPreviousPage')?.addEventListener('click', () => {
+    void moveAnnouncementFeedPage('announcements', -1)
+  })
+
+  document.getElementById('announcementNextPage')?.addEventListener('click', () => {
+    void moveAnnouncementFeedPage('announcements', 1)
+  })
+
+  document.getElementById('updatePreviousPage')?.addEventListener('click', () => {
+    void moveAnnouncementFeedPage('updates', -1)
+  })
+
+  document.getElementById('updateNextPage')?.addEventListener('click', () => {
+    void moveAnnouncementFeedPage('updates', 1)
   })
 
   window.addEventListener('resize', () => {

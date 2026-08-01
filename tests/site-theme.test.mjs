@@ -50,7 +50,7 @@ test('Home places account and appearance settings between identity and logout', 
   assert.ok(menu < changePassword && changePassword < menuEnd)
   assert.match(page, /aria-label="Settings"/)
   assert.match(page, /styles\/site-theme\.css\?v=5/)
-  assert.match(page, /scripts\/home\.js\?v=10/)
+  assert.match(page, /scripts\/home\.js\?v=11/)
   assert.match(page, /data-theme-choice="light"/)
   assert.match(page, /data-theme-choice="dark"/)
   assert.match(page, /class="site-settings-action" href="\.\/change-password\.html"/)
