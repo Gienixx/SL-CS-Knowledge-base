@@ -106,8 +106,13 @@ h1 { margin: 0 0 4px; font-family: "Space Grotesk", sans-serif; font-size: 21px;
 .panel-title { margin: 0 0 12px; flex: 0 0 auto; font-family: "Space Grotesk", sans-serif; font-size: 14.5px; font-weight: 600; }
 .left-col { display: grid; grid-template-rows: minmax(0, 1fr) 190px; gap: 14px; min-height: 0; }
 .updates-panel { min-height: 0; overflow: hidden; }
+.team-update-feeds { min-height: 0; flex: 1; display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; }
+.team-update-feed { min-width: 0; min-height: 0; overflow: hidden; display: flex; flex-direction: column; border: 1px solid var(--line); border-radius: 10px; background: var(--paper); }
+.team-update-feed-head { min-height: 39px; display: flex; align-items: center; justify-content: space-between; gap: 10px; padding: 0 11px; border-bottom: 1px solid var(--line); background: var(--card); }
+.team-update-feed-head h3 { margin: 0; color: var(--text-1); font-family: "Space Grotesk", sans-serif; font-size: 11.5px; font-weight: 600; }
+.team-update-feed-head span { color: var(--text-3); font-size: 8.5px; font-weight: 600; letter-spacing: .35px; text-transform: uppercase; }
 .empty-state { flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; color: var(--text-3); text-align: center; }
-.team-updates-body { min-height: 130px; }
+.team-updates-body { min-height: 112px; background: var(--card); }
 .empty-state .updates-empty-icon { width: 23px; height: 26px; position: relative; margin-bottom: 8px; border: 2px solid #b5b1a6; border-radius: 3px; opacity: .6; }
 .updates-empty-icon::before { content: ""; position: absolute; top: 7px; left: 5px; right: 5px; height: 2px; background: #b5b1a6; box-shadow: 0 5px 0 #b5b1a6, 0 10px 0 #b5b1a6; }
 .empty-state strong { color: var(--text-2); font-size: 13px; font-weight: 500; }
@@ -115,7 +120,7 @@ h1 { margin: 0 0 4px; font-family: "Space Grotesk", sans-serif; font-size: 21px;
 .sr-only { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0,0,0,0); white-space: nowrap; }
 .team-updates-body.has-updates { min-height: 0; flex: 1; overflow-y: auto; padding-right: 4px; scrollbar-gutter: stable; }
 .team-update-list { display: flex; flex-direction: column; }
-.team-update-columns, .team-update-item { display: grid; grid-template-columns: 104px minmax(0, 1fr) auto; align-items: center; gap: 14px; }
+.team-update-columns, .team-update-item { display: grid; grid-template-columns: 78px minmax(0, 1fr) auto; align-items: center; gap: 9px; }
 .team-update-columns { min-height: 28px; padding: 0 10px; border-bottom: 1px solid var(--line); color: var(--text-3); font-size: 9px; font-weight: 600; text-transform: uppercase; }
 .team-update-item { width: 100%; min-height: 46px; padding: 9px 10px; border: 0; border-bottom: 1px solid var(--line); color: inherit; background: transparent; text-align: left; cursor: pointer; }
 .team-update-item:hover { background: var(--paper); }
@@ -243,6 +248,11 @@ h1 { margin: 0 0 4px; font-family: "Space Grotesk", sans-serif; font-size: 21px;
   main { padding: 16px 18px 36px; }
 }
 
+@media (max-width: 760px) {
+  .team-update-feeds { grid-template-columns: 1fr; overflow-y: auto; }
+  .team-update-feed { min-height: 210px; }
+}
+
 @media (max-width: 680px) {
   .announcement-dialog { width: calc(100vw - 32px); padding: 18px; }
   .home-heading-meta { align-items: flex-start; flex-direction: column; gap: 2px; margin-bottom: 5px; }
@@ -250,7 +260,7 @@ h1 { margin: 0 0 4px; font-family: "Space Grotesk", sans-serif; font-size: 21px;
   .home-timezone-popover { width: 180px; }
   .snap-body { grid-template-columns: 1fr 1fr; }
   .snap-head { align-items: flex-start; }
-  .left-col { grid-template-rows: 360px auto; }
+  .left-col { grid-template-rows: minmax(520px, auto) auto; }
   .home-lower-panels { grid-template-columns: 1fr; }
   .home-lower-panel { min-height: 190px; }
   .todo-list, .celebrations-list { max-height: 180px; }

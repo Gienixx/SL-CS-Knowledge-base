@@ -12,7 +12,7 @@
   <link rel="stylesheet" href="./styles/home-sidebar-collapse.css?v=2" media="not all" />
   <link rel="stylesheet" href="./styles/home-workforce-calendar.css?v=3" media="not all" />
   <link rel="stylesheet" href="./styles/home-google-calendar.css?v=1" media="not all" />
-  <link rel="stylesheet" href="./styles/home-reference-redesign.css?v=18" />
+  <link rel="stylesheet" href="./styles/home-reference-redesign.css?v=19" />
   <link rel="stylesheet" href="./styles/site-theme.css?v=5" />
   <script src="./scripts/site-theme.js?v=1"></script>
 </head>
@@ -138,7 +138,22 @@
         <div class="left-col">
           <section class="panel updates-panel" aria-labelledby="updatesTitle">
             <h2 id="updatesTitle" class="panel-title">Latest team updates</h2>
-            <div id="announcementRows" class="empty-state team-updates-body"></div>
+            <div class="team-update-feeds">
+              <section class="team-update-feed" aria-labelledby="announcementsFeedTitle">
+                <div class="team-update-feed-head">
+                  <h3 id="announcementsFeedTitle">Announcements</h3>
+                  <span>Latest 5</span>
+                </div>
+                <div id="announcementRows" class="empty-state team-updates-body"></div>
+              </section>
+              <section class="team-update-feed" aria-labelledby="changelogFeedTitle">
+                <div class="team-update-feed-head">
+                  <h3 id="changelogFeedTitle">Updates and changelogs</h3>
+                  <span>Latest 5</span>
+                </div>
+                <div id="updateRows" class="empty-state team-updates-body"></div>
+              </section>
+            </div>
           </section>
           <div class="home-lower-panels">
             <section class="panel home-lower-panel" aria-labelledby="homeTodoTitle">
@@ -226,7 +241,7 @@
     </div>
   </dialog>
 
-  <script type="module" src="./scripts/home.js?v=9"></script>
+  <script type="module" src="./scripts/home.js?v=10"></script>
   <script type="module" src="./scripts/home-user-name.js?v=2"></script>
   <script type="module" src="./scripts/home-workforce-nav.js?v=8"></script>
   <script type="module" src="./scripts/home-workforce-calendar.js?v=6"></script>

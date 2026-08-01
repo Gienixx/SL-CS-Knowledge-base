@@ -246,82 +246,130 @@ function renderCurrentDate() {
   )
 }
 
-function renderAnnouncements() {
-  const body = document.getElementById('announcementRows')
+function renderEmptyAnnouncementFeed(body, title, message) {
   if (!body) return
 
   body.className = 'empty-state team-updates-body'
   body.innerHTML = `
     <span class="updates-empty-icon" aria-hidden="true"></span>
-    <strong>No updates posted yet</strong>
-    <small>New announcements from the team will show up here.</small>
+    <strong>${title}</strong>
+    <small>${message}</small>
     <span class="sr-only home-empty-table-cell">None</span>
   `
 }
 
+function renderAnnouncements() {
+  renderEmptyAnnouncementFeed(
+    document.getElementById('announcementRows'),
+    'No announcements posted yet',
+    'New team announcements will show up here.'
+  )
+  renderEmptyAnnouncementFeed(
+    document.getElementById('updateRows'),
+    'No updates posted yet',
+    'Product updates and changelogs will show up here.'
+  )
+}
+
+function publishedAnnouncementQuery(columns, updatesOnly) {
+  let query = supabase
+    .from('team_announcements')
+    .select(columns)
+    .eq('status', 'published')
+    .order('published_at', { ascending: false })
+    .limit(5)
+
+  query = updatesOnly
+    ? query.eq('category', 'Updates')
+    : query.neq('category', 'Updates')
+
+  return query
+}
+
 async function loadPublishedAnnouncements() {
-  const body = document.getElementById('announcementRows')
-  if (!body) return
+  const announcementBody = document.getElementById('announcementRows')
+  const updateBody = document.getElementById('updateRows')
+  if (!announcementBody || !updateBody) return
 
   try {
-    let result = await supabase
-      .from('team_announcements')
-      .select('id, title, body, category, published_by_name, published_at, like_count, dislike_count')
-      .eq('status', 'published')
-      .order('published_at', { ascending: false })
-      .limit(5)
+    const columns = 'id, title, body, category, published_by_name, published_at, like_count, dislike_count'
+    let [announcementResult, updateResult] = await Promise.all([
+      publishedAnnouncementQuery(columns, false),
+      publishedAnnouncementQuery(columns, true)
+    ])
 
-    if (result.error && isMissingAnnouncementReactionSchema(result.error)) {
+    if (
+      isMissingAnnouncementReactionSchema(announcementResult.error) ||
+      isMissingAnnouncementReactionSchema(updateResult.error)
+    ) {
       announcementReactionsAvailable = false
-      result = await supabase
-        .from('team_announcements')
-        .select('id, title, body, category, published_by_name, published_at')
-        .eq('status', 'published')
-        .order('published_at', { ascending: false })
-        .limit(5)
+      const fallbackColumns = 'id, title, body, category, published_by_name, published_at'
+      ;[announcementResult, updateResult] = await Promise.all([
+        publishedAnnouncementQuery(fallbackColumns, false),
+        publishedAnnouncementQuery(fallbackColumns, true)
+      ])
     }
 
-    if (result.error) throw result.error
-    const data = result.data
+    if (announcementResult.error) throw announcementResult.error
+    if (updateResult.error) throw updateResult.error
 
-    if (!Array.isArray(data) || data.length === 0) {
-      renderAnnouncements()
-      return
+    const announcements = Array.isArray(announcementResult.data) ? announcementResult.data : []
+    const updates = Array.isArray(updateResult.data) ? updateResult.data : []
+    const publishedItems = [...announcements, ...updates]
+
+    if (announcementReactionsAvailable && publishedItems.length) {
+      await loadCurrentUserAnnouncementReactions(publishedItems.map(item => item.id))
     }
 
-    if (announcementReactionsAvailable) {
-      await loadCurrentUserAnnouncementReactions(data.map(item => item.id))
-    }
-
-    body.className = 'team-updates-body has-updates'
-    body.replaceChildren()
-
-    const list = document.createElement('div')
-    list.className = 'team-update-list'
-
-    const columns = document.createElement('div')
-    columns.className = 'team-update-columns'
-
-    const dateColumn = document.createElement('span')
-    dateColumn.textContent = 'Date'
-
-    const titleColumn = document.createElement('span')
-    titleColumn.textContent = 'Title'
-
-    const unlabeledColumn = document.createElement('span')
-    unlabeledColumn.setAttribute('aria-hidden', 'true')
-    columns.append(dateColumn, titleColumn, unlabeledColumn)
-    list.appendChild(columns)
-
-    for (const announcement of data) {
-      list.appendChild(createTeamUpdate(announcement))
-    }
-
-    body.appendChild(list)
+    renderAnnouncementFeed(
+      announcementBody,
+      announcements,
+      'No announcements posted yet',
+      'New team announcements will show up here.'
+    )
+    renderAnnouncementFeed(
+      updateBody,
+      updates,
+      'No updates posted yet',
+      'Product updates and changelogs will show up here.'
+    )
   } catch (error) {
     console.error('Unable to load published announcements:', error)
     renderAnnouncements()
   }
+}
+
+function renderAnnouncementFeed(body, announcements, emptyTitle, emptyMessage) {
+  if (!announcements.length) {
+    renderEmptyAnnouncementFeed(body, emptyTitle, emptyMessage)
+    return
+  }
+
+  body.className = 'team-updates-body has-updates'
+  body.replaceChildren()
+
+  const list = document.createElement('div')
+  list.className = 'team-update-list'
+
+  const columns = document.createElement('div')
+  columns.className = 'team-update-columns'
+
+  const dateColumn = document.createElement('span')
+  dateColumn.textContent = 'Date'
+
+  const titleColumn = document.createElement('span')
+  titleColumn.textContent = 'Title'
+
+  const unlabeledColumn = document.createElement('span')
+  unlabeledColumn.setAttribute('aria-hidden', 'true')
+  columns.append(dateColumn, titleColumn, unlabeledColumn)
+  list.appendChild(columns)
+
+  for (const announcement of announcements) {
+    list.appendChild(createTeamUpdate(announcement))
+  }
+
+  body.appendChild(list)
 }
 
 function isMissingAnnouncementReactionSchema(error) {

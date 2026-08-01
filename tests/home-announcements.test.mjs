@@ -14,14 +14,22 @@ test('Home exposes Announcement Management to admins and announcement managers',
   assert.match(script, /hasWorkforcePermission\(access, 'manage_announcements'\)/)
 })
 
-test('Home loads the latest published announcements', async () => {
+test('Home separates announcements from Updates and changelogs', async () => {
   const page = await read('home.html')
   const script = await read('scripts/home.js')
 
+  assert.match(page, /id="announcementsFeedTitle">Announcements</)
+  assert.match(page, /id="changelogFeedTitle">Updates and changelogs</)
+  assert.match(page, /id="announcementRows"/)
+  assert.match(page, /id="updateRows"/)
   assert.match(script, /\.from\('team_announcements'\)/)
   assert.match(script, /\.eq\('status', 'published'\)/)
+  assert.match(script, /query\.eq\('category', 'Updates'\)/)
+  assert.match(script, /query\.neq\('category', 'Updates'\)/)
   assert.match(script, /\.order\('published_at', \{ ascending: false \}\)/)
   assert.match(script, /\.limit\(5\)/)
+  assert.match(script, /renderAnnouncementFeed\(\s*announcementBody,\s*announcements/)
+  assert.match(script, /renderAnnouncementFeed\(\s*updateBody,\s*updates/)
   assert.match(script, /createTeamUpdate/)
   assert.match(script, /dateColumn\.textContent = 'Date'/)
   assert.match(script, /titleColumn\.textContent = 'Title'/)
@@ -45,6 +53,8 @@ test('Announcement Management provides draft and publish workflows', async () =>
   assert.match(page, /id="announcementSaveDraft"/)
   assert.match(page, /id="announcementPublish"/)
   assert.match(page, /id="announcementList"/)
+  assert.match(page, /<option>Updates<\/option>/)
+  assert.match(page, /Updates appear in Updates and changelogs/)
   assert.match(script, /hasWorkforcePermission\(access, 'manage_announcements'\)/)
   assert.match(script, /\.insert\(/)
   assert.match(script, /\.update\(/)
@@ -79,7 +89,7 @@ test('Announcement dialog uses the wider responsive layout', async () => {
   const page = await read('home.html')
   const stylesheet = await read('styles/home-reference-redesign.css')
 
-  assert.match(page, /home-reference-redesign\.css\?v=18/)
+  assert.match(page, /home-reference-redesign\.css\?v=19/)
   assert.match(stylesheet, /\.announcement-dialog\s*\{[^}]*width:\s*min\(900px, calc\(100vw - 64px\)\)/)
   assert.match(stylesheet, /@media \(max-width: 680px\)[\s\S]*\.announcement-dialog\s*\{[^}]*width:\s*calc\(100vw - 32px\)/)
 })
