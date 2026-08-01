@@ -14,10 +14,15 @@ import {
   loadCurrentWorkforceAccess,
   hasWorkforcePermission
 } from './workforce-permissions.js'
-import { renderAnnouncementHtml } from './announcement-rich-text.js?v=1'
+import { renderAnnouncementHtml } from './announcement-rich-text.js?v=2'
 
 const SVG_NAMESPACE = 'http://www.w3.org/2000/svg'
 const HOME_HISTORY_LIMIT = 14
+const announcementReactionById = new Map()
+let currentHomeUserId = ''
+let activeAnnouncement = null
+let announcementReactionsAvailable = true
+let announcementReactionSaving = false
 
 const today = new Date()
 const calendarState = {
@@ -92,6 +97,7 @@ async function initializeHome() {
       return
     }
 
+    currentHomeUserId = currentUser.id
     configureUserInterface(currentUser, access)
     try {
       await loadHomeMetrics()
@@ -258,18 +264,33 @@ async function loadPublishedAnnouncements() {
   if (!body) return
 
   try {
-    const { data, error } = await supabase
+    let result = await supabase
       .from('team_announcements')
-      .select('id, title, body, category, published_by_name, published_at')
+      .select('id, title, body, category, published_by_name, published_at, like_count, dislike_count')
       .eq('status', 'published')
       .order('published_at', { ascending: false })
       .limit(5)
 
-    if (error) throw error
+    if (result.error && isMissingAnnouncementReactionSchema(result.error)) {
+      announcementReactionsAvailable = false
+      result = await supabase
+        .from('team_announcements')
+        .select('id, title, body, category, published_by_name, published_at')
+        .eq('status', 'published')
+        .order('published_at', { ascending: false })
+        .limit(5)
+    }
+
+    if (result.error) throw result.error
+    const data = result.data
 
     if (!Array.isArray(data) || data.length === 0) {
       renderAnnouncements()
       return
+    }
+
+    if (announcementReactionsAvailable) {
+      await loadCurrentUserAnnouncementReactions(data.map(item => item.id))
     }
 
     body.className = 'team-updates-body has-updates'
@@ -300,6 +321,41 @@ async function loadPublishedAnnouncements() {
   } catch (error) {
     console.error('Unable to load published announcements:', error)
     renderAnnouncements()
+  }
+}
+
+function isMissingAnnouncementReactionSchema(error) {
+  const message = String(error?.message || '').toLowerCase()
+  return (
+    ['42P01', '42703', 'PGRST204'].includes(error?.code) ||
+    message.includes('announcement_reactions') ||
+    message.includes('like_count') ||
+    message.includes('dislike_count')
+  )
+}
+
+async function loadCurrentUserAnnouncementReactions(announcementIds) {
+  announcementReactionById.clear()
+  if (!currentHomeUserId || !announcementIds.length) return
+
+  const { data, error } = await supabase
+    .from('announcement_reactions')
+    .select('announcement_id, reaction')
+    .eq('user_id', currentHomeUserId)
+    .in('announcement_id', announcementIds)
+
+  if (error) {
+    if (isMissingAnnouncementReactionSchema(error)) {
+      announcementReactionsAvailable = false
+      return
+    }
+    console.error('Unable to load announcement reactions:', error)
+    announcementReactionsAvailable = false
+    return
+  }
+
+  for (const row of data || []) {
+    announcementReactionById.set(row.announcement_id, row.reaction)
   }
 }
 
@@ -339,11 +395,129 @@ function openAnnouncementDialog(announcement) {
     document.getElementById('announcementDialogBody'),
     announcement.body
   )
+  activeAnnouncement = announcement
+  renderAnnouncementReactionState()
 
   if (typeof dialog.showModal === 'function') {
     dialog.showModal()
   } else {
     dialog.setAttribute('open', '')
+  }
+}
+
+function renderAnnouncementReactionState(message = '', isError = false) {
+  const container = document.getElementById('announcementDialogReactions')
+  if (!container) return
+
+  container.hidden = !announcementReactionsAvailable
+  if (!announcementReactionsAvailable || !activeAnnouncement) return
+
+  setText('announcementLikeCount', String(Number(activeAnnouncement.like_count) || 0))
+  setText('announcementDislikeCount', String(Number(activeAnnouncement.dislike_count) || 0))
+  const selectedReaction = announcementReactionById.get(activeAnnouncement.id) || ''
+
+  for (const button of container.querySelectorAll('[data-announcement-reaction]')) {
+    button.setAttribute(
+      'aria-pressed',
+      String(button.dataset.announcementReaction === selectedReaction)
+    )
+    button.disabled = announcementReactionSaving
+  }
+
+  const status = document.getElementById('announcementReactionStatus')
+  if (status) {
+    status.textContent = message
+    status.className = `announcement-reaction-status${isError ? ' error' : ''}`
+  }
+}
+
+function applyLocalAnnouncementReactionCounts(announcement, previous, next) {
+  if (previous === 'like') {
+    announcement.like_count = Math.max(0, (Number(announcement.like_count) || 0) - 1)
+  } else if (previous === 'dislike') {
+    announcement.dislike_count = Math.max(0, (Number(announcement.dislike_count) || 0) - 1)
+  }
+
+  if (next === 'like') {
+    announcement.like_count = (Number(announcement.like_count) || 0) + 1
+  } else if (next === 'dislike') {
+    announcement.dislike_count = (Number(announcement.dislike_count) || 0) + 1
+  }
+}
+
+async function handleAnnouncementReaction(event) {
+  const nextReaction = event.currentTarget.dataset.announcementReaction
+  if (
+    !activeAnnouncement ||
+    !currentHomeUserId ||
+    announcementReactionSaving ||
+    !['like', 'dislike'].includes(nextReaction)
+  ) return
+
+  const announcement = activeAnnouncement
+  const previousReaction = announcementReactionById.get(announcement.id) || ''
+  const removingReaction = previousReaction === nextReaction
+  let finalMessage = ''
+  let finalError = false
+  announcementReactionSaving = true
+  renderAnnouncementReactionState('Saving your reaction…')
+
+  try {
+    const mutation = removingReaction
+      ? supabase
+          .from('announcement_reactions')
+          .delete()
+          .eq('announcement_id', announcement.id)
+          .eq('user_id', currentHomeUserId)
+      : supabase
+          .from('announcement_reactions')
+          .upsert(
+            {
+              announcement_id: announcement.id,
+              user_id: currentHomeUserId,
+              reaction: nextReaction,
+              updated_at: new Date().toISOString()
+            },
+            { onConflict: 'announcement_id,user_id' }
+          )
+
+    const { error: mutationError } = await mutation
+    if (mutationError) throw mutationError
+
+    const storedReaction = removingReaction ? '' : nextReaction
+    applyLocalAnnouncementReactionCounts(
+      announcement,
+      previousReaction,
+      storedReaction
+    )
+
+    if (storedReaction) {
+      announcementReactionById.set(announcement.id, storedReaction)
+    } else {
+      announcementReactionById.delete(announcement.id)
+    }
+
+    const { data: counts, error: countError } = await supabase
+      .from('team_announcements')
+      .select('like_count, dislike_count')
+      .eq('id', announcement.id)
+      .single()
+
+    if (!countError && counts) {
+      announcement.like_count = counts.like_count
+      announcement.dislike_count = counts.dislike_count
+    } else if (countError) {
+      console.warn('Unable to refresh announcement reaction counts:', countError)
+    }
+
+    finalMessage = removingReaction ? 'Reaction removed.' : 'Reaction saved.'
+  } catch (error) {
+    console.error('Unable to save announcement reaction:', error)
+    finalMessage = 'Your reaction could not be saved. Try again.'
+    finalError = true
+  } finally {
+    announcementReactionSaving = false
+    renderAnnouncementReactionState(finalMessage, finalError)
   }
 }
 
@@ -463,6 +637,14 @@ function installPageEvents() {
     if (event.target === event.currentTarget) {
       event.currentTarget.close()
     }
+  })
+
+  document.getElementById('announcementDialog')?.addEventListener('close', () => {
+    activeAnnouncement = null
+  })
+
+  document.querySelectorAll('[data-announcement-reaction]').forEach(button => {
+    button.addEventListener('click', handleAnnouncementReaction)
   })
 
   window.addEventListener('resize', () => {

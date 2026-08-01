@@ -79,7 +79,7 @@ test('Announcement dialog uses the wider responsive layout', async () => {
   const page = await read('home.html')
   const stylesheet = await read('styles/home-reference-redesign.css')
 
-  assert.match(page, /home-reference-redesign\.css\?v=17/)
+  assert.match(page, /home-reference-redesign\.css\?v=18/)
   assert.match(stylesheet, /\.announcement-dialog\s*\{[^}]*width:\s*min\(900px, calc\(100vw - 64px\)\)/)
   assert.match(stylesheet, /@media \(max-width: 680px\)[\s\S]*\.announcement-dialog\s*\{[^}]*width:\s*calc\(100vw - 32px\)/)
 })

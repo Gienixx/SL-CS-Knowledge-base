@@ -12,7 +12,7 @@
   <link rel="stylesheet" href="./styles/home-sidebar-collapse.css?v=2" media="not all" />
   <link rel="stylesheet" href="./styles/home-workforce-calendar.css?v=3" media="not all" />
   <link rel="stylesheet" href="./styles/home-google-calendar.css?v=1" media="not all" />
-  <link rel="stylesheet" href="./styles/home-reference-redesign.css?v=17" />
+  <link rel="stylesheet" href="./styles/home-reference-redesign.css?v=18" />
   <link rel="stylesheet" href="./styles/site-theme.css?v=5" />
   <script src="./scripts/site-theme.js?v=1"></script>
 </head>
@@ -211,9 +211,22 @@
     <h2 id="announcementDialogTitle">Announcement</h2>
     <p id="announcementDialogMeta" class="announcement-dialog-meta"></p>
     <div id="announcementDialogBody" class="announcement-dialog-body"></div>
+    <div id="announcementDialogReactions" class="announcement-dialog-reactions" aria-label="Announcement reactions">
+      <button type="button" data-announcement-reaction="like" aria-pressed="false">
+        <span aria-hidden="true">👍</span>
+        <span>Like</span>
+        <strong id="announcementLikeCount">0</strong>
+      </button>
+      <button type="button" data-announcement-reaction="dislike" aria-pressed="false">
+        <span aria-hidden="true">👎</span>
+        <span>Dislike</span>
+        <strong id="announcementDislikeCount">0</strong>
+      </button>
+      <span id="announcementReactionStatus" class="announcement-reaction-status" role="status" aria-live="polite"></span>
+    </div>
   </dialog>
 
-  <script type="module" src="./scripts/home.js?v=8"></script>
+  <script type="module" src="./scripts/home.js?v=9"></script>
   <script type="module" src="./scripts/home-user-name.js?v=2"></script>
   <script type="module" src="./scripts/home-workforce-nav.js?v=8"></script>
   <script type="module" src="./scripts/home-workforce-calendar.js?v=6"></script>

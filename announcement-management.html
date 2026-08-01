@@ -7,7 +7,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Space+Grotesk:wght@500;600;700&display=swap" rel="stylesheet" />
-  <link rel="stylesheet" href="./styles/announcement-management.css?v=5" />
+  <link rel="stylesheet" href="./styles/announcement-management.css?v=6" />
   <link rel="stylesheet" href="./styles/site-theme.css?v=1" />
   <script src="./scripts/site-theme.js?v=1"></script>
 </head>
@@ -61,6 +61,7 @@
                 <button type="button" data-format-command="italic" aria-label="Italic" title="Italic"><em>I</em></button>
                 <button type="button" data-format-command="underline" aria-label="Underline" title="Underline"><span class="underline-symbol">U</span></button>
                 <button type="button" data-format-command="insertUnorderedList" aria-label="Bulleted list" title="Bulleted list"><span aria-hidden="true">&#8226;&#8801;</span></button>
+                <button id="announcementLinkButton" type="button" aria-label="Add outside link" title="Add outside link"><span aria-hidden="true">&#128279;</span></button>
               </div>
               <div id="announcementMessageEditor" class="announcement-message-editor" contenteditable="true" role="textbox" aria-multiline="true" aria-labelledby="announcementBodyLabel" data-placeholder="Write the announcement message..."></div>
             </div>
@@ -183,6 +184,25 @@
     </section>
   </main>
 
-  <script type="module" src="./scripts/announcement-management.js?v=6"></script>
+  <dialog id="announcementLinkDialog" class="announcement-link-dialog" aria-labelledby="announcementLinkTitle">
+    <form id="announcementLinkForm" class="announcement-link-form" method="dialog">
+      <h2 id="announcementLinkTitle">Add outside link</h2>
+      <p>Link selected words—or a new label—to a secure external website.</p>
+
+      <label for="announcementLinkText">Link text</label>
+      <input id="announcementLinkText" type="text" maxlength="180" autocomplete="off" required />
+
+      <label for="announcementLinkUrl">Website address</label>
+      <input id="announcementLinkUrl" type="url" maxlength="1000" placeholder="https://example.com" autocomplete="url" required />
+
+      <div id="announcementLinkStatus" class="announcement-link-status" role="status" aria-live="polite"></div>
+      <div class="announcement-link-actions">
+        <button id="announcementLinkCancel" class="secondary-button" type="button">Cancel</button>
+        <button class="primary-button" type="submit">Insert link</button>
+      </div>
+    </form>
+  </dialog>
+
+  <script type="module" src="./scripts/announcement-management.js?v=7"></script>
 </body>
 </html>

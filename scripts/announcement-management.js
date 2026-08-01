@@ -5,14 +5,16 @@ import {
 } from './workforce-permissions.js?v=1'
 import {
   announcementPlainText,
+  normalizeAnnouncementLink,
   renderAnnouncementHtml,
   sanitizeAnnouncementHtml
-} from './announcement-rich-text.js?v=1'
+} from './announcement-rich-text.js?v=2'
 
 const state = {
   access: null,
   announcements: [],
   editingId: null,
+  announcementLinkRange: null,
   saving: false,
   profiles: [],
   todos: [],
@@ -100,6 +102,13 @@ function collectElements() {
   elements.body = document.getElementById('announcementBody')
   elements.messageEditor = document.getElementById('announcementMessageEditor')
   elements.formatButtons = [...document.querySelectorAll('[data-format-command]')]
+  elements.linkButton = document.getElementById('announcementLinkButton')
+  elements.linkDialog = document.getElementById('announcementLinkDialog')
+  elements.linkForm = document.getElementById('announcementLinkForm')
+  elements.linkText = document.getElementById('announcementLinkText')
+  elements.linkUrl = document.getElementById('announcementLinkUrl')
+  elements.linkStatus = document.getElementById('announcementLinkStatus')
+  elements.linkCancel = document.getElementById('announcementLinkCancel')
   elements.characterCount = document.getElementById('announcementCharacterCount')
   elements.formStatus = document.getElementById('announcementFormStatus')
   elements.saveDraft = document.getElementById('announcementSaveDraft')
@@ -149,6 +158,11 @@ function installEvents() {
   elements.todoUserFilter.addEventListener('change', renderTodos)
   elements.todoList.addEventListener('click', handleTodoListAction)
   elements.todoActivityLogRefresh.addEventListener('click', refreshTodoActivityLogs)
+  elements.linkButton.addEventListener('mousedown', event => event.preventDefault())
+  elements.linkButton.addEventListener('click', openAnnouncementLinkDialog)
+  elements.linkForm.addEventListener('submit', insertAnnouncementLink)
+  elements.linkCancel.addEventListener('click', () => elements.linkDialog.close())
+  elements.linkDialog.addEventListener('close', resetAnnouncementLinkDialog)
 
   for (const button of elements.formatButtons) {
     button.addEventListener('mousedown', event => event.preventDefault())
@@ -200,15 +214,31 @@ function handleTabKeydown(event) {
 }
 
 async function loadAnnouncements() {
-  const { data, error } = await supabase
+  let result = await supabase
     .from('team_announcements')
-    .select('id, title, body, category, status, created_by_name, published_by_name, published_at, created_at, updated_at')
+    .select('id, title, body, category, status, created_by_name, published_by_name, published_at, created_at, updated_at, like_count, dislike_count')
     .order('created_at', { ascending: false })
 
-  if (error) throw error
+  if (result.error && isMissingAnnouncementReactionSchema(result.error)) {
+    result = await supabase
+      .from('team_announcements')
+      .select('id, title, body, category, status, created_by_name, published_by_name, published_at, created_at, updated_at')
+      .order('created_at', { ascending: false })
+  }
 
-  state.announcements = Array.isArray(data) ? data : []
+  if (result.error) throw result.error
+
+  state.announcements = Array.isArray(result.data) ? result.data : []
   renderAnnouncements()
+}
+
+function isMissingAnnouncementReactionSchema(error) {
+  const message = String(error?.message || '').toLowerCase()
+  return (
+    ['42P01', '42703', 'PGRST204'].includes(error?.code) ||
+    message.includes('like_count') ||
+    message.includes('dislike_count')
+  )
 }
 
 async function loadTodoManagement() {
@@ -863,7 +893,11 @@ function createAnnouncementItem(item) {
   detail.textContent = item.status === 'published'
     ? `Published by ${item.published_by_name || 'Administrator'} on ${formatDateTime(item.published_at)}`
     : `Created by ${item.created_by_name || 'Administrator'} on ${formatDateTime(item.created_at)}`
-  meta.append(category, detail)
+  const reactions = document.createElement('span')
+  reactions.className = 'announcement-reaction-summary'
+  reactions.textContent =
+    `👍 ${Number(item.like_count) || 0} · 👎 ${Number(item.dislike_count) || 0}`
+  meta.append(category, detail, reactions)
 
   const actions = document.createElement('div')
   actions.className = 'announcement-actions'
@@ -910,6 +944,72 @@ function applyMessageFormat(event) {
   elements.messageEditor.focus()
   document.execCommand(command, false, null)
   updateCharacterCount()
+}
+
+function selectionBelongsToAnnouncementEditor(range) {
+  const container = range?.commonAncestorContainer
+  const element = container?.nodeType === Node.ELEMENT_NODE
+    ? container
+    : container?.parentElement
+  return Boolean(element && elements.messageEditor.contains(element))
+}
+
+function openAnnouncementLinkDialog() {
+  const selection = window.getSelection()
+  const range = selection?.rangeCount ? selection.getRangeAt(0) : null
+  state.announcementLinkRange = selectionBelongsToAnnouncementEditor(range)
+    ? range.cloneRange()
+    : null
+  elements.linkText.value = state.announcementLinkRange?.toString().trim() || ''
+  elements.linkUrl.value = ''
+  elements.linkStatus.textContent = ''
+  elements.linkDialog.showModal()
+  elements.linkText.focus()
+}
+
+function insertAnnouncementLink(event) {
+  event.preventDefault()
+  const label = elements.linkText.value.trim()
+  const href = normalizeAnnouncementLink(elements.linkUrl.value)
+
+  if (!label || !href) {
+    elements.linkStatus.textContent =
+      'Enter link text and a complete http:// or https:// website address.'
+    return
+  }
+
+  const anchor = document.createElement('a')
+  anchor.href = href
+  anchor.target = '_blank'
+  anchor.rel = 'noopener noreferrer'
+  anchor.textContent = label
+
+  const range = state.announcementLinkRange
+  if (range && selectionBelongsToAnnouncementEditor(range)) {
+    range.deleteContents()
+    range.insertNode(anchor)
+  } else {
+    if (elements.messageEditor.textContent.trim()) {
+      elements.messageEditor.appendChild(document.createTextNode(' '))
+    }
+    elements.messageEditor.appendChild(anchor)
+  }
+
+  const selection = window.getSelection()
+  const cursor = document.createRange()
+  cursor.setStartAfter(anchor)
+  cursor.collapse(true)
+  selection?.removeAllRanges()
+  selection?.addRange(cursor)
+  updateCharacterCount()
+  elements.linkDialog.close()
+}
+
+function resetAnnouncementLinkDialog() {
+  state.announcementLinkRange = null
+  elements.linkForm.reset()
+  elements.linkStatus.textContent = ''
+  elements.messageEditor.focus()
 }
 
 function handleMessagePaste(event) {

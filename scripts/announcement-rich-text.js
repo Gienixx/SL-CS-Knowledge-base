@@ -1,4 +1,5 @@
 const ALLOWED_TAGS = new Set([
+  'A',
   'B',
   'BR',
   'DIV',
@@ -11,6 +12,15 @@ const ALLOWED_TAGS = new Set([
   'U',
   'UL'
 ])
+
+export function normalizeAnnouncementLink(value) {
+  try {
+    const url = new URL(String(value || '').trim())
+    return ['http:', 'https:'].includes(url.protocol) ? url.href : ''
+  } catch {
+    return ''
+  }
+}
 
 const BLOCKED_TAGS = new Set([
   'IFRAME',
@@ -61,6 +71,23 @@ function sanitizeNode(node) {
 
   if (!ALLOWED_TAGS.has(node.tagName)) {
     node.replaceWith(...node.childNodes)
+    return
+  }
+
+  if (node.tagName === 'A') {
+    const href = normalizeAnnouncementLink(node.getAttribute('href'))
+
+    if (!href) {
+      node.replaceWith(...node.childNodes)
+      return
+    }
+
+    for (const attribute of [...node.attributes]) {
+      node.removeAttribute(attribute.name)
+    }
+    node.href = href
+    node.target = '_blank'
+    node.rel = 'noopener noreferrer'
     return
   }
 

@@ -135,6 +135,15 @@ h1 { margin: 0 0 4px; font-family: "Space Grotesk", sans-serif; font-size: 21px;
 .announcement-dialog-body { margin-top: 18px; padding-top: 16px; border-top: 1px solid var(--line); color: var(--text-2); font-size: 12px; line-height: 1.65; white-space: pre-wrap; overflow-wrap: anywhere; }
 .announcement-dialog-body ul, .announcement-dialog-body ol { margin: 8px 0; padding-left: 22px; }
 .announcement-dialog-body p, .announcement-dialog-body div { margin: 0 0 7px; }
+.announcement-dialog-body a { color: var(--violet); font-weight: 600; text-decoration: underline; text-underline-offset: 2px; overflow-wrap: anywhere; }
+.announcement-dialog-reactions { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; margin-top: 18px; padding-top: 14px; border-top: 1px solid var(--line); }
+.announcement-dialog-reactions button { min-height: 34px; display: inline-flex; align-items: center; gap: 6px; padding: 0 10px; border: 1px solid var(--line); border-radius: 7px; color: var(--text-2); background: var(--card); font: inherit; font-size: 10px; font-weight: 600; cursor: pointer; }
+.announcement-dialog-reactions button:hover { border-color: var(--text-3); color: var(--text-1); }
+.announcement-dialog-reactions button[aria-pressed="true"] { border-color: var(--violet); color: var(--violet); background: var(--violet-bg); }
+.announcement-dialog-reactions button:disabled { cursor: wait; opacity: .58; }
+.announcement-dialog-reactions strong { min-width: 13px; color: inherit; text-align: center; }
+.announcement-reaction-status { flex: 1 1 100%; min-height: 14px; color: var(--text-3); font-size: 9.5px; }
+.announcement-reaction-status.error { color: var(--coral); }
 
 .home-lower-panels { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; min-height: 0; }
 .home-lower-panel { min-width: 0; padding: 14px 20px 16px; overflow: hidden; }
