@@ -153,12 +153,13 @@ body.modal-open{overflow:hidden}
 /* Workforce management shell */
 body{background:#f6f5fb;font-family:'Inter',sans-serif;color:#14142b}
 .wf-page{width:min(1320px,calc(100% - 40px));padding-top:26px}
-.wf-view-switcher{display:flex;width:100%;min-height:44px;align-items:flex-end;gap:4px;margin-bottom:20px;padding:0;border:0;border-bottom:1px solid var(--wf-border);border-radius:0;background:transparent;box-shadow:none}
-.wf-view-switcher button{min-height:43px;padding:0 15px;border:0;border-bottom:2px solid transparent;border-radius:0;background:transparent;color:var(--wf-muted);font-weight:600;font-size:.72rem;box-shadow:none;cursor:pointer;transition:color .16s ease,border-color .16s ease}
-.wf-view-switcher button:not(.active){border-bottom-color:transparent}
-.wf-view-switcher button:hover{color:var(--wf-navy);background:transparent}
-.wf-view-switcher button.active{border-bottom-color:var(--wf-gold);background:transparent;color:var(--wf-navy);box-shadow:none}
-.wf-view-switcher button:focus-visible{outline:2px solid var(--wf-navy);outline-offset:-3px}
+.wf-view-switcher{display:flex;width:100%;min-height:44px;align-items:flex-end;gap:4px;margin-bottom:20px;padding:0;border:0;background:transparent;box-shadow:none}
+.wf-view-switcher button{min-height:43px;padding:0 15px;border:0!important;border-bottom:2px solid transparent!important;border-radius:0;background:transparent!important;background-color:transparent!important;background-image:none!important;color:var(--wf-muted)!important;font-weight:600;font-size:.72rem;box-shadow:none!important;filter:none!important;text-shadow:none!important;transform:none!important;cursor:pointer;transition:color .16s ease,border-color .16s ease}
+.wf-view-switcher button:not(.active){border-bottom-color:transparent!important;color:var(--wf-muted)!important}
+.wf-view-switcher button:not(.active):hover{border-bottom-color:transparent!important;color:var(--wf-navy)!important;background:transparent!important;background-color:transparent!important;box-shadow:none!important;transform:none!important}
+.wf-view-switcher button.active,.wf-view-switcher button.active:hover{border-bottom-color:var(--wf-gold)!important;background:transparent!important;background-color:transparent!important;color:var(--wf-navy)!important;box-shadow:none!important;transform:none!important}
+.wf-view-switcher button:active:not(:disabled){background:transparent!important;background-color:transparent!important;box-shadow:none!important;transform:none!important}
+.wf-view-switcher button:focus-visible{outline:2px solid var(--wf-navy)!important;outline-offset:-3px}
 .wf-view-switcher button[hidden]{display:none}
 .wf-link,.wf-btn{min-height:40px;padding:9px 16px;border-radius:10px;font-size:.78rem;box-shadow:none}
 .wf-link{border:1.5px solid #eae8f5;background:#fff;color:#1d1d3d}

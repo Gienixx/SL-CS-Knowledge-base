@@ -150,7 +150,13 @@ function configureUserInterface(user, access) {
   }
 
   if (changePasswordButton) {
-    changePasswordButton.hidden = access.is_admin === true
+    changePasswordButton.hidden = !(
+      access.allowed === true && (
+        access.is_agent === true ||
+        access.is_admin === true ||
+        access.is_system_admin === true
+      )
+    )
   }
 }
 

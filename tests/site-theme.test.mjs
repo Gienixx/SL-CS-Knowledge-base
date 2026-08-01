@@ -36,18 +36,39 @@ test('every website page loads the shared attendance theme', async () => {
   }
 })
 
-test('Home places an accessible appearance control between identity and logout', async () => {
+test('Home places account and appearance settings between identity and logout', async () => {
   const page = await read('home.html')
   const identity = page.indexOf('class="who"')
   const settings = page.indexOf('id="siteSettingsButton"')
   const menu = page.indexOf('id="siteSettingsMenu"')
+  const changePassword = page.indexOf('id="homeChangePasswordBtn"')
+  const menuEnd = page.indexOf('</div>', changePassword)
   const logout = page.indexOf('id="homeLogoutBtn"')
 
   assert.ok(identity >= 0 && identity < settings)
   assert.ok(settings < menu && menu < logout)
-  assert.match(page, /aria-label="Appearance settings"/)
+  assert.ok(menu < changePassword && changePassword < menuEnd)
+  assert.match(page, /aria-label="Settings"/)
+  assert.match(page, /styles\/site-theme\.css\?v=5/)
+  assert.match(page, /scripts\/home\.js\?v=8/)
   assert.match(page, /data-theme-choice="light"/)
   assert.match(page, /data-theme-choice="dark"/)
+  assert.match(page, /class="site-settings-action" href="\.\/change-password\.html"/)
+  assert.doesNotMatch(page, /class="settings-link" href="\.\/change-password\.html"/)
+})
+
+test('Change Password is available to agents, admins, and system admins', async () => {
+  const script = await read('scripts/home.js')
+  const stylesheet = await read('styles/site-theme.css')
+
+  assert.match(
+    script,
+    /changePasswordButton\.hidden = !\([\s\S]*access\.is_agent === true[\s\S]*access\.is_admin === true[\s\S]*access\.is_system_admin === true/
+  )
+  assert.match(stylesheet, /\.site-settings-account \{[\s\S]*border-top: 1px solid var\(--site-border\)/)
+  assert.match(stylesheet, /\.site-settings-action \{[\s\S]*color: var\(--site-text\)/)
+  assert.match(stylesheet, /\.site-settings-menu \{[\s\S]*right: auto;[\s\S]*left: 0;[\s\S]*width: 100%;/)
+  assert.match(stylesheet, /\.home-layout\.sidebar-collapsed \.site-settings-menu \{[\s\S]*left: calc\(100% \+ 8px\);[\s\S]*width: 224px;/)
 })
 
 test('theme preference persists and remains synchronized with Attendance', async () => {
@@ -132,4 +153,24 @@ test('Knowledge Base articles retain readable dark surfaces', async () => {
   assert.ok(contrastRatio(token('--site-surface-solid'), token('--site-text')) >= 4.5)
   assert.ok(contrastRatio(token('--site-surface-solid'), token('--site-heading')) >= 4.5)
   assert.ok(contrastRatio(token('--site-surface-solid'), token('--site-muted')) >= 4.5)
+})
+
+test('Change Password uses readable Attendance-style dark surfaces', async () => {
+  const page = await read('change-password.html')
+  const stylesheet = await read('styles/site-theme.css')
+
+  assert.match(page, /class="password-card"/)
+  assert.match(page, /styles\/site-theme\.css\?v=6/)
+  assert.match(
+    stylesheet,
+    /html\[data-site-theme="dark"\] body:has\(\.password-card\) \{[\s\S]*--card-bg: var\(--site-surface-solid\)[\s\S]*--text-primary: var\(--site-text\)[\s\S]*--button-bg: var\(--site-gold\)/
+  )
+  assert.match(
+    stylesheet,
+    /body:has\(\.password-card\) \.password-card \{[\s\S]*background: linear-gradient\([\s\S]*box-shadow: var\(--site-shadow\)/
+  )
+  assert.match(
+    stylesheet,
+    /body:has\(\.password-card\) \.back-link \{[\s\S]*border: 0;[\s\S]*background: transparent;/
+  )
 })

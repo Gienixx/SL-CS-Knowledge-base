@@ -1,8 +1,9 @@
 import { supabase } from './supabaseClient.js?v=10'
 import {
   hasWorkforcePermission,
-  loadCurrentWorkforceAccess
-} from './workforce-permissions.js?v=1'
+  loadCurrentWorkforceAccess,
+  redactAttendanceCorrectionForViewer
+} from './workforce-permissions.js?v=2'
 
 const RELEASED_SCHEDULE_STATUSES = Object.freeze(['published', 'changed'])
 const REQUEST_TIMEOUT_MS = 15000
@@ -707,7 +708,8 @@ async function loadToday() {
   if (attendanceResult.error) throw attendanceResult.error
 
   visibleSchedules = scheduleResult.data || []
-  recentAttendance = attendanceResult.data || []
+  recentAttendance = (attendanceResult.data || [])
+    .map(record => redactAttendanceCorrectionForViewer(access, record))
   renderToday()
 }
 
@@ -728,7 +730,8 @@ async function loadHistory() {
     .abortSignal(requestSignal())
 
   if (error) throw error
-  historyRows = data || []
+  historyRows = (data || [])
+    .map(record => redactAttendanceCorrectionForViewer(access, record))
   renderHistory()
 }
 

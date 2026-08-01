@@ -1,7 +1,8 @@
 import {
   createLegacyWorkforceAccess,
   hasWorkforcePermission,
-  normalizeWorkforceAccess
+  normalizeWorkforceAccess,
+  redactAttendanceCorrectionForViewer
 } from '../shared/workforce-access.js'
 
 function normalizeEmail(value) {
@@ -161,4 +162,7 @@ export async function requireWorkforcePermission(
   return access
 }
 
-export { hasWorkforcePermission }
+export {
+  hasWorkforcePermission,
+  redactAttendanceCorrectionForViewer
+}

@@ -13,7 +13,7 @@
   <link rel="stylesheet" href="./styles/home-workforce-calendar.css?v=3" media="not all" />
   <link rel="stylesheet" href="./styles/home-google-calendar.css?v=1" media="not all" />
   <link rel="stylesheet" href="./styles/home-reference-redesign.css?v=17" />
-  <link rel="stylesheet" href="./styles/site-theme.css?v=1" />
+  <link rel="stylesheet" href="./styles/site-theme.css?v=5" />
   <script src="./scripts/site-theme.js?v=1"></script>
 </head>
 <body>
@@ -52,7 +52,6 @@
       </nav>
 
       <div class="side-foot">
-        <a id="homeChangePasswordBtn" class="settings-link" href="./change-password.html" hidden><span class="nav-icon"><svg viewBox="0 0 24 24"><path d="M6 10h12v10H6zM8.5 10V7.5a3.5 3.5 0 0 1 7 0V10M12 14v2"/></svg></span><span>Change password</span></a>
         <div class="who">
           <span id="homeUserAvatar" class="avatar">CS</span>
           <span><strong id="homeUserName">Support Team</strong><small id="homeUserRole">Team member</small></span>
@@ -60,10 +59,10 @@
             id="siteSettingsButton"
             class="site-settings-button"
             type="button"
-            aria-label="Appearance settings"
+            aria-label="Settings"
             aria-controls="siteSettingsMenu"
             aria-expanded="false"
-            title="Appearance settings"
+            title="Settings"
           >
             <svg viewBox="0 0 24 24" aria-hidden="true">
               <circle cx="12" cy="12" r="3"></circle>
@@ -71,12 +70,20 @@
             </svg>
           </button>
         </div>
-        <div id="siteSettingsMenu" class="site-settings-menu" role="dialog" aria-label="Appearance settings" hidden>
+        <div id="siteSettingsMenu" class="site-settings-menu" role="dialog" aria-label="Settings" hidden>
           <strong>Appearance</strong>
           <small>Choose how SocialLoop looks.</small>
           <div class="site-theme-choices" aria-label="Website theme">
             <button class="site-theme-choice" type="button" data-theme-choice="light" aria-pressed="true">Light</button>
             <button class="site-theme-choice" type="button" data-theme-choice="dark" aria-pressed="false">Dark</button>
+          </div>
+          <div class="site-settings-account">
+            <a id="homeChangePasswordBtn" class="site-settings-action" href="./change-password.html" hidden>
+              <span class="site-settings-action-icon" aria-hidden="true">
+                <svg viewBox="0 0 24 24"><path d="M6 10h12v10H6zM8.5 10V7.5a3.5 3.5 0 0 1 7 0V10M12 14v2"/></svg>
+              </span>
+              <span><strong>Change password</strong><small>Update your account password.</small></span>
+            </a>
           </div>
         </div>
         <button id="homeLogoutBtn" class="logout" type="button">Log out</button>
@@ -206,7 +213,7 @@
     <div id="announcementDialogBody" class="announcement-dialog-body"></div>
   </dialog>
 
-  <script type="module" src="./scripts/home.js?v=7"></script>
+  <script type="module" src="./scripts/home.js?v=8"></script>
   <script type="module" src="./scripts/home-user-name.js?v=2"></script>
   <script type="module" src="./scripts/home-workforce-nav.js?v=7"></script>
   <script type="module" src="./scripts/home-workforce-calendar.js?v=6"></script>

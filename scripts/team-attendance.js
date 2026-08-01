@@ -1,8 +1,9 @@
 import { supabase } from './supabaseClient.js?v=9'
 import {
   hasWorkforcePermission,
-  loadCurrentWorkforceAccess
-} from './workforce-permissions.js?v=1'
+  loadCurrentWorkforceAccess,
+  redactAttendanceCorrectionForViewer
+} from './workforce-permissions.js?v=2'
 
 const ATTENDANCE_STATUS_LABELS = Object.freeze({
   present: 'Present',
@@ -964,17 +965,19 @@ async function loadAttendance() {
   const prepaidByAttendance = new Map(
     (prepaidResult.data || []).map(row => [row.attendance_id, row])
   )
-  attendanceRows = (attendanceResult.data || []).map(row => ({
-    prepaid_clock_in: null,
-    prepaid_clock_out: null,
-    prepaid_minutes: null,
-    actual_eligible_minutes: null,
-    applied_prepaid_minutes: 0,
-    remaining_prepaid_minutes: null,
-    prepaid_status: null,
-    ...row,
-    ...(prepaidByAttendance.get(row.attendance_id) || {})
-  }))
+  attendanceRows = (attendanceResult.data || []).map(row => (
+    redactAttendanceCorrectionForViewer(access, {
+      prepaid_clock_in: null,
+      prepaid_clock_out: null,
+      prepaid_minutes: null,
+      actual_eligible_minutes: null,
+      applied_prepaid_minutes: 0,
+      remaining_prepaid_minutes: null,
+      prepaid_status: null,
+      ...row,
+      ...(prepaidByAttendance.get(row.attendance_id) || {})
+    })
+  ))
   mergeAttendanceReferences(attendanceRows)
   renderTable()
   setMessage(elements.filterMessage, `Attendance loaded for ${formatDate(range.start)} through ${formatDate(range.end)}.`, 'success')

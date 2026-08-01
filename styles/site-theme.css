@@ -832,30 +832,41 @@ html[data-site-theme="dark"] .event-type.rest-day {
 /* Workforce and Schedule Management dark highlights. */
 html[data-site-theme="dark"] .wf-view-switcher {
   border: 0;
-  border-bottom: 1px solid var(--site-border);
   background: transparent;
   box-shadow: none;
 }
 
 html[data-site-theme="dark"] .wf-view-switcher button {
-  color: var(--site-muted);
-  background: transparent;
+  border-bottom-color: transparent !important;
+  color: var(--site-muted) !important;
+  background: transparent !important;
+  background-color: transparent !important;
+  box-shadow: none !important;
+  filter: none !important;
+  text-shadow: none !important;
+  transform: none !important;
 }
 
 html[data-site-theme="dark"] .wf-view-switcher button:not(.active) {
-  border-bottom-color: transparent;
+  border-bottom-color: transparent !important;
+  color: var(--site-muted) !important;
 }
 
-html[data-site-theme="dark"] .wf-view-switcher button:hover {
-  color: var(--site-heading);
-  background: transparent;
+html[data-site-theme="dark"] .wf-view-switcher button:not(.active):hover {
+  border-bottom-color: transparent !important;
+  color: var(--site-heading) !important;
+  background: transparent !important;
+  box-shadow: none !important;
 }
 
-html[data-site-theme="dark"] .wf-view-switcher button.active {
-  border-bottom-color: var(--site-gold);
-  color: var(--site-heading);
-  background: transparent;
-  box-shadow: none;
+html[data-site-theme="dark"] .wf-view-switcher button.active,
+html[data-site-theme="dark"] .wf-view-switcher button.active:hover {
+  border-bottom-color: var(--site-gold) !important;
+  color: var(--site-heading) !important;
+  background: transparent !important;
+  background-color: transparent !important;
+  box-shadow: none !important;
+  transform: none !important;
 }
 
 html[data-site-theme="dark"] .wf-schedule-grid-table th {
@@ -1113,9 +1124,10 @@ html[data-site-theme] .side-foot {
 .site-settings-menu {
   position: absolute;
   z-index: 80;
-  right: 0;
+  right: auto;
   bottom: 44px;
-  width: 196px;
+  left: 0;
+  width: 100%;
   padding: 12px;
   border: 1px solid var(--site-border);
   border-radius: 12px;
@@ -1172,6 +1184,57 @@ html[data-site-theme] .side-foot {
   box-shadow: 0 4px 12px rgba(0, 0, 0, .12);
 }
 
+.site-settings-account {
+  margin-top: 10px;
+  padding-top: 10px;
+  border-top: 1px solid var(--site-border);
+}
+
+.site-settings-action {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  padding: 8px;
+  border-radius: 8px;
+  color: var(--site-text);
+  text-decoration: none;
+  transition: color .16s ease, background-color .16s ease;
+}
+
+.site-settings-action:hover {
+  color: var(--site-heading);
+  background: var(--site-blue-soft);
+}
+
+.site-settings-action-icon {
+  display: grid;
+  width: 28px;
+  height: 28px;
+  flex: 0 0 28px;
+  place-items: center;
+  border-radius: 8px;
+  color: var(--site-gold);
+  background: var(--site-amber-soft);
+}
+
+.site-settings-action-icon svg {
+  width: 15px;
+  height: 15px;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 1.8;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+.site-settings-action strong {
+  font-size: 11px;
+}
+
+.site-settings-action small {
+  font-size: 9.5px;
+}
+
 .home-layout.sidebar-collapsed .who > span:nth-child(2) {
   display: none;
 }
@@ -1188,6 +1251,7 @@ html[data-site-theme] .side-foot {
   right: auto;
   bottom: 0;
   left: calc(100% + 8px);
+  width: 224px;
 }
 
 html[data-site-theme="dark"] .home-timezone-popover,
@@ -1195,6 +1259,95 @@ html[data-site-theme="dark"] .announcement-dialog {
   border-color: var(--site-border);
   color: var(--site-text);
   background: var(--site-surface-solid);
+}
+
+/* Change Password follows the Attendance Control dark contrast hierarchy. */
+html[data-site-theme="dark"] body:has(.password-card) {
+  --card-bg: var(--site-surface-solid);
+  --border: var(--site-border);
+  --border-strong: var(--site-blue);
+  --text-primary: var(--site-text);
+  --text-secondary: var(--site-muted);
+  --text-muted: color-mix(in srgb, var(--site-muted) 86%, transparent);
+  --banner-bg: var(--site-amber-soft);
+  --banner-border: color-mix(in srgb, var(--site-gold) 38%, transparent);
+  --banner-text: var(--site-heading);
+  --link: var(--site-blue);
+  --danger: var(--site-red);
+  --warning: var(--site-gold);
+  --success: var(--site-green);
+  --button-bg: var(--site-gold);
+  --button-hover: color-mix(in srgb, var(--site-gold) 84%, #fff);
+  --button-text: #071321;
+}
+
+html[data-site-theme="dark"] body:has(.password-card) .password-card {
+  border-color: var(--site-border);
+  color: var(--site-text);
+  background: linear-gradient(
+    180deg,
+    rgba(9, 26, 45, .98),
+    rgba(6, 20, 36, .98)
+  );
+  box-shadow: var(--site-shadow);
+}
+
+html[data-site-theme="dark"] body:has(.password-card) .mode-banner {
+  border-color: color-mix(in srgb, var(--site-gold) 38%, transparent);
+  color: var(--site-heading);
+  background: var(--site-amber-soft);
+}
+
+html[data-site-theme="dark"] body:has(.password-card) :is(
+  input[type="password"],
+  input[type="text"]
+) {
+  border-color: var(--site-border);
+  color: var(--site-text);
+  background: var(--site-bg-deep);
+}
+
+html[data-site-theme="dark"] body:has(.password-card) :is(
+  input[type="password"],
+  input[type="text"]
+):focus {
+  border-color: var(--site-blue);
+  box-shadow: 0 0 0 3px var(--site-focus);
+}
+
+html[data-site-theme="dark"] body:has(.password-card) .icon-button {
+  color: var(--site-muted);
+  background: transparent;
+  box-shadow: none;
+}
+
+html[data-site-theme="dark"] body:has(.password-card) .icon-button:hover {
+  color: var(--site-blue);
+  background: var(--site-blue-soft);
+}
+
+html[data-site-theme="dark"] body:has(.password-card) .submit-button {
+  border: 1px solid var(--site-gold);
+  color: #071321;
+  background: var(--site-gold);
+  box-shadow: none;
+}
+
+html[data-site-theme="dark"] body:has(.password-card) .submit-button:hover:not(:disabled) {
+  color: #071321;
+  background: color-mix(in srgb, var(--site-gold) 84%, #fff);
+}
+
+html[data-site-theme="dark"] body:has(.password-card) .back-link {
+  border: 0;
+  color: var(--site-muted);
+  background: transparent;
+  box-shadow: none;
+  backdrop-filter: none;
+}
+
+html[data-site-theme="dark"] body:has(.password-card) .back-link a {
+  color: var(--site-blue);
 }
 
 @media (prefers-reduced-motion: reduce) {

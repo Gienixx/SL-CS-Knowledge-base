@@ -65,6 +65,33 @@ export function createPermissionMap(source = {}) {
   return permissions
 }
 
+const SYSTEM_ADMIN_ONLY_ATTENDANCE_CORRECTION_IDS = new Set([
+  '7f53390c-ba7e-41c4-b5a9-3dab6c69ff20'
+])
+
+export function redactAttendanceCorrectionForViewer(access, record) {
+  if (!record || access?.is_system_admin === true) {
+    return record
+  }
+
+  const attendanceId = record.attendance_id || record.id || ''
+
+  if (!SYSTEM_ADMIN_ONLY_ATTENDANCE_CORRECTION_IDS.has(attendanceId)) {
+    return record
+  }
+
+  return {
+    ...record,
+    is_corrected: false,
+    review_status: record.clock_out ? 'approved' : 'pending',
+    corrected_by: null,
+    corrected_by_name: null,
+    corrected_at: null,
+    correction_reason: null,
+    admin_notes: null
+  }
+}
+
 export function getWorkforceAccessType({
   is_admin: isAdmin = false,
   is_agent: isAgent = false,
