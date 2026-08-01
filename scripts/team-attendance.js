@@ -95,6 +95,11 @@ function defaultDateRange() {
   }
 }
 
+function defaultAgentDateRange() {
+  const today = localDateKey()
+  return { start: today, end: today }
+}
+
 function isValidUuid(value) {
   return /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(value)
 }
@@ -610,6 +615,7 @@ function createTimeline(record) {
 }
 
 function createAttendanceCard(record) {
+  const isAdminView = access?.is_admin === true
   const card = document.createElement('article')
   card.className = 'team-attendance-record'
   if (record.is_open) card.classList.add('is-open')
@@ -648,7 +654,7 @@ function createAttendanceCard(record) {
     `Undertime: ${formatMinutes(record.undertime_minutes)}`
   ].join(' · ')
   actionMenu.append(actionSummary, createActionCell(record).firstElementChild)
-  badges.appendChild(actionMenu)
+  if (isAdminView) badges.appendChild(actionMenu)
   top.append(person, badges)
 
   const middle = document.createElement('div')
@@ -712,8 +718,13 @@ function createAttendanceCard(record) {
     ? `${reviewStatus} by ${record.corrected_by_name || 'administrator'}${record.corrected_at ? ` · ${formatDateTime(record.corrected_at, record.employee_timezone, true)}` : ''}${record.correction_reason ? ` · ${record.correction_reason}` : ''}`
     : `Correction status: ${reviewStatus}`
   footer.appendChild(correction)
-  card.append(top, middle, createTimeline(record), stats, prepaid)
-  if (record.is_corrected || record.correction_reason || record.admin_notes) card.appendChild(footer)
+  card.append(top, middle, createTimeline(record))
+  if (isAdminView) {
+    card.append(stats, prepaid)
+    if (record.is_corrected || record.correction_reason || record.admin_notes) {
+      card.appendChild(footer)
+    }
+  }
   return card
 }
 
@@ -788,6 +799,13 @@ function populateAddEmployees() {
 }
 
 async function loadReferenceData() {
+  if (access?.is_admin !== true) {
+    employees = []
+    teams = []
+    populateFilters()
+    return
+  }
+
   const [profileResult, teamResult] = await Promise.all([
     supabase
       .from('profiles')
@@ -945,18 +963,30 @@ async function handleAddSubmit(messageElement) {
 }
 
 async function loadAttendance() {
-  const range = validateDateRange()
+  const range = access?.is_admin === true
+    ? validateDateRange()
+    : defaultAgentDateRange()
+
+  if (access?.is_admin !== true) {
+    elements.startDate.value = range.start
+    elements.endDate.value = range.end
+  }
   setMessage(elements.filterMessage, 'Loading authorized attendance records...')
 
-  const [attendanceResult, prepaidResult] = await Promise.all([
-    supabase.rpc('workforce_list_team_attendance', {
-      p_start_date: range.start,
-      p_end_date: range.end
-    }),
-    supabase.rpc('workforce_list_team_attendance_prepaid', {
+  const attendanceRequest = supabase.rpc('workforce_list_team_attendance', {
+    p_start_date: range.start,
+    p_end_date: range.end
+  })
+  const prepaidRequest = access?.is_admin === true
+    ? supabase.rpc('workforce_list_team_attendance_prepaid', {
       p_start_date: range.start,
       p_end_date: range.end
     })
+    : Promise.resolve({ data: [], error: null })
+
+  const [attendanceResult, prepaidResult] = await Promise.all([
+    attendanceRequest,
+    prepaidRequest
   ])
 
   if (attendanceResult.error) throw attendanceResult.error
@@ -980,7 +1010,13 @@ async function loadAttendance() {
   ))
   mergeAttendanceReferences(attendanceRows)
   renderTable()
-  setMessage(elements.filterMessage, `Attendance loaded for ${formatDate(range.start)} through ${formatDate(range.end)}.`, 'success')
+  setMessage(
+    elements.filterMessage,
+    access?.is_admin === true
+      ? `Attendance loaded for ${formatDate(range.start)} through ${formatDate(range.end)}.`
+      : `Showing agents currently clocked in for ${formatDate(range.start)}, including early clock-ins assigned to today's schedule.`,
+    'success'
+  )
 }
 
 function setBusy(value) {
@@ -1259,7 +1295,11 @@ async function initialize() {
     return
   }
 
-  if (!access.allowed || !hasWorkforcePermission(access, 'view_team_attendance')) {
+  const hasAdminAttendanceAccess = access.is_admin === true &&
+    hasWorkforcePermission(access, 'view_team_attendance')
+  const hasAgentLiveAccess = access.is_admin !== true && access.is_agent === true
+
+  if (!access.allowed || (!hasAdminAttendanceAccess && !hasAgentLiveAccess)) {
     window.alert('You do not have permission to view team attendance.')
     window.location.replace('./home.html')
     return
@@ -1270,15 +1310,28 @@ async function initialize() {
   )
   elements.scope.textContent = access.is_admin === true
     ? 'Showing attendance for all employees permitted by your administrator access.'
-    : 'Showing only employees assigned to your authorized supervisor scope.'
+    : `Showing agents currently clocked in today, including prior-night clock-ins assigned to today's schedule.`
   elements.addButton.hidden = !(
     access.is_admin === true && hasWorkforcePermission(access, 'manage_schedules')
   )
 
-  const linkedFilters = payrollAttendanceLinkFilters()
-  const range = linkedFilters || defaultDateRange()
+  const linkedFilters = access.is_admin === true
+    ? payrollAttendanceLinkFilters()
+    : null
+  const range = linkedFilters || (
+    access.is_admin === true
+      ? defaultDateRange()
+      : defaultAgentDateRange()
+  )
   elements.startDate.value = range.start
   elements.endDate.value = range.end
+
+  if (access.is_admin !== true) {
+    const advancedFilters = document.querySelector('.team-attendance-advanced-filters')
+    const quickFilters = document.querySelector('.team-attendance-chips')
+    if (advancedFilters) advancedFilters.hidden = true
+    if (quickFilters) quickFilters.hidden = true
+  }
   bindEvents()
 
   await loadReferenceData()

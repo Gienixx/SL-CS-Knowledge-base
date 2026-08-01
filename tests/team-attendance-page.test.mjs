@@ -56,7 +56,7 @@ test('Step 10 page contains every required attendance column and filter', async 
   }
 })
 
-test('Team Attendance defaults to the current half-month attendance period', async () => {
+test('administrator Team Attendance defaults to the current half-month attendance period', async () => {
   const script = await read('scripts/team-attendance.js')
   const functionSource = script.match(/function defaultDateRange\(\) \{[\s\S]*?\n\}/)?.[0]
 
@@ -92,9 +92,11 @@ test('Team Attendance defaults to the current half-month attendance period', asy
   })
 })
 
-test('Team Attendance requires view permission and only corrects attendance through the RPC', async () => {
+test('Team Attendance gives regular agents live access while retaining admin permission checks', async () => {
   const script = await read('scripts/team-attendance.js')
 
+  assert.match(script, /const hasAdminAttendanceAccess = access\.is_admin === true/)
+  assert.match(script, /const hasAgentLiveAccess = access\.is_admin !== true && access\.is_agent === true/)
   assert.match(script, /hasWorkforcePermission\(access, 'view_team_attendance'\)/)
   assert.match(script, /workforce_list_team_attendance/)
   assert.doesNotMatch(script, /\.from\('attendance'\)\s*\.update\(/)
@@ -196,7 +198,7 @@ test('Team Attendance does not flag fully classified long overtime records', asy
   const page = await read('team-attendance.html')
   const script = await read('scripts/team-attendance.js')
 
-  assert.match(page, /scripts\/team-attendance\.js\?v=9/)
+  assert.match(page, /scripts\/team-attendance\.js\?v=10/)
   assert.match(script, /const hasUnclassifiedWorkedMinutes = workedMinutes > regularMinutes \+ overtimeMinutes/)
   assert.match(script, /record\.schedule_id && hasUnclassifiedWorkedMinutes/)
   assert.match(script, /if \(overtimeMinutes > 0\) return \{ label: 'Overtime'/)

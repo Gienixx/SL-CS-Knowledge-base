@@ -170,7 +170,7 @@ test('missing attendance links open the exact employee and work date only for at
     /state\.canViewAttendance = hasWorkforcePermission\(\s*access,\s*'view_team_attendance'/
   )
   assert.match(periodScript, /source: 'payroll-missing'/)
-  assert.match(attendancePage, /scripts\/team-attendance\.js\?v=9/)
+  assert.match(attendancePage, /scripts\/team-attendance\.js\?v=10/)
   assert.match(attendanceScript, /function payrollAttendanceLinkFilters\(\)/)
   assert.match(
     attendanceScript,
@@ -200,7 +200,7 @@ test('payroll pages require explicit processing permissions and Home hides the l
     home,
     /id="homePayrollDashboardBtn"[\s\S]*?href="\.\/payroll-dashboard\.html"[\s\S]*?hidden/
   )
-  assert.match(home, /home-workforce-nav\.js\?v=7/)
+  assert.match(home, /home-workforce-nav\.js\?v=8/)
   assert.match(
     homeNavigation,
     /canAccessPayrollDashboard = \[[\s\S]*?'create_payroll'[\s\S]*?\.some\(permission => hasWorkforcePermission\(access, permission\)\)/

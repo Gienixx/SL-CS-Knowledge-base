@@ -6,6 +6,7 @@ import {
 import {
   removeArticleImage
 } from './article-image-upload.js?v=1'
+import { getArticleHref } from './article-route.js?v=1'
 import { requireWorkforcePermission } from './workforce-permissions.js'
 import './article-nesting-styles.js?v=1'
 import './article-preview-parser-styles.js?v=1'
@@ -290,8 +291,7 @@ function renderPreview(article) {
   }
 
   if (article.published === true) {
-    openPublishedArticleLink.href =
-      `./KB.html?article=${encodeURIComponent(article.id)}`
+    openPublishedArticleLink.href = getArticleHref(article)
     openPublishedArticleLink.hidden = false
   } else {
     openPublishedArticleLink.href = '#'

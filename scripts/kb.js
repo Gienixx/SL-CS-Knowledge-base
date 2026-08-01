@@ -4,6 +4,11 @@ import {
   renderArticleUnit,
   stripInlineFormatting
 } from './article-content-renderer-v8.js?v=2'
+import {
+  findArticleByRouteValue,
+  getArticleHref,
+  getArticleRouteValue
+} from './article-route.js?v=1'
 import './article-nesting-styles.js?v=1'
 import './article-published-parser-styles.js?v=1'
 
@@ -37,7 +42,8 @@ const categoryLabels = {
 
 let publishedArticles = []
 let activeCategory = getInitialCategory()
-let selectedId = getRequestedArticleId()
+let requestedArticleRoute = getRequestedArticleRoute()
+let selectedId = ''
 let searchQuery = ''
 
 const elements = {
@@ -53,7 +59,7 @@ function getInitialCategory() {
   return Object.hasOwn(categoryLabels, category) ? category : 'ALL'
 }
 
-function getRequestedArticleId() {
+function getRequestedArticleRoute() {
   const parameters = new URLSearchParams(window.location.search)
 
   return (
@@ -63,11 +69,11 @@ function getRequestedArticleId() {
   ).trim()
 }
 
-function getKnowledgeBaseUrl({ articleId = '', category = '' } = {}) {
+function getKnowledgeBaseUrl({ articleTitle = '', category = '' } = {}) {
   const url = new URL('./KB.html', window.location.href)
 
-  if (articleId) {
-    url.searchParams.set('article', articleId)
+  if (articleTitle) {
+    url.searchParams.set('article', getArticleRouteValue(articleTitle))
   } else if (category && category !== 'ALL') {
     url.searchParams.set('category', category)
   }
@@ -151,7 +157,7 @@ function mapArticle(row) {
     description,
     content: String(row.content || '').trim(),
     imageUrl: String(row.image_url || '').trim(),
-    url: `./KB.html?article=${encodeURIComponent(row.id)}`,
+    url: getArticleHref({ title: row.title }),
     search: `${row.title || ''} ${description} ${row.content || ''} ${author} ${updater} ${category}`.toLowerCase()
   }
 }
@@ -248,7 +254,7 @@ function renderList(items) {
       updateKnowledgeBaseRoute(
         item.category === 'links'
           ? { category: 'LINKS' }
-          : { articleId: item.id }
+          : { articleTitle: item.title }
       )
 
       renderList(items)
@@ -374,12 +380,21 @@ document.addEventListener('DOMContentLoaded', async () => {
   try {
     publishedArticles = await fetchArticles()
 
-    const requestedArticle = publishedArticles.find(
-      article => article.id === selectedId
+    const requestedArticle = findArticleByRouteValue(
+      publishedArticles,
+      requestedArticleRoute
     )
 
     if (requestedArticle) {
+      selectedId = requestedArticle.id
       activeCategory = requestedArticle.category.toUpperCase()
+      const canonicalRoute = getArticleRouteValue(requestedArticle.title)
+      if (requestedArticleRoute !== canonicalRoute) {
+        updateKnowledgeBaseRoute(
+          { articleTitle: requestedArticle.title },
+          'replaceState'
+        )
+      }
     } else {
       selectedId = ''
     }
@@ -396,9 +411,10 @@ document.addEventListener('DOMContentLoaded', async () => {
 })
 
 window.addEventListener('popstate', () => {
-  const requestedArticleId = getRequestedArticleId()
-  const requestedArticle = publishedArticles.find(
-    article => article.id === requestedArticleId
+  requestedArticleRoute = getRequestedArticleRoute()
+  const requestedArticle = findArticleByRouteValue(
+    publishedArticles,
+    requestedArticleRoute
   )
 
   searchQuery = ''
@@ -407,6 +423,13 @@ window.addEventListener('popstate', () => {
   if (requestedArticle) {
     selectedId = requestedArticle.id
     activeCategory = requestedArticle.category.toUpperCase()
+    const canonicalRoute = getArticleRouteValue(requestedArticle.title)
+    if (requestedArticleRoute !== canonicalRoute) {
+      updateKnowledgeBaseRoute(
+        { articleTitle: requestedArticle.title },
+        'replaceState'
+      )
+    }
   } else {
     selectedId = ''
     activeCategory = getInitialCategory()

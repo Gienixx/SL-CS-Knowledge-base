@@ -41,10 +41,9 @@ async function configureHomeWorkforceNavigation() {
       hasWorkforcePermission(access, 'manage_schedules')
 
     const canUseAttendance = access.is_agent === true
-    const canViewTeamAttendance = hasWorkforcePermission(
-      access,
-      'view_team_attendance'
-    )
+    const canViewTeamAttendance = access.is_admin === true
+      ? hasWorkforcePermission(access, 'view_team_attendance')
+      : access.is_agent === true
     const canViewOwnPayslips = hasWorkforcePermission(
       access,
       'view_own_payslips'
