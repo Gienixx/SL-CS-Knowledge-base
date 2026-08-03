@@ -4,10 +4,11 @@ import test from 'node:test'
 
 const read = path => readFile(new URL(`../${path}`, import.meta.url), 'utf8')
 
-const [html, client, migration, theme] = await Promise.all([
+const [html, client, migration, attendanceMigration, theme] = await Promise.all([
   read('workforce.html'),
   read('scripts/workforce-schedules.js'),
   read('supabase/migrations/20260803090118_allow_open_schedules.sql'),
+  read('supabase/migrations/20260803095337_allow_open_schedule_attendance.sql'),
   read('styles/site-theme.css')
 ])
 
@@ -55,4 +56,11 @@ test('database permits only non-holiday open schedule placeholders', () => {
   assert.match(migration, /null, null, v_timezone, v_status, false, false, null/)
   assert.match(migration, /revoke all[\s\S]*from public, anon, authenticated/)
   assert.match(migration, /grant execute[\s\S]*to authenticated/)
+})
+
+test('attendance can be recorded against an open schedule without fixed-time calculations', () => {
+  assert.match(attendanceMigration, /create or replace function public\.workforce_recalculate_attendance\(/)
+  assert.doesNotMatch(attendanceMigration, /Normal attendance requires a complete scheduled shift/)
+  assert.match(attendanceMigration, /workforce_calculate_attendance\([\s\S]*v_schedule\.shift_start[\s\S]*v_schedule\.shift_end/)
+  assert.match(attendanceMigration, /'open_schedule_attendance_enabled'/)
 })
