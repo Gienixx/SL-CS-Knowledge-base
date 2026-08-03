@@ -447,6 +447,11 @@
             <input id="scheduleIsOpen" type="checkbox">
             <span>Open schedule (no fixed clock-in or clock-out)</span>
           </label>
+          <label id="schedulePlannedPaidHoursField" class="wf-field full" hidden>
+            <span>Planned paid hours</span>
+            <input class="wf-control" id="schedulePlannedPaidHours" type="number" min="0.25" max="24" step="0.25" value="8">
+            <small class="wf-subtext">Actual time up to this duration is regular; excess time is overtime pending review.</small>
+          </label>
           <label class="wf-field full">
             <span>Holiday name</span>
             <input class="wf-control" id="scheduleHolidayName" disabled placeholder="Required when marked as a holiday">
@@ -468,7 +473,7 @@
   </div>
 
   <script type="module" src="./scripts/workforce.js?v=18"></script>
-  <script type="module" src="./scripts/workforce-schedules-entry.js?v=11"></script>
+  <script type="module" src="./scripts/workforce-schedules-entry.js?v=12"></script>
   <script type="module" src="./scripts/workforce-view-switcher.js?v=2"></script>
 </body>
 </html>

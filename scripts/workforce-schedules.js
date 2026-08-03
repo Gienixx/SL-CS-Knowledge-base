@@ -26,6 +26,8 @@ if (section) {
   const restDayInput = document.getElementById('scheduleIsRestDay')
   const holidayInput = document.getElementById('scheduleIsHoliday')
   const openScheduleInput = document.getElementById('scheduleIsOpen')
+  const plannedPaidHoursField = document.getElementById('schedulePlannedPaidHoursField')
+  const plannedPaidHoursInput = document.getElementById('schedulePlannedPaidHours')
   const repeatWeeklyInput = document.getElementById('scheduleRepeatWeekly')
   const scheduleFrequency = document.getElementById('scheduleFrequency')
   const scheduleToDate = document.getElementById('scheduleToDate')
@@ -197,6 +199,12 @@ if (section) {
     })
 
     return `${formatter.format(new Date(schedule.shift_start))} – ${formatter.format(new Date(schedule.shift_end))}`
+  }
+
+  function formatPlannedHours(minutes) {
+    const hours = Math.max(0, Number(minutes) || 0) / 60
+    const label = Number.isInteger(hours) ? String(hours) : String(Number(hours.toFixed(2)))
+    return `${label}h planned`
   }
 
   function localTimeInputValue(value, timeZone) {
@@ -380,7 +388,10 @@ if (section) {
           const editButton = document.createElement('button')
           editButton.type = 'button'
           editButton.className = 'wf-chip-main'
-          editButton.innerHTML = `<strong>${schedule.is_rest_day ? 'Rest day' : schedule.is_holiday ? schedule.holiday_name || 'Holiday' : formatShift(schedule)}</strong><small>${schedule.is_rest_day ? '' : `Sequence ${schedule.shift_sequence}`}</small>`
+          const scheduleMeta = isOpenSchedule
+            ? `${formatPlannedHours(schedule.planned_paid_minutes)} · Sequence ${schedule.shift_sequence}`
+            : schedule.is_rest_day ? '' : `Sequence ${schedule.shift_sequence}`
+          editButton.innerHTML = `<strong>${schedule.is_rest_day ? 'Rest day' : schedule.is_holiday ? schedule.holiday_name || 'Holiday' : formatShift(schedule)}</strong><small>${scheduleMeta}</small>`
           editButton.addEventListener('click', () => openSchedule(schedule.id))
           const deleteButton = document.createElement('button')
           deleteButton.type = 'button'
@@ -463,6 +474,11 @@ if (section) {
     holidayName.required = isHoliday
     if (!isHoliday) holidayName.value = ''
 
+    plannedPaidHoursField.hidden = !isOpenSchedule
+    plannedPaidHoursInput.disabled = !isOpenSchedule
+    plannedPaidHoursInput.required = isOpenSchedule
+    if (isOpenSchedule && !plannedPaidHoursInput.value) plannedPaidHoursInput.value = '8'
+
     repeatWeeklyInput.disabled = isOpenSchedule
     if (isOpenSchedule) repeatWeeklyInput.checked = false
   }
@@ -525,6 +541,7 @@ if (section) {
     document.getElementById('scheduleSequence').value = '1'
     document.getElementById('scheduleTimezone').value = 'America/New_York'
     document.getElementById('scheduleStatus').value = 'published'
+    plannedPaidHoursInput.value = '8'
     document.getElementById('scheduleEmployee').value = employeeFilter.value || ''
     scheduleFrequency.disabled = false
     setMessage(formMessage, '')
@@ -550,6 +567,7 @@ if (section) {
       restDayInput.checked = schedule.is_rest_day === true
       holidayInput.checked = schedule.is_holiday === true
       openScheduleInput.checked = !schedule.is_rest_day && !schedule.is_holiday && !schedule.shift_start && !schedule.shift_end
+      plannedPaidHoursInput.value = String((Number(schedule.planned_paid_minutes) || 480) / 60)
       document.getElementById('scheduleHolidayName').value = schedule.holiday_name || ''
       document.getElementById('scheduleNotes').value = schedule.notes || ''
       document.getElementById('scheduleStart').value = localTimeInputValue(schedule.shift_start, schedule.timezone)
@@ -580,7 +598,7 @@ if (section) {
           .order('name'),
         supabase
           .from('work_schedules')
-          .select('id, user_id, team_id, shift_date, shift_sequence, shift_start, shift_end, timezone, status, is_rest_day, is_holiday, holiday_name, notes, updated_at')
+          .select('id, user_id, team_id, shift_date, shift_sequence, shift_start, shift_end, timezone, status, is_rest_day, is_holiday, holiday_name, notes, planned_paid_minutes, updated_at')
           .gte('shift_date', range.start)
           .lte('shift_date', range.end)
           .order('shift_date')
@@ -619,6 +637,8 @@ if (section) {
     const isRestDay = restDayInput.checked
     const isHoliday = holidayInput.checked
     const isOpenSchedule = openScheduleInput.checked
+    const plannedPaidHours = Number(plannedPaidHoursInput.value)
+    const plannedPaidMinutes = Math.round(plannedPaidHours * 60)
     const holidayName = normalizeText(document.getElementById('scheduleHolidayName').value) || null
     const notes = normalizeText(document.getElementById('scheduleNotes').value) || null
     const repeatWeekly = repeatWeeklyInput.checked
@@ -650,6 +670,15 @@ if (section) {
       return
     }
 
+    if (isOpenSchedule && (
+      !Number.isFinite(plannedPaidHours)
+      || plannedPaidMinutes < 15
+      || plannedPaidMinutes > 1440
+    )) {
+      setMessage(formMessage, 'Planned paid hours must be between 0.25 and 24.', 'error')
+      return
+    }
+
     const startTime = document.getElementById('scheduleStart').value
     const endTime = document.getElementById('scheduleEnd').value
     if (!isRestDay && !isOpenSchedule && (!startTime || !endTime)) {
@@ -677,7 +706,8 @@ if (section) {
               p_shift_sequence: sequence,
               p_timezone: timezone,
               p_status: status,
-              p_notes: notes
+              p_notes: notes,
+              p_planned_paid_minutes: plannedPaidMinutes
             })
           : await supabase.rpc('workforce_admin_save_schedule_and_repeat', {
               p_schedule_id: scheduleId,
