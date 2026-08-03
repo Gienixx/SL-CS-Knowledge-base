@@ -884,7 +884,7 @@ async function loadAddSchedules() {
         : ''
     const times = schedule.shift_start && schedule.shift_end
       ? `${formatDateTime(schedule.shift_start, schedule.timezone)} – ${formatDateTime(schedule.shift_end, schedule.timezone)}`
-      : 'No shift times'
+      : schedule.is_rest_day || schedule.is_holiday ? 'No shift times' : 'Open schedule'
     select.appendChild(new Option([times, specialDay, schedule.status].filter(Boolean).join(' · '), schedule.id))
   }
 
@@ -1169,7 +1169,7 @@ async function loadCorrectionSchedules(row) {
         : ''
     const times = schedule.shift_start && schedule.shift_end
       ? `${formatDateTime(schedule.shift_start, schedule.timezone)} – ${formatDateTime(schedule.shift_end, schedule.timezone)}`
-      : 'No shift times'
+      : schedule.is_rest_day || schedule.is_holiday ? 'No shift times' : 'Open schedule'
     const option = new Option(times, schedule.id)
     option.dataset.status = [specialDay, schedule.status].filter(Boolean).join(' · ')
     select.appendChild(option)

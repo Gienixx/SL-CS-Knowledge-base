@@ -199,7 +199,7 @@ function formatShift(schedule) {
   }
 
   if (!schedule.shift_start || !schedule.shift_end) {
-    return schedule.is_holiday ? specialDayLabel(schedule) : 'Shift time unavailable'
+    return schedule.is_holiday ? specialDayLabel(schedule) : 'Open schedule'
   }
 
   const formatter = new Intl.DateTimeFormat('en-US', {
@@ -459,7 +459,7 @@ function updateScheduleHelp() {
   } else if (availability.state === 'future') {
     elements.scheduleHelp.textContent = 'Rest-day and holiday clock-in opens on the scheduled work date.'
   } else {
-    elements.scheduleHelp.textContent = 'Clock-in is unavailable for this schedule.'
+    elements.scheduleHelp.textContent = 'This is an open schedule. Fixed shift times must be added before self-service clock-in is available.'
   }
 }
 

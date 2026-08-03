@@ -292,7 +292,7 @@ function upcomingScheduleTitle(schedule) {
   }
 
   if (!schedule.shift_start || !schedule.shift_end) {
-    return 'Shift time unavailable'
+    return 'Open schedule'
   }
 
   return formatShiftRange(schedule)
@@ -320,6 +320,9 @@ function scheduleType(schedule) {
   }
   if (schedule.is_holiday) {
     return { label: 'Holiday', className: 'holiday' }
+  }
+  if (!schedule.shift_start && !schedule.shift_end) {
+    return { label: 'Open schedule', className: 'shift' }
   }
   return { label: 'Shift', className: 'shift' }
 }
@@ -466,7 +469,7 @@ function compactScheduleLabel(schedules) {
   if (schedule.status === 'cancelled') return 'Cancelled'
   if (schedule.is_rest_day) return 'Rest day'
   if (schedule.is_holiday) return 'Holiday'
-  if (!schedule.shift_start) return 'Shift'
+  if (!schedule.shift_start) return 'Open'
 
   return new Intl.DateTimeFormat('en-US', {
     timeZone: schedule.timezone || state.access?.timezone || 'America/New_York',
@@ -493,7 +496,7 @@ function scheduleDescription(schedule) {
   }
 
   if (!schedule.shift_start || !schedule.shift_end) {
-    return `Shift time unavailable, ${status}`
+    return `Open schedule, ${status}`
   }
 
   const holiday = schedule.is_holiday

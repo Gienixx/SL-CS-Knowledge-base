@@ -168,7 +168,7 @@ function formatDateTime(value, timeZone = 'America/New_York') {
 
 function formatShift(schedule) {
   if (schedule.is_rest_day) return 'Rest day'
-  if (!schedule.shift_start || !schedule.shift_end) return 'Time not available'
+  if (!schedule.shift_start || !schedule.shift_end) return 'Open schedule'
 
   const formatter = new Intl.DateTimeFormat('en-US', {
     timeZone: schedule.timezone || 'America/New_York',
@@ -276,7 +276,8 @@ function textCell(primary, secondary = '') {
 }
 
 function scheduleType(schedule) {
-  const parts = [schedule.is_rest_day ? 'Rest day' : 'Shift']
+  const isOpenSchedule = !schedule.is_rest_day && !schedule.is_holiday && !schedule.shift_start && !schedule.shift_end
+  const parts = [schedule.is_rest_day ? 'Rest day' : isOpenSchedule ? 'Open schedule' : 'Shift']
   if (schedule.is_holiday) parts.push(schedule.holiday_name || 'Holiday')
   return parts.join(' · ')
 }
