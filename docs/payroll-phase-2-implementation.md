@@ -480,7 +480,7 @@ Phase 2 becomes the primary payroll process only when:
 | 11 | Complete | Finalized payroll now has a private A4 payslip preview with a stable payslip number, employee and period details, itemized earnings and deductions, prepaid balances, totals, and approval information. Payroll-wide viewers can inspect the effective rates used; agents using own-payslip access receive no rate or other-employee data. Private adjustment reasons and correction notes are excluded |
 | 12 | Complete | Finalized payslips can be rendered server-side with the fixed `A4-V1` template, hashed with SHA-256, uploaded only to the private PDF-only `payroll-payslips` bucket, registered as append-only immutable document versions, and downloaded through two-minute signed URLs. Each generation is permission-checked and audited. The employee PDF omits rate fields so own-payslip access cannot reveal rates; payroll users retain rate verification in the secured Step 11 preview |
 | 13 | Complete | Agents now have a permission-gated **My payslips** page for their own finalized payroll only, with prepaid-hour summaries, private preview, temporary signed PDF download, and print actions. The server-side list excludes rates, private notes, storage paths, and detailed reconciliation data |
-| 14 | In progress | July 1–15 is calculated with no blocking exceptions and the rollback-only prepaid scenarios passed again on July 30. The `test test` profile is payroll-ineligible without losing other test access; the July 16–31 payment date is corrected to July 27; 99 completed attendance records are newly approved; and Almar's July 28–31 source schedules are approved as prepaid. Restore the approved manual workbook, close and approve four open shifts, correct Almar's two-hour July 29/30 overlap, then complete the employee-by-employee comparison |
+| 14 | In progress | July 1–15 is calculated with no blocking exceptions and the rollback-only prepaid scenarios passed again on July 30. Both testing-only profiles are payroll-ineligible without losing other test access, the approved manual workbook is restored, and no July shift remains open. The July 16–31 payment date is July 27. Correct Almar's July 30–31 system times from the restored source, approve the 11 remaining payable July attendance records, recalculate, and complete the employee-by-employee comparison |
 | 15 | Not started | Begin only after every Step 14 discrepancy is corrected and approval is documented |
 
 ## Next implementation order
@@ -588,31 +588,30 @@ Step 13 is implemented without finalizing production payroll:
 
 Step 14 started on July 30, 2026:
 
-- July 1–15 has 10 calculated records, no blocking exceptions, USD 7,466.06
-  gross and net pay, and 25,800 prepaid minutes fully applied.
+- July 1–15 has 9 payable calculated records, no blocking exceptions,
+  USD 7,466.06 gross and net pay, and 25,800 prepaid minutes fully applied.
+  The separate testing-only `Test` profile's zero-pay record is void and
+  preserved for audit history.
 - The rollback-only exact-match, partial-work, multi-day carry-forward,
   overtime-settlement, and special-day-exclusion scenarios passed again with
   no persistent synthetic records.
-- July 16–31 is not ready for calculation. Its completed attendance still
-  requires payroll approval, four July 30 shifts are currently open, five
-  attendance entries are missing, and one effective-dated rate is missing.
-- July 16–31 is configured with a July 31 payment date. The payroll owner must
-  confirm the actual early payment date before the period is changed or July
-  31 is approved as prepaid.
-- The approved `2026 Support Timesheet.xlsx` manual source is no longer
-  available at its former Downloads path or in the current attachments. It
-  must be restored before employee-by-employee manual variances can be
-  calculated.
+- July 16–31 is not ready for calculation. No July shift remains open and
+  there are no missing attendance or rate exceptions for payable employees.
+  Eleven payable July 30–31 attendance records still require review approval,
+  and Almar's current July 29/30 system schedules overlap.
+- July 16–31 is configured with the confirmed July 27 payment date and the
+  audited four-day early-payment override.
+- The approved `2026 Support Timesheet.xlsx` manual source was restored on
+  August 3. Its latest Almar rows resolve the overlap by changing July 30 to
+  10:15 AM–4:15 AM and also change July 31 to 9:00 AM–3:00 AM. The system
+  still contains the older 6:00 AM–12:00 AM times for those two dates.
 - The detailed run record and completion controls are in
   `docs/payroll-step-14-parallel-test.md`.
 
-1. Restore the approved manual workbook and identify the official manual
-   payroll total columns.
-2. Confirm the July 16–31 payment date and whether the two test profiles should
-   be excluded.
-3. Approve completed July 16–31 attendance, close current shifts, resolve the
-   five missing entries, and add the missing rate only if the affected profile
-   is a legitimate paid employee.
-4. Recalculate both periods, complete every employee comparison and scenario,
+1. Apply the restored source times to Almar's July 30 and July 31 schedules and
+   reconcile the linked July 31 attendance without changing immutable payroll
+   history silently.
+2. Review and approve the 11 remaining payable July 30–31 attendance records.
+3. Recalculate both periods, complete every employee comparison and scenario,
    and correct all differences.
-5. Continue to Step 15 only after Step 14 approval is signed and dated.
+4. Continue to Step 15 only after Step 14 approval is signed and dated.

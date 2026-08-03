@@ -69,9 +69,9 @@ The two-period test must prove:
 ### Period 1 — July 1–15
 
 - Status: system calculation ready for manual comparison.
-- Employees loaded: 10 payroll records, including one zero-pay test profile
-  that must be explicitly included or excluded by the payroll owner.
-- Calculated records: 10.
+- Payable employees retained: 9. The testing-only `Test` profile's calculated
+  zero-pay record was voided on August 3 and retained for audit history.
+- Calculated payable records: 9.
 - Blocking exceptions: 0.
 - System gross pay: USD 7,466.06.
 - System deductions: USD 0.00.
@@ -83,28 +83,35 @@ The two-period test must prove:
 ### Period 2 — July 16–31
 
 - Status: not ready for calculation.
-- Employees loaded: 10 payroll records after the payroll owner excluded the
-  `test test` testing-only profile. The separate `Test` profile remains
-  included pending a separate owner decision.
+- Employees loaded: 9 payroll records after the payroll owner excluded both
+  the `test test` and separate `Test` testing-only profiles. The separate
+  `Test` profile's untouched draft shell was removed on August 3.
 - Calculated records: 0.
 - Payment date: July 27, corrected from July 31 after owner confirmation. The
   four-day early payment uses the required documented override because the
   standard window is three days.
 - Attendance approval: 99 completed review-required records were approved on
   July 30 with one prior approved record, leaving 100 approved records.
-- Open clock-outs on July 30: 4. These remain pending because incomplete
-  attendance cannot be approved.
+- Open July shifts: 0. The four shifts that were open at the July 30 checkpoint
+  now have clock-outs. They belonged to Arby Jann Benito, Genevive Serrano,
+  Leufard Vallega, and Jean Vestil.
+- Attendance review: 11 payable July 30–31 records remain pending approval:
+  Alen Tristan Adeva, Arby Jann Benito, Genevive Serrano, Jean Vestil, and
+  Leufard Vallega for July 30; and Almar Contreras, Amora Angeles, Genevive
+  Serrano, Jean Vestil, Jerson Gavileño, and Leufard Vallega for July 31.
 - Missing attendance entries: 0 after Almar's July 28–31 schedules were
   approved as prepaid schedule snapshots.
 - Almar's July 27–31 schedules were corrected from the payroll owner's source
   times. July 27 now exactly matches the corrected 6:00 AM–12:00 AM
   attendance. The exact July 28–31 schedule versions are now approved prepaid
   entries and created four 1,080-minute carry-forward balances.
-- Blocking schedule overlap: Almar's owner-provided July 29 shift ends at
-  8:00 AM on July 30, while the July 30 shift starts at 6:00 AM. The exact
-  source schedule therefore contains a two-hour overlap. The owner's
-  instruction to proceed with the supplied hours is audited, but the blocking
-  integrity check remains until one exact time is corrected.
+- Restored manual source: `2026 Support Timesheet.xlsx` is available again at
+  its Downloads path as of August 3.
+- Almar source validation: July 27–29 match the system. The latest workbook
+  gives July 30 as 10:15 AM–4:15 AM and July 31 as 9:00 AM–3:00 AM. The system
+  still holds 6:00 AM–12:00 AM for both dates. The workbook therefore resolves
+  the July 29/30 overlap, but both system schedule times must be corrected
+  before calculation.
 - Missing-rate exceptions: 0 after excluding the testing-only profile.
 - Valid carry-forward warnings: 37 unresolved prepaid balances, including
   Almar's four newly approved balances. These warnings are non-blocking when
@@ -121,6 +128,10 @@ The two-period test must prove:
   audit history.
 - New payroll records are database-blocked for excluded profiles, including
   records attempted outside the normal period-creation screen.
+- The separate `Test` profile was also confirmed as testing-only on August 3
+  and is now payroll-ineligible. Its untouched July 16–31 draft shell was
+  removed, while its July 1–15 zero-pay calculation was voided and preserved
+  for audit history. Neither testing-only profile has an active payroll record.
 
 ### Rollback-only scenario test
 
@@ -142,21 +153,16 @@ need to be evidenced in the two-period comparison.
 
 ## Current blockers
 
-1. The approved `2026 Support Timesheet.xlsx` source used during the prepaid
-   import is no longer present at its prior Downloads path or in the available
-   workspace attachments. It must be reattached or restored before manual
-   totals can be compared.
-2. July 16–31 cannot be calculated until the four current open shifts are
-   closed and approved.
-3. The `test test` profile is resolved and excluded from payroll. The payroll
-   owner must still confirm whether the separate `Test` profile is a legitimate
-   paid employee for these periods.
-4. The payment date is resolved as July 27 with an audited four-day early
-   payment override.
-5. The owner-provided July 29 and July 30 Almar schedules overlap by two hours.
-   The acknowledgement is audited, but one exact source time must still be
-   corrected before calculation because the system does not silently waive
-   overlapping schedules.
+1. Correct Almar's July 30 system schedule from 6:00 AM–12:00 AM to the latest
+   approved source time of 10:15 AM–4:15 AM, which removes the July 29/30
+   overlap. Correct July 31 from 6:00 AM–12:00 AM to 9:00 AM–3:00 AM as well.
+2. Review and approve the 11 payable July 30–31 attendance records. No July
+   shift remains open; these are review blockers rather than missing
+   clock-outs.
+3. Recalculate July 16–31, then compare both periods employee by employee
+   against the restored workbook.
+4. Capture the remaining rate-change and post-finalization-correction scenario
+   evidence and obtain the payroll owner's signed, dated approval.
 
 ## Completion evidence
 
