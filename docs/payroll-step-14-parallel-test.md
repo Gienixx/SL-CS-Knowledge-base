@@ -82,44 +82,68 @@ The two-period test must prove:
 
 ### Period 2 — July 16–31
 
-- Status: not ready for calculation.
+- Status: calculated and ready for manual comparison.
 - Employees loaded: 9 payroll records after the payroll owner excluded both
   the `test test` and separate `Test` testing-only profiles. The separate
   `Test` profile's untouched draft shell was removed on August 3.
-- Calculated records: 0.
+- Calculated records: 9, all `ready_for_review` with no recalculation flag.
 - Payment date: July 27, corrected from July 31 after owner confirmation. The
   four-day early payment uses the required documented override because the
   standard window is three days.
-- Attendance approval: 99 completed review-required records were approved on
-  July 30 with one prior approved record, leaving 100 approved records.
+- Attendance approval: all 115 payroll-ready attendance records are approved,
+  imported at their current versions, and represented by immutable snapshots.
 - Open July shifts: 0. The four shifts that were open at the July 30 checkpoint
   now have clock-outs. They belonged to Arby Jann Benito, Genevive Serrano,
   Leufard Vallega, and Jean Vestil.
-- Attendance review: 12 payable July 30–31 records remain pending approval:
-  Alen Tristan Adeva, Almar Contreras, Arby Jann Benito, Genevive Serrano,
-  Jean Vestil, and Leufard Vallega for July 30; and Almar Contreras, Amora
-  Angeles, Genevive Serrano, Jean Vestil, Jerson Gavileño, and Leufard Vallega
-  for July 31.
-- Missing attendance entries: 0 after Almar's July 28–31 schedules were
-  approved as prepaid schedule snapshots.
+- Attendance review blockers: 0. Missing attendance, missing clock-out,
+  incomplete attendance, pending review, and missing-rate counts are all 0 in
+  the authoritative readiness view.
 - Almar's July 27–31 schedules were corrected from the payroll owner's source
   times. July 27 now exactly matches the corrected 6:00 AM–12:00 AM
-  attendance. The exact July 28–31 schedule versions are now approved prepaid
-  entries and created four 1,080-minute carry-forward balances.
+  attendance. The current July 28–31 schedule versions are approved prepaid
+  entries using 11:30 AM–5:30 AM, 2:00 PM–8:00 AM, 10:15 AM–4:15 AM, and
+  9:00 AM–3:00 AM, respectively. Their four stale version-2 balances are void
+  and linked to the replacement balances.
 - Restored manual source: `2026 Support Timesheet.xlsx` is available again at
-  its Downloads path as of August 3.
-- Almar source validation: July 27–29 match the system. On August 3, July 30
-  was corrected to 10:15 AM–4:15 AM and July 31 to 9:00 AM–3:00 AM from the
-  workbook's LOG IN / LOG OUT columns. Both schedules advanced from version 2
-  to version 3, their attendance punches were preserved and recalculated, and
-  the July 29/30 overlap is removed with a 135-minute gap. The prior version-2
-  prepaid balances remain unsettled and can be safely superseded when the
-  corrected versions are approved.
+  its Downloads path as of August 3. Its SHA-256 is
+  `949d4e4547f92829a3a631e8d7b4712e45fedeac8a1ad14245cdcd231b47d590`.
 - Missing-rate exceptions: 0 after excluding the testing-only profile.
-- Valid carry-forward warnings: 37 unresolved prepaid balances, including
-  Almar's four newly approved balances. These warnings are non-blocking when
-  the balances are valid.
+- System gross pay: USD 7,824.41.
+- System deductions: USD 0.00.
+- System net pay: USD 7,824.41.
+- Prepaid minutes added: 36,300.
+- Prepaid minutes applied: 22,172.
+- Closing prepaid-minute balance: 14,128.
+- Blocking exceptions: 0.
+- Valid carry-forward warnings: 19 unresolved prepaid balances. These warnings
+  are non-blocking because they represent positive minutes to render later.
 - Production status remains Draft.
+
+#### Period 2 system comparison baseline
+
+Opening prepaid minutes are 0 for every employee. The table is the system side
+of the required comparison captured immediately after calculation on August 3,
+2026. `Special min` combines rest-day and holiday minutes. `Excess ordinary`
+is ordinary regular plus overtime minutes remaining payable after FIFO prepaid
+settlement.
+
+| Employee | Regular min | OT min | Special min | Prepaid added | Prepaid applied | Closing prepaid | Excess ordinary | Special-day pay | Gross USD | Deductions USD | Net USD |
+|---|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|
+| Alen Tristan Adeva | 3,120 | 3,780 | 480 | 3,840 | 965 | 2,875 | 5,935 | 25.60 | 598.40 | 0.00 | 598.40 |
+| Almar Contreras | 5,400 | 3,244 | 4,320 | 4,320 | 4,320 | 0 | 4,324 | 560.00 | 1,640.33 | 0.00 | 1,640.33 |
+| Amora Angeles | 3,360 | 4,200 | 4,440 | 4,920 | 1,087 | 3,833 | 6,473 | 371.20 | 1,036.80 | 0.00 | 1,036.80 |
+| Arby Jann Benito | 3,840 | 4,367 | 1,620 | 4,320 | 3,236 | 1,084 | 4,971 | 124.80 | 792.91 | 0.00 | 792.91 |
+| Arez Santos | 4,050 | 5,670 | 1,890 | 2,760 | 720 | 2,040 | 9,000 | 164.50 | 892.50 | 0.00 | 892.50 |
+| Genevive Serrano | 4,200 | 5,292 | 960 | 3,420 | 3,304 | 116 | 6,188 | 56.00 | 809.19 | 0.00 | 809.19 |
+| Jean Vestil | 2,510 | 1,578 | 1,368 | 3,720 | 3,358 | 362 | 730 | 89.92 | 506.35 | 0.00 | 506.35 |
+| Jerson Gavileño | 3,360 | 3,210 | 1,800 | 4,800 | 982 | 3,818 | 5,588 | 167.20 | 887.30 | 0.00 | 887.30 |
+| Leufard Vallega | 2,869 | 2,222 | 660 | 4,200 | 4,200 | 0 | 891 | 72.20 | 660.63 | 0.00 | 660.63 |
+| **Total** | **32,709** | **33,563** | **17,538** | **36,300** | **22,172** | **14,128** | **44,100** | **1,631.42** | **7,824.41** | **0.00** | **7,824.41** |
+
+The supplied support timesheet contains the source schedule and login/logout
+activity but no signed manual gross-pay, deduction, or net-pay totals. Manual
+values and variances must therefore remain pending until the approved manual
+payroll report is provided; they must not be inferred from the activity log.
 
 ### Testing-only payroll exclusion
 
@@ -156,14 +180,12 @@ need to be evidenced in the two-period comparison.
 
 ## Current blockers
 
-1. Approve Almar's corrected July 30 and July 31 version-3 schedules as the
-   current prepaid sources; their version-2 balances are unsettled.
-2. Review and approve the 12 payable July 30–31 attendance records. No July
-   shift remains open; these are review blockers rather than missing
-   clock-outs.
-3. Recalculate July 16–31, then compare both periods employee by employee
-   against the restored workbook.
-4. Capture the remaining rate-change and post-finalization-correction scenario
+1. Obtain the signed manual payroll report containing employee-level manual
+   minutes, deductions, gross pay, and net pay for both July periods. The
+   support timesheet alone does not contain these approved payroll totals.
+2. Enter the approved manual values beside the captured system baseline and
+   resolve every employee and period variance.
+3. Capture the remaining rate-change and post-finalization-correction scenario
    evidence and obtain the payroll owner's signed, dated approval.
 
 ## Completion evidence

@@ -103,25 +103,28 @@ The July 1–15 system payroll is ready for manual comparison:
 - Production payroll remains in Draft and has not been finalized merely for
   testing.
 
-The approved `2026 Support Timesheet.xlsx` workbook was restored on August 3.
-Its Almar rows confirm that July 27–29 match the system source times. On August
-3, the July 30 and July 31 system schedules were corrected from the workbook's
-LOG IN / LOG OUT columns to 10:15 AM–4:15 AM and 9:00 AM–3:00 AM,
-respectively. The attendance punches were preserved, both linked records were
-recalculated, and the July 29/30 overlap is removed. The prior version-2
-prepaid snapshots remain immutable and unsettled; the corrected version-3
-schedules now require prepaid approval.
+The July 16–31 payroll was calculated in production on August 3 after the
+approved `2026 Support Timesheet.xlsx` values were revalidated. All 115 current
+attendance snapshots are imported, all 9 payable records are ready for review,
+and the period has zero blocking exceptions. Both testing-only profiles remain
+payroll-ineligible and have no active record. The system result is USD 7,824.41
+gross and net, with USD 0.00 deductions, 36,300 prepaid minutes added, 22,172
+applied, and 14,128 carried forward.
 
-All four shifts that were open at the July 30 checkpoint now have clock-outs.
-There are no open July shifts. Twelve payable July 30–31 attendance records
-still require review and approval before the second period can be calculated.
+Almar's current July 28–31 schedule versions are now the approved prepaid
+sources using the exact workbook LOG IN / LOG OUT windows. Their four stale
+version-2 balances are void and linked to the replacements. All four shifts
+that were open at the July 30 checkpoint have clock-outs, and no July shift or
+attendance review remains open.
 
 The following work is still required before Step 14 can be approved:
 
-- Approve Almar's corrected July 30 and July 31 version-3 prepaid schedules.
-- Review and approve the 12 remaining payable July 30–31 attendance records.
-- Compare manual and system values employee by employee for both payroll
-  periods.
+- Obtain the signed manual payroll report; the supplied support timesheet has
+  activity data but no approved employee-level payroll totals.
+- Compare the approved manual and captured system values employee by employee
+  for both payroll periods.
+- Capture the remaining rate-change and post-finalization-correction scenario
+  evidence.
 - Resolve every variance and capture the payroll owner's signed and dated
   approval.
 
@@ -210,8 +213,9 @@ The repository was checked on August 3, 2026:
 - [x] Close the four shifts that were open at the July 30 checkpoint
 - [x] Exclude both testing-only profiles from payroll
 - [x] Correct Almar's July 30–31 system schedule times
-- [ ] Approve Almar's corrected July 30–31 prepaid schedule versions
-- [ ] Review and approve the 12 payable July 30–31 attendance records
+- [x] Approve Almar's current July 28–31 prepaid schedule versions
+- [x] Review and approve the remaining payable July attendance records
+- [x] Calculate the July 16–31 draft payroll for all 9 payable employees
 - [ ] Complete and approve the two-period manual comparison
 - [ ] Run two linked controlled payroll periods
 - [ ] Approve Phase 2 as the primary payroll process
