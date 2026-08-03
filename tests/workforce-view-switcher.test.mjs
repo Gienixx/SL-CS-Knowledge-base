@@ -10,7 +10,7 @@ test('Workforce Management uses accessible underline tabs', async () => {
   const theme = await read('styles/site-theme.css')
 
   assert.match(page, /styles\/workforce-admin\.css\?v=12/)
-  assert.match(page, /styles\/site-theme\.css\?v=4/)
+  assert.match(page, /styles\/site-theme\.css\?v=5/)
   assert.match(page, /scripts\/workforce-view-switcher\.js\?v=2/)
   assert.match(page, /class="wf-view-switcher" role="tablist"/)
   assert.match(page, /id="workforceViewButton"[^>]+role="tab"[^>]+aria-selected="true"[^>]+tabindex="0"/)

@@ -18,9 +18,15 @@ test('create schedule offers an open schedule option', () => {
 })
 
 test('schedule option cards remain readable in both site themes', () => {
-  assert.match(html, /styles\/site-theme\.css\?v=4/)
+  assert.match(html, /styles\/site-theme\.css\?v=5/)
   assert.match(theme, /html\[data-site-theme\] \.wf-check-card \{[\s\S]*color: var\(--site-text\);[\s\S]*background: var\(--site-surface-solid\);/)
   assert.match(theme, /\.wf-check-card:has\(input:checked\)/)
+})
+
+test('saved open schedule chips have readable themed text and backgrounds', () => {
+  assert.match(theme, /html\[data-site-theme\] \.wf-schedule-chip\.open \{[\s\S]*background: color-mix\(in srgb, var\(--site-blue\) 10%, var\(--site-surface-solid\)\);/)
+  assert.match(theme, /\.wf-schedule-chip\.open \.wf-chip-main \{[\s\S]*color: var\(--site-blue\);/)
+  assert.match(theme, /\.wf-schedule-chip\.open \.wf-chip-main small \{[\s\S]*color: var\(--site-muted\);[\s\S]*opacity: 1;/)
 })
 
 test('open schedule disables and clears fixed time settings', () => {

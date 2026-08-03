@@ -905,6 +905,21 @@ html[data-site-theme="dark"] .wf-grid-user span {
   color: var(--site-muted);
 }
 
+html[data-site-theme] .wf-schedule-chip.open {
+  border-color: color-mix(in srgb, var(--site-blue) 34%, var(--site-border));
+  border-left: 3px solid var(--site-blue);
+  background: color-mix(in srgb, var(--site-blue) 10%, var(--site-surface-solid));
+}
+
+html[data-site-theme] .wf-schedule-chip.open .wf-chip-main {
+  color: var(--site-blue);
+}
+
+html[data-site-theme] .wf-schedule-chip.open .wf-chip-main small {
+  color: var(--site-muted);
+  opacity: 1;
+}
+
 html[data-site-theme="dark"] .wf-schedule-chip {
   border: 1px solid var(--site-border);
   box-shadow: none;
