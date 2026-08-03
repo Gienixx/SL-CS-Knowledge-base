@@ -104,21 +104,22 @@ The July 1–15 system payroll is ready for manual comparison:
   testing.
 
 The approved `2026 Support Timesheet.xlsx` workbook was restored on August 3.
-Its Almar rows confirm that July 27–29 match the system source times. The latest
-July 30 and July 31 source times are 10:15 AM–4:15 AM and 9:00 AM–3:00 AM,
-respectively. Those two system schedules still contain the older 6:00 AM–
-12:00 AM times, so the system correction remains outstanding; applying the
-July 30 source time will remove the current July 29/30 overlap.
+Its Almar rows confirm that July 27–29 match the system source times. On August
+3, the July 30 and July 31 system schedules were corrected from the workbook's
+LOG IN / LOG OUT columns to 10:15 AM–4:15 AM and 9:00 AM–3:00 AM,
+respectively. The attendance punches were preserved, both linked records were
+recalculated, and the July 29/30 overlap is removed. The prior version-2
+prepaid snapshots remain immutable and unsettled; the corrected version-3
+schedules now require prepaid approval.
 
 All four shifts that were open at the July 30 checkpoint now have clock-outs.
-There are no open July shifts. Eleven payable July 30–31 attendance records
+There are no open July shifts. Twelve payable July 30–31 attendance records
 still require review and approval before the second period can be calculated.
 
 The following work is still required before Step 14 can be approved:
 
-- Correct Almar's July 30 and July 31 system schedule times from the restored
-  approved workbook, removing the July 29/30 overlap.
-- Review and approve the 11 remaining payable July 30–31 attendance records.
+- Approve Almar's corrected July 30 and July 31 version-3 prepaid schedules.
+- Review and approve the 12 remaining payable July 30–31 attendance records.
 - Compare manual and system values employee by employee for both payroll
   periods.
 - Resolve every variance and capture the payroll owner's signed and dated
@@ -208,8 +209,9 @@ The repository was checked on August 3, 2026:
 - [x] Restore the approved manual payroll workbook
 - [x] Close the four shifts that were open at the July 30 checkpoint
 - [x] Exclude both testing-only profiles from payroll
-- [ ] Correct Almar's July 30–31 system schedule times
-- [ ] Review and approve the 11 payable July 30–31 attendance records
+- [x] Correct Almar's July 30–31 system schedule times
+- [ ] Approve Almar's corrected July 30–31 prepaid schedule versions
+- [ ] Review and approve the 12 payable July 30–31 attendance records
 - [ ] Complete and approve the two-period manual comparison
 - [ ] Run two linked controlled payroll periods
 - [ ] Approve Phase 2 as the primary payroll process

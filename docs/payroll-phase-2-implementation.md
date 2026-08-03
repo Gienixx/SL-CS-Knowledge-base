@@ -480,7 +480,7 @@ Phase 2 becomes the primary payroll process only when:
 | 11 | Complete | Finalized payroll now has a private A4 payslip preview with a stable payslip number, employee and period details, itemized earnings and deductions, prepaid balances, totals, and approval information. Payroll-wide viewers can inspect the effective rates used; agents using own-payslip access receive no rate or other-employee data. Private adjustment reasons and correction notes are excluded |
 | 12 | Complete | Finalized payslips can be rendered server-side with the fixed `A4-V1` template, hashed with SHA-256, uploaded only to the private PDF-only `payroll-payslips` bucket, registered as append-only immutable document versions, and downloaded through two-minute signed URLs. Each generation is permission-checked and audited. The employee PDF omits rate fields so own-payslip access cannot reveal rates; payroll users retain rate verification in the secured Step 11 preview |
 | 13 | Complete | Agents now have a permission-gated **My payslips** page for their own finalized payroll only, with prepaid-hour summaries, private preview, temporary signed PDF download, and print actions. The server-side list excludes rates, private notes, storage paths, and detailed reconciliation data |
-| 14 | In progress | July 1–15 is calculated with no blocking exceptions and the rollback-only prepaid scenarios passed again on July 30. Both testing-only profiles are payroll-ineligible without losing other test access, the approved manual workbook is restored, and no July shift remains open. The July 16–31 payment date is July 27. Correct Almar's July 30–31 system times from the restored source, approve the 11 remaining payable July attendance records, recalculate, and complete the employee-by-employee comparison |
+| 14 | In progress | July 1–15 is calculated with no blocking exceptions and the rollback-only prepaid scenarios passed again on July 30. Both testing-only profiles are payroll-ineligible without losing other test access, the approved manual workbook is restored, and no July shift remains open. The July 16–31 payment date is July 27. Almar's July 30–31 system times are corrected; approve their version-3 prepaid sources and the 12 remaining payable July attendance records, then recalculate and complete the employee-by-employee comparison |
 | 15 | Not started | Begin only after every Step 14 discrepancy is corrected and approval is documented |
 
 ## Next implementation order
@@ -597,21 +597,22 @@ Step 14 started on July 30, 2026:
   no persistent synthetic records.
 - July 16–31 is not ready for calculation. No July shift remains open and
   there are no missing attendance or rate exceptions for payable employees.
-  Eleven payable July 30–31 attendance records still require review approval,
-  and Almar's current July 29/30 system schedules overlap.
+  Twelve payable July 30–31 attendance records still require review approval.
+  Almar's July 30–31 schedules are corrected and no longer overlap July 29;
+  their corrected version-3 prepaid sources still require approval.
 - July 16–31 is configured with the confirmed July 27 payment date and the
   audited four-day early-payment override.
 - The approved `2026 Support Timesheet.xlsx` manual source was restored on
-  August 3. Its latest Almar rows resolve the overlap by changing July 30 to
-  10:15 AM–4:15 AM and also change July 31 to 9:00 AM–3:00 AM. The system
-  still contains the older 6:00 AM–12:00 AM times for those two dates.
+  August 3. Almar's July 30 schedule is now 10:15 AM–4:15 AM and July 31 is
+  now 9:00 AM–3:00 AM from its LOG IN / LOG OUT columns. The linked attendance
+  was recalculated without changing its punches, and the correction is audited
+  against the workbook hash and source rows.
 - The detailed run record and completion controls are in
   `docs/payroll-step-14-parallel-test.md`.
 
-1. Apply the restored source times to Almar's July 30 and July 31 schedules and
-   reconcile the linked July 31 attendance without changing immutable payroll
-   history silently.
-2. Review and approve the 11 remaining payable July 30–31 attendance records.
+1. Approve Almar's corrected July 30 and July 31 version-3 prepaid schedules;
+   the immutable version-2 balances are unsettled and safe to supersede.
+2. Review and approve the 12 remaining payable July 30–31 attendance records.
 3. Recalculate both periods, complete every employee comparison and scenario,
    and correct all differences.
 4. Continue to Step 15 only after Step 14 approval is signed and dated.

@@ -95,10 +95,11 @@ The two-period test must prove:
 - Open July shifts: 0. The four shifts that were open at the July 30 checkpoint
   now have clock-outs. They belonged to Arby Jann Benito, Genevive Serrano,
   Leufard Vallega, and Jean Vestil.
-- Attendance review: 11 payable July 30–31 records remain pending approval:
-  Alen Tristan Adeva, Arby Jann Benito, Genevive Serrano, Jean Vestil, and
-  Leufard Vallega for July 30; and Almar Contreras, Amora Angeles, Genevive
-  Serrano, Jean Vestil, Jerson Gavileño, and Leufard Vallega for July 31.
+- Attendance review: 12 payable July 30–31 records remain pending approval:
+  Alen Tristan Adeva, Almar Contreras, Arby Jann Benito, Genevive Serrano,
+  Jean Vestil, and Leufard Vallega for July 30; and Almar Contreras, Amora
+  Angeles, Genevive Serrano, Jean Vestil, Jerson Gavileño, and Leufard Vallega
+  for July 31.
 - Missing attendance entries: 0 after Almar's July 28–31 schedules were
   approved as prepaid schedule snapshots.
 - Almar's July 27–31 schedules were corrected from the payroll owner's source
@@ -107,11 +108,13 @@ The two-period test must prove:
   entries and created four 1,080-minute carry-forward balances.
 - Restored manual source: `2026 Support Timesheet.xlsx` is available again at
   its Downloads path as of August 3.
-- Almar source validation: July 27–29 match the system. The latest workbook
-  gives July 30 as 10:15 AM–4:15 AM and July 31 as 9:00 AM–3:00 AM. The system
-  still holds 6:00 AM–12:00 AM for both dates. The workbook therefore resolves
-  the July 29/30 overlap, but both system schedule times must be corrected
-  before calculation.
+- Almar source validation: July 27–29 match the system. On August 3, July 30
+  was corrected to 10:15 AM–4:15 AM and July 31 to 9:00 AM–3:00 AM from the
+  workbook's LOG IN / LOG OUT columns. Both schedules advanced from version 2
+  to version 3, their attendance punches were preserved and recalculated, and
+  the July 29/30 overlap is removed with a 135-minute gap. The prior version-2
+  prepaid balances remain unsettled and can be safely superseded when the
+  corrected versions are approved.
 - Missing-rate exceptions: 0 after excluding the testing-only profile.
 - Valid carry-forward warnings: 37 unresolved prepaid balances, including
   Almar's four newly approved balances. These warnings are non-blocking when
@@ -153,10 +156,9 @@ need to be evidenced in the two-period comparison.
 
 ## Current blockers
 
-1. Correct Almar's July 30 system schedule from 6:00 AM–12:00 AM to the latest
-   approved source time of 10:15 AM–4:15 AM, which removes the July 29/30
-   overlap. Correct July 31 from 6:00 AM–12:00 AM to 9:00 AM–3:00 AM as well.
-2. Review and approve the 11 payable July 30–31 attendance records. No July
+1. Approve Almar's corrected July 30 and July 31 version-3 schedules as the
+   current prepaid sources; their version-2 balances are unsettled.
+2. Review and approve the 12 payable July 30–31 attendance records. No July
    shift remains open; these are review blockers rather than missing
    clock-outs.
 3. Recalculate July 16–31, then compare both periods employee by employee
