@@ -736,7 +736,8 @@ if (section) {
       await loadScheduleData()
       setMessage(scheduleMessage, 'Schedule entry deleted successfully.', 'success')
     } catch (error) {
-      setMessage(scheduleMessage, errorMessage(error), 'error')
+      console.error('Schedule deletion failed:', error)
+      setMessage(scheduleMessage, 'Unable to delete schedule.', 'error')
       setLoading(button, false, 'Deleting...', 'Delete')
     }
   }

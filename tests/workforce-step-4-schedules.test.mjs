@@ -40,6 +40,13 @@ test('schedule deletion is admin-only, scoped, audited, and preserves attendance
   assert.match(verification, /schedule_delete_is_audited/)
 })
 
+test('schedule deletion hides database details from the page and logs the full error', async () => {
+  const script = await read('scripts/workforce-schedules.js')
+
+  assert.match(script, /console\.error\('Schedule deletion failed:', error\)/)
+  assert.match(script, /setMessage\(scheduleMessage, 'Unable to delete schedule\.', 'error'\)/)
+})
+
 test('schedule RPC enforces authorization, validation, and change visibility', async () => {
   const migration = await read('supabase/migrations-legacy/2026070703_workforce_schedule_management.sql')
 
