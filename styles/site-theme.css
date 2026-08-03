@@ -250,6 +250,17 @@ html[data-site-theme] :is(
   background: var(--site-surface-soft);
 }
 
+html[data-site-theme] .wf-check-card {
+  border-color: var(--site-border);
+  color: var(--site-text);
+  background: var(--site-surface-solid);
+}
+
+html[data-site-theme] .wf-check-card:has(input:checked) {
+  border-color: color-mix(in srgb, var(--site-blue) 58%, var(--site-border));
+  background: color-mix(in srgb, var(--site-blue) 10%, var(--site-surface-solid));
+}
+
 html[data-site-theme] :is(
   input:not([type="checkbox"]):not([type="radio"]),
   select,

@@ -4,16 +4,23 @@ import test from 'node:test'
 
 const read = path => readFile(new URL(`../${path}`, import.meta.url), 'utf8')
 
-const [html, client, migration] = await Promise.all([
+const [html, client, migration, theme] = await Promise.all([
   read('workforce.html'),
   read('scripts/workforce-schedules.js'),
-  read('supabase/migrations/20260803090118_allow_open_schedules.sql')
+  read('supabase/migrations/20260803090118_allow_open_schedules.sql'),
+  read('styles/site-theme.css')
 ])
 
 test('create schedule offers an open schedule option', () => {
   assert.match(html, /id="scheduleIsOpen" type="checkbox"/)
   assert.match(html, /Open schedule \(no fixed clock-in or clock-out\)/)
   assert.match(client, /const openScheduleInput = document\.getElementById\('scheduleIsOpen'\)/)
+})
+
+test('schedule option cards remain readable in both site themes', () => {
+  assert.match(html, /styles\/site-theme\.css\?v=4/)
+  assert.match(theme, /html\[data-site-theme\] \.wf-check-card \{[\s\S]*color: var\(--site-text\);[\s\S]*background: var\(--site-surface-solid\);/)
+  assert.match(theme, /\.wf-check-card:has\(input:checked\)/)
 })
 
 test('open schedule disables and clears fixed time settings', () => {
