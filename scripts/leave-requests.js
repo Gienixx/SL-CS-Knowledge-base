@@ -1,4 +1,4 @@
-import { supabase } from './supabaseClient.js?v=9'
+import { supabase } from './supabaseClient.js?v=10'
 import {
   hasWorkforcePermission,
   loadCurrentWorkforceAccess
@@ -7,11 +7,14 @@ import {
 const STATUS_LABELS = Object.freeze({
   pending: 'Pending',
   approved: 'Approved',
-  rejected: 'Rejected',
+  rejected: 'Denied',
   cancelled: 'Cancelled'
 })
 
 const LEAVE_TYPE_LABELS = Object.freeze({
+  incentive_vl: 'Incentive VL',
+  birthday_vl: 'Birthday VL',
+  leave_without_pay: 'Leave Without Pay',
   vacation: 'Vacation',
   sick: 'Sick',
   emergency: 'Emergency',
@@ -20,18 +23,28 @@ const LEAVE_TYPE_LABELS = Object.freeze({
 })
 
 const elements = {
+  page: document.getElementById('leaveRequestsPage'),
+  pageTitle: document.getElementById('leaveRequestsPageTitle'),
+  pageDescription: document.getElementById('leaveRequestsPageDescription'),
   workforceLink: document.getElementById('leaveRequestsWorkforceLink'),
   totalCount: document.getElementById('leaveRequestTotalCount'),
   pendingCount: document.getElementById('leaveRequestPendingCount'),
   approvedCount: document.getElementById('leaveRequestApprovedCount'),
   rejectedCount: document.getElementById('leaveRequestRejectedCount'),
+  submissionSection: document.getElementById('leaveRequestSubmissionSection'),
+  approvalSection: document.getElementById('leaveApprovalQueueSection'),
+  approvalCount: document.getElementById('leaveApprovalQueueCount'),
+  approvalTableBody: document.getElementById('leaveApprovalTableBody'),
   form: document.getElementById('leaveRequestForm'),
   type: document.getElementById('leaveRequestType'),
   startDate: document.getElementById('leaveRequestStartDate'),
   endDate: document.getElementById('leaveRequestEndDate'),
   reason: document.getElementById('leaveRequestReason'),
   resetButton: document.getElementById('leaveRequestResetButton'),
+  submitButton: document.getElementById('leaveRequestSubmitButton'),
   formMessage: document.getElementById('leaveRequestFormMessage'),
+  tableTitle: document.getElementById('leaveRequestTableTitle'),
+  tableDescription: document.getElementById('leaveRequestTableDescription'),
   refreshButton: document.getElementById('leaveRequestRefreshButton'),
   tableBody: document.getElementById('leaveRequestTableBody'),
   tableMessage: document.getElementById('leaveRequestTableMessage'),
@@ -40,41 +53,45 @@ const elements = {
   reviewEmployee: document.getElementById('leaveRequestReviewEmployee'),
   reviewType: document.getElementById('leaveRequestReviewType'),
   reviewDates: document.getElementById('leaveRequestReviewDates'),
+  reviewReason: document.getElementById('leaveRequestReviewReason'),
   reviewAction: document.getElementById('leaveRequestReviewAction'),
   reviewNotes: document.getElementById('leaveRequestReviewNotes'),
+  reviewNotesLabel: document.getElementById('leaveRequestReviewNotesLabel'),
+  reviewNotesHint: document.getElementById('leaveRequestReviewNotesHint'),
+  reviewSubmitButton: document.getElementById('leaveRequestReviewSubmitButton'),
   reviewMessage: document.getElementById('leaveRequestReviewMessage')
 }
 
 let access = null
 let leaveRequests = []
 let selectedReviewRequestId = null
-let busy = false
+let isApproverView = false
 
 function errorMessage(error) {
   return error?.message || 'An unexpected error occurred.'
 }
 
+function setMessage(element, text, type = '') {
+  if (!element) return
+  element.textContent = text
+  element.className = type ? `wf-message ${type}` : 'wf-message'
+}
+
 function setFormMessage(text, type = '') {
-  elements.formMessage.textContent = text
-  elements.formMessage.className = type ? `wf-message ${type}` : 'wf-message'
+  setMessage(elements.formMessage, text, type)
 }
 
 function setTableMessage(text, type = '') {
-  elements.tableMessage.textContent = text
-  elements.tableMessage.className = type ? `wf-message ${type}` : 'wf-message'
+  setMessage(elements.tableMessage, text, type)
 }
 
 function setReviewMessage(text, type = '') {
-  elements.reviewMessage.textContent = text
-  elements.reviewMessage.className = type ? `wf-message ${type}` : 'wf-message'
+  setMessage(elements.reviewMessage, text, type)
 }
 
-function resetForm() {
-  elements.type.value = ''
-  elements.startDate.value = ''
-  elements.endDate.value = ''
-  elements.reason.value = ''
-  setFormMessage('')
+function resetForm({ clearMessage = true } = {}) {
+  elements.form?.reset()
+  if (clearMessage) setFormMessage('')
 }
 
 function normalizeDate(value) {
@@ -83,11 +100,16 @@ function normalizeDate(value) {
 
 function formatDate(value) {
   if (!value) return '—'
+  const source = /^\d{4}-\d{2}-\d{2}$/.test(value)
+    ? `${value}T12:00:00`
+    : value
+  const date = new Date(source)
+  if (Number.isNaN(date.getTime())) return '—'
   return new Intl.DateTimeFormat('en-US', {
     month: 'short',
     day: 'numeric',
     year: 'numeric'
-  }).format(new Date(value))
+  }).format(date)
 }
 
 function formatLeaveDates(startDate, endDate) {
@@ -99,17 +121,19 @@ function formatLeaveDates(startDate, endDate) {
 
 function createCell(content, secondary = '', className = '') {
   const cell = document.createElement('td')
+  if (className) cell.className = className
+
   const stack = document.createElement('div')
-  stack.className = `team-attendance-cell-stack${className ? ` ${className}` : ''}`
+  stack.className = 'leave-request-cell-stack'
 
   const main = document.createElement('span')
-  main.className = 'team-attendance-time'
+  main.className = 'leave-request-cell-main'
   main.textContent = content || '—'
   stack.appendChild(main)
 
   if (secondary) {
     const sub = document.createElement('span')
-    sub.className = 'team-attendance-muted'
+    sub.className = 'leave-request-cell-muted'
     sub.textContent = secondary
     stack.appendChild(sub)
   }
@@ -118,29 +142,51 @@ function createCell(content, secondary = '', className = '') {
   return cell
 }
 
-function createActionCell(request) {
+function createStatusCell(status) {
   const cell = document.createElement('td')
-  if (request.status === 'pending' && request.user_id === access.user_id) {
-    const button = document.createElement('button')
-    button.type = 'button'
-    button.className = 'wf-btn secondary compact'
-    button.textContent = 'Cancel'
-    button.addEventListener('click', () => cancelLeaveRequest(request.id))
-    cell.appendChild(button)
-    return cell
-  }
+  const badge = document.createElement('span')
+  badge.className = `leave-status ${status || 'pending'}`
+  badge.textContent = STATUS_LABELS[status] || status || '—'
+  cell.appendChild(badge)
+  return cell
+}
 
-  if (request.status === 'pending' && hasWorkforcePermission(access, 'approve_leave')) {
-    const button = document.createElement('button')
-    button.type = 'button'
-    button.className = 'wf-btn compact'
-    button.textContent = 'Review'
-    button.addEventListener('click', () => openReviewModal(request))
-    cell.appendChild(button)
+function createButton(label, className, handler) {
+  const button = document.createElement('button')
+  button.type = 'button'
+  button.className = className
+  button.textContent = label
+  button.addEventListener('click', handler)
+  return button
+}
+
+function createHistoryActionCell(request) {
+  const cell = document.createElement('td')
+
+  if (
+    !isApproverView &&
+    request.status === 'pending' &&
+    access?.linked_profile_ids?.includes(request.user_id)
+  ) {
+    cell.appendChild(createButton(
+      'Cancel',
+      'wf-btn secondary compact',
+      () => cancelLeaveRequest(request.id)
+    ))
     return cell
   }
 
   cell.textContent = '—'
+  return cell
+}
+
+function createReviewActionCell(request) {
+  const cell = document.createElement('td')
+  cell.appendChild(createButton(
+    'Review',
+    'wf-btn compact',
+    () => openReviewModal(request)
+  ))
   return cell
 }
 
@@ -151,41 +197,100 @@ function renderSummary(rows) {
   elements.rejectedCount.textContent = rows.filter(row => row.status === 'rejected').length
 }
 
-function renderTable() {
-  elements.tableBody.replaceChildren()
+function renderApprovalQueue() {
+  if (!isApproverView || !elements.approvalTableBody) return
 
-  if (!leaveRequests.length) {
+  const pendingRequests = leaveRequests.filter(request => request.status === 'pending')
+  elements.approvalTableBody.replaceChildren()
+  elements.approvalCount.textContent = `${pendingRequests.length} pending`
+
+  if (!pendingRequests.length) {
     const row = document.createElement('tr')
     const cell = document.createElement('td')
-    cell.colSpan = 10
+    cell.colSpan = 6
     cell.className = 'wf-empty'
-    cell.textContent = 'No leave requests have been submitted yet.'
+    cell.textContent = 'No leave requests are waiting for approval.'
     row.appendChild(cell)
-    elements.tableBody.appendChild(row)
-    renderSummary([])
-    setTableMessage('')
+    elements.approvalTableBody.appendChild(row)
     return
   }
 
-  leaveRequests.forEach(request => {
+  pendingRequests.forEach(request => {
+    const row = document.createElement('tr')
+    row.append(
+      createCell(request.full_name),
+      createCell(LEAVE_TYPE_LABELS[request.leave_type] || request.leave_type),
+      createCell(formatLeaveDates(request.start_date, request.end_date)),
+      createCell(request.reason, '', 'leave-reason-cell'),
+      createCell(formatDate(request.created_at)),
+      createReviewActionCell(request)
+    )
+    elements.approvalTableBody.appendChild(row)
+  })
+}
+
+function renderHistory() {
+  const rows = isApproverView
+    ? leaveRequests.filter(request => request.status !== 'pending')
+    : leaveRequests
+
+  elements.tableBody.replaceChildren()
+
+  if (!rows.length) {
+    const row = document.createElement('tr')
+    const cell = document.createElement('td')
+    cell.colSpan = 8
+    cell.className = 'wf-empty'
+    cell.textContent = isApproverView
+      ? 'No reviewed leave requests yet.'
+      : 'You have not submitted a leave request yet.'
+    row.appendChild(cell)
+    elements.tableBody.appendChild(row)
+    return
+  }
+
+  rows.forEach(request => {
+    const decisionReason = request.status === 'rejected'
+      ? request.review_notes || 'No reason was recorded.'
+      : request.review_notes || '—'
+
     const row = document.createElement('tr')
     row.append(
       createCell(request.full_name || 'You'),
       createCell(LEAVE_TYPE_LABELS[request.leave_type] || request.leave_type),
       createCell(formatLeaveDates(request.start_date, request.end_date)),
-      createCell(STATUS_LABELS[request.status] || request.status),
-      createCell(request.reason),
-      createCell(request.review_notes || ''),
-      createCell(request.reviewed_by_name || '—'),
-      createCell(formatDate(request.created_at)),
-      createCell(formatDate(request.updated_at)),
-      createActionCell(request)
+      createStatusCell(request.status),
+      createCell(request.reason, '', 'leave-reason-cell'),
+      createCell(decisionReason, '', request.status === 'rejected' ? 'leave-denial-reason' : ''),
+      createCell(formatDate(request.reviewed_at)),
+      createHistoryActionCell(request)
     )
     elements.tableBody.appendChild(row)
   })
+}
 
+function renderLeaveRequests() {
   renderSummary(leaveRequests)
+  renderApprovalQueue()
+  renderHistory()
   setTableMessage(`${leaveRequests.length} leave request${leaveRequests.length === 1 ? '' : 's'} loaded.`)
+}
+
+function updateReviewNotesRequirement() {
+  const isDenied = elements.reviewAction?.value === 'rejected'
+  elements.reviewNotes.required = isDenied
+  elements.reviewNotesLabel.textContent = isDenied
+    ? 'Denial reason'
+    : 'Decision notes (optional)'
+  elements.reviewNotes.placeholder = isDenied
+    ? 'Explain why this request is being denied'
+    : 'Add an optional approval note'
+  elements.reviewNotesHint.textContent = isDenied
+    ? 'The agent will see this reason in their leave-request history.'
+    : 'Approval will automatically update the agent’s schedule.'
+  elements.reviewSubmitButton.textContent = isDenied
+    ? 'Deny request'
+    : 'Approve request'
 }
 
 function openReviewModal(request) {
@@ -194,8 +299,10 @@ function openReviewModal(request) {
   elements.reviewEmployee.value = request.full_name || 'Unknown employee'
   elements.reviewType.value = LEAVE_TYPE_LABELS[request.leave_type] || request.leave_type
   elements.reviewDates.value = formatLeaveDates(request.start_date, request.end_date)
+  elements.reviewReason.value = request.reason || '—'
   elements.reviewAction.value = 'approved'
   elements.reviewNotes.value = ''
+  updateReviewNotesRequirement()
   setReviewMessage('')
   elements.reviewModal.hidden = false
   document.body.classList.add('modal-open')
@@ -204,16 +311,20 @@ function openReviewModal(request) {
 function closeReviewModal() {
   if (!elements.reviewModal) return
   elements.reviewModal.hidden = true
+  selectedReviewRequestId = null
   document.body.classList.remove('modal-open')
 }
 
 async function loadLeaveRequests() {
   setTableMessage('Loading leave requests...')
+  elements.refreshButton.disabled = true
 
   const { data, error } = await supabase
     .from('leave_requests')
-    .select(`*, reviewed_by:profiles(full_name), user:profiles(full_name)`)
+    .select('*, user:profiles!leave_requests_user_id_fkey(full_name)')
     .order('created_at', { ascending: false })
+
+  elements.refreshButton.disabled = false
 
   if (error) {
     setTableMessage(errorMessage(error), 'error')
@@ -222,10 +333,9 @@ async function loadLeaveRequests() {
 
   leaveRequests = (data || []).map(request => ({
     ...request,
-    full_name: request.user?.full_name || 'Unknown employee',
-    reviewed_by_name: request.reviewed_by?.full_name || '—'
+    full_name: request.user?.full_name || (isApproverView ? 'Unknown employee' : 'You')
   }))
-  renderTable()
+  renderLeaveRequests()
 }
 
 async function submitLeaveRequest(event) {
@@ -257,37 +367,29 @@ async function submitLeaveRequest(event) {
   }
 
   setFormMessage('Submitting leave request...')
-  elements.form.querySelector('button[type=submit]').disabled = true
+  elements.submitButton.disabled = true
 
-  const { data, error } = await supabase
-    .from('leave_requests')
-    .insert([
-      {
-        user_id: access.user_id,
-        leave_type: leaveType,
-        start_date: startDate,
-        end_date: endDate,
-        reason
-      }
-    ])
-    .select('*')
+  const { error } = await supabase.rpc('workforce_submit_leave_request', {
+    p_leave_type: leaveType,
+    p_start_date: startDate,
+    p_end_date: endDate,
+    p_reason: reason
+  })
 
-  elements.form.querySelector('button[type=submit]').disabled = false
+  elements.submitButton.disabled = false
 
   if (error) {
     setFormMessage(errorMessage(error), 'error')
     return
   }
 
-  setFormMessage('Leave request submitted successfully.', 'success')
-  resetForm()
+  resetForm({ clearMessage: false })
+  setFormMessage('Leave request submitted. An administrator has been notified.', 'success')
   await loadLeaveRequests()
 }
 
 async function cancelLeaveRequest(requestId) {
-  if (!confirm('Cancel this pending leave request?')) {
-    return
-  }
+  if (!window.confirm('Cancel this pending leave request?')) return
 
   setTableMessage('Cancelling leave request...')
   const { error } = await supabase.rpc('workforce_cancel_leave_request', {
@@ -299,8 +401,8 @@ async function cancelLeaveRequest(requestId) {
     return
   }
 
-  setTableMessage('Leave request cancelled.', 'success')
   await loadLeaveRequests()
+  setTableMessage('Leave request cancelled.', 'success')
 }
 
 async function reviewLeaveRequest(event) {
@@ -314,38 +416,69 @@ async function reviewLeaveRequest(event) {
   const status = elements.reviewAction.value
   const notes = elements.reviewNotes.value.trim()
 
-  setReviewMessage('Submitting review...')
-  elements.reviewForm.querySelector('button[type=submit]').disabled = true
+  if (status === 'rejected' && !notes) {
+    setReviewMessage('Enter the reason for denying this request.', 'error')
+    elements.reviewNotes.focus()
+    return
+  }
 
-  const { data, error } = await supabase.rpc('workforce_review_leave_request', {
+  setReviewMessage(status === 'approved'
+    ? 'Approving request and updating the schedule...'
+    : 'Submitting denial...')
+  elements.reviewSubmitButton.disabled = true
+
+  const { error } = await supabase.rpc('workforce_review_leave_request', {
     p_request_id: selectedReviewRequestId,
     p_status: status,
     p_review_notes: notes || null
   })
 
-  elements.reviewForm.querySelector('button[type=submit]').disabled = false
+  elements.reviewSubmitButton.disabled = false
 
   if (error) {
     setReviewMessage(errorMessage(error), 'error')
     return
   }
 
-  setReviewMessage('Review submitted successfully.', 'success')
   closeReviewModal()
   await loadLeaveRequests()
+  setTableMessage(status === 'approved'
+    ? 'Leave approved and the agent’s schedule was updated.'
+    : 'Leave request denied. The reason is now visible to the agent.', 'success')
+}
+
+function configureRoleView() {
+  elements.submissionSection.hidden = isApproverView
+  elements.approvalSection.hidden = !isApproverView
+
+  if (isApproverView) {
+    elements.pageTitle.textContent = 'Leave Request Approvals'
+    elements.pageDescription.textContent = 'Review agent leave requests and keep approved leave synchronized with their schedules.'
+    elements.tableTitle.textContent = 'Approval history'
+    elements.tableDescription.textContent = 'Previously approved, denied, or cancelled leave requests in your authorized scope.'
+  } else {
+    elements.pageTitle.textContent = 'My Leave Requests'
+    elements.pageDescription.textContent = 'File a leave request and track the administrator’s decision.'
+    elements.tableTitle.textContent = 'My leave requests'
+    elements.tableDescription.textContent = 'Denied requests display the administrator’s reason here.'
+  }
 }
 
 function bindEvents() {
-  elements.form.addEventListener('submit', submitLeaveRequest)
-  elements.resetButton.addEventListener('click', resetForm)
+  if (!isApproverView) {
+    elements.form.addEventListener('submit', submitLeaveRequest)
+    elements.resetButton.addEventListener('click', () => resetForm())
+  }
+
   elements.refreshButton.addEventListener('click', loadLeaveRequests)
-  elements.reviewForm.addEventListener('submit', reviewLeaveRequest)
-  document.querySelectorAll('[data-close]').forEach(button => {
-    button.addEventListener('click', () => {
-      if (button.dataset.close === 'leaveRequestReviewModal') {
-        closeReviewModal()
-      }
-    })
+
+  if (isApproverView) {
+    elements.reviewForm.addEventListener('submit', reviewLeaveRequest)
+    elements.reviewAction.addEventListener('change', updateReviewNotesRequirement)
+  }
+
+  document.querySelectorAll('[data-close="leaveRequestReviewModal"]').forEach(button => {
+    button.addEventListener('click', closeReviewModal)
   })
 }
 
@@ -357,15 +490,32 @@ async function initialize() {
     return
   }
 
+  if (!access.allowed) {
+    window.alert('An active workforce profile is required to access leave requests.')
+    window.location.replace('./home.html')
+    return
+  }
+
+  isApproverView = access.is_admin === true &&
+    hasWorkforcePermission(access, 'approve_leave')
+
+  if (!isApproverView && access.is_agent !== true) {
+    window.alert('You do not have access to leave requests.')
+    window.location.replace('./home.html')
+    return
+  }
+
   elements.workforceLink.hidden = !(
     access.is_admin === true && hasWorkforcePermission(access, 'manage_employees')
   )
 
-  const canApproveLeave = hasWorkforcePermission(access, 'approve_leave')
-  if (!canApproveLeave) {
-    document.getElementById('leaveRequestReviewModal')?.remove()
+  if (!isApproverView) {
+    elements.reviewModal?.remove()
   }
 
+  configureRoleView()
+  elements.page.hidden = false
+  document.documentElement.classList.remove('leave-role-pending')
   bindEvents()
   resetForm()
   await loadLeaveRequests()

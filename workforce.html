@@ -8,7 +8,7 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@500&family=Sora:wght@600;700;800&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="./styles/button-theme.css?v=1">
-  <link rel="stylesheet" href="./styles/workforce-admin.css?v=14">
+  <link rel="stylesheet" href="./styles/workforce-admin.css?v=15">
   <link rel="stylesheet" href="./styles/site-theme.css?v=5">
   <script src="./scripts/site-theme.js?v=1"></script>
 </head>
@@ -196,7 +196,7 @@
 
   <div class="wf-modal" id="employeeInviteModal" role="dialog" aria-modal="true" aria-labelledby="employeeInviteModalTitle" hidden>
     <button class="wf-backdrop" type="button" data-close="employeeInviteModal" aria-label="Close user invitation dialog"></button>
-    <section class="wf-dialog wf-schedule-dialog">
+    <section class="wf-dialog">
       <div class="wf-dialog-header">
         <h2 id="employeeInviteModalTitle">Invite User</h2>
         <button class="wf-close" type="button" data-close="employeeInviteModal" aria-label="Close">×</button>
@@ -356,9 +356,9 @@
     </section>
   </div>
 
-  <div class="wf-modal" id="scheduleModal" role="dialog" aria-modal="true" aria-labelledby="scheduleModalTitle" hidden>
+  <div class="wf-modal wf-schedule-modal" id="scheduleModal" role="dialog" aria-modal="true" aria-labelledby="scheduleModalTitle" hidden>
     <button class="wf-backdrop" type="button" data-schedule-close aria-label="Close schedule dialog"></button>
-    <section class="wf-dialog">
+    <section class="wf-dialog wf-schedule-dialog">
       <div class="wf-dialog-header">
         <h2 id="scheduleModalTitle">Create Schedule Entry</h2>
         <button class="wf-close" type="button" data-schedule-close aria-label="Close">×</button>
@@ -367,11 +367,11 @@
       <form id="scheduleForm" class="wf-form">
         <input id="scheduleId" type="hidden">
         <div class="wf-form-grid wf-schedule-form-grid">
-          <label class="wf-field full wf-schedule-user-field">
+          <label class="wf-field half wf-schedule-user-field">
             <span>User</span>
             <select class="wf-control" id="scheduleEmployee" required><option value="">Select user</option></select>
           </label>
-          <label class="wf-field full">
+          <label class="wf-field half">
             <span>Schedule Frequency</span>
             <select class="wf-control" id="scheduleFrequency" required>
               <option value="one">One day</option>
@@ -439,7 +439,7 @@
               </label>
             </div>
           </details>
-          <label class="wf-field full">
+          <label class="wf-field half">
             <span>Other schedule</span>
             <select class="wf-control" id="scheduleOtherType">
               <option value="">None — regular shift</option>
@@ -449,7 +449,7 @@
               <option value="absent">Absent</option>
             </select>
           </label>
-          <label class="wf-field full" id="scheduleLeaveTypeField" hidden>
+          <label class="wf-field half" id="scheduleLeaveTypeField" hidden>
             <span>Leave type</span>
             <select class="wf-control" id="scheduleLeaveType">
               <option value="">Select leave type</option>
@@ -458,7 +458,7 @@
               <option value="leave_without_pay">Leave Without Pay</option>
             </select>
           </label>
-          <label class="wf-field full" id="scheduleAbsenceTypeField" hidden>
+          <label class="wf-field half" id="scheduleAbsenceTypeField" hidden>
             <span>Absent type</span>
             <select class="wf-control" id="scheduleAbsenceType">
               <option value="">Select absent type</option>
@@ -466,26 +466,26 @@
               <option value="without_notification">Absent without Notif</option>
             </select>
           </label>
-          <label class="wf-check wf-check-card full">
+          <label class="wf-check wf-check-card half">
             <input id="scheduleIsOpen" type="checkbox">
             <span>Open schedule (no fixed clock-in or clock-out)</span>
           </label>
-          <label id="schedulePlannedPaidHoursField" class="wf-field full" hidden>
+          <label id="schedulePlannedPaidHoursField" class="wf-field half" hidden>
             <span>Planned paid hours</span>
             <input class="wf-control" id="schedulePlannedPaidHours" type="number" min="0.25" max="24" step="0.25" value="8">
             <small class="wf-subtext">Actual time up to this duration is regular; excess time is overtime pending review.</small>
           </label>
-          <label class="wf-field full">
+          <label class="wf-field half">
             <span>Holiday name</span>
             <input class="wf-control" id="scheduleHolidayName" disabled placeholder="Required when marked as a holiday">
           </label>
-          <label class="wf-check full">
+          <label class="wf-check half">
             <input id="scheduleRepeatWeekly" type="checkbox">
             <span>Add this schedule to Sunday weekly automation</span>
           </label>
         </div>
 
-        <p class="wf-note">You can select one date or several dates. Leave and Absent are treated as non-working days and cannot be used for attendance.</p>
+        <p class="wf-note wf-schedule-note">You can select one date or several dates. Leave and Absent are treated as non-working days and cannot be used for attendance.</p>
         <div class="wf-dialog-actions">
           <button class="wf-btn secondary" type="button" data-schedule-close>Cancel</button>
           <button class="wf-btn" id="saveScheduleButton" type="submit">Save Schedule</button>

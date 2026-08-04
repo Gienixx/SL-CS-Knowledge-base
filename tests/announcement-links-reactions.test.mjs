@@ -36,7 +36,7 @@ test('Home lets each authenticated user like or dislike an announcement', async 
     read('styles/home-reference-redesign.css')
   ])
 
-  assert.match(page, /home-reference-redesign\.css\?v=20/)
+  assert.match(page, /home-reference-redesign\.css\?v=21/)
   assert.match(page, /scripts\/home\.js\?v=11/)
   assert.match(page, /data-announcement-reaction="like"/)
   assert.match(page, /data-announcement-reaction="dislike"/)

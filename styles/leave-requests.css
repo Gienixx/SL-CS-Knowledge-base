@@ -1,13 +1,47 @@
-.leave-requests-page{max-width:1180px}
-.leave-request-actions{justify-content:flex-start}
-.leave-requests-table{min-width:1240px}
+.leave-role-pending .leave-requests-page{visibility:hidden}
+.leave-requests-page{max-width:1240px}
+.leave-request-form-card,.leave-approval-card{margin-bottom:16px}
+.leave-request-form{padding:0 22px 18px}
+.leave-request-form-grid{grid-template-columns:minmax(190px,.9fr) repeat(2,minmax(160px,.7fr))}
+.leave-request-form-grid .full{grid-column:1/-1}
+.leave-request-form textarea{min-height:76px;resize:vertical}
+.leave-request-actions{justify-content:flex-start;margin-top:2px}
+.leave-request-actions+.wf-message{margin-bottom:0}
+.leave-queue-count{display:inline-flex;align-items:center;min-height:30px;padding:0 11px;border:1px solid color-mix(in srgb,var(--wf-gold) 48%,transparent);border-radius:999px;background:color-mix(in srgb,var(--wf-gold) 13%,var(--wf-surface));color:var(--wf-navy);font-size:.74rem;font-weight:850;white-space:nowrap}
+.leave-approval-table{min-width:960px}
+.leave-requests-table{min-width:1160px}
+.leave-approval-table td:nth-child(4),
 .leave-requests-table td:nth-child(5),
 .leave-requests-table td:nth-child(6){max-width:260px;white-space:normal;line-height:1.45}
-.team-attendance-cell-stack{display:grid;gap:4px;min-width:0}
-.team-attendance-time{color:var(--wf-navy);font-weight:820;overflow-wrap:anywhere}
-.team-attendance-muted{color:var(--wf-muted);font-size:.82rem;line-height:1.35;overflow-wrap:anywhere}
-.wf-btn.compact{min-height:34px;padding:0 12px;font-size:.9rem}
+.leave-request-cell-stack{display:grid;gap:4px;min-width:0}
+.leave-request-cell-main{color:var(--wf-navy);font-weight:760;overflow-wrap:anywhere}
+.leave-request-cell-muted{color:var(--wf-muted);font-size:.75rem;line-height:1.35;overflow-wrap:anywhere}
+.leave-reason-cell .leave-request-cell-main{color:var(--wf-text);font-weight:560}
+.leave-denial-reason .leave-request-cell-main{color:var(--wf-danger);font-weight:720}
+.leave-status{display:inline-flex;align-items:center;justify-content:center;min-width:76px;padding:5px 10px;border-radius:999px;font-size:.72rem;font-weight:850}
+.leave-status.pending{background:color-mix(in srgb,var(--wf-gold) 15%,var(--wf-surface));color:#9a6200}
+.leave-status.approved{background:color-mix(in srgb,var(--wf-success) 14%,var(--wf-surface));color:var(--wf-success)}
+.leave-status.rejected{background:color-mix(in srgb,var(--wf-danger) 13%,var(--wf-surface));color:var(--wf-danger)}
+.leave-status.cancelled{background:color-mix(in srgb,var(--wf-muted) 12%,var(--wf-surface));color:var(--wf-muted)}
+.wf-btn.compact{min-height:32px;padding:0 11px;font-size:.76rem}
+.leave-review-dialog{width:min(100%,680px)}
+.leave-review-dialog .wf-form{padding-top:2px}
+.leave-review-dialog textarea[readonly]{min-height:78px;resize:none}
+
+html[data-site-theme="dark"] .leave-status.pending{color:var(--site-gold)}
+html[data-site-theme="dark"] :is(.leave-request-cell-main,.leave-queue-count){color:var(--site-heading)}
+html[data-site-theme="dark"] .leave-reason-cell .leave-request-cell-main{color:var(--site-text)}
+html[data-site-theme="dark"] .leave-denial-reason .leave-request-cell-main{color:var(--site-red)}
+
+@media(max-width:840px){
+  .leave-request-form-grid{grid-template-columns:repeat(2,minmax(0,1fr))}
+  .leave-request-form-grid .wf-field:first-child{grid-column:1/-1}
+}
 
 @media(max-width:680px){
+  .leave-request-form{padding-inline:18px}
+  .leave-request-form-grid{grid-template-columns:1fr}
+  .leave-request-form-grid .wf-field:first-child{grid-column:auto}
   .leave-request-actions{width:100%}
+  .leave-request-actions .wf-btn{flex:1}
 }

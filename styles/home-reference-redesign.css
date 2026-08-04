@@ -52,6 +52,8 @@ nav a:hover, .settings-link:hover { color: #fff; background: rgba(255,255,255,.0
 nav a.active { position: relative; color: #fff; background: rgba(255,255,255,.09); }
 nav a.active::before { content: ""; position: absolute; top: 0; bottom: 0; left: 0; width: 3px; border-radius: 0 4px 4px 0; background: var(--amber-strong); }
 nav a.active .nav-icon { color: var(--amber-strong); }
+.sidebar-link-copy { min-width: 0; flex: 1; display: flex; align-items: center; justify-content: space-between; gap: 8px; }
+.sidebar-notification-badge { min-width: 20px; height: 20px; padding: 0 6px; border: 1px solid rgba(255,255,255,.2); border-radius: 999px; color: #fff; background: var(--coral); display: inline-flex; align-items: center; justify-content: center; font-family: "JetBrains Mono", monospace; font-size: 9px; font-weight: 800; line-height: 1; box-shadow: 0 0 0 3px rgba(181,67,47,.16); }
 
 .side-foot { margin-top: 12px; padding-top: 8px; border-top: 1px solid rgba(255,255,255,.1); }
 .settings-link { margin-bottom: 6px; }

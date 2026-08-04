@@ -5,14 +5,20 @@ import test from 'node:test'
 const read = path => readFile(new URL(`../${path}`, import.meta.url), 'utf8')
 
 test('workforce administration includes the schedule management interface', async () => {
-  const [html, script] = await Promise.all([
+  const [html, script, styles] = await Promise.all([
     read('workforce.html'),
-    read('scripts/workforce-schedules.js')
+    read('scripts/workforce-schedules.js'),
+    read('styles/workforce-admin.css')
   ])
 
   assert.match(html, /id="scheduleManagementSection"/)
   assert.match(html, /Weekly and monthly schedule views/)
   assert.match(html, /id="scheduleModal"/)
+  assert.match(html, /class="wf-modal wf-schedule-modal" id="scheduleModal"/)
+  assert.match(html, /class="wf-dialog wf-schedule-dialog"/)
+  assert.match(html, /class="wf-field half wf-schedule-user-field"/)
+  assert.match(styles, /\.wf-schedule-form-grid\{grid-template-columns:repeat\(4,minmax\(0,1fr\)\)/)
+  assert.match(styles, /@media\(max-width:680px\)\{[\s\S]*\.wf-schedule-form-grid\{grid-template-columns:1fr\}/)
   assert.match(html, /id="scheduleOtherType"/)
   assert.match(html, /value="rest_day">Rest day/)
   assert.match(html, /value="holiday">Holiday/)

@@ -54,7 +54,7 @@ test('Leave renders consistently in schedule management, My Schedule, and Home',
 test('Leave is first-class database state and cannot create attendance', async () => {
   const [migration, categoryMigration, attendance, teamAttendance] = await Promise.all([
     read('supabase/migrations/20260804131343_add_leave_schedule_type.sql'),
-    read('supabase/migrations/20260804142306_add_schedule_leave_and_absence_categories.sql'),
+    read('supabase/migrations/20260804152955_add_schedule_leave_and_absence_categories.sql'),
     read('scripts/attendance.js'),
     read('scripts/team-attendance.js')
   ])

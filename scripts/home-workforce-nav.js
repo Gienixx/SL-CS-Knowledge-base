@@ -8,6 +8,9 @@ async function configureHomeWorkforceNavigation() {
   const myScheduleButton = document.getElementById('homeMyScheduleBtn')
   const attendanceButton = document.getElementById('homeAttendanceBtn')
   const leaveRequestsButton = document.getElementById('homeLeaveRequestsBtn')
+  const leaveRequestsPendingBadge = document.getElementById(
+    'homeLeaveRequestsPendingBadge'
+  )
   const myPayslipsButton = document.getElementById('homeMyPayslipsBtn')
   const teamAttendanceButton = document.getElementById('homeTeamAttendanceBtn')
   const workforceManagementButton = document.getElementById(
@@ -42,6 +45,10 @@ async function configureHomeWorkforceNavigation() {
 
     const canUseAttendance = access.allowed === true
     const isRegularAgentView = access.access_type === 'regular_agent'
+    const canApproveLeave =
+      access.is_admin === true &&
+      hasWorkforcePermission(access, 'approve_leave')
+    const canUseLeaveRequests = access.is_agent === true || canApproveLeave
     const canViewTeamAttendance = access.is_admin === true
       ? hasWorkforcePermission(access, 'view_team_attendance')
       : access.is_agent === true
@@ -69,7 +76,38 @@ async function configureHomeWorkforceNavigation() {
     }
 
     if (leaveRequestsButton) {
-      leaveRequestsButton.hidden = isRegularAgentView || !access.allowed
+      leaveRequestsButton.hidden = !canUseLeaveRequests
+
+      if (canApproveLeave && leaveRequestsPendingBadge) {
+        const refreshPendingLeaveCount = async () => {
+          const { count, error } = await supabase
+            .from('leave_requests')
+            .select('*', { count: 'exact', head: true })
+            .eq('status', 'pending')
+
+          if (error) {
+            console.error('Pending leave request count failed:', error)
+            return
+          }
+
+          const pendingCount = Number(count || 0)
+          leaveRequestsPendingBadge.textContent = pendingCount > 99
+            ? '99+'
+            : String(pendingCount)
+          leaveRequestsPendingBadge.hidden = pendingCount === 0
+          leaveRequestsPendingBadge.setAttribute(
+            'aria-label',
+            `${pendingCount} pending leave request${pendingCount === 1 ? '' : 's'}`
+          )
+          leaveRequestsButton.title = pendingCount
+            ? `${pendingCount} leave request${pendingCount === 1 ? '' : 's'} waiting for approval`
+            : ''
+        }
+
+        await refreshPendingLeaveCount()
+        window.setInterval(refreshPendingLeaveCount, 60000)
+        window.addEventListener('focus', refreshPendingLeaveCount)
+      }
     }
 
     if (myPayslipsButton) {

@@ -1,21 +1,21 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="en" class="leave-role-pending">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Leave Requests | SocialLoop CS Base</title>
   <link rel="stylesheet" href="./styles/button-theme.css?v=1">
-  <link rel="stylesheet" href="./styles/workforce-admin.css?v=2">
-  <link rel="stylesheet" href="./styles/leave-requests.css?v=1">
-  <link rel="stylesheet" href="./styles/site-theme.css?v=1">
+  <link rel="stylesheet" href="./styles/workforce-admin.css?v=15">
+  <link rel="stylesheet" href="./styles/leave-requests.css?v=2">
+  <link rel="stylesheet" href="./styles/site-theme.css?v=5">
   <script src="./scripts/site-theme.js?v=1"></script>
 </head>
 <body>
-  <main class="wf-page leave-requests-page">
+  <main id="leaveRequestsPage" class="wf-page leave-requests-page" hidden>
     <header class="wf-topbar">
       <div class="wf-title">
-        <h1>Leave Requests</h1>
-        <p>Submit time-off requests, review request status, and manage approvals when your workforce permissions allow it.</p>
+        <h1 id="leaveRequestsPageTitle">Leave Requests</h1>
+        <p id="leaveRequestsPageDescription">File a leave request and track its approval status.</p>
       </div>
       <nav class="wf-nav" aria-label="Leave requests navigation">
         <a class="wf-link" href="./my-schedule.html">My Schedule</a>
@@ -26,31 +26,29 @@
     </header>
 
     <section class="wf-summary-grid" aria-label="Leave request summary">
-      <article class="wf-summary"><span>Total requests</span><strong id="leaveRequestTotalCount">—</strong></article>
+      <article class="wf-summary"><span>Requests shown</span><strong id="leaveRequestTotalCount">—</strong></article>
       <article class="wf-summary"><span>Pending</span><strong id="leaveRequestPendingCount">—</strong></article>
       <article class="wf-summary"><span>Approved</span><strong id="leaveRequestApprovedCount">—</strong></article>
-      <article class="wf-summary"><span>Rejected</span><strong id="leaveRequestRejectedCount">—</strong></article>
+      <article class="wf-summary"><span>Denied</span><strong id="leaveRequestRejectedCount">—</strong></article>
     </section>
 
-    <section class="wf-card" aria-labelledby="leaveRequestFormTitle">
+    <section id="leaveRequestSubmissionSection" class="wf-card leave-request-form-card" aria-labelledby="leaveRequestFormTitle" hidden>
       <div class="wf-card-header">
         <div>
           <h2 id="leaveRequestFormTitle">New Leave Request</h2>
-          <p class="wf-message">Choose the leave type, date range, and reason for your request.</p>
+          <p class="wf-message">Choose the leave type and dates, then explain your request.</p>
         </div>
       </div>
 
-      <form id="leaveRequestForm" class="wf-form">
-        <div class="wf-form-grid">
+      <form id="leaveRequestForm" class="wf-form leave-request-form">
+        <div class="wf-form-grid leave-request-form-grid">
           <label class="wf-field">
             <span>Leave type</span>
             <select id="leaveRequestType" class="wf-control" required>
               <option value="">Select leave type</option>
-              <option value="vacation">Vacation</option>
-              <option value="sick">Sick</option>
-              <option value="emergency">Emergency</option>
-              <option value="unpaid">Unpaid</option>
-              <option value="other">Other</option>
+              <option value="incentive_vl">Incentive VL</option>
+              <option value="birthday_vl">Birthday VL</option>
+              <option value="leave_without_pay">Leave Without Pay</option>
             </select>
           </label>
           <label class="wf-field">
@@ -63,23 +61,51 @@
           </label>
           <label class="wf-field full">
             <span>Reason</span>
-            <textarea id="leaveRequestReason" class="wf-control" rows="4" required></textarea>
+            <textarea id="leaveRequestReason" class="wf-control" rows="3" required placeholder="Explain why you are requesting leave"></textarea>
           </label>
         </div>
 
         <div class="wf-dialog-actions leave-request-actions">
           <button id="leaveRequestResetButton" class="wf-btn secondary" type="button">Reset</button>
-          <button class="wf-btn" type="submit">Submit Request</button>
+          <button id="leaveRequestSubmitButton" class="wf-btn" type="submit">Submit Request</button>
         </div>
         <p id="leaveRequestFormMessage" class="wf-message" aria-live="polite"></p>
       </form>
     </section>
 
+    <section id="leaveApprovalQueueSection" class="wf-card leave-approval-card" aria-labelledby="leaveApprovalQueueTitle" hidden>
+      <div class="wf-card-header">
+        <div>
+          <h2 id="leaveApprovalQueueTitle">Leave approval queue</h2>
+          <p class="wf-message">Pending agent requests that require an approval decision.</p>
+        </div>
+        <span id="leaveApprovalQueueCount" class="leave-queue-count">0 pending</span>
+      </div>
+
+      <div class="wf-table-wrap">
+        <table class="wf-table leave-approval-table">
+          <thead>
+            <tr>
+              <th>Employee</th>
+              <th>Leave type</th>
+              <th>Dates</th>
+              <th>Request reason</th>
+              <th>Filed</th>
+              <th>Action</th>
+            </tr>
+          </thead>
+          <tbody id="leaveApprovalTableBody">
+            <tr><td colspan="6" class="wf-empty">Loading pending requests...</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </section>
+
     <section class="wf-card" aria-labelledby="leaveRequestTableTitle">
       <div class="wf-card-header">
         <div>
-          <h2 id="leaveRequestTableTitle">Request History</h2>
-          <p class="wf-message">Pending requests can be cancelled by the requester or reviewed by authorized approvers.</p>
+          <h2 id="leaveRequestTableTitle">My leave requests</h2>
+          <p id="leaveRequestTableDescription" class="wf-message">Track pending requests and read the administrator’s decision reason when a request is denied.</p>
         </div>
         <div class="wf-actions">
           <button id="leaveRequestRefreshButton" class="wf-btn secondary" type="button">Refresh</button>
@@ -91,19 +117,17 @@
           <thead>
             <tr>
               <th>Employee</th>
-              <th>Type</th>
+              <th>Leave type</th>
               <th>Dates</th>
               <th>Status</th>
-              <th>Reason</th>
-              <th>Review notes</th>
-              <th>Reviewed by</th>
-              <th>Created</th>
-              <th>Updated</th>
-              <th>Actions</th>
+              <th>Request reason</th>
+              <th>Decision reason</th>
+              <th>Decision date</th>
+              <th>Action</th>
             </tr>
           </thead>
           <tbody id="leaveRequestTableBody">
-            <tr><td colspan="10" class="wf-empty">Loading leave requests...</td></tr>
+            <tr><td colspan="8" class="wf-empty">Loading leave requests...</td></tr>
           </tbody>
         </table>
       </div>
@@ -113,11 +137,11 @@
 
   <div class="wf-modal" id="leaveRequestReviewModal" role="dialog" aria-modal="true" aria-labelledby="leaveRequestReviewTitle" hidden>
     <button class="wf-backdrop" type="button" data-close="leaveRequestReviewModal" aria-label="Close leave request review dialog"></button>
-    <section class="wf-dialog compact">
+    <section class="wf-dialog compact leave-review-dialog">
       <div class="wf-dialog-header">
         <div>
           <h2 id="leaveRequestReviewTitle">Review Leave Request</h2>
-          <p class="wf-message">Approve or reject the selected pending request.</p>
+          <p class="wf-message">Approval updates the agent’s schedule automatically.</p>
         </div>
         <button class="wf-close" type="button" data-close="leaveRequestReviewModal" aria-label="Close">×</button>
       </div>
@@ -136,28 +160,33 @@
             <span>Dates</span>
             <input id="leaveRequestReviewDates" class="wf-control" type="text" readonly>
           </label>
+          <label class="wf-field full">
+            <span>Agent’s reason</span>
+            <textarea id="leaveRequestReviewReason" class="wf-control" rows="3" readonly></textarea>
+          </label>
           <label class="wf-field">
             <span>Decision</span>
             <select id="leaveRequestReviewAction" class="wf-control">
               <option value="approved">Approve</option>
-              <option value="rejected">Reject</option>
+              <option value="rejected">Deny</option>
             </select>
           </label>
           <label class="wf-field full">
-            <span>Review notes</span>
-            <textarea id="leaveRequestReviewNotes" class="wf-control" rows="4"></textarea>
+            <span id="leaveRequestReviewNotesLabel">Decision notes (optional)</span>
+            <textarea id="leaveRequestReviewNotes" class="wf-control" rows="3" placeholder="Add an optional approval note"></textarea>
+            <small id="leaveRequestReviewNotesHint" class="wf-subtext">A reason is required when denying a request.</small>
           </label>
         </div>
 
         <p id="leaveRequestReviewMessage" class="wf-message" aria-live="polite"></p>
         <div class="wf-dialog-actions">
           <button class="wf-btn secondary" type="button" data-close="leaveRequestReviewModal">Cancel</button>
-          <button class="wf-btn" type="submit">Submit Review</button>
+          <button id="leaveRequestReviewSubmitButton" class="wf-btn" type="submit">Approve request</button>
         </div>
       </form>
     </section>
   </div>
 
-  <script type="module" src="./scripts/leave-requests.js?v=1"></script>
+  <script type="module" src="./scripts/leave-requests.js?v=2"></script>
 </body>
 </html>

@@ -1,45 +1,45 @@
-# Step 14 — Leave Management
+# Leave Request Management
 
-Phase 1 leave management is implemented in `leave-requests.html` and
-`scripts/leave-requests.js`.
+Leave requests use separate agent and administrator workflows in
+`leave-requests.html` and `scripts/leave-requests.js`.
 
 ## Agent workflow
 
-- Submit vacation, sick, emergency, unpaid, or other leave with an inclusive
-  date range and required reason.
-- View the request history and reviewer outcome.
+- Submit Incentive VL, Birthday VL, or Leave Without Pay for an inclusive date
+  range with a required reason.
+- View only owned requests and their current status.
+- Read the administrator's decision reason when a request is denied.
 - Cancel an owned request while it is pending.
 
-## Reviewer workflow
+## Administrator workflow
 
-- Users with `approve_leave` can view requests within their authorized employee
-  scope.
-- Pending requests can be approved or rejected with optional review notes.
-- The review RPC locks the request so concurrent reviewers cannot process it
-  twice.
-- Direct updates and deletes are revoked from browser roles; cancellation and
-  review must use their audited RPC workflows.
+- Administrators with `approve_leave` see an approval page instead of the
+  agent submission form.
+- The Home sidebar displays a pending-request count for authorized approvers.
+- Pending requests can be approved or denied. A denial reason is required and
+  is displayed in the agent's history.
+- Review history remains available after a request leaves the pending queue.
+- The review RPC locks each pending request so two administrators cannot decide
+  it concurrently.
 
-## Approved leave and attendance
+## Approved leave and schedules
 
-Approval marks each published or changed working shift inside the request range
-as `on_leave`. The attendance record is also marked `approved` for review. Rest
-days and holidays are excluded so they do not consume leave.
+Approval converts eligible schedules in the request range to the selected leave
+type and creates a leave schedule for any uncovered date. Every resulting row is
+linked to its source through `work_schedules.leave_request_id`.
 
-Approval fails transactionally when any attendance in the date range already has
-clock activity or worked minutes. This prevents approved leave from overwriting
-real attendance; an administrator must resolve the conflict first.
+This does not create attendance history. Approval fails transactionally when
+the date range already contains attendance or a completed schedule, so recorded
+work is never silently replaced.
 
-The leave request, attendance changes, reviewer identity, review time, and a
-summary count are written to the workforce audit trail.
+If schedule automation later creates another row in an approved leave range,
+the database converts it to the linked leave type before it is saved.
 
-## Deployment
+## Security and verification
 
-Step 14 is included in the active production schema baseline. Its original
-implementation is preserved at
-`supabase/migrations-legacy/2026071101_complete_leave_management.sql` and must
-not be replayed against the linked project.
-
-1. Run `supabase/verification/leave_management_check.sql` after deployment.
-2. Test submission, cancellation, rejection, approval, team scope, rest-day
-   exclusion, and an approval that overlaps clock activity.
+Browser roles cannot insert, update, or delete `leave_requests` directly.
+Identity-safe submission, cancellation, and scoped review RPCs perform all
+changes. Run `supabase/verification/leave_management_check.sql` after deployment
+to verify privileges, denial reasons, and approved schedule linkage. The
+rollback-only `supabase/verification/leave_management_transaction_check.sql`
+exercises a complete approval and denial flow without retaining test records.

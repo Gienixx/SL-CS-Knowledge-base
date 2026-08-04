@@ -238,3 +238,36 @@ body{background:#f6f5fb;font-family:'Inter',sans-serif;color:#14142b}
   .wf-table th,.wf-table td,.wf-compact-table td{padding-inline:12px}
 }
 .wf-row-btn.danger{border-color:#b42318;color:#b42318}.wf-row-btn.danger:hover{background:#fff1f0}
+
+/* Compact create/edit schedule dialog */
+.wf-schedule-modal{padding:12px}
+.wf-schedule-dialog{width:min(100%,760px);max-height:calc(100dvh - 24px);padding:18px 20px 20px;border-radius:18px}
+.wf-schedule-dialog .wf-dialog-header{margin-bottom:12px}
+.wf-schedule-dialog .wf-dialog-header h2{font-size:1.15rem}
+.wf-schedule-dialog .wf-close{width:34px;height:34px;font-size:1.25rem}
+.wf-schedule-dialog .wf-form{gap:12px}
+.wf-schedule-form-grid{grid-template-columns:repeat(4,minmax(0,1fr));gap:10px 12px}
+.wf-schedule-form-grid>.half{grid-column:span 2}
+.wf-schedule-dialog .wf-field{gap:5px}
+.wf-schedule-dialog .wf-control{min-height:36px;padding:7px 10px}
+.wf-schedule-dialog textarea.wf-control{min-height:60px;line-height:1.4}
+.wf-schedule-dialog .wf-check-card{min-height:38px;padding:8px 10px;border-radius:9px;font-size:.78rem}
+.wf-schedule-dialog .wf-check:not(.wf-check-card){align-items:center;font-size:.76rem}
+.wf-schedule-dialog .wf-check input{width:16px;height:16px}
+.wf-schedule-dialog .wf-advanced summary{padding:9px 10px;font-size:.78rem}
+.wf-schedule-dialog .wf-advanced .wf-form-grid{gap:10px;padding:10px}
+.wf-schedule-dialog .wf-schedule-day-picker legend{margin-bottom:5px;font-size:.68rem}
+.wf-schedule-dialog .wf-schedule-day-toggles span{min-height:32px;border-radius:8px;font-size:.72rem}
+.wf-schedule-dialog .wf-schedule-summary{gap:7px;padding:8px 10px;margin:0;border-radius:9px;font-size:.74rem}
+.wf-schedule-dialog .wf-schedule-summary-dot{width:7px;height:7px}
+.wf-schedule-dialog .wf-schedule-note{padding:8px 10px;border-radius:9px;font-size:.76rem;line-height:1.4}
+.wf-schedule-dialog .wf-dialog-actions{gap:8px}
+.wf-schedule-dialog .wf-dialog-actions .wf-btn{min-height:36px;padding:7px 14px}
+.wf-schedule-dialog .wf-message{margin-top:8px;font-size:.78rem}
+
+@media(max-width:680px){
+  .wf-schedule-modal{padding:8px}
+  .wf-schedule-dialog{max-height:calc(100dvh - 16px);padding:16px}
+  .wf-schedule-form-grid{grid-template-columns:1fr}
+  .wf-schedule-form-grid>.half{grid-column:auto}
+}
