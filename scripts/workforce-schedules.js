@@ -23,9 +23,11 @@ if (section) {
   const scheduleForm = document.getElementById('scheduleForm')
   const saveButton = document.getElementById('saveScheduleButton')
   const formMessage = document.getElementById('scheduleFormMessage')
-  const restDayInput = document.getElementById('scheduleIsRestDay')
-  const holidayInput = document.getElementById('scheduleIsHoliday')
-  const leaveInput = document.getElementById('scheduleIsLeave')
+  const otherTypeSelect = document.getElementById('scheduleOtherType')
+  const leaveTypeField = document.getElementById('scheduleLeaveTypeField')
+  const leaveTypeSelect = document.getElementById('scheduleLeaveType')
+  const absenceTypeField = document.getElementById('scheduleAbsenceTypeField')
+  const absenceTypeSelect = document.getElementById('scheduleAbsenceType')
   const openScheduleInput = document.getElementById('scheduleIsOpen')
   const plannedPaidHoursField = document.getElementById('schedulePlannedPaidHoursField')
   const plannedPaidHoursInput = document.getElementById('schedulePlannedPaidHours')
@@ -57,6 +59,23 @@ if (section) {
     cancelled: 'Cancelled',
     completed: 'Completed'
   })
+
+  const LEAVE_TYPE_LABELS = Object.freeze({
+    incentive_vl: 'Incentive VL',
+    birthday_vl: 'Birthday VL',
+    leave_without_pay: 'Leave Without Pay'
+  })
+
+  const ABSENCE_TYPE_LABELS = Object.freeze({
+    with_notification: 'ABSENT with Notif',
+    without_notification: 'Absent without Notif'
+  })
+
+  function specialScheduleLabel(schedule) {
+    if (schedule.is_leave) return LEAVE_TYPE_LABELS[schedule.leave_type] || 'Leave'
+    if (schedule.is_absent) return ABSENCE_TYPE_LABELS[schedule.absence_type] || 'Absent'
+    return ''
+  }
 
   function normalizeText(value) {
     return typeof value === 'string' ? value.trim() : ''
@@ -190,7 +209,7 @@ if (section) {
   }
 
   function formatShift(schedule) {
-    if (schedule.is_leave) return 'Leave'
+    if (schedule.is_leave || schedule.is_absent) return specialScheduleLabel(schedule)
     if (schedule.is_rest_day) return 'Rest day'
     if (!schedule.shift_start && !schedule.shift_end) return 'Open schedule'
 
@@ -321,6 +340,7 @@ if (section) {
     document.getElementById('publishedScheduleCount').textContent = rows.filter(item => item.status === 'published').length
     document.getElementById('restDayCount').textContent = rows.filter(item => item.is_rest_day).length
     document.getElementById('leaveScheduleCount').textContent = rows.filter(item => item.is_leave).length
+    document.getElementById('absentScheduleCount').textContent = rows.filter(item => item.is_absent).length
     document.getElementById('holidayCount').textContent = rows.filter(item => item.is_holiday).length
   }
 
@@ -386,17 +406,20 @@ if (section) {
         }
         dayEntries.forEach(schedule => {
           const chip = document.createElement('div')
-          const isOpenSchedule = !schedule.is_leave && !schedule.is_rest_day && !schedule.is_holiday && !schedule.shift_start && !schedule.shift_end
-          chip.className = `wf-schedule-chip ${schedule.is_leave ? 'leave' : schedule.is_holiday ? 'holiday' : schedule.is_rest_day ? 'rest' : isOpenSchedule ? 'open' : 'shift'} ${schedule.status === 'scheduled' ? 'draft' : 'published'}`
+          const isOpenSchedule = !schedule.is_leave && !schedule.is_absent && !schedule.is_rest_day && !schedule.is_holiday && !schedule.shift_start && !schedule.shift_end
+          const chipType = schedule.is_absent ? 'absent' : schedule.is_leave ? 'leave' : schedule.is_holiday ? 'holiday' : schedule.is_rest_day ? 'rest' : isOpenSchedule ? 'open' : 'shift'
+          chip.className = `wf-schedule-chip ${chipType} ${schedule.status === 'scheduled' ? 'draft' : 'published'}`
           const editButton = document.createElement('button')
           editButton.type = 'button'
           editButton.className = 'wf-chip-main'
           const scheduleMeta = schedule.is_leave
-            ? ''
+            ? 'Leave'
+            : schedule.is_absent
+              ? 'Absent'
             : isOpenSchedule
             ? `${formatPlannedHours(schedule.planned_paid_minutes)} · Sequence ${schedule.shift_sequence}`
             : schedule.is_rest_day ? '' : `Sequence ${schedule.shift_sequence}`
-          editButton.innerHTML = `<strong>${schedule.is_leave ? 'Leave' : schedule.is_rest_day ? 'Rest day' : schedule.is_holiday ? schedule.holiday_name || 'Holiday' : formatShift(schedule)}</strong><small>${scheduleMeta}</small>`
+          editButton.innerHTML = `<strong>${schedule.is_leave || schedule.is_absent ? specialScheduleLabel(schedule) : schedule.is_rest_day ? 'Rest day' : schedule.is_holiday ? schedule.holiday_name || 'Holiday' : formatShift(schedule)}</strong><small>${scheduleMeta}</small>`
           editButton.addEventListener('click', () => openSchedule(schedule.id))
           const deleteButton = document.createElement('button')
           deleteButton.type = 'button'
@@ -458,14 +481,16 @@ if (section) {
   }
 
   function updateScheduleFormState() {
-    const isRestDay = restDayInput.checked
-    const isHoliday = holidayInput.checked
-    const isLeave = leaveInput.checked
+    const otherType = otherTypeSelect.value
+    const isRestDay = otherType === 'rest_day'
+    const isHoliday = otherType === 'holiday'
+    const isLeave = otherType === 'leave'
+    const isAbsent = otherType === 'absent'
     const isOpenSchedule = openScheduleInput.checked
     const start = document.getElementById('scheduleStart')
     const end = document.getElementById('scheduleEnd')
     const holidayName = document.getElementById('scheduleHolidayName')
-    const hasNoFixedTimes = isRestDay || isLeave || isOpenSchedule
+    const hasNoFixedTimes = isRestDay || isLeave || isAbsent || isOpenSchedule
 
     start.disabled = hasNoFixedTimes
     end.disabled = hasNoFixedTimes
@@ -480,34 +505,27 @@ if (section) {
     holidayName.required = isHoliday
     if (!isHoliday) holidayName.value = ''
 
+    leaveTypeField.hidden = !isLeave
+    leaveTypeSelect.disabled = !isLeave
+    leaveTypeSelect.required = isLeave
+    if (!isLeave) leaveTypeSelect.value = ''
+
+    absenceTypeField.hidden = !isAbsent
+    absenceTypeSelect.disabled = !isAbsent
+    absenceTypeSelect.required = isAbsent
+    if (!isAbsent) absenceTypeSelect.value = ''
+
     plannedPaidHoursField.hidden = !isOpenSchedule
     plannedPaidHoursInput.disabled = !isOpenSchedule
     plannedPaidHoursInput.required = isOpenSchedule
     if (isOpenSchedule && !plannedPaidHoursInput.value) plannedPaidHoursInput.value = '8'
 
-    repeatWeeklyInput.disabled = isOpenSchedule || isLeave
-    if (isOpenSchedule || isLeave) repeatWeeklyInput.checked = false
+    repeatWeeklyInput.disabled = isOpenSchedule || isLeave || isAbsent
+    if (isOpenSchedule || isLeave || isAbsent) repeatWeeklyInput.checked = false
   }
 
-  function selectExclusiveScheduleType(selectedInput) {
-    if (!selectedInput.checked) {
-      updateScheduleFormState()
-      return
-    }
-
-    if (selectedInput === openScheduleInput) {
-      restDayInput.checked = false
-      holidayInput.checked = false
-      leaveInput.checked = false
-    } else if (selectedInput === leaveInput) {
-      restDayInput.checked = false
-      holidayInput.checked = false
-      openScheduleInput.checked = false
-    } else {
-      openScheduleInput.checked = false
-      leaveInput.checked = false
-    }
-
+  function selectScheduleType() {
+    if (openScheduleInput.checked) otherTypeSelect.value = ''
     updateScheduleFormState()
   }
 
@@ -576,10 +594,18 @@ if (section) {
       document.getElementById('scheduleSequence').value = String(schedule.shift_sequence)
       document.getElementById('scheduleTimezone').value = schedule.timezone || 'America/New_York'
       document.getElementById('scheduleStatus').value = schedule.status
-      restDayInput.checked = schedule.is_rest_day === true
-      holidayInput.checked = schedule.is_holiday === true
-      leaveInput.checked = schedule.is_leave === true
-      openScheduleInput.checked = !schedule.is_leave && !schedule.is_rest_day && !schedule.is_holiday && !schedule.shift_start && !schedule.shift_end
+      otherTypeSelect.value = schedule.is_absent
+        ? 'absent'
+        : schedule.is_leave
+          ? 'leave'
+          : schedule.is_rest_day
+            ? 'rest_day'
+            : schedule.is_holiday
+              ? 'holiday'
+              : ''
+      leaveTypeSelect.value = schedule.leave_type || ''
+      absenceTypeSelect.value = schedule.absence_type || ''
+      openScheduleInput.checked = !schedule.is_leave && !schedule.is_absent && !schedule.is_rest_day && !schedule.is_holiday && !schedule.shift_start && !schedule.shift_end
       plannedPaidHoursInput.value = String((Number(schedule.planned_paid_minutes) || 480) / 60)
       document.getElementById('scheduleHolidayName').value = schedule.holiday_name || ''
       document.getElementById('scheduleNotes').value = schedule.notes || ''
@@ -611,7 +637,7 @@ if (section) {
           .order('name'),
         supabase
           .from('work_schedules')
-          .select('id, user_id, team_id, shift_date, shift_sequence, shift_start, shift_end, timezone, status, is_rest_day, is_holiday, is_leave, holiday_name, notes, planned_paid_minutes, updated_at')
+          .select('id, user_id, team_id, shift_date, shift_sequence, shift_start, shift_end, timezone, status, is_rest_day, is_holiday, is_leave, is_absent, leave_type, absence_type, holiday_name, notes, planned_paid_minutes, updated_at')
           .gte('shift_date', range.start)
           .lte('shift_date', range.end)
           .order('shift_date')
@@ -647,10 +673,13 @@ if (section) {
     const sequence = Number(document.getElementById('scheduleSequence').value)
     const timezone = normalizeText(document.getElementById('scheduleTimezone').value) || 'America/New_York'
     const status = document.getElementById('scheduleStatus').value
-    const isRestDay = restDayInput.checked
-    const isHoliday = holidayInput.checked
-    const isLeave = leaveInput.checked
+    const otherType = otherTypeSelect.value
+    const isRestDay = otherType === 'rest_day'
+    const isHoliday = otherType === 'holiday'
+    const isLeave = otherType === 'leave'
+    const isAbsent = otherType === 'absent'
     const isOpenSchedule = openScheduleInput.checked
+    const specialSubtype = isLeave ? leaveTypeSelect.value : isAbsent ? absenceTypeSelect.value : null
     const plannedPaidHours = Number(plannedPaidHoursInput.value)
     const plannedPaidMinutes = Math.round(plannedPaidHours * 60)
     const holidayName = normalizeText(document.getElementById('scheduleHolidayName').value) || null
@@ -684,6 +713,16 @@ if (section) {
       return
     }
 
+    if (isLeave && !specialSubtype) {
+      setMessage(formMessage, 'Select a leave type.', 'error')
+      return
+    }
+
+    if (isAbsent && !specialSubtype) {
+      setMessage(formMessage, 'Select an absent type.', 'error')
+      return
+    }
+
     if (isOpenSchedule && (
       !Number.isFinite(plannedPaidHours)
       || plannedPaidMinutes < 15
@@ -695,7 +734,7 @@ if (section) {
 
     const startTime = document.getElementById('scheduleStart').value
     const endTime = document.getElementById('scheduleEnd').value
-    if (!isRestDay && !isLeave && !isOpenSchedule && (!startTime || !endTime)) {
+    if (!isRestDay && !isLeave && !isAbsent && !isOpenSchedule && (!startTime || !endTime)) {
       setMessage(formMessage, 'Shift start and end times are required.', 'error')
       return
     }
@@ -705,21 +744,23 @@ if (section) {
 
     try {
       for (const targetDate of scheduleDates) {
-        const targetStart = isRestDay || isLeave || isOpenSchedule
+        const targetStart = isRestDay || isLeave || isAbsent || isOpenSchedule
           ? null
           : zonedDateTimeToIso(`${targetDate}T${startTime}`, timezone)
         const targetEndDate = endTime <= startTime ? addDays(targetDate, 1) : targetDate
-        const targetEnd = isRestDay || isLeave || isOpenSchedule
+        const targetEnd = isRestDay || isLeave || isAbsent || isOpenSchedule
           ? null
           : zonedDateTimeToIso(`${targetEndDate}T${endTime}`, timezone)
-        const { error } = isLeave
-          ? await supabase.rpc('workforce_admin_save_leave_schedule', {
+        const { error } = isLeave || isAbsent
+          ? await supabase.rpc('workforce_admin_save_nonworking_schedule', {
               p_schedule_id: scheduleId,
               p_user_id: userId,
               p_shift_date: targetDate,
               p_shift_sequence: sequence,
               p_timezone: timezone,
               p_status: status,
+              p_schedule_type: otherType,
+              p_subtype: specialSubtype,
               p_notes: notes
             })
           : isOpenSchedule
@@ -853,10 +894,11 @@ if (section) {
       schedulePage += 1
       renderSchedules()
     })
-    restDayInput.addEventListener('change', () => selectExclusiveScheduleType(restDayInput))
-    holidayInput.addEventListener('change', () => selectExclusiveScheduleType(holidayInput))
-    leaveInput.addEventListener('change', () => selectExclusiveScheduleType(leaveInput))
-    openScheduleInput.addEventListener('change', () => selectExclusiveScheduleType(openScheduleInput))
+    otherTypeSelect.addEventListener('change', () => {
+      if (otherTypeSelect.value) openScheduleInput.checked = false
+      updateScheduleFormState()
+    })
+    openScheduleInput.addEventListener('change', selectScheduleType)
     scheduleForm.addEventListener('submit', saveSchedule)
 
     await loadScheduleData()

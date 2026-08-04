@@ -23,6 +23,23 @@ const STATUS_LABELS = Object.freeze({
   completed: 'Completed'
 })
 
+const LEAVE_TYPE_LABELS = Object.freeze({
+  incentive_vl: 'Incentive VL',
+  birthday_vl: 'Birthday VL',
+  leave_without_pay: 'Leave Without Pay'
+})
+
+const ABSENCE_TYPE_LABELS = Object.freeze({
+  with_notification: 'ABSENT with Notif',
+  without_notification: 'Absent without Notif'
+})
+
+function specialScheduleLabel(schedule) {
+  if (schedule.is_leave) return LEAVE_TYPE_LABELS[schedule.leave_type] || 'Leave'
+  if (schedule.is_absent) return ABSENCE_TYPE_LABELS[schedule.absence_type] || 'Absent'
+  return ''
+}
+
 const MONTH_INDEX = Object.freeze({
   january: 0,
   february: 1,
@@ -102,7 +119,7 @@ function installCalendarNavigationRefresh() {
 function buildScheduleQuery(startDate, endDate) {
   let query = supabase
     .from('work_schedules')
-    .select('id, user_id, shift_date, shift_sequence, shift_start, shift_end, timezone, status, is_rest_day, is_holiday, is_leave, holiday_name, notes')
+    .select('id, user_id, shift_date, shift_sequence, shift_start, shift_end, timezone, status, is_rest_day, is_holiday, is_leave, is_absent, leave_type, absence_type, holiday_name, notes')
     .in('user_id', state.profileIds)
     .gte('shift_date', startDate)
     .lte('shift_date', endDate)
@@ -187,7 +204,7 @@ function isUpcomingSchedule(schedule, now, today) {
   if (schedule.shift_date < today) return false
   if (schedule.status === 'completed') return true
 
-  if (schedule.is_leave || schedule.is_rest_day || schedule.is_holiday) return true
+  if (schedule.is_leave || schedule.is_absent || schedule.is_rest_day || schedule.is_holiday) return true
   if (!schedule.shift_end) return true
 
   return new Date(schedule.shift_end).getTime() > now.getTime()
@@ -281,7 +298,7 @@ function createUpcomingScheduleCard(schedule) {
 }
 
 function upcomingScheduleTitle(schedule) {
-  if (schedule.is_leave) return 'Leave'
+  if (schedule.is_leave || schedule.is_absent) return specialScheduleLabel(schedule)
   if (schedule.is_rest_day) {
     return schedule.is_holiday && schedule.holiday_name
       ? `Rest day · ${schedule.holiday_name}`
@@ -318,6 +335,9 @@ function upcomingScheduleMeta(schedule) {
 function scheduleType(schedule) {
   if (schedule.is_leave) {
     return { label: 'Leave', className: 'leave' }
+  }
+  if (schedule.is_absent) {
+    return { label: 'Absent', className: 'absent' }
   }
   if (schedule.is_rest_day) {
     return { label: 'Rest day', className: 'rest-day' }
@@ -404,6 +424,7 @@ function renderCalendarDay(button, date, schedules) {
     'has-work-schedule',
     'work-shift',
     'work-leave',
+    'work-absent',
     'work-rest-day',
     'work-holiday',
     'work-cancelled',
@@ -457,6 +478,10 @@ function applyScheduleClasses(button, schedules) {
     button.classList.add('work-leave')
     return
   }
+  if (schedules.some(schedule => schedule.is_absent)) {
+    button.classList.add('work-absent')
+    return
+  }
   if (schedules.some(schedule => schedule.is_rest_day)) {
     button.classList.add('work-rest-day')
     return
@@ -476,7 +501,7 @@ function compactScheduleLabel(schedules) {
   const schedule = schedules[0]
 
   if (schedule.status === 'cancelled') return 'Cancelled'
-  if (schedule.is_leave) return 'Leave'
+  if (schedule.is_leave || schedule.is_absent) return specialScheduleLabel(schedule)
   if (schedule.is_rest_day) return 'Rest day'
   if (schedule.is_holiday) return 'Holiday'
   if (!schedule.shift_start) return 'Open'
@@ -496,7 +521,11 @@ function scheduleDescription(schedule) {
       : schedule.status
 
   if (schedule.is_leave) {
-    return `Leave, ${status}`
+    return `${specialScheduleLabel(schedule)}, leave, ${status}`
+  }
+
+  if (schedule.is_absent) {
+    return `${specialScheduleLabel(schedule)}, absent, ${status}`
   }
 
   if (schedule.is_rest_day) {

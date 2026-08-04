@@ -868,10 +868,11 @@ async function loadAddSchedules() {
 
   const { data, error } = await supabase
     .from('work_schedules')
-    .select('id, shift_start, shift_end, timezone, status, is_rest_day, is_holiday, is_leave, holiday_name')
+    .select('id, shift_start, shift_end, timezone, status, is_rest_day, is_holiday, is_leave, is_absent, holiday_name')
     .eq('user_id', employeeId)
     .eq('shift_date', workDate)
     .eq('is_leave', false)
+    .eq('is_absent', false)
     .in('status', ['published', 'changed'])
     .order('shift_start')
 
@@ -1153,10 +1154,11 @@ async function loadCorrectionSchedules(row) {
 
   const { data, error } = await supabase
     .from('work_schedules')
-    .select('id, shift_start, shift_end, timezone, status, is_rest_day, is_holiday, is_leave, holiday_name')
+    .select('id, shift_start, shift_end, timezone, status, is_rest_day, is_holiday, is_leave, is_absent, holiday_name')
     .eq('user_id', row.employee_user_id)
     .eq('shift_date', row.work_date)
     .eq('is_leave', false)
+    .eq('is_absent', false)
     .in('status', ['published', 'changed'])
     .order('shift_start')
 

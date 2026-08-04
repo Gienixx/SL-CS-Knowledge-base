@@ -8,7 +8,7 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@500&family=Sora:wght@600;700;800&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="./styles/button-theme.css?v=1">
-  <link rel="stylesheet" href="./styles/workforce-admin.css?v=13">
+  <link rel="stylesheet" href="./styles/workforce-admin.css?v=14">
   <link rel="stylesheet" href="./styles/site-theme.css?v=5">
   <script src="./scripts/site-theme.js?v=1"></script>
 </head>
@@ -160,6 +160,7 @@
         <span><i class="shift"></i>Shift</span>
         <span><i class="rest"></i>Rest day</span>
         <span><i class="leave"></i>Leave</span>
+        <span><i class="absent"></i>Absent</span>
         <span><i class="holiday"></i>Holiday</span>
         <span><i class="published"></i>Published</span>
         <span><i class="draft"></i>Draft</span>
@@ -170,6 +171,7 @@
         <article class="wf-summary"><span class="wf-stat-icon mint"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="m8 12 2.5 2.5L16 9"/></svg></span><span class="wf-stat-copy"><span>Published</span><strong id="publishedScheduleCount">—</strong></span></article>
         <article class="wf-summary"><span class="wf-stat-icon gold"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M8 12h8"/></svg></span><span class="wf-stat-copy"><span>Rest days</span><strong id="restDayCount">—</strong></span></article>
         <article class="wf-summary"><span class="wf-stat-icon violet"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M7 4h10v16H7z"/><path d="M9.5 8h5M9.5 12h5"/></svg></span><span class="wf-stat-copy"><span>Leave</span><strong id="leaveScheduleCount">—</strong></span></article>
+        <article class="wf-summary"><span class="wf-stat-icon coral"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M8 8l8 8M16 8l-8 8"/></svg></span><span class="wf-stat-copy"><span>Absent</span><strong id="absentScheduleCount">—</strong></span></article>
         <article class="wf-summary"><span class="wf-stat-icon coral"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="m12 3 2.5 5.5 6 .7-4.4 4 1.2 5.8-5.3-3-5.3 3 1.2-5.8-4.4-4 6-.7z"/></svg></span><span class="wf-stat-copy"><span>Holidays</span><strong id="holidayCount">—</strong></span></article>
       </div>
 
@@ -437,17 +439,32 @@
               </label>
             </div>
           </details>
-          <label class="wf-check wf-check-card">
-            <input id="scheduleIsRestDay" type="checkbox">
-            <span>Mark as rest day</span>
+          <label class="wf-field full">
+            <span>Other schedule</span>
+            <select class="wf-control" id="scheduleOtherType">
+              <option value="">None — regular shift</option>
+              <option value="rest_day">Rest day</option>
+              <option value="holiday">Holiday</option>
+              <option value="leave">Leave</option>
+              <option value="absent">Absent</option>
+            </select>
           </label>
-          <label class="wf-check wf-check-card">
-            <input id="scheduleIsHoliday" type="checkbox">
-            <span>Mark as holiday</span>
+          <label class="wf-field full" id="scheduleLeaveTypeField" hidden>
+            <span>Leave type</span>
+            <select class="wf-control" id="scheduleLeaveType">
+              <option value="">Select leave type</option>
+              <option value="incentive_vl">Incentive VL</option>
+              <option value="birthday_vl">Birthday VL</option>
+              <option value="leave_without_pay">Leave Without Pay</option>
+            </select>
           </label>
-          <label class="wf-check wf-check-card full">
-            <input id="scheduleIsLeave" type="checkbox">
-            <span>Mark as leave</span>
+          <label class="wf-field full" id="scheduleAbsenceTypeField" hidden>
+            <span>Absent type</span>
+            <select class="wf-control" id="scheduleAbsenceType">
+              <option value="">Select absent type</option>
+              <option value="with_notification">ABSENT with Notif</option>
+              <option value="without_notification">Absent without Notif</option>
+            </select>
           </label>
           <label class="wf-check wf-check-card full">
             <input id="scheduleIsOpen" type="checkbox">
@@ -468,7 +485,7 @@
           </label>
         </div>
 
-        <p class="wf-note">You can select one date or several dates. Leave is treated as a non-working day and cannot be used for attendance.</p>
+        <p class="wf-note">You can select one date or several dates. Leave and Absent are treated as non-working days and cannot be used for attendance.</p>
         <div class="wf-dialog-actions">
           <button class="wf-btn secondary" type="button" data-schedule-close>Cancel</button>
           <button class="wf-btn" id="saveScheduleButton" type="submit">Save Schedule</button>
@@ -479,7 +496,7 @@
   </div>
 
   <script type="module" src="./scripts/workforce.js?v=18"></script>
-  <script type="module" src="./scripts/workforce-schedules-entry.js?v=13"></script>
+  <script type="module" src="./scripts/workforce-schedules-entry.js?v=14"></script>
   <script type="module" src="./scripts/workforce-view-switcher.js?v=2"></script>
 </body>
 </html>

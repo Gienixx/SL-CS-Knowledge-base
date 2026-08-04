@@ -19,6 +19,23 @@ const STATUS_LABELS = Object.freeze({
   completed: 'Completed'
 })
 
+const LEAVE_TYPE_LABELS = Object.freeze({
+  incentive_vl: 'Incentive VL',
+  birthday_vl: 'Birthday VL',
+  leave_without_pay: 'Leave Without Pay'
+})
+
+const ABSENCE_TYPE_LABELS = Object.freeze({
+  with_notification: 'ABSENT with Notif',
+  without_notification: 'Absent without Notif'
+})
+
+function specialScheduleLabel(schedule) {
+  if (schedule.is_leave) return LEAVE_TYPE_LABELS[schedule.leave_type] || 'Leave'
+  if (schedule.is_absent) return ABSENCE_TYPE_LABELS[schedule.absence_type] || 'Absent'
+  return ''
+}
+
 const TABLE_PAGE_SIZE = 10
 
 const elements = {
@@ -167,7 +184,7 @@ function formatDateTime(value, timeZone = 'America/New_York') {
 }
 
 function formatShift(schedule) {
-  if (schedule.is_leave) return 'Leave'
+  if (schedule.is_leave || schedule.is_absent) return specialScheduleLabel(schedule)
   if (schedule.is_rest_day) return 'Rest day'
   if (!schedule.shift_start || !schedule.shift_end) return 'Open schedule'
 
@@ -277,8 +294,9 @@ function textCell(primary, secondary = '') {
 }
 
 function scheduleType(schedule) {
-  const isOpenSchedule = !schedule.is_leave && !schedule.is_rest_day && !schedule.is_holiday && !schedule.shift_start && !schedule.shift_end
-  const parts = [schedule.is_leave ? 'Leave' : schedule.is_rest_day ? 'Rest day' : isOpenSchedule ? 'Open schedule' : 'Shift']
+  const isOpenSchedule = !schedule.is_leave && !schedule.is_absent && !schedule.is_rest_day && !schedule.is_holiday && !schedule.shift_start && !schedule.shift_end
+  const parts = [schedule.is_absent ? 'Absent' : schedule.is_leave ? 'Leave' : schedule.is_rest_day ? 'Rest day' : isOpenSchedule ? 'Open schedule' : 'Shift']
+  if (schedule.is_leave || schedule.is_absent) parts.push(specialScheduleLabel(schedule))
   if (schedule.is_holiday) parts.push(schedule.holiday_name || 'Holiday')
   return parts.join(' · ')
 }
@@ -289,6 +307,7 @@ function renderSummary(rows) {
   document.getElementById('myChangedCount').textContent = rows.filter(item => item.status === 'changed').length
   document.getElementById('myRestDayCount').textContent = rows.filter(item => item.is_rest_day).length
   document.getElementById('myLeaveCount').textContent = rows.filter(item => item.is_leave).length
+  document.getElementById('myAbsentCount').textContent = rows.filter(item => item.is_absent).length
 }
 
 function renderChangeNotice(rows) {
@@ -315,6 +334,7 @@ function createCalendarEntry(schedule) {
   if (schedule.status === 'completed') button.classList.add('completed')
   if (schedule.is_rest_day) button.classList.add('rest-day')
   if (schedule.is_leave) button.classList.add('leave')
+  if (schedule.is_absent) button.classList.add('absent')
   button.setAttribute(
     'aria-label',
     `${employeeName(schedule.user_id)}, ${formatDate(schedule.shift_date)}, ${formatShift(schedule)}, ${STATUS_LABELS[schedule.status] || schedule.status}`
@@ -437,7 +457,7 @@ function renderTable(rows) {
     const detailsCell = document.createElement('td')
     detailsCell.className = 'wf-row-actions'
 
-    typeCell.appendChild(badge(scheduleType(schedule), schedule.is_rest_day || schedule.is_leave ? 'muted' : ''))
+    typeCell.appendChild(badge(scheduleType(schedule), schedule.is_rest_day || schedule.is_leave || schedule.is_absent ? 'muted' : ''))
     statusCell.appendChild(badge(
       STATUS_LABELS[schedule.status] || schedule.status,
       statusModifier(schedule.status)
@@ -527,7 +547,7 @@ async function loadSchedules() {
 
   let query = supabase
     .from('work_schedules')
-    .select('id, user_id, team_id, shift_date, shift_sequence, shift_start, shift_end, timezone, status, is_rest_day, is_holiday, is_leave, holiday_name, notes, updated_at')
+    .select('id, user_id, team_id, shift_date, shift_sequence, shift_start, shift_end, timezone, status, is_rest_day, is_holiday, is_leave, is_absent, leave_type, absence_type, holiday_name, notes, updated_at')
 
   // constrain by user id depending on scope
   if (currentScope() === 'team') {

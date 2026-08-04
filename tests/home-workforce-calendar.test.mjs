@@ -10,8 +10,8 @@ test('Home loads the workforce schedule calendar integration', async () => {
 
   assert.match(page, /class="sidebar-link" href="\.\/dashboard\.html" title="Analytics"/)
   assert.doesNotMatch(page, /Open full analytics|analytics-cta/)
-  assert.match(page, /home-workforce-calendar\.css\?v=4/)
-  assert.match(page, /home-workforce-calendar\.js\?v=7/)
+  assert.match(page, /home-workforce-calendar\.css\?v=5/)
+  assert.match(page, /home-workforce-calendar\.js\?v=8/)
   assert.match(page, /<h2 id="homeUpcomingTitle">Upcoming Events<\/h2>/)
   assert.doesNotMatch(page, /homeUpcomingEyebrow/)
   assert.match(page, />My shift</)

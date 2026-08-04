@@ -685,7 +685,7 @@ async function loadToday() {
 
   const scheduleQuery = supabase
     .from('work_schedules')
-    .select('id, user_id, shift_date, shift_sequence, shift_start, shift_end, timezone, status, is_rest_day, is_holiday, is_leave, holiday_name, notes')
+    .select('id, user_id, shift_date, shift_sequence, shift_start, shift_end, timezone, status, is_rest_day, is_holiday, is_leave, is_absent, holiday_name, notes')
     .in('user_id', profileIds)
     .gte('shift_date', rangeStart)
     .lte('shift_date', rangeEnd)
@@ -696,7 +696,7 @@ async function loadToday() {
 
   const attendanceQuery = supabase
     .from('attendance')
-    .select('id, user_id, schedule_id, work_date, clock_in, clock_out, attendance_status, is_late, minutes_late, overtime_minutes, pre_shift_overtime_minutes, regular_minutes, post_shift_overtime_minutes, rest_day_overtime_minutes, holiday_overtime_minutes, total_overtime_minutes, total_worked_minutes, undertime_minutes, correction_reason, admin_notes, corrected_at, created_at, updated_at, work_schedules(id, shift_date, shift_start, shift_end, timezone, status, is_rest_day, is_holiday, is_leave, holiday_name)')
+    .select('id, user_id, schedule_id, work_date, clock_in, clock_out, attendance_status, is_late, minutes_late, overtime_minutes, pre_shift_overtime_minutes, regular_minutes, post_shift_overtime_minutes, rest_day_overtime_minutes, holiday_overtime_minutes, total_overtime_minutes, total_worked_minutes, undertime_minutes, correction_reason, admin_notes, corrected_at, created_at, updated_at, work_schedules(id, shift_date, shift_start, shift_end, timezone, status, is_rest_day, is_holiday, is_leave, is_absent, holiday_name)')
     .in('user_id', profileIds)
     .gte('work_date', rangeStart)
     .lte('work_date', rangeEnd)
@@ -707,7 +707,7 @@ async function loadToday() {
   if (scheduleResult.error) throw scheduleResult.error
   if (attendanceResult.error) throw attendanceResult.error
 
-  visibleSchedules = (scheduleResult.data || []).filter(schedule => !schedule.is_leave)
+  visibleSchedules = (scheduleResult.data || []).filter(schedule => !schedule.is_leave && !schedule.is_absent)
   recentAttendance = (attendanceResult.data || [])
     .map(record => redactAttendanceCorrectionForViewer(access, record))
   renderToday()
@@ -721,7 +721,7 @@ async function loadHistory() {
 
   const { data, error } = await supabase
     .from('attendance')
-    .select('id, user_id, schedule_id, work_date, clock_in, clock_out, attendance_status, is_late, minutes_late, overtime_minutes, pre_shift_overtime_minutes, regular_minutes, post_shift_overtime_minutes, rest_day_overtime_minutes, holiday_overtime_minutes, total_overtime_minutes, total_worked_minutes, undertime_minutes, correction_reason, admin_notes, corrected_at, created_at, updated_at, work_schedules(id, shift_date, shift_start, shift_end, timezone, status, is_rest_day, is_holiday, is_leave, holiday_name)')
+    .select('id, user_id, schedule_id, work_date, clock_in, clock_out, attendance_status, is_late, minutes_late, overtime_minutes, pre_shift_overtime_minutes, regular_minutes, post_shift_overtime_minutes, rest_day_overtime_minutes, holiday_overtime_minutes, total_overtime_minutes, total_worked_minutes, undertime_minutes, correction_reason, admin_notes, corrected_at, created_at, updated_at, work_schedules(id, shift_date, shift_start, shift_end, timezone, status, is_rest_day, is_holiday, is_leave, is_absent, holiday_name)')
     .in('user_id', profileIds)
     .gte('work_date', range.start)
     .lte('work_date', range.end)

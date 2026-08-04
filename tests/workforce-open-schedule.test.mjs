@@ -33,7 +33,7 @@ test('saved open schedule chips have readable themed text and backgrounds', () =
 })
 
 test('open schedule disables and clears fixed time settings', () => {
-  assert.match(client, /const hasNoFixedTimes = isRestDay \|\| isLeave \|\| isOpenSchedule/)
+  assert.match(client, /const hasNoFixedTimes = isRestDay \|\| isLeave \|\| isAbsent \|\| isOpenSchedule/)
   assert.match(client, /start\.disabled = hasNoFixedTimes/)
   assert.match(client, /end\.disabled = hasNoFixedTimes/)
   assert.match(client, /if \(hasNoFixedTimes\) \{[\s\S]*start\.value = ''[\s\S]*end\.value = ''/)
@@ -43,8 +43,8 @@ test('open schedule disables and clears fixed time settings', () => {
 })
 
 test('open schedule is exclusive with rest day and holiday', () => {
-  assert.match(client, /if \(selectedInput === openScheduleInput\) \{[\s\S]*restDayInput\.checked = false[\s\S]*holidayInput\.checked = false/)
-  assert.match(client, /else \{[\s\S]*openScheduleInput\.checked = false/)
+  assert.match(client, /if \(openScheduleInput\.checked\) otherTypeSelect\.value = ''/)
+  assert.match(client, /otherTypeSelect\.addEventListener\('change',[\s\S]*if \(otherTypeSelect\.value\) openScheduleInput\.checked = false/)
 })
 
 test('open schedules save without shift times and remain clearly labeled', () => {
