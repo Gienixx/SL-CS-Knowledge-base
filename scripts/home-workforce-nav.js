@@ -40,7 +40,8 @@ async function configureHomeWorkforceNavigation() {
       access.is_agent === true ||
       hasWorkforcePermission(access, 'manage_schedules')
 
-    const canUseAttendance = access.is_agent === true
+    const canUseAttendance = access.allowed === true
+    const isRegularAgentView = access.access_type === 'regular_agent'
     const canViewTeamAttendance = access.is_admin === true
       ? hasWorkforcePermission(access, 'view_team_attendance')
       : access.is_agent === true
@@ -68,11 +69,11 @@ async function configureHomeWorkforceNavigation() {
     }
 
     if (leaveRequestsButton) {
-      leaveRequestsButton.hidden = !access.allowed
+      leaveRequestsButton.hidden = isRegularAgentView || !access.allowed
     }
 
     if (myPayslipsButton) {
-      myPayslipsButton.hidden = !canViewOwnPayslips
+      myPayslipsButton.hidden = isRegularAgentView || !canViewOwnPayslips
     }
 
     if (teamAttendanceButton) {

@@ -63,14 +63,15 @@ test('attendance history defaults to a half-month and paginates five entries at 
   assert.match(styles, /\.attendance-history-footer \{[\s\S]*display: flex/)
 })
 
-test('attendance client uses workforce access scope and secure RPC functions', async () => {
+test('attendance client allows every active workforce role and uses secure RPC functions', async () => {
   const script = await read('scripts/attendance.js')
 
   assert.match(script, /loadCurrentWorkforceAccess/)
   assert.match(script, /linked_profile_ids/)
   assert.match(script, /\.rpc\('workforce_clock_in'/)
   assert.match(script, /\.rpc\('workforce_clock_out'/)
-  assert.match(script, /access\.is_agent !== true/)
+  assert.match(script, /if \(!access\.allowed\)/)
+  assert.doesNotMatch(script, /access\.is_agent !== true/)
   assert.match(script, /\.in\('user_id', profileIds\)/)
 })
 
@@ -99,7 +100,7 @@ test('attendance automatically refreshes when the agent work date changes', asyn
     read('scripts/attendance.js')
   ])
 
-  assert.match(html, /scripts\/attendance\.js\?v=8/)
+  assert.match(html, /scripts\/attendance\.js\?v=10/)
   assert.match(script, /const nextLocalDate = localDateKey\(now\)/)
   assert.match(script, /nextLocalDate !== activeLocalDate/)
   assert.match(script, /localDateRefreshPending = true/)

@@ -278,7 +278,8 @@ test('page guards enforce management, attendance, and schedule boundaries', asyn
   assert.match(teams, /requireWorkforcePermission\(supabase,\s*'manage_employees'/)
   assert.match(teams, /access\.is_admin !== true/)
 
-  assert.match(attendance, /access\.is_agent !== true/)
+  assert.match(attendance, /if \(!access\.allowed\)/)
+  assert.doesNotMatch(attendance, /access\.is_agent !== true/)
   assert.match(attendance, /linked_profile_ids/)
   assert.match(attendance, /\.rpc\('workforce_clock_in'/)
   assert.match(attendance, /\.rpc\('workforce_clock_out'/)
@@ -289,7 +290,7 @@ test('page guards enforce management, attendance, and schedule boundaries', asyn
 
   assert.match(homeNav, /access\.is_admin\s*===\s*true/)
   assert.match(homeNav, /hasWorkforcePermission\(access,\s*'manage_employees'\)/)
-  assert.match(homeNav, /access\.is_agent\s*===\s*true/)
+  assert.match(homeNav, /const canUseAttendance = access\.allowed === true/)
 
   assert.match(middleware, /permission:\s*'manage_employees'/)
   assert.match(middleware, /requireAdmin:\s*true/)

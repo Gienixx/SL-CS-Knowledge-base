@@ -167,6 +167,7 @@ function formatDateTime(value, timeZone = 'America/New_York') {
 }
 
 function formatShift(schedule) {
+  if (schedule.is_leave) return 'Leave'
   if (schedule.is_rest_day) return 'Rest day'
   if (!schedule.shift_start || !schedule.shift_end) return 'Open schedule'
 
@@ -276,8 +277,8 @@ function textCell(primary, secondary = '') {
 }
 
 function scheduleType(schedule) {
-  const isOpenSchedule = !schedule.is_rest_day && !schedule.is_holiday && !schedule.shift_start && !schedule.shift_end
-  const parts = [schedule.is_rest_day ? 'Rest day' : isOpenSchedule ? 'Open schedule' : 'Shift']
+  const isOpenSchedule = !schedule.is_leave && !schedule.is_rest_day && !schedule.is_holiday && !schedule.shift_start && !schedule.shift_end
+  const parts = [schedule.is_leave ? 'Leave' : schedule.is_rest_day ? 'Rest day' : isOpenSchedule ? 'Open schedule' : 'Shift']
   if (schedule.is_holiday) parts.push(schedule.holiday_name || 'Holiday')
   return parts.join(' · ')
 }
@@ -287,6 +288,7 @@ function renderSummary(rows) {
   document.getElementById('myPublishedCount').textContent = rows.filter(item => item.status === 'published').length
   document.getElementById('myChangedCount').textContent = rows.filter(item => item.status === 'changed').length
   document.getElementById('myRestDayCount').textContent = rows.filter(item => item.is_rest_day).length
+  document.getElementById('myLeaveCount').textContent = rows.filter(item => item.is_leave).length
 }
 
 function renderChangeNotice(rows) {
@@ -312,6 +314,7 @@ function createCalendarEntry(schedule) {
   if (schedule.status === 'cancelled') button.classList.add('cancelled')
   if (schedule.status === 'completed') button.classList.add('completed')
   if (schedule.is_rest_day) button.classList.add('rest-day')
+  if (schedule.is_leave) button.classList.add('leave')
   button.setAttribute(
     'aria-label',
     `${employeeName(schedule.user_id)}, ${formatDate(schedule.shift_date)}, ${formatShift(schedule)}, ${STATUS_LABELS[schedule.status] || schedule.status}`
@@ -434,7 +437,7 @@ function renderTable(rows) {
     const detailsCell = document.createElement('td')
     detailsCell.className = 'wf-row-actions'
 
-    typeCell.appendChild(badge(scheduleType(schedule), schedule.is_rest_day ? 'muted' : ''))
+    typeCell.appendChild(badge(scheduleType(schedule), schedule.is_rest_day || schedule.is_leave ? 'muted' : ''))
     statusCell.appendChild(badge(
       STATUS_LABELS[schedule.status] || schedule.status,
       statusModifier(schedule.status)
@@ -524,7 +527,7 @@ async function loadSchedules() {
 
   let query = supabase
     .from('work_schedules')
-    .select('id, user_id, team_id, shift_date, shift_sequence, shift_start, shift_end, timezone, status, is_rest_day, is_holiday, holiday_name, notes, updated_at')
+    .select('id, user_id, team_id, shift_date, shift_sequence, shift_start, shift_end, timezone, status, is_rest_day, is_holiday, is_leave, holiday_name, notes, updated_at')
 
   // constrain by user id depending on scope
   if (currentScope() === 'team') {

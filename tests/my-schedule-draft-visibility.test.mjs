@@ -29,7 +29,7 @@ test('hidden scope controls remain hidden and draft entries receive distinct sty
     read('styles/my-schedule.css')
   ])
 
-  assert.match(html, /scripts\/my-schedule-v2\.js\?v=1/)
+  assert.match(html, /scripts\/my-schedule-v2\.js\?v=2/)
   assert.match(styles, /^\[hidden\]\{display:none!important\}/)
   assert.match(styles, /\.schedule-entry\.scheduled/)
 })

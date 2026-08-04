@@ -31,6 +31,8 @@
 .schedule-entry.completed::before{background:#42a56d}
 .schedule-entry.rest-day{color:#666}
 .schedule-entry.rest-day::before{background:#8b8b8b}
+.schedule-entry.leave{color:#574b9d;background:rgba(117,104,200,.1)}
+.schedule-entry.leave::before{background:#7568c8}
 .schedule-entry-content{display:block;min-width:0}
 .schedule-entry-time{display:block;font-size:.66rem;font-weight:850;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .schedule-entry-person{display:block;margin-top:1px;font-size:.61rem;font-weight:680;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}

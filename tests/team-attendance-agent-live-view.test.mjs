@@ -55,6 +55,6 @@ test('Home exposes Team Attendance to active regular agents', async () => {
     read('scripts/home-workforce-nav.js')
   ])
 
-  assert.match(home, /scripts\/home-workforce-nav\.js\?v=8/)
+  assert.match(home, /scripts\/home-workforce-nav\.js\?v=9/)
   assert.match(navigation, /access\.is_admin === true[\s\S]*?view_team_attendance[\s\S]*?: access\.is_agent === true/)
 })

@@ -104,18 +104,21 @@ The two-period test must prove:
   entries using 11:30 AM–5:30 AM, 2:00 PM–8:00 AM, 10:15 AM–4:15 AM, and
   9:00 AM–3:00 AM, respectively. Their four stale version-2 balances are void
   and linked to the replacement balances.
+- Arby's July 29 and July 30 attendance is approved at the workbook LOG IN /
+  LOG OUT times of 12:00 AM–6:00 PM and 12:30 AM–6:30 PM, respectively. The
+  corrected versions are imported and the Draft calculation is current.
 - Restored manual source: `2026 Support Timesheet.xlsx` is available again at
   its Downloads path as of August 3. Its SHA-256 is
   `949d4e4547f92829a3a631e8d7b4712e45fedeac8a1ad14245cdcd231b47d590`.
 - Missing-rate exceptions: 0 after excluding the testing-only profile.
-- System gross pay: USD 7,824.41.
+- System gross pay: USD 7,805.90.
 - System deductions: USD 0.00.
-- System net pay: USD 7,824.41.
+- System net pay: USD 7,805.90.
 - Prepaid minutes added: 36,300.
-- Prepaid minutes applied: 22,172.
-- Closing prepaid-minute balance: 14,128.
+- Prepaid minutes applied: 22,176.
+- Closing prepaid-minute balance: 14,124.
 - Blocking exceptions: 0.
-- Valid carry-forward warnings: 19 unresolved prepaid balances. These warnings
+- Valid carry-forward warnings: 18 unresolved prepaid balances. These warnings
   are non-blocking because they represent positive minutes to render later.
 - Production status remains Draft.
 
@@ -132,18 +135,95 @@ settlement.
 | Alen Tristan Adeva | 3,120 | 3,780 | 480 | 3,840 | 965 | 2,875 | 5,935 | 25.60 | 598.40 | 0.00 | 598.40 |
 | Almar Contreras | 5,400 | 3,244 | 4,320 | 4,320 | 4,320 | 0 | 4,324 | 560.00 | 1,640.33 | 0.00 | 1,640.33 |
 | Amora Angeles | 3,360 | 4,200 | 4,440 | 4,920 | 1,087 | 3,833 | 6,473 | 371.20 | 1,036.80 | 0.00 | 1,036.80 |
-| Arby Jann Benito | 3,840 | 4,367 | 1,620 | 4,320 | 3,236 | 1,084 | 4,971 | 124.80 | 792.91 | 0.00 | 792.91 |
+| Arby Jann Benito | 3,840 | 4,020 | 1,620 | 4,320 | 3,240 | 1,080 | 4,620 | 124.80 | 774.40 | 0.00 | 774.40 |
 | Arez Santos | 4,050 | 5,670 | 1,890 | 2,760 | 720 | 2,040 | 9,000 | 164.50 | 892.50 | 0.00 | 892.50 |
 | Genevive Serrano | 4,200 | 5,292 | 960 | 3,420 | 3,304 | 116 | 6,188 | 56.00 | 809.19 | 0.00 | 809.19 |
 | Jean Vestil | 2,510 | 1,578 | 1,368 | 3,720 | 3,358 | 362 | 730 | 89.92 | 506.35 | 0.00 | 506.35 |
 | Jerson Gavileño | 3,360 | 3,210 | 1,800 | 4,800 | 982 | 3,818 | 5,588 | 167.20 | 887.30 | 0.00 | 887.30 |
 | Leufard Vallega | 2,869 | 2,222 | 660 | 4,200 | 4,200 | 0 | 891 | 72.20 | 660.63 | 0.00 | 660.63 |
-| **Total** | **32,709** | **33,563** | **17,538** | **36,300** | **22,172** | **14,128** | **44,100** | **1,631.42** | **7,824.41** | **0.00** | **7,824.41** |
+| **Total** | **32,709** | **33,216** | **17,538** | **36,300** | **22,176** | **14,124** | **43,749** | **1,631.42** | **7,805.90** | **0.00** | **7,805.90** |
 
 The supplied support timesheet contains the source schedule and login/logout
 activity but no signed manual gross-pay, deduction, or net-pay totals. Manual
 values and variances must therefore remain pending until the approved manual
 payroll report is provided; they must not be inferred from the activity log.
+
+### July manual-evidence availability decision
+
+On August 3, 2026, the payroll owner confirmed that July 1–15 and July 16–31
+manual payslips can be provided for Arby Jann Benito only. The equivalent
+historical manual payroll evidence is unavailable for the other eight payable
+employees:
+
+- Alen Tristan Adeva
+- Almar Contreras
+- Amora Angeles
+- Arez Santos
+- Genevive Serrano
+- Jean Vestil
+- Jerson Gavileño
+- Leufard Vallega
+
+Those eight employees must be recorded as `Manual evidence unavailable` for
+both July periods. Missing manual amounts must not be entered as zero,
+estimated from February, copied from another employee, or reverse-calculated
+from the July system result.
+
+This owner-approved evidence scope permits a documented partial July
+comparison for Arby. It does not satisfy the full-population completion gate
+defined for Step 14. Both July payroll periods therefore remain Draft and the
+historical evidence limitation remains open until a later full-population,
+two-period parallel run is completed or the project governance standard is
+formally revised and approved.
+
+#### Arby July payslip comparison
+
+The payroll owner supplied two manual payslip screenshots on August 3, 2026:
+
+- July 1–15: `C:\Users\Gienixx\Downloads\image (1).png`, SHA-256
+  `26305e600a0197f7e862266880c3f38ef6152d2b05628b2a6b55bdfb23c6f00c`.
+- July 16–31: `C:\Users\Gienixx\Downloads\image.png`, SHA-256
+  `16ab381362d86d0b472411aa3b6ee1cf7a8221fd9a1d413d717cf8afb3ed5c4e`.
+
+Both screenshots identify Arby Jann Benito and an hourly rate of USD 3.20.
+They do not split billed hours into regular, overtime, special-day, or prepaid
+categories and do not show a reviewer signature or approval date. Blank
+deduction fields are treated as an implied USD 0.00 only because gross and net
+pay are identical; the source does not provide a separate deduction total.
+
+Variance below is `System - Manual`. `System earning hours` is the sum of the
+quantities on the Draft system earning items; it is not presented as a direct
+replacement for the payslip's unsplit `Total Billed Hours` field.
+
+| Period | Manual billed hours | System earning hours | Hour variance | Manual base pay | Manual other earnings | Manual gross/net | System gross/net | Gross/net variance |
+|---|---:|---:|---:|---:|---:|---:|---:|---:|
+| Jul 1–15 | 206.0000 | 205.0000 | -1.0000 | 659.20 | 200.81 | 860.01 | 686.40 | -173.61 |
+| Jul 16–31 | 230.0000 | 230.0000 | 0.0000 | 736.00 | 1.00 | 737.00 | 774.40 | +37.40 |
+
+Manual other earnings for July 1–15 are a USD 41.94 internet reimbursement,
+USD 83.87 work-peripheral reimbursement, and USD 75.00 performance bonus.
+July 16–31 contains a USD 1.00 bug incentive. None of these four manual items
+currently exists in the Draft system payroll.
+
+The underlying system earning-item reconciliation is internally consistent:
+
+- Jul 1–15: 205.0000 earning hours at the USD 3.20 base rate produce USD
+  656.00, plus USD 30.40 of additional rest-day-excess premium, totaling USD
+  686.40.
+- Jul 16–31: the approved July 29 attendance is 12:00 AM–6:00 PM and July 30
+  is 12:30 AM–6:30 PM, exactly matching ARBY rows 284–285 in the validated
+  workbook. The 230.0000 earning hours produce USD 736.00 at the confirmed
+  USD 3.20 rate, plus USD 38.40 of additional rest-day-excess premium,
+  totaling USD 774.40.
+
+Adding the payslip-only reimbursements and incentives to the system without
+changing its approved prepaid and special-day rules would produce USD 887.21
+for Jul 1–15 and USD 775.40 for Jul 16–31. Those adjusted figures would remain
+USD 27.20 and USD 38.40 above the manual payslips, respectively. Therefore the
+variance is not merely missing manual earnings; it also reflects different
+billed-hour and special-day treatment. No Draft adjustment was entered because
+the payroll owner must first approve each reimbursement/incentive and decide
+whether the manual or system treatment is authoritative.
 
 ### Testing-only payroll exclusion
 
@@ -180,12 +260,13 @@ need to be evidenced in the two-period comparison.
 
 ## Current blockers
 
-1. Obtain the signed manual payroll report containing employee-level manual
-   minutes, deductions, gross pay, and net pay for both July periods. The
-   support timesheet alone does not contain these approved payroll totals.
-2. Enter the approved manual values beside the captured system baseline and
-   resolve every employee and period variance.
-3. Capture the remaining rate-change and post-finalization-correction scenario
+1. Resolve Arby Jann Benito's two documented July policy variances and obtain the
+   payroll owner's approval for any Draft reimbursements or incentives.
+2. Keep the other eight employees marked `Manual evidence unavailable`; do
+   not infer missing manual values or count them as reconciled.
+3. Plan a later full-population, two-period parallel run because the July
+   evidence set cannot meet the existing Step 14 completion gate.
+4. Capture the remaining rate-change and post-finalization-correction scenario
    evidence and obtain the payroll owner's signed, dated approval.
 
 ## Completion evidence

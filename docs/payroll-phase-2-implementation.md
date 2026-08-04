@@ -480,7 +480,7 @@ Phase 2 becomes the primary payroll process only when:
 | 11 | Complete | Finalized payroll now has a private A4 payslip preview with a stable payslip number, employee and period details, itemized earnings and deductions, prepaid balances, totals, and approval information. Payroll-wide viewers can inspect the effective rates used; agents using own-payslip access receive no rate or other-employee data. Private adjustment reasons and correction notes are excluded |
 | 12 | Complete | Finalized payslips can be rendered server-side with the fixed `A4-V1` template, hashed with SHA-256, uploaded only to the private PDF-only `payroll-payslips` bucket, registered as append-only immutable document versions, and downloaded through two-minute signed URLs. Each generation is permission-checked and audited. The employee PDF omits rate fields so own-payslip access cannot reveal rates; payroll users retain rate verification in the secured Step 11 preview |
 | 13 | Complete | Agents now have a permission-gated **My payslips** page for their own finalized payroll only, with prepaid-hour summaries, private preview, temporary signed PDF download, and print actions. The server-side list excludes rates, private notes, storage paths, and detailed reconciliation data |
-| 14 | In progress | Both July periods are calculated in Draft with no blocking exceptions. July 16–31 contains 9 payable records totaling USD 7,824.41 gross and net, all 115 attendance snapshots are current, Almar's current July 28–31 prepaid versions are approved, and both testing-only profiles remain excluded. Obtain the signed manual payroll totals, complete the employee-by-employee variance comparison, capture the two remaining scenarios, and obtain owner approval |
+| 14 | In progress | Both July periods are calculated in Draft with no blocking exceptions. July 16–31 contains 9 payable records totaling USD 7,805.90 gross and net, all 115 attendance snapshots are current, Almar's current July 28–31 prepaid versions are approved, and both testing-only profiles remain excluded. Obtain the signed manual payroll totals, complete the employee-by-employee variance comparison, capture the two remaining scenarios, and obtain owner approval |
 | 15 | Not started | Begin only after every Step 14 discrepancy is corrected and approval is documented |
 
 ## Next implementation order
@@ -596,8 +596,8 @@ Step 14 started on July 30, 2026:
   overtime-settlement, and special-day-exclusion scenarios passed again with
   no persistent synthetic records.
 - July 16–31 has 9 payable calculated records, no blocking exceptions,
-  USD 7,824.41 gross and net pay, USD 0.00 deductions, 36,300 prepaid minutes
-  added, 22,172 applied, and 14,128 carried forward. All 115 attendance
+  USD 7,805.90 gross and net pay, USD 0.00 deductions, 36,300 prepaid minutes
+  added, 22,176 applied, and 14,124 carried forward. All 115 attendance
   snapshots are current and all records are ready for review.
 - July 16–31 is configured with the confirmed July 27 payment date and the
   audited four-day early-payment override.
@@ -608,8 +608,13 @@ Step 14 started on July 30, 2026:
 - The detailed run record and completion controls are in
   `docs/payroll-step-14-parallel-test.md`.
 
-1. Obtain the signed manual payroll report; the support timesheet does not
-   contain approved employee-level gross, deduction, or net totals.
-2. Complete every employee comparison and the remaining rate-change and
-   post-finalization-correction scenarios, then correct all differences.
-3. Continue to Step 15 only after Step 14 approval is signed and dated.
+1. Resolve Arby Jann Benito's completed partial July comparison. His Jul 1–15
+   system gross/net is USD 173.61 below the manual result, while Jul 16–31 is
+   USD 37.40 above it after the approved July 29–30 workbook corrections were
+   imported and recalculated. The payroll owner confirmed that equivalent historical
+   manual evidence is unavailable for the other eight payable employees; keep
+   them explicitly marked unavailable and do not infer their values.
+2. Plan a later full-population, two-period comparison, and complete the
+   remaining rate-change and post-finalization-correction scenarios.
+3. Continue to Step 15 only after the Step 14 completion standard is met or a
+   formally approved governance change replaces that standard.

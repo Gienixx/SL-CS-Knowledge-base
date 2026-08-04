@@ -8,7 +8,7 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@500&family=Sora:wght@600;700;800&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="./styles/button-theme.css?v=1">
-  <link rel="stylesheet" href="./styles/workforce-admin.css?v=12">
+  <link rel="stylesheet" href="./styles/workforce-admin.css?v=13">
   <link rel="stylesheet" href="./styles/site-theme.css?v=5">
   <script src="./scripts/site-theme.js?v=1"></script>
 </head>
@@ -110,7 +110,7 @@
       <div class="wf-card-header">
         <div>
           <h2>Schedule Management</h2>
-          <p class="wf-message" style="margin-top:5px;">Weekly and monthly schedule views for shifts, rest days, holidays, and published schedule changes.</p>
+          <p class="wf-message" style="margin-top:5px;">Weekly and monthly schedule views for shifts, rest days, leave, holidays, and published schedule changes.</p>
         </div>
         <div class="wf-actions">
           <button class="wf-btn secondary" id="refreshSchedulesButton" type="button">Refresh</button>
@@ -159,6 +159,7 @@
       <div class="wf-schedule-legend" aria-label="Schedule legend">
         <span><i class="shift"></i>Shift</span>
         <span><i class="rest"></i>Rest day</span>
+        <span><i class="leave"></i>Leave</span>
         <span><i class="holiday"></i>Holiday</span>
         <span><i class="published"></i>Published</span>
         <span><i class="draft"></i>Draft</span>
@@ -168,6 +169,7 @@
         <article class="wf-summary"><span class="wf-stat-icon violet"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="5" width="18" height="16" rx="2"/><path d="M3 10h18M8 3v4M16 3v4"/></svg></span><span class="wf-stat-copy"><span>Entries shown</span><strong id="scheduleCount">—</strong></span></article>
         <article class="wf-summary"><span class="wf-stat-icon mint"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="m8 12 2.5 2.5L16 9"/></svg></span><span class="wf-stat-copy"><span>Published</span><strong id="publishedScheduleCount">—</strong></span></article>
         <article class="wf-summary"><span class="wf-stat-icon gold"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M8 12h8"/></svg></span><span class="wf-stat-copy"><span>Rest days</span><strong id="restDayCount">—</strong></span></article>
+        <article class="wf-summary"><span class="wf-stat-icon violet"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M7 4h10v16H7z"/><path d="M9.5 8h5M9.5 12h5"/></svg></span><span class="wf-stat-copy"><span>Leave</span><strong id="leaveScheduleCount">—</strong></span></article>
         <article class="wf-summary"><span class="wf-stat-icon coral"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="m12 3 2.5 5.5 6 .7-4.4 4 1.2 5.8-5.3-3-5.3 3 1.2-5.8-4.4-4 6-.7z"/></svg></span><span class="wf-stat-copy"><span>Holidays</span><strong id="holidayCount">—</strong></span></article>
       </div>
 
@@ -444,6 +446,10 @@
             <span>Mark as holiday</span>
           </label>
           <label class="wf-check wf-check-card full">
+            <input id="scheduleIsLeave" type="checkbox">
+            <span>Mark as leave</span>
+          </label>
+          <label class="wf-check wf-check-card full">
             <input id="scheduleIsOpen" type="checkbox">
             <span>Open schedule (no fixed clock-in or clock-out)</span>
           </label>
@@ -462,7 +468,7 @@
           </label>
         </div>
 
-        <p class="wf-note">Check the box to reuse each saved schedule automatically every week. You can select one date or several dates. Holidays stay one-time only.</p>
+        <p class="wf-note">You can select one date or several dates. Leave is treated as a non-working day and cannot be used for attendance.</p>
         <div class="wf-dialog-actions">
           <button class="wf-btn secondary" type="button" data-schedule-close>Cancel</button>
           <button class="wf-btn" id="saveScheduleButton" type="submit">Save Schedule</button>
@@ -473,7 +479,7 @@
   </div>
 
   <script type="module" src="./scripts/workforce.js?v=18"></script>
-  <script type="module" src="./scripts/workforce-schedules-entry.js?v=12"></script>
+  <script type="module" src="./scripts/workforce-schedules-entry.js?v=13"></script>
   <script type="module" src="./scripts/workforce-view-switcher.js?v=2"></script>
 </body>
 </html>

@@ -768,6 +768,11 @@ html[data-site-theme="dark"] .calendar-day.work-rest-day:not(.today) {
   background: var(--site-neutral-soft);
 }
 
+html[data-site-theme="dark"] .calendar-day.work-leave:not(.today) {
+  color: var(--site-blue);
+  background: color-mix(in srgb, var(--site-blue-soft) 72%, var(--site-surface));
+}
+
 html[data-site-theme="dark"] .calendar-day.has-google-calendar-event:not(.today) {
   color: var(--site-blue);
   background: var(--site-blue-soft);
@@ -838,6 +843,11 @@ html[data-site-theme="dark"] .event-type.google-calendar {
 html[data-site-theme="dark"] .event-type.rest-day {
   color: var(--site-muted);
   background: var(--site-neutral-soft);
+}
+
+html[data-site-theme="dark"] .event-type.leave {
+  color: var(--site-blue);
+  background: var(--site-blue-soft);
 }
 
 /* Workforce and Schedule Management dark highlights. */

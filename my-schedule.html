@@ -6,7 +6,7 @@
   <title>My Schedule | SocialLoop CS Base</title>
   <link rel="stylesheet" href="./styles/button-theme.css?v=1">
   <link rel="stylesheet" href="./styles/workforce-admin.css?v=2">
-  <link rel="stylesheet" href="./styles/my-schedule.css?v=3">
+  <link rel="stylesheet" href="./styles/my-schedule.css?v=4">
   <link rel="stylesheet" href="./styles/site-theme.css?v=1">
   <script src="./scripts/site-theme.js?v=1"></script>
 </head>
@@ -15,7 +15,7 @@
     <header class="wf-topbar">
       <div class="wf-title">
         <h1>My Schedule</h1>
-        <p id="schedulePageSubtitle">View assigned shifts, rest days, holidays, and schedule changes.</p>
+        <p id="schedulePageSubtitle">View assigned shifts, rest days, leave, holidays, and schedule changes.</p>
       </div>
       <nav class="wf-nav" aria-label="Schedule navigation">
         <a class="wf-link" href="./attendance.html">Attendance</a>
@@ -29,6 +29,7 @@
       <article class="wf-summary"><span>Published shifts</span><strong id="myPublishedCount">—</strong></article>
       <article class="wf-summary"><span>Changed shifts</span><strong id="myChangedCount">—</strong></article>
       <article class="wf-summary"><span>Rest days</span><strong id="myRestDayCount">—</strong></article>
+      <article class="wf-summary"><span>Leave</span><strong id="myLeaveCount">—</strong></article>
     </section>
 
     <section id="scheduleChangeNotice" class="schedule-change-notice" hidden aria-live="polite">
@@ -158,6 +159,6 @@
     </section>
   </div>
 
-  <script type="module" src="./scripts/my-schedule-v2.js?v=1"></script>
+  <script type="module" src="./scripts/my-schedule-v2.js?v=2"></script>
 </body>
 </html>

@@ -107,9 +107,9 @@ The July 16–31 payroll was calculated in production on August 3 after the
 approved `2026 Support Timesheet.xlsx` values were revalidated. All 115 current
 attendance snapshots are imported, all 9 payable records are ready for review,
 and the period has zero blocking exceptions. Both testing-only profiles remain
-payroll-ineligible and have no active record. The system result is USD 7,824.41
-gross and net, with USD 0.00 deductions, 36,300 prepaid minutes added, 22,172
-applied, and 14,128 carried forward.
+payroll-ineligible and have no active record. The system result is USD 7,805.90
+gross and net, with USD 0.00 deductions, 36,300 prepaid minutes added, 22,176
+applied, and 14,124 carried forward.
 
 Almar's current July 28–31 schedule versions are now the approved prepaid
 sources using the exact workbook LOG IN / LOG OUT windows. Their four stale
@@ -119,10 +119,18 @@ attendance review remains open.
 
 The following work is still required before Step 14 can be approved:
 
-- Obtain the signed manual payroll report; the supplied support timesheet has
-  activity data but no approved employee-level payroll totals.
-- Compare the approved manual and captured system values employee by employee
-  for both payroll periods.
+- Resolve Arby Jann Benito's completed payslip comparison. The Jul 1–15
+  system gross/net is USD 173.61 below the manual USD 860.01; the Jul 16–31
+  system gross/net is USD 37.40 above the manual USD 737.00 after the approved
+  July 29–30 workbook corrections were imported and recalculated. The payslip-only
+  reimbursements and incentives have not been added to Draft payroll pending
+  owner approval, and billed-hour/special-day differences remain unresolved.
+- Keep the other eight payable employees marked `Manual evidence unavailable`
+  for both July periods. Their missing values must not be inferred or entered
+  as zero.
+- Run a later full-population, two-period comparison because the approved
+  partial July evidence scope cannot meet the existing Step 14 completion
+  gate.
 - Capture the remaining rate-change and post-finalization-correction scenario
   evidence.
 - Resolve every variance and capture the payroll owner's signed and dated

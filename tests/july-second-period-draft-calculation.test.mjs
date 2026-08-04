@@ -6,6 +6,10 @@ const migration = await readFile(new URL(
   '../supabase/migrations/20260803135503_calculate_july_16_31_draft_payroll.sql',
   import.meta.url
 ), 'utf8')
+const recalculationMigration = await readFile(new URL(
+  '../supabase/migrations/20260803155202_allow_recalculation_after_attendance_reimport.sql',
+  import.meta.url
+), 'utf8')
 const runbook = await readFile(new URL(
   '../docs/payroll-step-14-parallel-test.md',
   import.meta.url
@@ -40,11 +44,25 @@ test('the second-period calculation is guarded, audited, and stays draft', () =>
 
 test('Step 14 records the calculated system baseline without inventing manual totals', () => {
   assert.match(runbook, /Status: calculated and ready for manual comparison/)
-  assert.match(runbook, /System gross pay: USD 7,824\.41/)
-  assert.match(runbook, /Prepaid minutes applied: 22,172/)
-  assert.match(runbook, /Closing prepaid-minute balance: 14,128/)
+  assert.match(runbook, /System gross pay: USD 7,805\.90/)
+  assert.match(runbook, /Prepaid minutes applied: 22,176/)
+  assert.match(runbook, /Closing prepaid-minute balance: 14,124/)
   assert.match(runbook, /no signed manual gross-pay, deduction, or net-pay totals/)
   assert.match(runbook, /must not be inferred from the activity log/)
   assert.doesNotMatch(runbook, /Status: not ready for calculation/)
   assert.match(phaseUpdate, /Calculate the July 16–31 draft payroll for all 9 payable employees/)
+})
+
+test('Arby corrections are re-imported before guarded draft recalculation', () => {
+  assert.match(recalculationMigration, /date '2026-07-29'/)
+  assert.match(recalculationMigration, /0, 0, 0, 'America\/New_York'/)
+  assert.match(recalculationMigration, /date '2026-07-30'/)
+  assert.match(recalculationMigration, /0, 30, 0, 'America\/New_York'/)
+  assert.match(recalculationMigration, /new_snapshot_count'\)::integer <> 2/)
+  assert.match(recalculationMigration, /public\.payroll_calculate_draft\(v_period_id\)/)
+  assert.match(recalculationMigration, /latest_attendance_versions_imported/)
+  assert.match(recalculationMigration, /v_record\.calculation_version <> 2/)
+  assert.match(recalculationMigration, /period did not remain an unapproved Draft/)
+  assert.doesNotMatch(recalculationMigration, /payroll_finalize_period/)
+  assert.doesNotMatch(recalculationMigration, /payroll_generate_payslip/)
 })

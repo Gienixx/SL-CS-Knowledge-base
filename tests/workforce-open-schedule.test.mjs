@@ -33,7 +33,7 @@ test('saved open schedule chips have readable themed text and backgrounds', () =
 })
 
 test('open schedule disables and clears fixed time settings', () => {
-  assert.match(client, /const hasNoFixedTimes = isRestDay \|\| isOpenSchedule/)
+  assert.match(client, /const hasNoFixedTimes = isRestDay \|\| isLeave \|\| isOpenSchedule/)
   assert.match(client, /start\.disabled = hasNoFixedTimes/)
   assert.match(client, /end\.disabled = hasNoFixedTimes/)
   assert.match(client, /if \(hasNoFixedTimes\) \{[\s\S]*start\.value = ''[\s\S]*end\.value = ''/)

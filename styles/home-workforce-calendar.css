@@ -43,6 +43,11 @@
   background:rgba(120,120,120,.14);
 }
 
+.calendar-day.work-leave .home-work-schedule-label{
+  color:#574b9d;
+  background:rgba(117,104,200,.18);
+}
+
 .calendar-day.work-holiday .home-work-schedule-label{
   color:#8b6400;
   background:rgba(255,194,26,.2);
@@ -83,6 +88,7 @@
 
 .event-dot.work-shift{background:#438fd2}
 .event-dot.work-rest-day{background:#888}
+.event-dot.work-leave{background:#7568c8}
 .event-dot.work-holiday{background:var(--home-gold)}
 
 .home-schedule-event-card{
@@ -135,6 +141,11 @@
 .event-type.rest-day{
   color:#5d5d5d;
   background:rgba(120,120,120,.14);
+}
+
+.event-type.leave{
+  color:#574b9d;
+  background:rgba(117,104,200,.18);
 }
 
 .event-type.holiday{

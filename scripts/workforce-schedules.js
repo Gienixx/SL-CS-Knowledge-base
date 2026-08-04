@@ -25,6 +25,7 @@ if (section) {
   const formMessage = document.getElementById('scheduleFormMessage')
   const restDayInput = document.getElementById('scheduleIsRestDay')
   const holidayInput = document.getElementById('scheduleIsHoliday')
+  const leaveInput = document.getElementById('scheduleIsLeave')
   const openScheduleInput = document.getElementById('scheduleIsOpen')
   const plannedPaidHoursField = document.getElementById('schedulePlannedPaidHoursField')
   const plannedPaidHoursInput = document.getElementById('schedulePlannedPaidHours')
@@ -189,6 +190,7 @@ if (section) {
   }
 
   function formatShift(schedule) {
+    if (schedule.is_leave) return 'Leave'
     if (schedule.is_rest_day) return 'Rest day'
     if (!schedule.shift_start && !schedule.shift_end) return 'Open schedule'
 
@@ -318,6 +320,7 @@ if (section) {
     document.getElementById('scheduleCount').textContent = rows.length
     document.getElementById('publishedScheduleCount').textContent = rows.filter(item => item.status === 'published').length
     document.getElementById('restDayCount').textContent = rows.filter(item => item.is_rest_day).length
+    document.getElementById('leaveScheduleCount').textContent = rows.filter(item => item.is_leave).length
     document.getElementById('holidayCount').textContent = rows.filter(item => item.is_holiday).length
   }
 
@@ -383,15 +386,17 @@ if (section) {
         }
         dayEntries.forEach(schedule => {
           const chip = document.createElement('div')
-          const isOpenSchedule = !schedule.is_rest_day && !schedule.is_holiday && !schedule.shift_start && !schedule.shift_end
-          chip.className = `wf-schedule-chip ${schedule.is_holiday ? 'holiday' : schedule.is_rest_day ? 'rest' : isOpenSchedule ? 'open' : 'shift'} ${schedule.status === 'scheduled' ? 'draft' : 'published'}`
+          const isOpenSchedule = !schedule.is_leave && !schedule.is_rest_day && !schedule.is_holiday && !schedule.shift_start && !schedule.shift_end
+          chip.className = `wf-schedule-chip ${schedule.is_leave ? 'leave' : schedule.is_holiday ? 'holiday' : schedule.is_rest_day ? 'rest' : isOpenSchedule ? 'open' : 'shift'} ${schedule.status === 'scheduled' ? 'draft' : 'published'}`
           const editButton = document.createElement('button')
           editButton.type = 'button'
           editButton.className = 'wf-chip-main'
-          const scheduleMeta = isOpenSchedule
+          const scheduleMeta = schedule.is_leave
+            ? ''
+            : isOpenSchedule
             ? `${formatPlannedHours(schedule.planned_paid_minutes)} · Sequence ${schedule.shift_sequence}`
             : schedule.is_rest_day ? '' : `Sequence ${schedule.shift_sequence}`
-          editButton.innerHTML = `<strong>${schedule.is_rest_day ? 'Rest day' : schedule.is_holiday ? schedule.holiday_name || 'Holiday' : formatShift(schedule)}</strong><small>${scheduleMeta}</small>`
+          editButton.innerHTML = `<strong>${schedule.is_leave ? 'Leave' : schedule.is_rest_day ? 'Rest day' : schedule.is_holiday ? schedule.holiday_name || 'Holiday' : formatShift(schedule)}</strong><small>${scheduleMeta}</small>`
           editButton.addEventListener('click', () => openSchedule(schedule.id))
           const deleteButton = document.createElement('button')
           deleteButton.type = 'button'
@@ -455,11 +460,12 @@ if (section) {
   function updateScheduleFormState() {
     const isRestDay = restDayInput.checked
     const isHoliday = holidayInput.checked
+    const isLeave = leaveInput.checked
     const isOpenSchedule = openScheduleInput.checked
     const start = document.getElementById('scheduleStart')
     const end = document.getElementById('scheduleEnd')
     const holidayName = document.getElementById('scheduleHolidayName')
-    const hasNoFixedTimes = isRestDay || isOpenSchedule
+    const hasNoFixedTimes = isRestDay || isLeave || isOpenSchedule
 
     start.disabled = hasNoFixedTimes
     end.disabled = hasNoFixedTimes
@@ -479,8 +485,8 @@ if (section) {
     plannedPaidHoursInput.required = isOpenSchedule
     if (isOpenSchedule && !plannedPaidHoursInput.value) plannedPaidHoursInput.value = '8'
 
-    repeatWeeklyInput.disabled = isOpenSchedule
-    if (isOpenSchedule) repeatWeeklyInput.checked = false
+    repeatWeeklyInput.disabled = isOpenSchedule || isLeave
+    if (isOpenSchedule || isLeave) repeatWeeklyInput.checked = false
   }
 
   function selectExclusiveScheduleType(selectedInput) {
@@ -492,8 +498,14 @@ if (section) {
     if (selectedInput === openScheduleInput) {
       restDayInput.checked = false
       holidayInput.checked = false
+      leaveInput.checked = false
+    } else if (selectedInput === leaveInput) {
+      restDayInput.checked = false
+      holidayInput.checked = false
+      openScheduleInput.checked = false
     } else {
       openScheduleInput.checked = false
+      leaveInput.checked = false
     }
 
     updateScheduleFormState()
@@ -566,7 +578,8 @@ if (section) {
       document.getElementById('scheduleStatus').value = schedule.status
       restDayInput.checked = schedule.is_rest_day === true
       holidayInput.checked = schedule.is_holiday === true
-      openScheduleInput.checked = !schedule.is_rest_day && !schedule.is_holiday && !schedule.shift_start && !schedule.shift_end
+      leaveInput.checked = schedule.is_leave === true
+      openScheduleInput.checked = !schedule.is_leave && !schedule.is_rest_day && !schedule.is_holiday && !schedule.shift_start && !schedule.shift_end
       plannedPaidHoursInput.value = String((Number(schedule.planned_paid_minutes) || 480) / 60)
       document.getElementById('scheduleHolidayName').value = schedule.holiday_name || ''
       document.getElementById('scheduleNotes').value = schedule.notes || ''
@@ -598,7 +611,7 @@ if (section) {
           .order('name'),
         supabase
           .from('work_schedules')
-          .select('id, user_id, team_id, shift_date, shift_sequence, shift_start, shift_end, timezone, status, is_rest_day, is_holiday, holiday_name, notes, planned_paid_minutes, updated_at')
+          .select('id, user_id, team_id, shift_date, shift_sequence, shift_start, shift_end, timezone, status, is_rest_day, is_holiday, is_leave, holiday_name, notes, planned_paid_minutes, updated_at')
           .gte('shift_date', range.start)
           .lte('shift_date', range.end)
           .order('shift_date')
@@ -636,6 +649,7 @@ if (section) {
     const status = document.getElementById('scheduleStatus').value
     const isRestDay = restDayInput.checked
     const isHoliday = holidayInput.checked
+    const isLeave = leaveInput.checked
     const isOpenSchedule = openScheduleInput.checked
     const plannedPaidHours = Number(plannedPaidHoursInput.value)
     const plannedPaidMinutes = Math.round(plannedPaidHours * 60)
@@ -681,7 +695,7 @@ if (section) {
 
     const startTime = document.getElementById('scheduleStart').value
     const endTime = document.getElementById('scheduleEnd').value
-    if (!isRestDay && !isOpenSchedule && (!startTime || !endTime)) {
+    if (!isRestDay && !isLeave && !isOpenSchedule && (!startTime || !endTime)) {
       setMessage(formMessage, 'Shift start and end times are required.', 'error')
       return
     }
@@ -691,15 +705,25 @@ if (section) {
 
     try {
       for (const targetDate of scheduleDates) {
-        const targetStart = isRestDay || isOpenSchedule
+        const targetStart = isRestDay || isLeave || isOpenSchedule
           ? null
           : zonedDateTimeToIso(`${targetDate}T${startTime}`, timezone)
         const targetEndDate = endTime <= startTime ? addDays(targetDate, 1) : targetDate
-        const targetEnd = isRestDay || isOpenSchedule
+        const targetEnd = isRestDay || isLeave || isOpenSchedule
           ? null
           : zonedDateTimeToIso(`${targetEndDate}T${endTime}`, timezone)
-        const { error } = isOpenSchedule
-          ? await supabase.rpc('workforce_admin_save_open_schedule', {
+        const { error } = isLeave
+          ? await supabase.rpc('workforce_admin_save_leave_schedule', {
+              p_schedule_id: scheduleId,
+              p_user_id: userId,
+              p_shift_date: targetDate,
+              p_shift_sequence: sequence,
+              p_timezone: timezone,
+              p_status: status,
+              p_notes: notes
+            })
+          : isOpenSchedule
+            ? await supabase.rpc('workforce_admin_save_open_schedule', {
               p_schedule_id: scheduleId,
               p_user_id: userId,
               p_shift_date: targetDate,
@@ -831,6 +855,7 @@ if (section) {
     })
     restDayInput.addEventListener('change', () => selectExclusiveScheduleType(restDayInput))
     holidayInput.addEventListener('change', () => selectExclusiveScheduleType(holidayInput))
+    leaveInput.addEventListener('change', () => selectExclusiveScheduleType(leaveInput))
     openScheduleInput.addEventListener('change', () => selectExclusiveScheduleType(openScheduleInput))
     scheduleForm.addEventListener('submit', saveSchedule)
 
