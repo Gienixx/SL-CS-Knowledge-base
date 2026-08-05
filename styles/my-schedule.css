@@ -120,3 +120,18 @@
   );
   outline-offset: 3px;
 }
+
+/* Remove green glow from schedule range navigation */
+.schedule-page #previousMyScheduleRange,
+.schedule-page #currentMyScheduleRange,
+.schedule-page #nextMyScheduleRange,
+.schedule-page #previousMyScheduleRange:hover:not(:disabled),
+.schedule-page #currentMyScheduleRange:hover:not(:disabled),
+.schedule-page #nextMyScheduleRange:hover:not(:disabled),
+.schedule-page #previousMyScheduleRange:active:not(:disabled),
+.schedule-page #currentMyScheduleRange:active:not(:disabled),
+.schedule-page #nextMyScheduleRange:active:not(:disabled) {
+  box-shadow: none !important;
+  filter: none !important;
+  transform: none !important;
+}
