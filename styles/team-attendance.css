@@ -79,8 +79,8 @@ body:has(.team-attendance-page){background:#eef1f5}
 .team-attendance-timeline-labels{display:flex;justify-content:space-between;margin-top:6px;color:#9aa4b2;font-size:10.5px}
 .team-attendance-stats{
   display:grid;
-  grid-template-columns:repeat(3,minmax(90px,max-content));
-  gap:32px;
+  grid-template-columns:repeat(4,minmax(85px,max-content));
+  gap:28px;
   padding:0;
   border:0;
 }
@@ -99,7 +99,7 @@ body:has(.team-attendance-page){background:#eef1f5}
   color:var(--ta-amber);
 }
 
-.team-attendance-stat:nth-child(3) strong{
+.team-attendance-stat:nth-child(4) strong{
   color:var(--ta-green);
 }
 
@@ -189,8 +189,8 @@ body:has(.team-attendance-page){background:#eef1f5}
   .team-attendance-record-mid{grid-template-columns:1fr 1fr}
   .team-attendance-record-mid .team-attendance-meta:first-child{grid-column:1/-1}
   .team-attendance-stats{
-    grid-template-columns:repeat(3,minmax(60px,1fr));
-    gap:12px;
+    grid-template-columns:repeat(2,minmax(90px,1fr));
+    gap:12px 18px;
   }
   .team-attendance-prepaid-values{grid-template-columns:repeat(2,minmax(0,1fr))}
   .team-attendance-record-footer,.team-attendance-pagination{align-items:stretch;flex-direction:column}
