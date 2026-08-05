@@ -135,3 +135,554 @@
   filter: none !important;
   transform: none !important;
 }
+
+/* =========================================================
+   My Schedule compact layout
+   ========================================================= */
+
+
+/* ---------------------------------------------------------
+   Page and header
+   --------------------------------------------------------- */
+
+.schedule-page {
+  width: min(1440px, calc(100% - 28px));
+  padding-top: 18px;
+  padding-bottom: 28px;
+}
+
+.schedule-page .wf-topbar {
+  align-items: center;
+  gap: 16px;
+  margin-bottom: 12px;
+}
+
+.schedule-page .wf-title h1 {
+  font-size: clamp(1.55rem, 2.2vw, 1.9rem);
+  letter-spacing: -0.025em;
+}
+
+.schedule-page .wf-title p {
+  max-width: 720px;
+  margin-top: 4px;
+  font-size: 0.77rem;
+  line-height: 1.4;
+}
+
+.schedule-page .wf-nav {
+  gap: 7px;
+}
+
+.schedule-page .wf-link,
+.schedule-page .wf-btn {
+  min-height: 34px;
+  padding: 6px 11px;
+  border-radius: 8px;
+  font-size: 0.72rem;
+  box-shadow: none !important;
+}
+
+
+/* ---------------------------------------------------------
+   Summary cards
+   --------------------------------------------------------- */
+
+.schedule-page .wf-summary-grid {
+  grid-template-columns: repeat(6, minmax(0, 1fr));
+  gap: 7px;
+  margin-bottom: 11px;
+}
+
+html[data-site-theme] .schedule-page .wf-summary {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: center;
+  min-height: 52px;
+  gap: 8px;
+  padding: 8px 10px;
+  border-radius: 10px;
+  box-shadow: none;
+  backdrop-filter: none;
+}
+
+.schedule-page .wf-summary span {
+  min-width: 0;
+  font-size: 0.58rem;
+  line-height: 1.25;
+  white-space: normal;
+}
+
+.schedule-page .wf-summary strong {
+  margin: 0;
+  font-size: 1rem;
+  line-height: 1;
+}
+
+
+/* ---------------------------------------------------------
+   Changed-schedule notice
+   --------------------------------------------------------- */
+
+.schedule-change-notice {
+  gap: 7px;
+  margin-bottom: 11px;
+  padding: 9px 12px;
+  border-radius: 10px;
+  font-size: 0.74rem;
+  box-shadow: none;
+}
+
+.schedule-change-notice strong {
+  font-size: 0.76rem;
+}
+
+.schedule-change-notice span {
+  font-size: 0.72rem;
+}
+
+
+/* ---------------------------------------------------------
+   Main cards
+   --------------------------------------------------------- */
+
+html[data-site-theme] .schedule-page .wf-card {
+  margin-bottom: 12px;
+  padding: 0;
+  overflow: hidden;
+  border-radius: 13px;
+  box-shadow: none;
+  backdrop-filter: none;
+}
+
+.schedule-page .wf-card-header {
+  gap: 10px;
+  margin: 0;
+  padding: 11px 14px 8px;
+}
+
+.schedule-page .wf-card-header h2 {
+  font-size: 0.96rem;
+}
+
+.schedule-page .wf-card-header .wf-message {
+  min-height: 0;
+  margin: 2px 0 0;
+  font-size: 0.68rem;
+  line-height: 1.35;
+}
+
+.schedule-drag-hint {
+  margin-top: 2px !important;
+  font-size: 0.66rem !important;
+}
+
+
+/* ---------------------------------------------------------
+   Range navigation
+   --------------------------------------------------------- */
+
+.schedule-page .wf-range-bar {
+  gap: 10px;
+  margin: 0;
+  padding: 8px 14px;
+  border: 0;
+  border-top: 1px solid var(--wf-border);
+  border-bottom: 1px solid var(--wf-border);
+  border-radius: 0;
+}
+
+.schedule-page .wf-range-bar .wf-actions {
+  gap: 6px;
+}
+
+.schedule-page .wf-range-bar .wf-row-btn {
+  min-height: 30px;
+  padding: 4px 9px;
+  border-radius: 7px;
+  font-size: 0.68rem;
+  box-shadow: none !important;
+  transform: none !important;
+}
+
+.schedule-page .wf-range-bar strong {
+  font-size: 0.76rem;
+}
+
+
+/* ---------------------------------------------------------
+   Filters
+   --------------------------------------------------------- */
+
+.schedule-page .my-schedule-toolbar {
+  grid-template-columns: repeat(4, minmax(135px, 1fr));
+  gap: 8px;
+  margin: 0;
+  padding: 8px 14px;
+}
+
+.schedule-page .my-schedule-toolbar .wf-field {
+  gap: 3px;
+}
+
+.schedule-page .my-schedule-toolbar .wf-field > span {
+  font-size: 0.58rem;
+  letter-spacing: 0.055em;
+}
+
+.schedule-page .my-schedule-toolbar .wf-control {
+  min-height: 32px;
+  padding: 5px 8px;
+  border-radius: 7px;
+  font-size: 0.72rem;
+}
+
+
+/* ---------------------------------------------------------
+   Calendar
+   --------------------------------------------------------- */
+
+.schedule-calendar-shell {
+  border: 0;
+  border-radius: 0;
+  box-shadow: none;
+}
+
+.schedule-weekday-row,
+.schedule-calendar {
+  grid-template-columns: repeat(7, minmax(130px, 1fr));
+  min-width: 910px;
+}
+
+.schedule-weekday-row span {
+  padding: 7px 8px;
+  font-size: 0.62rem;
+  letter-spacing: 0.04em;
+}
+
+.schedule-day {
+  min-height: 118px;
+  padding: 6px;
+}
+
+.schedule-day-header {
+  gap: 5px;
+  margin-bottom: 3px;
+}
+
+.schedule-day-number {
+  min-width: 23px;
+  height: 23px;
+  padding: 0 5px;
+  font-size: 0.7rem;
+}
+
+.schedule-day-count {
+  font-size: 0.57rem;
+}
+
+.schedule-entry-list {
+  gap: 1px;
+  max-height: 112px;
+  overflow-y: auto;
+  scrollbar-width: thin;
+}
+
+.schedule-entry {
+  grid-template-columns: 5px minmax(0, 1fr);
+  gap: 4px;
+  padding: 2px 3px;
+  border-radius: 4px;
+  line-height: 1.08;
+  box-shadow: none !important;
+  filter: none !important;
+  transform: none !important;
+}
+
+.schedule-entry::before {
+  width: 5px;
+  height: 5px;
+  margin-top: 3px;
+}
+
+.schedule-entry-time {
+  font-size: 0.59rem;
+}
+
+.schedule-entry-person {
+  margin-top: 0;
+  font-size: 0.55rem;
+}
+
+.schedule-empty-day {
+  padding-top: 9px;
+  font-size: 0.66rem;
+}
+
+
+/* Keep administrator dragging compact */
+
+.schedule-entry-list.is-sortable {
+  min-height: 20px;
+}
+
+.schedule-entry.is-draggable {
+  cursor: grab;
+}
+
+.schedule-entry.is-dragging {
+  opacity: 0.42;
+}
+
+
+/* ---------------------------------------------------------
+   Calendar status message
+   --------------------------------------------------------- */
+
+.schedule-page #myScheduleMessage {
+  min-height: 0;
+  margin: 0;
+  padding: 8px 14px 10px;
+  font-size: 0.68rem;
+}
+
+
+/* ---------------------------------------------------------
+   Schedule details table
+   --------------------------------------------------------- */
+
+.schedule-page .wf-table-wrap {
+  max-height: 350px;
+  overflow: auto;
+  border: 0;
+  border-radius: 0;
+  box-shadow: none;
+}
+
+.schedule-page .my-schedule-details-table {
+  min-width: 790px;
+}
+
+.schedule-page .my-schedule-details-table thead {
+  position: sticky;
+  top: 0;
+  z-index: 4;
+}
+
+.schedule-page .my-schedule-details-table th {
+  padding: 7px 10px;
+  font-size: 0.58rem;
+}
+
+.schedule-page .my-schedule-details-table td {
+  height: 42px;
+  padding: 6px 10px;
+  font-size: 0.72rem;
+}
+
+.schedule-page .my-schedule-details-table .wf-person {
+  font-size: 0.73rem;
+}
+
+.schedule-page .my-schedule-details-table .wf-subtext {
+  margin-top: 1px;
+  font-size: 0.61rem;
+}
+
+.schedule-page .my-schedule-details-table .wf-badge {
+  padding: 2px 7px;
+  font-size: 0.61rem;
+}
+
+.schedule-page .schedule-details-button {
+  min-height: 27px;
+  padding: 3px 8px;
+  border-radius: 7px;
+  font-size: 0.65rem;
+  box-shadow: none !important;
+  transform: none !important;
+}
+
+
+/* ---------------------------------------------------------
+   Pagination
+   --------------------------------------------------------- */
+
+.schedule-page .my-schedule-pagination {
+  min-height: 41px;
+  gap: 8px;
+  margin: 0;
+  padding: 6px 14px;
+  border-top: 1px solid var(--wf-border);
+  font-size: 0.68rem;
+}
+
+.schedule-page .my-schedule-pagination .wf-actions {
+  gap: 6px;
+}
+
+.schedule-page .my-schedule-pagination .wf-row-btn {
+  min-height: 28px;
+  padding: 4px 8px;
+  border-radius: 7px;
+  font-size: 0.65rem;
+  box-shadow: none !important;
+  transform: none !important;
+}
+
+
+/* ---------------------------------------------------------
+   Details modal
+   --------------------------------------------------------- */
+
+.schedule-page + .wf-modal .wf-dialog,
+#myScheduleModal .wf-dialog {
+  width: min(100%, 560px);
+  padding: 18px;
+  border-radius: 15px;
+}
+
+#myScheduleModal .wf-dialog-header {
+  margin-bottom: 12px;
+}
+
+#myScheduleModal .wf-dialog-header h2 {
+  font-size: 1rem;
+}
+
+#myScheduleModal .wf-close {
+  width: 32px;
+  height: 32px;
+  font-size: 1.2rem;
+  box-shadow: none !important;
+}
+
+#myScheduleModal .schedule-detail-list {
+  gap: 8px;
+  margin-bottom: 11px;
+}
+
+#myScheduleModal .schedule-detail-list > div {
+  padding: 8px 10px;
+  border-radius: 9px;
+  box-shadow: none;
+}
+
+#myScheduleModal .schedule-detail-list dt {
+  margin-bottom: 3px;
+  font-size: 0.61rem;
+}
+
+#myScheduleModal .schedule-detail-list dd {
+  font-size: 0.76rem;
+  line-height: 1.35;
+}
+
+#myScheduleModal .wf-note {
+  padding: 8px 10px;
+  border-radius: 9px;
+  font-size: 0.71rem;
+}
+
+#myScheduleModal .wf-dialog-actions {
+  gap: 7px;
+}
+
+#myScheduleModal .wf-dialog-actions .wf-btn {
+  min-height: 32px;
+  padding: 5px 11px;
+  font-size: 0.7rem;
+  box-shadow: none !important;
+}
+
+
+/* ---------------------------------------------------------
+   Tablet
+   --------------------------------------------------------- */
+
+@media (max-width: 900px) {
+  .schedule-page .wf-summary-grid {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+
+  .schedule-page .my-schedule-toolbar {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+
+/* ---------------------------------------------------------
+   Mobile
+   --------------------------------------------------------- */
+
+@media (max-width: 680px) {
+  .schedule-page {
+    width: min(100% - 18px, 1440px);
+    padding-top: 12px;
+  }
+
+  .schedule-page .wf-topbar {
+    align-items: stretch;
+    gap: 9px;
+  }
+
+  .schedule-page .wf-title h1 {
+    font-size: 1.4rem;
+  }
+
+  .schedule-page .wf-nav {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    width: 100%;
+  }
+
+  .schedule-page .wf-link,
+  .schedule-page .wf-btn {
+    width: 100%;
+  }
+
+  .schedule-page .wf-summary-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .schedule-page .my-schedule-toolbar {
+    grid-template-columns: 1fr;
+    padding-inline: 11px;
+  }
+
+  .schedule-page .wf-card-header,
+  .schedule-page .wf-range-bar {
+    padding-inline: 11px;
+  }
+
+  .schedule-page .wf-range-bar {
+    align-items: stretch;
+  }
+
+  .schedule-page .wf-range-bar .wf-actions {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    width: 100%;
+  }
+
+  .schedule-page .wf-range-bar strong {
+    text-align: center;
+  }
+
+  .schedule-weekday-row,
+  .schedule-calendar {
+    grid-template-columns: repeat(7, minmax(115px, 1fr));
+    min-width: 805px;
+  }
+
+  .schedule-day {
+    min-height: 110px;
+  }
+
+  #myScheduleModal .schedule-detail-list {
+    grid-template-columns: 1fr;
+  }
+
+  #myScheduleModal .schedule-detail-list .full {
+    grid-column: auto;
+  }
+}
