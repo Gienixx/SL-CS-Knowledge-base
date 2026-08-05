@@ -236,3 +236,112 @@ html[data-site-theme="light"] #attendanceTodayBadge {
   color: var(--site-muted);
   background: var(--site-neutral-soft);
 }
+
+/* =========================================================
+   Final light-theme corrections
+   ========================================================= */
+
+/* Force the entire attendance canvas into the shared light theme */
+html[data-site-theme="light"],
+html[data-site-theme="light"] body.attendance-shell {
+  background-color: var(--site-bg) !important;
+}
+
+html[data-site-theme="light"] body.attendance-shell {
+  color: var(--site-text) !important;
+  background:
+    linear-gradient(var(--site-grid) 1px, transparent 1px),
+    linear-gradient(90deg, var(--site-grid) 1px, transparent 1px),
+    linear-gradient(var(--site-grid-strong) 1px, transparent 1px),
+    linear-gradient(90deg, var(--site-grid-strong) 1px, transparent 1px),
+    radial-gradient(
+      circle at 23% 8%,
+      color-mix(in srgb, var(--site-gold) 14%, transparent),
+      transparent 28rem
+    ),
+    radial-gradient(
+      circle at 86% 7%,
+      color-mix(in srgb, var(--site-blue) 11%, transparent),
+      transparent 30rem
+    ),
+    var(--site-bg) !important;
+  background-size:
+    16px 16px,
+    16px 16px,
+    80px 80px,
+    80px 80px,
+    auto,
+    auto,
+    auto !important;
+  background-attachment: fixed !important;
+}
+
+/* Remove any dark attendance-level background covering the body */
+html[data-site-theme="light"] .attendance-app {
+  min-height: 100vh;
+  background: transparent !important;
+  background-color: transparent !important;
+}
+
+html[data-site-theme="light"] .attendance-page {
+  background: transparent !important;
+  background-color: transparent !important;
+}
+
+/* Disable decorative dark overlays from attendance.css */
+html[data-site-theme="light"] body.attendance-shell::before,
+html[data-site-theme="light"] body.attendance-shell::after,
+html[data-site-theme="light"] .attendance-app::before,
+html[data-site-theme="light"] .attendance-app::after,
+html[data-site-theme="light"] .attendance-page::before,
+html[data-site-theme="light"] .attendance-page::after {
+  background: none !important;
+  box-shadow: none !important;
+}
+
+
+/* Attendance snapshot card */
+html[data-site-theme="light"] .attendance-snapshot {
+  border-color: var(--site-border) !important;
+  color: var(--site-text) !important;
+  background: var(--site-surface-solid) !important;
+}
+
+/* Individual snapshot metric cells */
+html[data-site-theme="light"] .attendance-summary-grid .wf-summary {
+  border-color: var(--site-border) !important;
+  color: var(--site-text) !important;
+  background: var(--site-surface-solid) !important;
+  box-shadow: none !important;
+}
+
+/* Snapshot labels */
+html[data-site-theme="light"] .attendance-summary-grid .wf-summary span {
+  color: var(--site-muted) !important;
+}
+
+/* Snapshot numbers */
+html[data-site-theme="light"] .attendance-summary-grid .wf-summary strong,
+html[data-site-theme="light"] #attendanceMonthCount,
+html[data-site-theme="light"] #attendancePresentCount,
+html[data-site-theme="light"] #attendanceLateCount,
+html[data-site-theme="light"] #attendanceWorkedTotal {
+  color: var(--site-heading) !important;
+  text-shadow: none !important;
+}
+
+/* Snapshot heading and kicker */
+html[data-site-theme="light"] .attendance-snapshot h2 {
+  color: var(--site-heading) !important;
+}
+
+html[data-site-theme="light"] .attendance-card-kicker {
+  color: var(--site-muted) !important;
+}
+
+/* Snapshot footer legend */
+html[data-site-theme="light"] .attendance-snapshot-legend {
+  border-color: var(--site-border) !important;
+  color: var(--site-muted) !important;
+  background: var(--site-surface-soft) !important;
+}
