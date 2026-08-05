@@ -1,0 +1,238 @@
+/* =========================================================
+   Attendance page shared light-theme support
+
+   Dark mode continues using attendance.css.
+   These rules only correct the light website theme.
+   ========================================================= */
+
+html[data-site-theme="light"] body.attendance-shell {
+  color: var(--site-text);
+  background:
+    linear-gradient(var(--site-grid) 1px, transparent 1px),
+    linear-gradient(90deg, var(--site-grid) 1px, transparent 1px),
+    linear-gradient(var(--site-grid-strong) 1px, transparent 1px),
+    linear-gradient(90deg, var(--site-grid-strong) 1px, transparent 1px),
+    radial-gradient(
+      circle at 23% 8%,
+      color-mix(in srgb, var(--site-gold) 14%, transparent),
+      transparent 28rem
+    ),
+    radial-gradient(
+      circle at 86% 7%,
+      color-mix(in srgb, var(--site-blue) 11%, transparent),
+      transparent 30rem
+    ),
+    var(--site-bg);
+  background-size:
+    16px 16px,
+    16px 16px,
+    80px 80px,
+    80px 80px,
+    auto,
+    auto,
+    auto;
+}
+
+
+/* Main attendance console */
+
+html[data-site-theme="light"] .attendance-console {
+  border-color: var(--site-border);
+  color: var(--site-text);
+  background: var(--site-surface-solid);
+  box-shadow: var(--site-shadow);
+}
+
+
+/* Left clock section */
+
+html[data-site-theme="light"] .attendance-clock-panel {
+  border-color: var(--site-border);
+  background:
+    radial-gradient(
+      circle at 50% 45%,
+      color-mix(in srgb, var(--site-blue) 12%, transparent),
+      transparent 52%
+    ),
+    var(--site-surface-soft);
+}
+
+html[data-site-theme="light"] .attendance-clock-face {
+  border-color: color-mix(
+    in srgb,
+    var(--site-blue) 48%,
+    var(--site-border)
+  );
+  background:
+    radial-gradient(
+      circle at 50% 43%,
+      var(--site-surface-solid) 0%,
+      color-mix(
+        in srgb,
+        var(--site-blue) 7%,
+        var(--site-surface-solid)
+      ) 68%,
+      color-mix(
+        in srgb,
+        var(--site-blue) 14%,
+        var(--site-surface-solid)
+      ) 100%
+    );
+  box-shadow:
+    0 0 0 10px color-mix(
+      in srgb,
+      var(--site-blue) 7%,
+      transparent
+    ),
+    0 18px 44px color-mix(
+      in srgb,
+      var(--site-blue) 14%,
+      transparent
+    );
+}
+
+html[data-site-theme="light"] .attendance-clock-content {
+  color: var(--site-text);
+}
+
+html[data-site-theme="light"] .attendance-live-clock {
+  color: var(--site-heading);
+  text-shadow: none;
+}
+
+html[data-site-theme="light"] .attendance-timezone {
+  color: var(--site-blue);
+}
+
+html[data-site-theme="light"] :is(
+  .attendance-eyebrow,
+  .attendance-clock-caption
+) {
+  color: var(--site-muted);
+}
+
+html[data-site-theme="light"] .attendance-clock-divider {
+  background: var(--site-border);
+}
+
+html[data-site-theme="light"] .attendance-orbit {
+  border-color: color-mix(
+    in srgb,
+    var(--site-gold) 48%,
+    transparent
+  );
+}
+
+html[data-site-theme="light"] .attendance-orbit i {
+  background: var(--site-gold);
+  box-shadow: 0 0 12px color-mix(
+    in srgb,
+    var(--site-gold) 46%,
+    transparent
+  );
+}
+
+
+/* Right attendance-status section */
+
+html[data-site-theme="light"] .attendance-today-panel {
+  color: var(--site-text);
+  background: var(--site-surface-solid);
+}
+
+html[data-site-theme="light"] .attendance-status-heading h2 {
+  color: var(--site-heading);
+}
+
+html[data-site-theme="light"] .attendance-today-details > div {
+  border-color: var(--site-border);
+}
+
+html[data-site-theme="light"] .attendance-today-details dt {
+  color: var(--site-muted);
+}
+
+html[data-site-theme="light"] .attendance-today-details dd {
+  color: var(--site-text);
+}
+
+html[data-site-theme="light"] .attendance-today-details svg {
+  color: var(--site-blue);
+}
+
+
+/* Schedule selector, notice and guidance */
+
+html[data-site-theme="light"] :is(
+  .attendance-schedule-chooser,
+  .attendance-notice,
+  .attendance-policy
+) {
+  border-color: var(--site-border);
+  color: var(--site-text);
+  background: var(--site-surface-soft);
+}
+
+html[data-site-theme="light"] .attendance-policy summary {
+  color: var(--site-blue);
+}
+
+html[data-site-theme="light"] :is(
+  .attendance-help,
+  .attendance-action-message
+) {
+  color: var(--site-muted);
+}
+
+
+/* Clock-action buttons */
+
+html[data-site-theme="light"] .attendance-actions button {
+  border-color: var(--site-border) !important;
+  color: var(--site-heading) !important;
+  background: var(--site-surface-solid) !important;
+  box-shadow: none !important;
+}
+
+html[data-site-theme="light"] .attendance-actions button:hover:not(:disabled) {
+  border-color: color-mix(
+    in srgb,
+    var(--site-blue) 48%,
+    var(--site-border)
+  ) !important;
+  color: var(--site-blue) !important;
+  background: var(--site-blue-soft) !important;
+}
+
+html[data-site-theme="light"] .attendance-actions .attendance-action-primary {
+  border-color: color-mix(
+    in srgb,
+    var(--site-green) 55%,
+    var(--site-border)
+  ) !important;
+  color: var(--site-green) !important;
+}
+
+html[data-site-theme="light"] .attendance-actions button:disabled {
+  color: var(--site-muted) !important;
+  background: var(--site-neutral-soft) !important;
+  opacity: 0.68;
+}
+
+
+/* Navigation buttons */
+
+html[data-site-theme="light"] .attendance-nav .wf-link {
+  border-color: var(--site-border);
+  color: var(--site-heading);
+  background: var(--site-surface-solid);
+}
+
+
+/* Status badge */
+
+html[data-site-theme="light"] #attendanceTodayBadge {
+  border-color: var(--site-border);
+  color: var(--site-muted);
+  background: var(--site-neutral-soft);
+}
