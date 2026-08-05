@@ -66,3 +66,13 @@
   .schedule-detail-list{grid-template-columns:1fr}
   .schedule-detail-list .full{grid-column:auto}
 }
+
+
+/* Remove the global green button glow from calendar entries */
+.schedule-page .schedule-entry,
+.schedule-page .schedule-entry:hover:not(:disabled),
+.schedule-page .schedule-entry:active:not(:disabled) {
+  box-shadow: none !important;
+  filter: none !important;
+  transform: none !important;
+}
