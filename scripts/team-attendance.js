@@ -668,6 +668,7 @@ function createAttendanceCard(record) {
   addStat(stats, record.regular_minutes, 'Regular')
   addStat(stats, record.total_overtime_minutes, 'Overtime')
   addStat(stats, record.minutes_late, 'Late')
+  addStat(stats, record.total_worked_minutes, 'Total hours')
 
   const prepaid = document.createElement('section')
   prepaid.className = 'team-attendance-prepaid'
