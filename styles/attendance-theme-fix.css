@@ -345,3 +345,24 @@ html[data-site-theme="light"] .attendance-snapshot-legend {
   color: var(--site-muted) !important;
   background: var(--site-surface-soft) !important;
 }
+
+/* Attendance header text in light mode */
+html[data-site-theme="light"] .attendance-brand .wf-title h1 {
+  color: var(--site-heading) !important;
+  text-shadow: none !important;
+}
+
+html[data-site-theme="light"] .attendance-brand .wf-title p {
+  color: var(--site-muted) !important;
+  text-shadow: none !important;
+}
+
+html[data-site-theme="light"] .attendance-brand-rule {
+  background: var(--site-border) !important;
+}
+
+html[data-site-theme="light"] .attendance-brand-mark {
+  border-color: var(--site-gold) !important;
+  color: var(--site-gold) !important;
+  background: transparent !important;
+}
