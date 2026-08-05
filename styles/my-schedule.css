@@ -76,3 +76,47 @@
   filter: none !important;
   transform: none !important;
 }
+
+/* Administrator calendar reordering */
+.schedule-drag-hint {
+  min-height: 0;
+  margin-top: 3px !important;
+  color: var(--wf-muted);
+  font-size: 0.7rem;
+}
+
+.schedule-entry.is-draggable {
+  cursor: grab;
+  user-select: none;
+}
+
+.schedule-entry.is-draggable:active {
+  cursor: grabbing;
+}
+
+.schedule-entry.is-dragging {
+  opacity: 0.42;
+  box-shadow: none !important;
+}
+
+.schedule-entry-list.is-sortable {
+  min-height: 24px;
+  border-radius: 6px;
+  transition:
+    background-color 0.15s ease,
+    outline-color 0.15s ease;
+}
+
+.schedule-entry-list.is-drag-over {
+  background: color-mix(
+    in srgb,
+    var(--wf-gold) 9%,
+    transparent
+  );
+  outline: 1px dashed color-mix(
+    in srgb,
+    var(--wf-gold) 65%,
+    transparent
+  );
+  outline-offset: 3px;
+}
