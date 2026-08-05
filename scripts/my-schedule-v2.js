@@ -644,6 +644,153 @@ function enableScheduleListDragging(list, shiftDate) {
 })
 }
 
+const SHIFT_INDICATORS = Object.freeze({
+  opening: {
+    label: 'Opening',
+    windows: [[360, 840]]
+  },
+  mid: {
+    label: 'Mid',
+    windows: [[840, 1320]]
+  },
+  closer: {
+    label: 'Closer',
+    windows: [
+      [1320, 1440],
+      [0, 360]
+    ]
+  }
+})
+
+function scheduleMinuteOfDay(value, timeZone) {
+  if (!value) return null
+
+  const parts = new Intl.DateTimeFormat('en-US', {
+    timeZone: timeZone || 'America/New_York',
+    hour: '2-digit',
+    minute: '2-digit',
+    hourCycle: 'h23'
+  }).formatToParts(new Date(value))
+
+  const values = Object.fromEntries(
+    parts.map(part => [part.type, part.value])
+  )
+
+  return (
+    Number(values.hour) * 60 +
+    Number(values.minute)
+  )
+}
+
+function splitDailyInterval(start, end) {
+  if (
+    start === null ||
+    end === null ||
+    start === end
+  ) {
+    return []
+  }
+
+  if (end > start) {
+    return [[start, end]]
+  }
+
+  return [
+    [start, 1440],
+    [0, end]
+  ]
+}
+
+function intervalOverlapMinutes(left, right) {
+  const start = Math.max(left[0], right[0])
+  const end = Math.min(left[1], right[1])
+
+  return Math.max(0, end - start)
+}
+
+function shiftWindowOverlap(scheduleIntervals, windows) {
+  return scheduleIntervals.reduce(
+    (total, scheduleInterval) =>
+      total +
+      windows.reduce(
+        (windowTotal, windowInterval) =>
+          windowTotal +
+          intervalOverlapMinutes(
+            scheduleInterval,
+            windowInterval
+          ),
+        0
+      ),
+    0
+  )
+}
+
+function shiftIndicator(schedule) {
+  if (
+    schedule.is_rest_day ||
+    schedule.is_leave ||
+    schedule.is_absent ||
+    !schedule.shift_start ||
+    !schedule.shift_end
+  ) {
+    return null
+  }
+
+  const timeZone =
+    schedule.timezone ||
+    'America/New_York'
+
+  const start = scheduleMinuteOfDay(
+    schedule.shift_start,
+    timeZone
+  )
+
+  const end = scheduleMinuteOfDay(
+    schedule.shift_end,
+    timeZone
+  )
+
+  const scheduleIntervals =
+    splitDailyInterval(start, end)
+
+  if (!scheduleIntervals.length) {
+    return null
+  }
+
+  const scores = Object.entries(
+    SHIFT_INDICATORS
+  ).map(([key, definition]) => ({
+    key,
+    label: definition.label,
+    minutes: shiftWindowOverlap(
+      scheduleIntervals,
+      definition.windows
+    )
+  }))
+
+  scores.sort(
+    (left, right) =>
+      right.minutes - left.minutes
+  )
+
+  if (!scores[0] || scores[0].minutes <= 0) {
+    return null
+  }
+
+  /*
+   * Do not assign a potentially misleading indicator
+   * when two windows have exactly the same overlap.
+   */
+  if (
+    scores[1] &&
+    scores[0].minutes === scores[1].minutes
+  ) {
+    return null
+  }
+
+  return scores[0]
+}
+
 function createCalendarEntry(schedule) {
   const button = document.createElement('button')
   button.type = 'button'
@@ -663,17 +810,40 @@ function createCalendarEntry(schedule) {
   const content = document.createElement('span')
   content.className = 'schedule-entry-content'
 
-  const time = document.createElement('span')
-  time.className = 'schedule-entry-time'
-  time.textContent = formatShift(schedule)
+  const timeRow = document.createElement('span')
+timeRow.className = 'schedule-entry-time-row'
 
-  const person = document.createElement('span')
+const time = document.createElement('span')
+time.className = 'schedule-entry-time'
+time.textContent = formatShift(schedule)
+
+timeRow.appendChild(time)
+
+const indicator = shiftIndicator(schedule)
+
+if (indicator) {
+  const indicatorElement =
+    document.createElement('span')
+
+  indicatorElement.className =
+    `schedule-shift-indicator ${indicator.key}`
+
+  indicatorElement.textContent =
+    indicator.label
+
+  indicatorElement.title =
+    `${indicator.label} shift`
+
+  timeRow.appendChild(indicatorElement)
+}
+
+const person = document.createElement('span')
   person.className = 'schedule-entry-person'
   person.textContent = currentScope() === 'team'
     ? employeeName(schedule.user_id)
     : scheduleType(schedule)
 
-  content.append(time, person)
+  content.append(timeRow, person)
   button.appendChild(content)
 
   enableScheduleEntryDragging(button, schedule)
