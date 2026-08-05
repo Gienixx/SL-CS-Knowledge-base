@@ -6,14 +6,6 @@
   background: #06111f;
 }
 
-.attendance-theme-input {
-  position: fixed;
-  width: 1px;
-  height: 1px;
-  opacity: 0;
-  pointer-events: none;
-}
-
 .attendance-app {
   --att-bg: #061323;
   --att-surface: rgba(6, 20, 36, .88);
@@ -165,21 +157,6 @@
 }
 
 .attendance-nav .wf-link,
-.attendance-theme-toggle {
-  display: inline-flex;
-  align-items: center;
-  gap: 9px;
-  min-height: 36px;
-  padding: 6px 11px;
-  border: 0;
-  border-radius: 9px;
-  background: transparent;
-  color: var(--att-text);
-  box-shadow: none;
-  font-size: .82rem;
-  font-weight: 650;
-  white-space: nowrap;
-}
 
 .attendance-nav .wf-link + .wf-link {
   border-left: 1px solid var(--att-border);
@@ -215,18 +192,6 @@
 #attendanceThemeToggle:focus-visible ~ .attendance-app .attendance-theme-toggle {
   outline: 2px solid var(--att-blue);
   outline-offset: 2px;
-}
-
-.attendance-theme-name-dark,
-.attendance-theme-moon,
-#attendanceThemeToggle:not(:checked) ~ .attendance-app .attendance-theme-name-light,
-#attendanceThemeToggle:not(:checked) ~ .attendance-app .attendance-theme-sun {
-  display: none;
-}
-
-#attendanceThemeToggle:not(:checked) ~ .attendance-app .attendance-theme-name-dark,
-#attendanceThemeToggle:not(:checked) ~ .attendance-app .attendance-theme-moon {
-  display: inline;
 }
 
 .attendance-console {
