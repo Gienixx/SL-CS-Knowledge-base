@@ -839,17 +839,40 @@ function createCalendarEntry(schedule) {
     `${employeeName(schedule.user_id)}, ${formatDate(schedule.shift_date)}, ${formatShift(schedule)}, ${STATUS_LABELS[schedule.status] || schedule.status}`
   )
 
-  const content = document.createElement('span')
-  content.className = 'schedule-entry-content'
-
   const timeRow = document.createElement('span')
-timeRow.className = 'schedule-entry-time-row'
+  timeRow.className = 'schedule-entry-time-row'
 
-const time = document.createElement('span')
-time.className = 'schedule-entry-time'
-time.textContent = formatShift(schedule)
+  const time = document.createElement('span')
+  time.className = 'schedule-entry-time'
+  time.textContent = formatShift(schedule)
 
-timeRow.appendChild(time)
+  timeRow.appendChild(time)
+
+  const indicator = shiftIndicator(schedule)
+
+  if (indicator) {
+    const indicatorElement =
+      document.createElement('span')
+
+    indicatorElement.className =
+      `schedule-shift-indicator ${indicator.key}`
+
+    indicatorElement.textContent =
+      indicator.label
+
+    indicatorElement.title =
+      `${indicator.label} shift`
+
+    timeRow.appendChild(indicatorElement)
+  }
+
+  const person = document.createElement('span')
+  person.className = 'schedule-entry-person'
+  person.textContent = currentScope() === 'team'
+    ? employeeName(schedule.user_id)
+    : scheduleType(schedule)
+
+  content.append(timeRow, person)
 
 const indicator = shiftIndicator(schedule)
 
