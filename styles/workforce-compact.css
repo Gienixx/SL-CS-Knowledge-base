@@ -1,0 +1,418 @@
+/* =========================================================
+   Workforce Management
+   Compact layout overrides
+
+   Loaded after:
+   1. workforce-admin.css
+   2. site-theme.css
+   ========================================================= */
+
+
+/* ---------------------------------------------------------
+   Page shell
+   --------------------------------------------------------- */
+
+.wf-page {
+  width: min(1440px, calc(100% - 28px));
+  padding: 18px 0 28px;
+}
+
+
+/*
+ * Hide the view switcher while Schedule Management remains
+ * unavailable. It will automatically return when the hidden
+ * attribute is removed from #scheduleViewButton.
+ */
+
+.wf-view-switcher:has(#scheduleViewButton[hidden]) {
+  display: none;
+}
+
+
+/* ---------------------------------------------------------
+   Page header
+   --------------------------------------------------------- */
+
+.wf-topbar {
+  align-items: center;
+  gap: 16px;
+  margin-bottom: 12px;
+}
+
+.wf-title h1 {
+  font-size: clamp(1.55rem, 2.2vw, 1.9rem);
+  letter-spacing: -0.025em;
+}
+
+.wf-title p {
+  max-width: 700px;
+  margin: 4px 0 0;
+  font-size: 0.78rem;
+  line-height: 1.4;
+}
+
+.wf-nav {
+  gap: 8px;
+}
+
+.wf-link,
+.wf-btn {
+  min-height: 34px;
+  padding: 6px 12px;
+  border-radius: 8px;
+  font-size: 0.74rem;
+  box-shadow: none;
+}
+
+
+/* ---------------------------------------------------------
+   Summary cards
+   --------------------------------------------------------- */
+
+.wf-summary-grid {
+  gap: 8px;
+  margin-bottom: 12px;
+}
+
+.wf-summary {
+  min-height: 58px;
+  gap: 9px;
+  padding: 9px 12px;
+  border-radius: 11px;
+  box-shadow: none;
+  backdrop-filter: none;
+}
+
+.wf-stat-icon {
+  width: 30px;
+  height: 30px;
+  border-radius: 8px;
+}
+
+.wf-stat-icon svg {
+  width: 14px;
+  height: 14px;
+}
+
+.wf-stat-copy {
+  gap: 2px;
+}
+
+.wf-stat-copy > span {
+  font-size: 0.6rem !important;
+}
+
+.wf-summary strong,
+.wf-stat-copy > strong {
+  font-size: 1.08rem;
+  line-height: 1;
+}
+
+
+/* ---------------------------------------------------------
+   Main card
+   --------------------------------------------------------- */
+
+html[data-site-theme] body:has(.wf-page) .wf-card {
+  margin-bottom: 12px;
+  border-radius: 14px;
+  box-shadow: none;
+  backdrop-filter: none;
+}
+
+.wf-card-header {
+  gap: 12px;
+  padding: 13px 16px 9px;
+}
+
+.wf-card-header h2 {
+  font-size: 1rem;
+}
+
+.wf-card-header .wf-message {
+  min-height: 0;
+  margin: 2px 0 0;
+  font-size: 0.71rem;
+  line-height: 1.35;
+}
+
+.wf-actions {
+  gap: 7px;
+}
+
+
+/* ---------------------------------------------------------
+   Search and filter toolbar
+   --------------------------------------------------------- */
+
+.wf-toolbar {
+  grid-template-columns:
+    minmax(260px, 1fr)
+    minmax(130px, 160px)
+    minmax(130px, 160px);
+  gap: 8px;
+  padding: 9px 16px;
+}
+
+.wf-toolbar.schedule-toolbar {
+  grid-template-columns: repeat(4, minmax(130px, 1fr));
+  gap: 8px;
+  padding: 9px 16px;
+}
+
+.wf-field {
+  gap: 4px;
+}
+
+.wf-field > span,
+.wf-field-label {
+  font-size: 0.6rem;
+  letter-spacing: 0.055em;
+}
+
+.wf-control {
+  min-height: 34px;
+  padding: 6px 9px;
+  border-radius: 7px;
+  font-size: 0.76rem;
+}
+
+
+/* ---------------------------------------------------------
+   User profile table
+   --------------------------------------------------------- */
+
+.wf-employee-table {
+  min-width: 860px;
+}
+
+.wf-table th {
+  padding: 7px 12px;
+  font-size: 0.59rem;
+  letter-spacing: 0.04em;
+}
+
+.wf-table td,
+.wf-compact-table td {
+  height: 46px;
+  padding: 7px 12px;
+  font-size: 0.75rem;
+}
+
+.wf-user-cell {
+  min-width: 205px;
+  gap: 8px;
+}
+
+.wf-avatar {
+  width: 28px;
+  height: 28px;
+  font-size: 0.66rem;
+}
+
+.wf-user-cell > span:last-child {
+  gap: 1px;
+}
+
+.wf-user-cell strong {
+  font-size: 0.76rem;
+}
+
+.wf-user-cell small {
+  font-size: 0.62rem;
+}
+
+.wf-team-cell {
+  gap: 5px;
+  font-size: 0.73rem;
+}
+
+.wf-permission-cell {
+  font-size: 0.71rem;
+}
+
+.wf-subtext {
+  margin-top: 1px;
+  font-size: 0.65rem;
+}
+
+.wf-badge {
+  margin: 0 2px 0 0;
+  padding: 2px 7px;
+  font-size: 0.62rem;
+}
+
+.wf-row-actions {
+  gap: 5px;
+}
+
+.wf-row-btn {
+  min-height: 28px;
+  padding: 4px 9px;
+  border-radius: 7px;
+  font-size: 0.68rem;
+  box-shadow: none;
+}
+
+.wf-kebab {
+  width: 28px;
+  min-width: 28px;
+  height: 28px;
+  border-radius: 7px;
+  box-shadow: none;
+}
+
+
+/* ---------------------------------------------------------
+   Table scrolling
+   --------------------------------------------------------- */
+
+.wf-table-wrap {
+  max-height: 500px;
+  overflow: auto;
+  box-shadow: none;
+  backdrop-filter: none;
+}
+
+.wf-table thead {
+  position: sticky;
+  top: 0;
+  z-index: 5;
+}
+
+
+/* ---------------------------------------------------------
+   Profile footer and pagination
+   --------------------------------------------------------- */
+
+.wf-profile-panel-foot {
+  min-height: 44px;
+  padding: 6px 16px;
+}
+
+.wf-profile-panel-foot > .wf-message {
+  font-size: 0.68rem;
+}
+
+.wf-profile-panel-foot > .wf-message:empty {
+  display: none;
+}
+
+.wf-table-pagination {
+  gap: 8px;
+  font-size: 0.7rem;
+}
+
+.wf-table-pagination .wf-row-btn {
+  min-height: 28px;
+  padding: 4px 9px;
+}
+
+
+/* ---------------------------------------------------------
+   Schedule navigation
+   --------------------------------------------------------- */
+
+.wf-range-bar {
+  gap: 10px;
+  padding: 10px 16px;
+}
+
+.wf-range-bar strong {
+  font-size: 0.82rem;
+}
+
+.wf-schedule-legend {
+  gap: 11px;
+  padding: 9px 16px;
+  font-size: 0.65rem;
+}
+
+
+/* ---------------------------------------------------------
+   Responsive layout
+   --------------------------------------------------------- */
+
+@media (max-width: 900px) {
+  .wf-toolbar {
+    grid-template-columns: 1fr 1fr;
+  }
+
+  .wf-toolbar .wide {
+    grid-column: 1 / -1;
+  }
+
+  .wf-toolbar.schedule-toolbar {
+    grid-template-columns: 1fr 1fr;
+  }
+}
+
+@media (max-width: 680px) {
+  .wf-page {
+    width: min(100% - 18px, 1440px);
+    padding: 12px 0 20px;
+  }
+
+  .wf-topbar {
+    align-items: stretch;
+    gap: 10px;
+  }
+
+  .wf-title h1 {
+    font-size: 1.45rem;
+  }
+
+  .wf-title p {
+    font-size: 0.73rem;
+  }
+
+  .wf-nav {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    width: 100%;
+  }
+
+  .wf-link,
+  .wf-btn {
+    width: 100%;
+  }
+
+  .wf-summary-grid {
+    grid-template-columns: 1fr 1fr;
+  }
+
+  .wf-toolbar,
+  .wf-toolbar.schedule-toolbar {
+    grid-template-columns: 1fr;
+  }
+
+  .wf-toolbar .wide {
+    grid-column: auto;
+  }
+
+  .wf-card-header {
+    padding-inline: 12px;
+  }
+
+  .wf-toolbar {
+    padding-inline: 12px;
+  }
+
+  .wf-table th,
+  .wf-table td,
+  .wf-compact-table td {
+    padding-inline: 10px;
+  }
+
+  .wf-profile-panel-foot {
+    align-items: stretch;
+    flex-direction: column;
+    gap: 7px;
+    padding-inline: 12px;
+  }
+
+  .wf-profile-panel-foot .wf-table-pagination {
+    width: 100%;
+    justify-content: space-between;
+  }
+}
