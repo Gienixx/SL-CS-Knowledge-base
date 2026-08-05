@@ -686,3 +686,76 @@ html[data-site-theme] .schedule-page .wf-card {
     grid-column: auto;
   }
 }
+
+/* =========================================================
+   Calendar shift indicators
+   ========================================================= */
+
+.schedule-entry-time-row {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  min-width: 0;
+}
+
+.schedule-entry-time-row .schedule-entry-time {
+  min-width: 0;
+  flex: 1;
+}
+
+.schedule-shift-indicator {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex: none;
+  min-height: 14px;
+  padding: 1px 4px;
+  border: 1px solid transparent;
+  border-radius: 999px;
+  font-size: 0.48rem;
+  font-weight: 800;
+  line-height: 1;
+  letter-spacing: 0.025em;
+  white-space: nowrap;
+}
+
+/* 6 AM–2 PM */
+.schedule-shift-indicator.opening {
+  border-color: color-mix(
+    in srgb,
+    var(--site-gold) 38%,
+    transparent
+  );
+  color: var(--site-gold);
+  background: var(--site-amber-soft);
+}
+
+/* 2 PM–10 PM */
+.schedule-shift-indicator.mid {
+  border-color: color-mix(
+    in srgb,
+    var(--site-blue) 34%,
+    transparent
+  );
+  color: var(--site-blue);
+  background: var(--site-blue-soft);
+}
+
+/* 10 PM–6 AM */
+.schedule-shift-indicator.closer {
+  border-color: color-mix(
+    in srgb,
+    var(--site-blue) 24%,
+    var(--site-red) 18%
+  );
+  color: color-mix(
+    in srgb,
+    var(--site-blue) 72%,
+    var(--site-red)
+  );
+  background: color-mix(
+    in srgb,
+    var(--site-blue-soft) 72%,
+    var(--site-red-soft)
+  );
+}
