@@ -37,8 +37,8 @@ function specialScheduleLabel(schedule) {
 }
 
 const TABLE_PAGE_SIZE = 10
-const SCHEDULE_ORDER_STORAGE_KEY =
-  'socialloop-my-schedule-entry-order-v1'
+const SCHEDULE_EMPLOYEE_ORDER_STORAGE_KEY =
+  'socialloop-my-schedule-employee-order-v1'
 
 const elements = {
   calendar: document.getElementById('myScheduleCalendar'),
@@ -331,90 +331,177 @@ function renderChangeNotice(rows) {
   elements.changeNotice.hidden = false
 }
 
-function readScheduleOrderPreferences() {
+function readScheduleEmployeeOrder() {
   try {
     const stored = window.localStorage.getItem(
-      SCHEDULE_ORDER_STORAGE_KEY
+      SCHEDULE_EMPLOYEE_ORDER_STORAGE_KEY
     )
 
-    if (!stored) return {}
+    if (!stored) return []
 
     const parsed = JSON.parse(stored)
 
-    return parsed && typeof parsed === 'object'
-      ? parsed
-      : {}
-  } catch {
-    return {}
-  }
-}
+    if (!Array.isArray(parsed)) return []
 
-function saveScheduleOrderPreference(shiftDate, scheduleIds) {
-  try {
-    const preferences = readScheduleOrderPreferences()
-
-    preferences[shiftDate] = scheduleIds
-
-    window.localStorage.setItem(
-      SCHEDULE_ORDER_STORAGE_KEY,
-      JSON.stringify(preferences)
-    )
-  } catch {
-    throw new Error(
-      'The custom schedule order could not be saved in this browser.'
-    )
-  }
-}
-
-function orderedDaySchedules(shiftDate, rows) {
-  const defaultOrder = rows
-    .slice()
-    .sort((left, right) => {
-      const sequenceDifference =
-        (Number(left.shift_sequence) || 0) -
-        (Number(right.shift_sequence) || 0)
-
-      if (sequenceDifference) return sequenceDifference
-
-      return employeeName(left.user_id).localeCompare(
-        employeeName(right.user_id)
+    return [
+      ...new Set(
+        parsed.filter(
+          userId =>
+            typeof userId === 'string' &&
+            userId.trim()
+        )
       )
-    })
+    ]
+  } catch {
+    return []
+  }
+}
 
-  if (!canManageSchedules) return defaultOrder
+function writeScheduleEmployeeOrder(userIds) {
+  const cleanOrder = [
+    ...new Set(
+      userIds.filter(
+        userId =>
+          typeof userId === 'string' &&
+          userId.trim()
+      )
+    )
+  ]
 
-  const savedOrder =
-    readScheduleOrderPreferences()[shiftDate]
+  window.localStorage.setItem(
+    SCHEDULE_EMPLOYEE_ORDER_STORAGE_KEY,
+    JSON.stringify(cleanOrder)
+  )
+}
 
-  if (!Array.isArray(savedOrder) || !savedOrder.length) {
-    return defaultOrder
+function saveEmployeeOrderFromList(list) {
+  const visibleOrder = [
+    ...list.querySelectorAll(
+      '.schedule-entry[data-user-id]'
+    )
+  ]
+    .map(entry => entry.dataset.userId)
+    .filter(Boolean)
+
+  const uniqueVisibleOrder = [
+    ...new Set(visibleOrder)
+  ]
+
+  if (!uniqueVisibleOrder.length) {
+    return readScheduleEmployeeOrder()
   }
 
-  const savedPositions = new Map(
-    savedOrder.map((scheduleId, index) => [
-      scheduleId,
-      index
-    ])
+  const existingOrder =
+    readScheduleEmployeeOrder()
+
+  const visibleUserIds = new Set(
+    uniqueVisibleOrder
   )
 
-  return defaultOrder.sort((left, right) => {
-    const leftPosition = savedPositions.has(left.id)
-      ? savedPositions.get(left.id)
-      : Number.MAX_SAFE_INTEGER
-
-    const rightPosition = savedPositions.has(right.id)
-      ? savedPositions.get(right.id)
-      : Number.MAX_SAFE_INTEGER
-
-    if (leftPosition !== rightPosition) {
-      return leftPosition - rightPosition
-    }
-
-    return (
-      (Number(left.shift_sequence) || 0) -
-      (Number(right.shift_sequence) || 0)
+  /*
+   * Preserve employees that are not present on the date being
+   * rearranged. Insert the reordered visible employees where
+   * the first matching employee previously appeared.
+   */
+  const firstExistingPosition =
+    existingOrder.findIndex(
+      userId => visibleUserIds.has(userId)
     )
-  })
+
+  const retainedOrder =
+    existingOrder.filter(
+      userId => !visibleUserIds.has(userId)
+    )
+
+  const insertionPosition =
+    firstExistingPosition === -1
+      ? retainedOrder.length
+      : Math.min(
+          firstExistingPosition,
+          retainedOrder.length
+        )
+
+  const mergedOrder = [
+    ...retainedOrder.slice(
+      0,
+      insertionPosition
+    ),
+    ...uniqueVisibleOrder,
+    ...retainedOrder.slice(
+      insertionPosition
+    )
+  ]
+
+  writeScheduleEmployeeOrder(mergedOrder)
+
+  return mergedOrder
+}
+
+function preferredEmployeeOrderMap() {
+  return new Map(
+    readScheduleEmployeeOrder().map(
+      (userId, index) => [userId, index]
+    )
+  )
+}
+
+function compareScheduleEntries(
+  left,
+  right,
+  orderMap = preferredEmployeeOrderMap()
+) {
+  const leftPosition = orderMap.has(left.user_id)
+    ? orderMap.get(left.user_id)
+    : Number.MAX_SAFE_INTEGER
+
+  const rightPosition = orderMap.has(right.user_id)
+    ? orderMap.get(right.user_id)
+    : Number.MAX_SAFE_INTEGER
+
+  if (leftPosition !== rightPosition) {
+    return leftPosition - rightPosition
+  }
+
+  /*
+   * Keep multiple schedules belonging to the same employee
+   * in their normal sequence.
+   */
+  const sequenceDifference =
+    (Number(left.shift_sequence) || 0) -
+    (Number(right.shift_sequence) || 0)
+
+  if (sequenceDifference) {
+    return sequenceDifference
+  }
+
+  const startDifference = String(
+    left.shift_start || ''
+  ).localeCompare(
+    String(right.shift_start || '')
+  )
+
+  if (startDifference) {
+    return startDifference
+  }
+
+  return employeeName(left.user_id)
+    .localeCompare(employeeName(right.user_id))
+}
+
+function orderedDaySchedules(rows) {
+  const orderMap =
+    preferredEmployeeOrderMap()
+
+  return rows
+    .slice()
+    .sort(
+      (left, right) =>
+        compareScheduleEntries(
+          left,
+          right,
+          orderMap
+        )
+    )
 }
 
 function enableScheduleEntryDragging(button, schedule) {
@@ -423,8 +510,10 @@ function enableScheduleEntryDragging(button, schedule) {
   button.draggable = true
   button.classList.add('is-draggable')
   button.dataset.scheduleId = schedule.id
+  button.dataset.userId = schedule.user_id || ''
   button.dataset.shiftDate = schedule.shift_date
-  button.title = 'Drag to reorder this day’s entries'
+  button.title =
+    'Drag to set this employee’s position across all dates'
 
   button.addEventListener('dragstart', event => {
     draggedScheduleElement = button
@@ -524,36 +613,35 @@ function enableScheduleListDragging(list, shiftDate) {
   })
 
   list.addEventListener('drop', event => {
-    if (
-      !draggedScheduleElement ||
-      draggedScheduleDate !== shiftDate
-    ) {
-      return
-    }
+  if (
+    !draggedScheduleElement ||
+    draggedScheduleDate !== shiftDate
+  ) {
+    return
+  }
 
-    event.preventDefault()
-    list.classList.remove('is-drag-over')
+  event.preventDefault()
+  list.classList.remove('is-drag-over')
 
-    const scheduleIds = [
-      ...list.querySelectorAll(
-        '.schedule-entry[data-schedule-id]'
-      )
-    ].map(entry => entry.dataset.scheduleId)
+  try {
+    saveEmployeeOrderFromList(list)
 
-    try {
-      saveScheduleOrderPreference(
-        shiftDate,
-        scheduleIds
-      )
+    /*
+     * Re-render the full calendar so the same employee
+     * arrangement immediately appears on every date.
+     */
+    window.requestAnimationFrame(() => {
+      render()
 
       setMessage(
-        `Custom entry order saved for ${formatDate(shiftDate)}.`,
+        'Preferred employee order saved and applied to all visible dates.',
         'success'
       )
-    } catch (error) {
-      setMessage(errorMessage(error), 'error')
-    }
-  })
+    })
+  } catch (error) {
+    setMessage(errorMessage(error), 'error')
+  }
+})
 }
 
 function createCalendarEntry(schedule) {
@@ -640,7 +728,6 @@ function renderCalendar(rows) {
     number.textContent = String(parseDateKey(cursor).getUTCDate())
 
     const daySchedules = orderedDaySchedules(
-      cursor,
       schedulesByDate.get(cursor) || []
     )
 
@@ -730,9 +817,27 @@ function renderTable(rows) {
 }
 
 function render() {
-  const rows = visibleSchedules()
-    .slice()
-    .sort((a, b) => a.shift_date.localeCompare(b.shift_date) || a.shift_sequence - b.shift_sequence)
+  const employeeOrder =
+  preferredEmployeeOrderMap()
+
+const rows = visibleSchedules()
+  .slice()
+  .sort((left, right) => {
+    const dateDifference =
+      left.shift_date.localeCompare(
+        right.shift_date
+      )
+
+    if (dateDifference) {
+      return dateDifference
+    }
+
+    return compareScheduleEntries(
+      left,
+      right,
+      employeeOrder
+    )
+  })
 
   elements.rangeLabel.textContent = formatRange(selectedRange())
   renderSummary(rows)
