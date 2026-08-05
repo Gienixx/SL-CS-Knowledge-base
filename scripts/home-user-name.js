@@ -1,4 +1,4 @@
-import { supabase } from './supabaseClient.js?v=10'
+import { supabase } from './supabaseClient.js?v=11'
 
 const DISPLAY_TARGETS = Object.freeze({
   homeFirstName: value => value,

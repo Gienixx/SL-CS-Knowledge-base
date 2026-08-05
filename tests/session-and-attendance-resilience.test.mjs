@@ -14,9 +14,10 @@ test('browser modules reuse one Supabase auth client', async () => {
     read('scripts/home-workforce-nav.js')
   ])
 
+  assert.match(client, /@supabase\/supabase-js@2\.53\.0\?bundle/)
   assert.match(client, /window\.__slSupabase \|\| createClient/)
   for (const source of [home, userName, calendar, workforceCalendar, workforceNav]) {
-    assert.match(source, /supabaseClient\.js\?v=10/)
+    assert.match(source, /supabaseClient\.js\?v=11/)
   }
   assert.match(home, /signOut\(\{ scope: 'local' \}\)/)
   assert.match(home, /finally[\s\S]*window\.location\.replace\('\.\/login\.html'\)/)

@@ -1,4 +1,4 @@
-import { supabase } from './supabaseClient.js?v=8'
+import { supabase } from './supabaseClient.js?v=11'
 import {
   initializeDriverPieDashboard
 } from './dashboard-driver-pie.js?v=1'

@@ -1,4 +1,4 @@
-import { supabase } from './supabaseClient.js?v=8'
+import { supabase } from './supabaseClient.js?v=11'
 
 const SVG_NS = 'http://www.w3.org/2000/svg'
 const COLORS = [

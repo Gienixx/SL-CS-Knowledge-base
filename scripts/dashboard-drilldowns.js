@@ -1,4 +1,4 @@
-import { supabase } from './supabaseClient.js?v=8'
+import { supabase } from './supabaseClient.js?v=11'
 
 const LINK_STYLE_ID = 'dashboardDrilldownStyles'
 const COMPLETION_TIMEOUT_MS = 20000

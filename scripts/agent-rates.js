@@ -1,4 +1,4 @@
-import { supabase } from './supabaseClient.js?v=10'
+import { supabase } from './supabaseClient.js?v=11'
 import { requireWorkforcePermission } from './workforce-permissions.js?v=1'
 
 const PAID_HOURS_PER_DAY = 8

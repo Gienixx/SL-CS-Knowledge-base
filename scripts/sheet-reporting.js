@@ -1,4 +1,4 @@
-import { supabase } from './supabaseClient.js?v=8'
+import { supabase } from './supabaseClient.js?v=11'
 import { requiresFirstLoginPasswordChange } from './first-login-policy.js?v=4'
 
 export const REPORT_TIME_ZONE = 'America/New_York'
