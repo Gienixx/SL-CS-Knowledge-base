@@ -778,8 +778,8 @@ function shiftIndicator(schedule) {
   }
 
   /*
-   * When two periods have the same overlap, use the
-   * period containing the scheduled start time.
+   * If two shift windows have equal overlap, use the
+   * window containing the scheduled starting time.
    */
   const tiedScores = scores.filter(
     item => item.minutes === scores[0].minutes
@@ -809,35 +809,46 @@ function shiftIndicator(schedule) {
   return scores[0]
 }
 
-  /*
-   * Do not assign a potentially misleading indicator
-   * when two windows have exactly the same overlap.
-   */
-  if (
-    scores[1] &&
-    scores[0].minutes === scores[1].minutes
-  ) {
-    return null
-  }
-
-  return scores[0]
-}
-
 function createCalendarEntry(schedule) {
   const button = document.createElement('button')
   button.type = 'button'
   button.className = 'schedule-entry'
-  if (schedule.status === 'changed') button.classList.add('changed')
-  if (schedule.status === 'scheduled') button.classList.add('scheduled')
-  if (schedule.status === 'cancelled') button.classList.add('cancelled')
-  if (schedule.status === 'completed') button.classList.add('completed')
-  if (schedule.is_rest_day) button.classList.add('rest-day')
-  if (schedule.is_leave) button.classList.add('leave')
-  if (schedule.is_absent) button.classList.add('absent')
+
+  if (schedule.status === 'changed') {
+    button.classList.add('changed')
+  }
+
+  if (schedule.status === 'scheduled') {
+    button.classList.add('scheduled')
+  }
+
+  if (schedule.status === 'cancelled') {
+    button.classList.add('cancelled')
+  }
+
+  if (schedule.status === 'completed') {
+    button.classList.add('completed')
+  }
+
+  if (schedule.is_rest_day) {
+    button.classList.add('rest-day')
+  }
+
+  if (schedule.is_leave) {
+    button.classList.add('leave')
+  }
+
+  if (schedule.is_absent) {
+    button.classList.add('absent')
+  }
+
   button.setAttribute(
     'aria-label',
     `${employeeName(schedule.user_id)}, ${formatDate(schedule.shift_date)}, ${formatShift(schedule)}, ${STATUS_LABELS[schedule.status] || schedule.status}`
   )
+
+  const content = document.createElement('span')
+  content.className = 'schedule-entry-content'
 
   const timeRow = document.createElement('span')
   timeRow.className = 'schedule-entry-time-row'
@@ -868,40 +879,18 @@ function createCalendarEntry(schedule) {
 
   const person = document.createElement('span')
   person.className = 'schedule-entry-person'
-  person.textContent = currentScope() === 'team'
-    ? employeeName(schedule.user_id)
-    : scheduleType(schedule)
-
-  content.append(timeRow, person)
-
-const indicator = shiftIndicator(schedule)
-
-if (indicator) {
-  const indicatorElement =
-    document.createElement('span')
-
-  indicatorElement.className =
-    `schedule-shift-indicator ${indicator.key}`
-
-  indicatorElement.textContent =
-    indicator.label
-
-  indicatorElement.title =
-    `${indicator.label} shift`
-
-  timeRow.appendChild(indicatorElement)
-}
-
-const person = document.createElement('span')
-  person.className = 'schedule-entry-person'
-  person.textContent = currentScope() === 'team'
-    ? employeeName(schedule.user_id)
-    : scheduleType(schedule)
+  person.textContent =
+    currentScope() === 'team'
+      ? employeeName(schedule.user_id)
+      : scheduleType(schedule)
 
   content.append(timeRow, person)
   button.appendChild(content)
 
-  enableScheduleEntryDragging(button, schedule)
+  enableScheduleEntryDragging(
+    button,
+    schedule
+  )
 
   button.addEventListener('click', event => {
     if (suppressScheduleClick) {
@@ -912,7 +901,7 @@ const person = document.createElement('span')
     openScheduleDetails(schedule.id)
   })
 
-return button
+  return button
 }
 
 function renderCalendar(rows) {
