@@ -37,6 +37,8 @@ function specialScheduleLabel(schedule) {
 }
 
 const TABLE_PAGE_SIZE = 10
+const SCHEDULE_ORDER_STORAGE_KEY =
+  'socialloop-my-schedule-entry-order-v1'
 
 const elements = {
   calendar: document.getElementById('myScheduleCalendar'),
@@ -59,6 +61,7 @@ const elements = {
   tableNext: document.getElementById('nextMyScheduleTablePage'),
   changeNotice: document.getElementById('scheduleChangeNotice'),
   subtitle: document.getElementById('schedulePageSubtitle'),
+  dragHint: document.getElementById('scheduleDragHint'),
   modal: document.getElementById('myScheduleModal')
 }
 
@@ -71,6 +74,10 @@ let canManageSchedules = false
 let canViewTeam = false
 let lastFocusedElement = null
 let tablePage = 1
+
+let draggedScheduleElement = null
+let draggedScheduleDate = ''
+let suppressScheduleClick = false
 
 function normalizeText(value) {
   return typeof value === 'string' ? value.trim().toLowerCase() : ''
@@ -324,6 +331,231 @@ function renderChangeNotice(rows) {
   elements.changeNotice.hidden = false
 }
 
+function readScheduleOrderPreferences() {
+  try {
+    const stored = window.localStorage.getItem(
+      SCHEDULE_ORDER_STORAGE_KEY
+    )
+
+    if (!stored) return {}
+
+    const parsed = JSON.parse(stored)
+
+    return parsed && typeof parsed === 'object'
+      ? parsed
+      : {}
+  } catch {
+    return {}
+  }
+}
+
+function saveScheduleOrderPreference(shiftDate, scheduleIds) {
+  try {
+    const preferences = readScheduleOrderPreferences()
+
+    preferences[shiftDate] = scheduleIds
+
+    window.localStorage.setItem(
+      SCHEDULE_ORDER_STORAGE_KEY,
+      JSON.stringify(preferences)
+    )
+  } catch {
+    throw new Error(
+      'The custom schedule order could not be saved in this browser.'
+    )
+  }
+}
+
+function orderedDaySchedules(shiftDate, rows) {
+  const defaultOrder = rows
+    .slice()
+    .sort((left, right) => {
+      const sequenceDifference =
+        (Number(left.shift_sequence) || 0) -
+        (Number(right.shift_sequence) || 0)
+
+      if (sequenceDifference) return sequenceDifference
+
+      return employeeName(left.user_id).localeCompare(
+        employeeName(right.user_id)
+      )
+    })
+
+  if (!canManageSchedules) return defaultOrder
+
+  const savedOrder =
+    readScheduleOrderPreferences()[shiftDate]
+
+  if (!Array.isArray(savedOrder) || !savedOrder.length) {
+    return defaultOrder
+  }
+
+  const savedPositions = new Map(
+    savedOrder.map((scheduleId, index) => [
+      scheduleId,
+      index
+    ])
+  )
+
+  return defaultOrder.sort((left, right) => {
+    const leftPosition = savedPositions.has(left.id)
+      ? savedPositions.get(left.id)
+      : Number.MAX_SAFE_INTEGER
+
+    const rightPosition = savedPositions.has(right.id)
+      ? savedPositions.get(right.id)
+      : Number.MAX_SAFE_INTEGER
+
+    if (leftPosition !== rightPosition) {
+      return leftPosition - rightPosition
+    }
+
+    return (
+      (Number(left.shift_sequence) || 0) -
+      (Number(right.shift_sequence) || 0)
+    )
+  })
+}
+
+function enableScheduleEntryDragging(button, schedule) {
+  if (!canManageSchedules) return
+
+  button.draggable = true
+  button.classList.add('is-draggable')
+  button.dataset.scheduleId = schedule.id
+  button.dataset.shiftDate = schedule.shift_date
+  button.title = 'Drag to reorder this day’s entries'
+
+  button.addEventListener('dragstart', event => {
+    draggedScheduleElement = button
+    draggedScheduleDate = schedule.shift_date
+    suppressScheduleClick = true
+
+    button.classList.add('is-dragging')
+    button.setAttribute('aria-grabbed', 'true')
+
+    if (event.dataTransfer) {
+      event.dataTransfer.effectAllowed = 'move'
+      event.dataTransfer.setData(
+        'text/plain',
+        schedule.id
+      )
+    }
+  })
+
+  button.addEventListener('dragend', () => {
+    button.classList.remove('is-dragging')
+    button.setAttribute('aria-grabbed', 'false')
+
+    document
+      .querySelectorAll(
+        '.schedule-entry-list.is-drag-over'
+      )
+      .forEach(list => {
+        list.classList.remove('is-drag-over')
+      })
+
+    draggedScheduleElement = null
+    draggedScheduleDate = ''
+
+    window.setTimeout(() => {
+      suppressScheduleClick = false
+    }, 0)
+  })
+}
+
+function enableScheduleListDragging(list, shiftDate) {
+  if (!canManageSchedules) return
+
+  list.classList.add('is-sortable')
+  list.dataset.shiftDate = shiftDate
+
+  list.addEventListener('dragover', event => {
+    if (
+      !draggedScheduleElement ||
+      draggedScheduleDate !== shiftDate
+    ) {
+      return
+    }
+
+    event.preventDefault()
+    list.classList.add('is-drag-over')
+
+    if (event.dataTransfer) {
+      event.dataTransfer.dropEffect = 'move'
+    }
+
+    const eventTarget =
+      event.target instanceof Element
+        ? event.target
+        : null
+
+    const targetEntry = eventTarget?.closest(
+      '.schedule-entry'
+    )
+
+    if (
+      !targetEntry ||
+      targetEntry === draggedScheduleElement ||
+      targetEntry.parentElement !== list
+    ) {
+      return
+    }
+
+    const targetBounds =
+      targetEntry.getBoundingClientRect()
+
+    const insertAfter =
+      event.clientY >
+      targetBounds.top + targetBounds.height / 2
+
+    list.insertBefore(
+      draggedScheduleElement,
+      insertAfter
+        ? targetEntry.nextSibling
+        : targetEntry
+    )
+  })
+
+  list.addEventListener('dragleave', event => {
+    if (!list.contains(event.relatedTarget)) {
+      list.classList.remove('is-drag-over')
+    }
+  })
+
+  list.addEventListener('drop', event => {
+    if (
+      !draggedScheduleElement ||
+      draggedScheduleDate !== shiftDate
+    ) {
+      return
+    }
+
+    event.preventDefault()
+    list.classList.remove('is-drag-over')
+
+    const scheduleIds = [
+      ...list.querySelectorAll(
+        '.schedule-entry[data-schedule-id]'
+      )
+    ].map(entry => entry.dataset.scheduleId)
+
+    try {
+      saveScheduleOrderPreference(
+        shiftDate,
+        scheduleIds
+      )
+
+      setMessage(
+        `Custom entry order saved for ${formatDate(shiftDate)}.`,
+        'success'
+      )
+    } catch (error) {
+      setMessage(errorMessage(error), 'error')
+    }
+  })
+}
+
 function createCalendarEntry(schedule) {
   const button = document.createElement('button')
   button.type = 'button'
@@ -355,8 +587,19 @@ function createCalendarEntry(schedule) {
 
   content.append(time, person)
   button.appendChild(content)
-  button.addEventListener('click', () => openScheduleDetails(schedule.id))
-  return button
+
+  enableScheduleEntryDragging(button, schedule)
+
+  button.addEventListener('click', event => {
+    if (suppressScheduleClick) {
+      event.preventDefault()
+      return
+    }
+
+    openScheduleDetails(schedule.id)
+  })
+
+return button
 }
 
 function renderCalendar(rows) {
@@ -396,9 +639,10 @@ function renderCalendar(rows) {
     number.className = 'schedule-day-number'
     number.textContent = String(parseDateKey(cursor).getUTCDate())
 
-    const daySchedules = (schedulesByDate.get(cursor) || [])
-      .slice()
-      .sort((a, b) => a.shift_sequence - b.shift_sequence)
+    const daySchedules = orderedDaySchedules(
+      cursor,
+      schedulesByDate.get(cursor) || []
+    )
 
     const count = document.createElement('span')
     count.className = 'schedule-day-count'
@@ -409,6 +653,8 @@ function renderCalendar(rows) {
 
     const list = document.createElement('div')
     list.className = 'schedule-entry-list'
+
+    enableScheduleListDragging(list, cursor)
 
     if (daySchedules.length) {
       daySchedules.forEach(schedule => list.appendChild(createCalendarEntry(schedule)))
@@ -685,9 +931,18 @@ async function initialize() {
 
   // Determine whether the current user can manage schedules early so callers
   // can allow non-agent admins who have management permission to access.
-  canManageSchedules = access.is_admin === true && hasWorkforcePermission(access, 'manage_schedules')
-  // Default permission pairing: managers may view team schedules by default
+  canManageSchedules =
+    access.is_admin === true &&
+    hasWorkforcePermission(
+      access,
+      'manage_schedules'
+    )
+
   canViewTeam = canManageSchedules
+
+  if (elements.dragHint) {
+    elements.dragHint.hidden = !canManageSchedules
+  }
 
   if (!access.allowed || (access.is_agent !== true && !canManageSchedules)) {
     window.alert('Schedule access is available only to active agent profiles.')
