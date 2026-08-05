@@ -778,6 +778,38 @@ function shiftIndicator(schedule) {
   }
 
   /*
+   * When two periods have the same overlap, use the
+   * period containing the scheduled start time.
+   */
+  const tiedScores = scores.filter(
+    item => item.minutes === scores[0].minutes
+  )
+
+  if (tiedScores.length > 1) {
+    if (start >= 360 && start < 840) {
+      return {
+        key: 'opening',
+        label: 'Opening'
+      }
+    }
+
+    if (start >= 840 && start < 1320) {
+      return {
+        key: 'mid',
+        label: 'Mid'
+      }
+    }
+
+    return {
+      key: 'closer',
+      label: 'Closer'
+    }
+  }
+
+  return scores[0]
+}
+
+  /*
    * Do not assign a potentially misleading indicator
    * when two windows have exactly the same overlap.
    */
