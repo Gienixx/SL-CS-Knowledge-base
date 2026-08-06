@@ -663,7 +663,7 @@ function createAttendanceCard(record) {
   const edited = record.is_corrected === true ||
     (record.original_clock_in && record.original_clock_in !== record.clock_in) ||
     (record.original_clock_out && record.original_clock_out !== record.clock_out)
-  if (edited && record.original_clock_in && record.original_clock_out) {
+  if (edited) {
     addMeta(middle, formatDateTime(record.original_clock_in, record.employee_timezone), 'Original Clock-in')
     addMeta(middle, formatDateTime(record.original_clock_out, record.employee_timezone), 'Original Clock-out')
     addMeta(middle, formatDateTime(record.clock_in, record.employee_timezone), 'New Clock-in')

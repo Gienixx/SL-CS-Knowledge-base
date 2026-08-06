@@ -28,7 +28,7 @@ test('Team Attendance uses conditional original and new timestamp labels', async
   const script = await read('scripts/team-attendance.js')
   const page = await read('team-attendance.html')
 
-  assert.match(script, /if \(edited && record\.original_clock_in && record\.original_clock_out\)/)
+  assert.match(script, /if \(edited\)/)
   assert.match(script, /'Original Clock-in'/)
   assert.match(script, /'Original Clock-out'/)
   assert.match(script, /'New Clock-in'/)
