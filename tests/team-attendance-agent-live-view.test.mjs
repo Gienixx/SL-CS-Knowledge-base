@@ -30,7 +30,7 @@ test('regular agents receive only the live attendance card surface', async () =>
   const script = await read('scripts/team-attendance.js')
 
   assert.match(script, /if \(isAdminView\) badges\.appendChild\(actionMenu\)/)
-  assert.match(script, /if \(isAdminView\) \{[\s\S]*?card\.append\(stats, prepaid\)/)
+  assert.match(script, /if \(isAdminView\) \{[\s\S]*?card\.append\(summary\)/)
   assert.match(script, /access\?\.is_admin === true[\s\S]*?workforce_list_team_attendance_prepaid/)
   assert.match(script, /Promise\.resolve\(\{ data: \[\], error: null \}\)/)
   assert.match(script, /including early clock-ins assigned to today's schedule/)

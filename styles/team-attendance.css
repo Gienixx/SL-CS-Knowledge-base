@@ -67,6 +67,12 @@ body:has(.team-attendance-page){background:#eef1f5}
 .team-attendance-meta strong{font-size:13.5px;color:var(--ta-ink);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .team-attendance-record-mid .team-attendance-meta:nth-child(n+2) strong{font-family:'IBM Plex Mono','Courier New',monospace;font-weight:600;letter-spacing:-.01em}
 .team-attendance-meta span{color:var(--ta-muted);font-size:11.5px}
+.team-attendance-time-change{display:grid;gap:4px;min-width:0}
+.team-attendance-time-label{color:var(--ta-muted);font-size:10px;font-weight:800;letter-spacing:.055em;text-transform:uppercase}
+.team-attendance-time-values{display:flex;align-items:center;gap:5px;min-width:0;font-family:'IBM Plex Mono','Courier New',monospace;font-size:12px;white-space:nowrap}
+.team-attendance-time-values del{overflow:visible;color:#9aa4b2;text-decoration:line-through;text-overflow:clip}
+.team-attendance-time-values strong{overflow:visible;color:var(--ta-amber);text-overflow:clip}
+.team-attendance-time-arrow{color:#c97a28;font-family:Arial,sans-serif;font-weight:800}
 .team-attendance-timeline{margin-bottom:14px}
 .team-attendance-track{position:relative;height:10px;border-radius:99px;background:#f1f3f6;overflow:hidden}
 .team-attendance-shift-segment,.team-attendance-work-segment{position:absolute;top:0;height:100%;border-radius:99px}
@@ -84,6 +90,7 @@ body:has(.team-attendance-page){background:#eef1f5}
   padding:0;
   border:0;
 }
+.team-attendance-summary{display:flex;align-items:center;justify-content:space-between;gap:18px;margin-top:2px}
 
 .team-attendance-stat{
   display:grid;
@@ -109,9 +116,13 @@ body:has(.team-attendance-page){background:#eef1f5}
   text-transform:uppercase;
   letter-spacing:.04em;
 }
-.team-attendance-prepaid{margin-top:14px;padding:12px 13px;border:1px solid #dfe5ed;border-radius:10px;background:#f8fafc}
-.team-attendance-prepaid-title{margin-bottom:9px;color:var(--ta-muted);font-size:10px;font-weight:800;letter-spacing:.055em;text-transform:uppercase}
-.team-attendance-prepaid-values{display:grid;grid-template-columns:repeat(7,minmax(0,1fr));gap:12px}
+.team-attendance-prepaid{position:relative;min-width:160px;padding:0;border:0;background:transparent}
+.team-attendance-prepaid-title{display:flex;align-items:center;gap:6px;min-height:30px;padding:5px 8px;border:1px solid #dfe5ed;border-radius:8px;background:#f8fafc;color:var(--ta-muted);font-size:10px;font-weight:800;letter-spacing:.055em;text-transform:uppercase;cursor:pointer;list-style:none}
+.team-attendance-prepaid-title::-webkit-details-marker{display:none}
+.team-attendance-prepaid-caret{width:0;height:0;border-top:4px solid transparent;border-bottom:4px solid transparent;border-left:5px solid var(--ta-muted)}
+.team-attendance-prepaid[open] .team-attendance-prepaid-caret{transform:rotate(90deg)}
+.team-attendance-prepaid-status{margin-left:auto;padding:3px 6px;border-radius:999px;background:#eef1f5;color:var(--ta-muted);font-size:9px;letter-spacing:0;text-transform:none;white-space:nowrap}
+.team-attendance-prepaid-values{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px;margin-top:7px;padding:10px;border:1px solid #dfe5ed;border-radius:10px;background:#f8fafc}
 .team-attendance-prepaid-value{display:grid;align-content:start;gap:2px;min-width:0}
 .team-attendance-prepaid-value strong{overflow:hidden;color:var(--ta-ink);font-size:12px;font-weight:700;line-height:1.35;text-overflow:ellipsis;white-space:nowrap}
 .team-attendance-prepaid-value span{color:var(--ta-muted);font-size:9px;font-weight:650;letter-spacing:.035em;line-height:1.3;text-transform:uppercase}
@@ -119,6 +130,7 @@ body:has(.team-attendance-page){background:#eef1f5}
 .team-attendance-prepaid-value.has-balance strong,.team-attendance-prepaid-value.status-open strong,.team-attendance-prepaid-value.status-partially_settled strong{color:var(--ta-amber)}
 .team-attendance-prepaid-value.status-void strong{color:var(--ta-red)}
 .team-attendance-record-footer{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-top:9px}
+.team-attendance-record-footer{padding-top:9px;border-top:1px solid var(--ta-line)}
 .team-attendance-correction{color:var(--ta-muted);font-size:.68rem;line-height:1.35}
 .team-attendance-record .wf-row-actions{gap:6px;flex-wrap:nowrap}
 .team-attendance-record .wf-btn.compact{min-height:30px;padding:0 10px;font-size:.7rem}
@@ -188,6 +200,9 @@ body:has(.team-attendance-page){background:#eef1f5}
   .team-attendance-flag-filters{align-items:stretch;flex-direction:column}
   .team-attendance-record-mid{grid-template-columns:1fr 1fr}
   .team-attendance-record-mid .team-attendance-meta:first-child{grid-column:1/-1}
+  .team-attendance-summary{align-items:stretch;flex-direction:column;gap:10px}
+  .team-attendance-stats{grid-template-columns:repeat(2,minmax(90px,1fr));gap:12px 18px}
+  .team-attendance-prepaid{width:100%}
   .team-attendance-stats{
     grid-template-columns:repeat(2,minmax(90px,1fr));
     gap:12px 18px;

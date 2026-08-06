@@ -25,17 +25,27 @@ test('Team Attendance returns immutable original timestamps for edited-card hist
 })
 
 test('Team Attendance uses conditional original and new timestamp labels', async () => {
-  const script = await read('scripts/team-attendance.js')
-  const page = await read('team-attendance.html')
+  const [script, page, styles] = await Promise.all([
+    read('scripts/team-attendance.js'),
+    read('team-attendance.html'),
+    read('styles/team-attendance.css')
+  ])
 
   assert.match(script, /if \(edited\)/)
-  assert.match(script, /'Original Clock-in'/)
-  assert.match(script, /'Original Clock-out'/)
-  assert.match(script, /'New Clock-in'/)
-  assert.match(script, /'New Clock-out'/)
   assert.match(script, /'Clock-in'/)
   assert.match(script, /'Clock-out'/)
+  assert.match(script, /'New Clock-in'/)
+  assert.match(script, /'New Clock-out'/)
+  assert.match(script, /team-attendance-time-change/)
+  assert.match(script, /createElement\('del'\)/)
+  assert.match(script, /team-attendance-time-arrow/)
+  assert.match(styles, /\.team-attendance-time-values del\{[^}]*text-decoration/)
+  assert.match(styles, /\.team-attendance-time-values strong\{[^}]*color:var\(--ta-amber\)/)
   assert.match(script, /'Total billed hours'/)
+  assert.match(script, /team-attendance-prepaid-caret/)
+  assert.match(script, /aria-expanded/)
+  assert.match(script, /prepaid\.addEventListener\('toggle'/)
+  assert.match(styles, /\.team-attendance-prepaid-values\{display:grid;grid-template-columns:repeat\(3/)
   assert.match(page, /Total billed hours/)
 })
 

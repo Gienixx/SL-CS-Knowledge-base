@@ -664,10 +664,30 @@ function createAttendanceCard(record) {
     (record.original_clock_in && record.original_clock_in !== record.clock_in) ||
     (record.original_clock_out && record.original_clock_out !== record.clock_out)
   if (edited) {
-    addMeta(middle, formatDateTime(record.original_clock_in, record.employee_timezone), 'Original Clock-in')
-    addMeta(middle, formatDateTime(record.original_clock_out, record.employee_timezone), 'Original Clock-out')
-    addMeta(middle, formatDateTime(record.clock_in, record.employee_timezone), 'New Clock-in')
-    addMeta(middle, record.is_open ? 'In progress' : formatDateTime(record.clock_out, record.employee_timezone), 'New Clock-out')
+    const addTimeChange = (parent, original, current, label, currentLabel) => {
+      const item = document.createElement('div')
+      item.className = 'team-attendance-time-change'
+      const fieldLabel = document.createElement('span')
+      fieldLabel.className = 'team-attendance-time-label'
+      fieldLabel.textContent = label
+      const values = document.createElement('div')
+      values.className = 'team-attendance-time-values'
+      const oldValue = document.createElement('del')
+      oldValue.textContent = formatDateTime(original, record.employee_timezone)
+      oldValue.setAttribute('aria-label', `Original ${label}`)
+      const arrow = document.createElement('span')
+      arrow.className = 'team-attendance-time-arrow'
+      arrow.textContent = '→'
+      arrow.setAttribute('aria-hidden', 'true')
+      const newValue = document.createElement('strong')
+      newValue.textContent = current
+      newValue.setAttribute('aria-label', currentLabel)
+      values.append(oldValue, arrow, newValue)
+      item.append(fieldLabel, values)
+      parent.appendChild(item)
+    }
+    addTimeChange(middle, record.original_clock_in, formatDateTime(record.clock_in, record.employee_timezone), 'Clock-in', 'New Clock-in')
+    addTimeChange(middle, record.original_clock_out, record.is_open ? 'In progress' : formatDateTime(record.clock_out, record.employee_timezone), 'Clock-out', 'New Clock-out')
   } else {
     addMeta(middle, formatDateTime(record.clock_in, record.employee_timezone), 'Clock-in')
     addMeta(middle, record.is_open ? 'In progress' : formatDateTime(record.clock_out, record.employee_timezone), 'Clock-out')
@@ -680,12 +700,27 @@ function createAttendanceCard(record) {
   addStat(stats, record.minutes_late, 'Late')
   addStat(stats, record.total_worked_minutes, 'Total billed hours')
 
-  const prepaid = document.createElement('section')
+  const summary = document.createElement('div')
+  summary.className = 'team-attendance-summary'
+  summary.appendChild(stats)
+  const prepaid = document.createElement('details')
   prepaid.className = 'team-attendance-prepaid'
-  prepaid.setAttribute('aria-label', 'Prepaid reconciliation')
-  const prepaidTitle = document.createElement('div')
+  const prepaidTitle = document.createElement('summary')
   prepaidTitle.className = 'team-attendance-prepaid-title'
-  prepaidTitle.textContent = 'Prepaid reconciliation'
+  prepaidTitle.setAttribute('aria-label', 'Prepaid reconciliation')
+  prepaidTitle.setAttribute('aria-expanded', 'false')
+  const prepaidCaret = document.createElement('span')
+  prepaidCaret.className = 'team-attendance-prepaid-caret'
+  prepaidCaret.setAttribute('aria-hidden', 'true')
+  const prepaidLabel = document.createElement('span')
+  prepaidLabel.textContent = 'Prepaid'
+  const prepaidBadge = document.createElement('span')
+  prepaidBadge.className = 'team-attendance-prepaid-status'
+  prepaidBadge.textContent = prepaidStatusLabel(record.prepaid_status, record.applied_prepaid_minutes)
+  prepaidTitle.append(prepaidCaret, prepaidLabel, prepaidBadge)
+  prepaid.addEventListener('toggle', () => {
+    prepaidTitle.setAttribute('aria-expanded', String(prepaid.open))
+  })
   const prepaidValues = document.createElement('div')
   prepaidValues.className = 'team-attendance-prepaid-values'
   addPrepaidValue(
@@ -719,6 +754,7 @@ function createAttendanceCard(record) {
     record.prepaid_status ? `status-${record.prepaid_status}` : ''
   )
   prepaid.append(prepaidTitle, prepaidValues)
+  summary.appendChild(prepaid)
 
   const footer = document.createElement('div')
   footer.className = 'team-attendance-record-footer'
@@ -731,7 +767,7 @@ function createAttendanceCard(record) {
   footer.appendChild(correction)
   card.append(top, middle, createTimeline(record))
   if (isAdminView) {
-    card.append(stats, prepaid)
+    card.append(summary)
     if (record.is_corrected || record.correction_reason || record.admin_notes) {
       card.appendChild(footer)
     }
