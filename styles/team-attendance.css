@@ -183,6 +183,31 @@ body:has(.team-attendance-page){background:#eef1f5}
 #teamAttendanceCorrectionModal .wf-dialog-actions .wf-btn.secondary:hover:not(:disabled){background:var(--site-surface-soft)}
 #teamAttendanceCorrectionModal .wf-dialog-actions #teamAttendanceCorrectionSubmit:hover:not(:disabled){background:var(--site-blue)}
 
+html[data-site-theme="dark"] body:has(.team-attendance-page){background:var(--site-bg)}
+html[data-site-theme="dark"] .team-attendance-page{--ta-ink:#f2f5fb;--ta-muted:#9eafc5;--ta-line:rgba(147,178,216,.16);--ta-paper:var(--site-bg);--ta-blue:#7f9cff;--ta-red:#ef7772;--ta-amber:#e2a14c;--ta-green:#78c88a}
+html[data-site-theme="dark"] .team-attendance-page .wf-card{background:var(--site-surface-solid);border-color:rgba(147,178,216,.15)}
+html[data-site-theme="dark"] .team-attendance-record{background:#10243a;border-color:rgba(147,178,216,.2);box-shadow:0 8px 24px rgba(0,0,0,.12)}
+html[data-site-theme="dark"] .team-attendance-record:hover{background:#132a43}
+html[data-site-theme="dark"] .team-attendance-avatar{background:rgba(127,156,255,.14);color:var(--ta-blue)}
+html[data-site-theme="dark"] .team-attendance-record .wf-badge.in-progress{background:rgba(127,156,255,.14);border:1px solid rgba(127,156,255,.24);color:#aebeff}
+html[data-site-theme="dark"] .team-attendance-record-actions summary:hover,html[data-site-theme="dark"] .team-attendance-record-actions[open] summary{background:rgba(170,181,201,.12);color:#d6dfec}
+html[data-site-theme="dark"] .team-attendance-record-actions>.wf-row-actions{background:#10243a;border-color:rgba(147,178,216,.22)}
+html[data-site-theme="dark"] .team-attendance-record-mid .team-attendance-meta:nth-child(n+2) strong,html[data-site-theme="dark"] .team-attendance-time-values{font-family:'Poppins',Arial,sans-serif}
+html[data-site-theme="dark"] .team-attendance-time-values del{color:#8798ad}
+html[data-site-theme="dark"] .team-attendance-time-values strong{color:#e2a14c}
+html[data-site-theme="dark"] .team-attendance-time-arrow{color:#a9b6c8}
+html[data-site-theme="dark"] .team-attendance-track{background:#243a51}
+html[data-site-theme="dark"] .team-attendance-shift-segment{background:#45617d}
+html[data-site-theme="dark"] .team-attendance-timeline-labels{color:#91a4ba}
+html[data-site-theme="dark"] .team-attendance-summary{gap:24px;margin-top:5px}
+html[data-site-theme="dark"] .team-attendance-prepaid-title{border-color:rgba(147,178,216,.22);background:#1a3149;color:#b6c3d5}
+html[data-site-theme="dark"] .team-attendance-prepaid-title:hover{background:#213b56}
+html[data-site-theme="dark"] .team-attendance-prepaid-status{background:rgba(170,181,201,.13);color:#c0ccdb}
+html[data-site-theme="dark"] .team-attendance-prepaid-values{border-color:rgba(147,178,216,.18);background:#0d1f33}
+html[data-site-theme="dark"] .team-attendance-prepaid-value strong{color:#edf2f8}
+html[data-site-theme="dark"] .team-attendance-prepaid-value span{color:#91a4ba}
+html[data-site-theme="dark"] .team-attendance-record-footer{border-top-color:rgba(147,178,216,.15)}
+
 @media(max-width:980px){
   .team-attendance-filter-grid{grid-template-columns:repeat(3,minmax(0,1fr))}
   .team-attendance-stats{

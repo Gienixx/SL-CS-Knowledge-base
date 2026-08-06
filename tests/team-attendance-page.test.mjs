@@ -238,6 +238,17 @@ test('Team Attendance shows a compact filtered total billed hours summary', asyn
   assert.match(styles, /\.team-attendance-page \.wf-summary:nth-child\(5\)>span\{[^}]*max-width:70px[^}]*white-space:normal/)
 })
 
+test('Team Attendance preserves a distinct dark-mode card hierarchy', async () => {
+  const styles = await read('styles/team-attendance.css')
+
+  assert.match(styles, /html\[data-site-theme="dark"\] body:has\(\.team-attendance-page\)\{background:var\(--site-bg\)/)
+  assert.match(styles, /html\[data-site-theme="dark"\] \.team-attendance-record\{[^}]*background:#10243a/)
+  assert.match(styles, /html\[data-site-theme="dark"\] \.team-attendance-prepaid-title\{[^}]*background:#1a3149/)
+  assert.doesNotMatch(styles, /html\[data-site-theme="dark"\] \.team-attendance-prepaid-title\{[^}]*background:#fff/)
+  assert.match(styles, /html\[data-site-theme="dark"\] \.team-attendance-time-values\{font-family:'Poppins',Arial,sans-serif/)
+  assert.match(styles, /html\[data-site-theme="dark"\] \.team-attendance-track\{background:#243a51/)
+})
+
 test('Team Attendance does not flag fully classified long overtime records', async () => {
   const page = await read('team-attendance.html')
   const script = await read('scripts/team-attendance.js')
