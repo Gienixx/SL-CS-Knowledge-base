@@ -1250,12 +1250,7 @@ async function initialize() {
 
   // Determine whether the current user can manage schedules early so callers
   // can allow non-agent admins who have management permission to access.
-  canManageSchedules =
-    access.is_admin === true &&
-    hasWorkforcePermission(
-      access,
-      'manage_schedules'
-    )
+  canManageSchedules = access.is_admin === true && hasWorkforcePermission(access, 'manage_schedules')
 
   canViewTeam = canManageSchedules
 

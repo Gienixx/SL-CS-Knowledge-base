@@ -38,8 +38,10 @@ test('attendance redesign preserves functional hooks and accessible theme contro
   }
 
   assert.match(html, /class="attendance-console"/)
-  assert.match(html, /id="attendanceThemeToggle"[\s\S]*aria-label="Use light attendance theme"/)
-  assert.match(styles, /#attendanceThemeToggle:checked ~ \.attendance-app/)
+  // Theme selection is owned by Home's global site-theme control; Attendance
+  // must not introduce a duplicate page-specific toggle.
+  assert.doesNotMatch(html, /id="attendanceThemeToggle"/)
+  assert.doesNotMatch(styles, /#attendanceThemeToggle:checked ~ \.attendance-app/)
   assert.match(styles, /@media \(max-width: 680px\)/)
   assert.match(styles, /@media \(prefers-reduced-motion: reduce\)/)
 })

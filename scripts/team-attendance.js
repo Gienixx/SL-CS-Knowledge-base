@@ -660,15 +660,25 @@ function createAttendanceCard(record) {
   const middle = document.createElement('div')
   middle.className = 'team-attendance-record-mid'
   addMeta(middle, formatDate(record.work_date), formatShift(record))
-  addMeta(middle, formatDateTime(record.clock_in, record.employee_timezone), 'Clock-in')
-  addMeta(middle, record.is_open ? 'In progress' : formatDateTime(record.clock_out, record.employee_timezone), 'Clock-out')
+  const edited = record.is_corrected === true ||
+    (record.original_clock_in && record.original_clock_in !== record.clock_in) ||
+    (record.original_clock_out && record.original_clock_out !== record.clock_out)
+  if (edited && record.original_clock_in && record.original_clock_out) {
+    addMeta(middle, formatDateTime(record.original_clock_in, record.employee_timezone), 'Original Clock-in')
+    addMeta(middle, formatDateTime(record.original_clock_out, record.employee_timezone), 'Original Clock-out')
+    addMeta(middle, formatDateTime(record.clock_in, record.employee_timezone), 'New Clock-in')
+    addMeta(middle, record.is_open ? 'In progress' : formatDateTime(record.clock_out, record.employee_timezone), 'New Clock-out')
+  } else {
+    addMeta(middle, formatDateTime(record.clock_in, record.employee_timezone), 'Clock-in')
+    addMeta(middle, record.is_open ? 'In progress' : formatDateTime(record.clock_out, record.employee_timezone), 'Clock-out')
+  }
 
   const stats = document.createElement('div')
   stats.className = 'team-attendance-stats'
   addStat(stats, record.regular_minutes, 'Regular')
   addStat(stats, record.total_overtime_minutes, 'Overtime')
   addStat(stats, record.minutes_late, 'Late')
-  addStat(stats, record.total_worked_minutes, 'Total hours')
+  addStat(stats, record.total_worked_minutes, 'Total billed hours')
 
   const prepaid = document.createElement('section')
   prepaid.className = 'team-attendance-prepaid'

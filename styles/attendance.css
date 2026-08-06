@@ -63,32 +63,6 @@
   mask-image: linear-gradient(to bottom, #000, rgba(0, 0, 0, .38) 72%, transparent);
 }
 
-#attendanceThemeToggle:checked ~ .attendance-app {
-  --att-bg: #fbf8f1;
-  --att-surface: rgba(255, 255, 255, .88);
-  --att-surface-solid: #ffffff;
-  --att-surface-soft: rgba(246, 242, 252, .76);
-  --att-border: rgba(36, 27, 93, .14);
-  --att-border-strong: rgba(76, 84, 208, .34);
-  --att-text: #2b2459;
-  --att-heading: #241b5d;
-  --att-muted: #6f678f;
-  --att-blue: #4b5bdc;
-  --att-blue-strong: #304de0;
-  --att-gold: #f5aa18;
-  --att-gold-soft: #ffc84a;
-  --att-green: #218943;
-  --att-red: #d84046;
-  --att-shadow: 0 22px 54px rgba(36, 27, 93, .1);
-  --att-grid: rgba(36, 27, 93, .026);
-  --att-grid-strong: rgba(36, 27, 93, .048);
-
-  background:
-    radial-gradient(circle at 23% 8%, rgba(255, 194, 26, .16), transparent 28rem),
-    radial-gradient(circle at 86% 7%, rgba(72, 75, 196, .08), transparent 30rem),
-    linear-gradient(180deg, #fffdfa, var(--att-bg));
-}
-
 .attendance-page {
   position: relative;
   z-index: 1;
@@ -188,8 +162,7 @@
   user-select: none;
 }
 
-.attendance-theme-toggle:focus-within,
-#attendanceThemeToggle:focus-visible ~ .attendance-app .attendance-theme-toggle {
+.attendance-theme-toggle:focus-within {
   outline: 2px solid var(--att-blue);
   outline-offset: 2px;
 }

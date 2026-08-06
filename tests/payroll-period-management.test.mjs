@@ -170,7 +170,7 @@ test('missing attendance links open the exact employee and work date only for at
     /state\.canViewAttendance = hasWorkforcePermission\(\s*access,\s*'view_team_attendance'/
   )
   assert.match(periodScript, /source: 'payroll-missing'/)
-  assert.match(attendancePage, /scripts\/team-attendance\.js\?v=12/)
+  assert.match(attendancePage, /scripts\/team-attendance\.js\?v=13/)
   assert.match(attendanceScript, /function payrollAttendanceLinkFilters\(\)/)
   assert.match(
     attendanceScript,

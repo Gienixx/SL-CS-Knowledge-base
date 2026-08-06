@@ -1,17 +1,17 @@
 # SL CS Knowledge Base — Project Phase Update
 
-**Status date:** August 3, 2026
+**Status date:** August 6, 2026
 
 **Repository:** `SL-CS-Knowledge-base`
 
-**Current active work:** Phase 2, Step 14 — Two-Period Parallel Payroll Test
+**Current active work:** Payroll acceptance for Phase 2, Step 14 — Two-Period Parallel Payroll Test
 
 ## Phase overview
 
 | Phase | Scope | Status | Current position |
 | --- | --- | --- | --- |
 | Phase 1 | Workforce, Attendance, and Leave Foundation | Complete and released | All 18 steps passed the production-release gate on July 22, 2026 |
-| Phase 2 | Rates, Payroll, and Payslips | In progress | Steps 1–13 complete; Step 14 in progress; Step 15 not started |
+| Phase 2 | Rates, Payroll, and Payslips | In progress | Steps 1–13 complete; Step 14 blocked pending payroll acceptance; Step 15 not started |
 | Phase 3 | Reporting and Analytics | Complete in its current architecture | Reporting uses Google Sheet as its only active source; operational monitoring and secured exports are implemented |
 
 ## Phase 1 — Workforce, Attendance, and Leave Foundation
@@ -88,7 +88,7 @@ private immutable payslips.
 13. Built My Payslips so employees can access only their own finalized
     payslips.
 
-### Step 14 in progress — Parallel payroll test
+### Step 14 blocked — Parallel payroll test and acceptance
 
 The July 1–15 system payroll is ready for manual comparison:
 
@@ -136,6 +136,11 @@ The following work is still required before Step 14 can be approved:
 - Resolve every variance and capture the payroll owner's signed and dated
   approval.
 
+Core payroll development for the current scope is complete. The remaining
+work is payroll acceptance: documented manual evidence, variance resolution,
+and payroll-owner approval. Missing evidence remains a blocker and is not
+treated as zero.
+
 ### Step 15 not started — Controlled payroll periods
 
 Step 15 will run two linked controlled payroll periods with complete manual
@@ -145,6 +150,24 @@ References:
 
 - [Phase 2 implementation](payroll-phase-2-implementation.md)
 - [Step 14 parallel payroll test](payroll-step-14-parallel-test.md)
+
+## Recent changes — August 4–5, 2026
+
+- Resolved the My Schedule automated test failures. Schedule drafts remain
+  visible to authorized schedule managers through the canonical controller;
+  personal scope uses resolved workforce identities; and team scope remains
+  limited to `manage_schedules` plus RLS-visible profiles.
+- Resolved stale Team Attendance test expectations for the accepted compact
+  card layout, five-record pagination, filtered billed-hours summary, and
+  fully classified overtime handling. The current Team Attendance script and
+  stylesheet references use `v=13`.
+- Removed the unused duplicate Attendance theme toggle and its obsolete light
+  theme CSS; Home remains the primary theme control. Correction visibility
+  continues to use `redactAttendanceCorrectionForViewer` without permission
+  changes.
+- The complete automated quality gate now reports 489 tests passing and 0
+  failing. The build produced 200 production assets; build tests passed 1/1;
+  repository checks passed 11/11.
 
 ## Phase 3 — Reporting and Analytics
 
@@ -179,11 +202,17 @@ Reference: [Reporting system](reporting-system.md)
 
 ## Repository verification
 
-The repository was checked on August 3, 2026:
+The repository was checked on August 6, 2026:
 
-- `main` matched `origin/main` before this status file was added.
-- The working tree was clean before this status file was added.
-- The complete automated repository suite passed: **459 passed, 0 failed**.
+- The complete automated repository suite passed: **489 passed, 0 failed**.
+- The build completed successfully with **200 production assets**.
+- Build tests passed: **1 passed, 0 failed**.
+- Repository checks passed: **11 passed, 0 failed**.
+
+The August 3 result of **459 out of 459 tests** is historical and is retained
+here for comparison only. The newer repository baseline was **489 tests, 479
+passing, and 10 failing** before the targeted corrections; it is no longer
+the current result.
 
 ## Completion checklist
 

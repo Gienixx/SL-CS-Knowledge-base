@@ -7,6 +7,37 @@ const migrationPath = 'supabase/migrations-legacy/2026070902_team_attendance_pag
 const manualEntryMigrationPath = 'supabase/migrations/20260714070649_manual_attendance_entry.sql'
 const approvalLockingMigrationPath = 'supabase/migrations/20260717172240_attendance_approval_locking.sql'
 const writeBoundaryMigrationPath = 'supabase/migrations/20260721153218_harden_attendance_write_boundaries.sql'
+const timestampHistoryMigrationPath = 'supabase/migrations/20260806120000_team_attendance_original_timestamps.sql'
+
+test('Team Attendance returns immutable original timestamps for edited-card history', async () => {
+  const [migration, baseline] = await Promise.all([
+    read(timestampHistoryMigrationPath),
+    read('supabase/migrations/20260711083340_remote_schema_baseline.sql')
+  ])
+  const script = await read('scripts/team-attendance.js')
+
+  assert.match(migration, /original_clock_in timestamptz,\s*original_clock_out timestamptz/)
+  assert.match(migration, /attendance_row\.original_clock_in/)
+  assert.match(migration, /attendance_row\.original_clock_out/)
+  assert.match(script, /record\.original_clock_in/)
+  assert.match(script, /record\.original_clock_out/)
+  assert.match(baseline, /original_clock_in is immutable after capture/)
+})
+
+test('Team Attendance uses conditional original and new timestamp labels', async () => {
+  const script = await read('scripts/team-attendance.js')
+  const page = await read('team-attendance.html')
+
+  assert.match(script, /if \(edited && record\.original_clock_in && record\.original_clock_out\)/)
+  assert.match(script, /'Original Clock-in'/)
+  assert.match(script, /'Original Clock-out'/)
+  assert.match(script, /'New Clock-in'/)
+  assert.match(script, /'New Clock-out'/)
+  assert.match(script, /'Clock-in'/)
+  assert.match(script, /'Clock-out'/)
+  assert.match(script, /'Total billed hours'/)
+  assert.match(page, /Total billed hours/)
+})
 
 test('Step 10 page contains every required attendance column and filter', async () => {
   const page = await read('team-attendance.html')
@@ -173,7 +204,7 @@ test('Team Attendance uses the compact card design and paginates five records at
   assert.match(styles, /\.team-attendance-record-mid \.team-attendance-meta:nth-child\(n\+2\) strong\{font-family:'IBM Plex Mono','Courier New',monospace/)
   assert.match(styles, /#teamAttendanceCorrectionModal \.team-attendance-correction-dialog\{[^}]*width:min\(100%,620px\)/)
   assert.match(styles, /#teamAttendanceCorrectionModal \.wf-dialog-header h2\{[^}]*font-family:'Poppins'/)
-  assert.match(page, /styles\/team-attendance\.css\?v=11/)
+  assert.match(page, /styles\/team-attendance\.css\?v=13/)
   assert.match(styles, /#teamAttendanceCorrectionModal \.team-attendance-correction-dialog\{[^}]*background:var\(--site-surface-solid\)/)
   assert.match(styles, /#teamAttendanceCorrectionModal \.wf-control\{[^}]*background:var\(--site-surface-solid\)[^}]*color:var\(--site-text\)/)
   assert.match(styles, /#teamAttendanceCorrectionModal \.wf-dialog-actions #teamAttendanceCorrectionSubmit\{[^}]*background:var\(--site-blue-strong\)/)
@@ -186,7 +217,7 @@ test('Team Attendance shows a compact filtered total billed hours summary', asyn
 
   assert.match(page, /Total billed hours/)
   assert.match(page, /id="teamAttendanceBilledHours"/)
-  assert.match(page, /styles\/team-attendance\.css\?v=11/)
+  assert.match(page, /styles\/team-attendance\.css\?v=13/)
   assert.match(script, /billedHours: document\.getElementById\('teamAttendanceBilledHours'\)/)
   assert.match(script, /row\.total_worked_minutes/)
   assert.match(script, /elements\.billedHours\.textContent = formatMinutes/)
@@ -201,7 +232,7 @@ test('Team Attendance does not flag fully classified long overtime records', asy
   const page = await read('team-attendance.html')
   const script = await read('scripts/team-attendance.js')
 
-  assert.match(page, /scripts\/team-attendance\.js\?v=12/)
+  assert.match(page, /scripts\/team-attendance\.js\?v=13/)
   assert.match(script, /const hasUnclassifiedWorkedMinutes = workedMinutes > regularMinutes \+ overtimeMinutes/)
   assert.match(script, /record\.schedule_id && hasUnclassifiedWorkedMinutes/)
   assert.match(script, /if \(overtimeMinutes > 0\) return \{ label: 'Overtime'/)
