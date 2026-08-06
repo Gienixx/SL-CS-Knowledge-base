@@ -275,7 +275,7 @@
 .attendance-clock-content {
   position: relative;
   z-index: 2;
-  width: 78%;
+  width: 90%;
   text-align: center;
 }
 
@@ -291,18 +291,33 @@
 }
 
 .attendance-live-clock {
-  display: block;
+  display: flex;
+  align-items: baseline;
+  justify-content: center;
+  gap: 0.28em;
+  width: 100%;
   margin: 9px 0 3px;
   color: var(--att-heading);
   font-family: "Cascadia Code", "SFMono-Regular", Consolas, monospace;
-  font-size: clamp(2rem, 3.5vw, 2.9rem);
+  font-size: clamp(1.8rem, 2.7vw, 2.35rem);
   font-weight: 500;
-  letter-spacing: -.06em;
+  font-variant-numeric: tabular-nums;
+  letter-spacing: -.05em;
   line-height: 1;
   text-shadow: 0 0 25px color-mix(in srgb, var(--att-gold) 18%, transparent);
   white-space: nowrap;
 }
 
+.attendance-clock-value {
+  min-width: 0;
+}
+
+.attendance-clock-period {
+  flex: none;
+  font-size: .55em;
+  font-weight: 600;
+  letter-spacing: .04em;
+}
 .attendance-timezone {
   margin: 7px 0 0;
   color: var(--att-blue);
