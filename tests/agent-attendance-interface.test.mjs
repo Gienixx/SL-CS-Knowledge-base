@@ -102,7 +102,7 @@ test('attendance automatically refreshes when the agent work date changes', asyn
     read('scripts/attendance.js')
   ])
 
-  assert.match(html, /scripts\/attendance\.js\?v=11/)
+  assert.match(html, /scripts\/attendance\.js\?v=12/)
   assert.match(script, /const nextLocalDate = localDateKey\(now\)/)
   assert.match(script, /nextLocalDate !== activeLocalDate/)
   assert.match(script, /localDateRefreshPending = true/)
