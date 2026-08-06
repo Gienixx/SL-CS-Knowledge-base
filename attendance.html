@@ -7,7 +7,7 @@
   <title>Attendance | SocialLoop CS Base</title>
   <link rel="stylesheet" href="./styles/button-theme.css?v=1">
   <link rel="stylesheet" href="./styles/workforce-admin.css?v=2">
-  <link rel="stylesheet" href="./styles/attendance.css?v=4">
+  <link rel="stylesheet" href="./styles/attendance.css?v=5">
   <link rel="stylesheet" href="./styles/site-theme.css?v=1">
   <link rel="stylesheet" href="./styles/attendance-theme-fix.css?v=3">
   <script src="./scripts/site-theme.js?v=1"></script>
@@ -65,7 +65,10 @@
             <span class="attendance-clock-ticks" aria-hidden="true"></span>
             <div class="attendance-clock-content">
               <p class="attendance-eyebrow">Current local time</p>
-              <time id="attendanceLiveClock" class="attendance-live-clock">—</time>
+              <time id="attendanceLiveClock" class="attendance-live-clock">
+              <span id="attendanceLiveClockValue" class="attendance-clock-value">--:--:--</span>
+              <span id="attendanceLiveClockPeriod" class="attendance-clock-period">--</span>
+              </time>
               <p id="attendanceTimeZone" class="attendance-timezone">America/New_York</p>
               <span class="attendance-clock-divider" aria-hidden="true"></span>
               <p class="attendance-clock-caption"><span class="attendance-live-dot"></span>Live attendance</p>
@@ -241,6 +244,6 @@
     </main>
   </div>
 
-  <script type="module" src="./scripts/attendance.js?v=11"></script>
+  <script type="module" src="./scripts/attendance.js?v=12"></script>
 </body>
 </html>

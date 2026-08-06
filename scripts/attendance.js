@@ -29,6 +29,8 @@ const CORRECTION_REASON_LABELS = Object.freeze({
 
 const elements = {
   liveClock: document.getElementById('attendanceLiveClock'),
+  liveClockValue: document.getElementById('attendanceLiveClockValue'),
+  liveClockPeriod: document.getElementById('attendanceLiveClockPeriod'),
   timeZone: document.getElementById('attendanceTimeZone'),
   todayTitle: document.getElementById('attendanceTodayTitle'),
   todayBadge: document.getElementById('attendanceTodayBadge'),
@@ -528,12 +530,22 @@ function updateLiveClock() {
     elements.historyPeriod.value = defaultHistoryPeriod(nextLocalDate)
   }
 
-  elements.liveClock.textContent = new Intl.DateTimeFormat('en-US', {
+  const clockParts = new Intl.DateTimeFormat('en-US', {
     timeZone: access?.timezone || 'America/New_York',
     hour: 'numeric',
     minute: '2-digit',
-    second: '2-digit'
-  }).format(now)
+    second: '2-digit',
+    hour12: true
+  }).formatToParts(now)
+
+  const clockPart = type =>
+    clockParts.find(part => part.type === type)?.value || ''
+
+  elements.liveClockValue.textContent =
+    `${clockPart('hour')}:${clockPart('minute')}:${clockPart('second')}`
+
+  elements.liveClockPeriod.textContent = clockPart('dayPeriod')
+  elements.liveClock.dateTime = now.toISOString()
 
   const record = openAttendanceRecord()
   if (record) elements.todayWorked.textContent = formatMinutes(workedMinutes(record, now))
