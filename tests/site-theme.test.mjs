@@ -57,6 +57,7 @@ test('Admin Tool Playground uses the shared authenticated employee identity gate
   assert.match(entry, /window\.location\.replace\('\.\/home\.html'\)/)
   assert.match(access, /access\.employee_id === ADMIN_TOOL_PLAYGROUND_EMPLOYEE_ID/)
   assert.match(home, /canAccessAdminToolPlayground\(access\)/)
+  assert.match(access, /access\.is_admin === true[\s\S]*access\.employee_id === ADMIN_TOOL_PLAYGROUND_EMPLOYEE_ID/)
 })
 
 test('Home places account and appearance settings between identity and logout', async () => {

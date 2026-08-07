@@ -35,6 +35,8 @@ test('Admin Tool Playground is a system-admin-only mockup link', async () => {
   assert.match(page, /id="homeAdminToolPlaygroundBtn"[^>]+href="\.\/admintool\.html"[^>]+hidden/)
   assert.match(script, /adminToolPlaygroundButton\.hidden = !canAccessAdminToolPlayground\(access\)/)
   assert.match(access, /SL-81158E64/)
+  assert.match(access, /access\.is_admin === true/)
+  assert.match(access, /access\.is_system_admin === true/)
   assert.match(mockup, /scripts\/admin-tool-entry\.js\?v=1/)
   assert.match(mockup, /href="\.\/home\.html">← Home<\/a>/)
   assert.doesNotMatch(mockup, /supabase|fetch\(|XMLHttpRequest|\.rpc\(|\.from\(/i)
