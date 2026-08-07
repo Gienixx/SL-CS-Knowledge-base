@@ -36,6 +36,29 @@ test('every website page loads the shared attendance theme', async () => {
   }
 })
 
+test('Admin Tool reuses the shared theme controller and theme variables', async () => {
+  const page = await read('admintool.html')
+  assert.match(page, /styles\/site-theme\.css\?v=5/)
+  assert.match(page, /scripts\/site-theme\.js\?v=1/)
+  assert.match(page, /html\[data-site-theme="light"\]/)
+  assert.match(page, /--input-bg:var\(--input-bg\)|background:var\(--input-bg\)/)
+  assert.doesNotMatch(page, /localStorage|data-theme-choice|SocialLoopTheme\.set/)
+})
+
+test('Admin Tool Playground uses the shared authenticated employee identity gate', async () => {
+  const [entry, access, home] = await Promise.all([
+    read('scripts/admin-tool-entry.js'),
+    read('shared/admin-tool-access.js'),
+    read('scripts/home.js')
+  ])
+
+  assert.match(entry, /loadCurrentWorkforceAccess\(supabase, \{[\s\S]*allowLegacyFallback: false/)
+  assert.match(entry, /canAccessAdminToolPlayground\(access\)/)
+  assert.match(entry, /window\.location\.replace\('\.\/home\.html'\)/)
+  assert.match(access, /access\.employee_id === ADMIN_TOOL_PLAYGROUND_EMPLOYEE_ID/)
+  assert.match(home, /canAccessAdminToolPlayground\(access\)/)
+})
+
 test('Home places account and appearance settings between identity and logout', async () => {
   const page = await read('home.html')
   const identity = page.indexOf('class="who"')

@@ -21,6 +21,23 @@ test('Home separates management links from My work', async () => {
   assert.match(managementGroup, /homeWorkforceManagementBtn/)
   assert.match(managementGroup, /homeArticleManagementBtn/)
   assert.match(managementGroup, /homeAnnouncementManagementBtn/)
+  assert.match(managementGroup, /homeAdminToolPlaygroundBtn/)
+})
+
+test('Admin Tool Playground is a system-admin-only mockup link', async () => {
+  const [page, script, mockup, access] = await Promise.all([
+    read('home.html'),
+    read('scripts/home.js'),
+    read('admintool.html'),
+    read('shared/admin-tool-access.js')
+  ])
+
+  assert.match(page, /id="homeAdminToolPlaygroundBtn"[^>]+href="\.\/admintool\.html"[^>]+hidden/)
+  assert.match(script, /adminToolPlaygroundButton\.hidden = !canAccessAdminToolPlayground\(access\)/)
+  assert.match(access, /SL-81158E64/)
+  assert.match(mockup, /scripts\/admin-tool-entry\.js\?v=1/)
+  assert.match(mockup, /href="\.\/home\.html">← Home<\/a>/)
+  assert.doesNotMatch(mockup, /supabase|fetch\(|XMLHttpRequest|\.rpc\(|\.from\(/i)
 })
 
 test('management divider is hidden when the user has no management links', async () => {

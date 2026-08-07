@@ -1,0 +1,1483 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<link rel="stylesheet" href="./styles/site-theme.css?v=5">
+<script src="./scripts/site-theme.js?v=1"></script>
+<style>html[data-admin-tool-access="checking"] body{visibility:hidden}</style>
+<script>document.documentElement.dataset.adminToolAccess = 'checking'</script>
+<title>User Profile</title>
+<style>
+  :root{
+    --bg:#0b0b16;
+    --panel:#12121f;
+    --panel-alt:#161626;
+    --border:#26263c;
+    --header:#1a1a2e;
+    --purple:#5b4fe0;
+    --purple-light:#8b7ff5;
+    --text:#e6e6f0;
+    --text-dim:#9494ad;
+    --yellow:#f0c419;
+    --orange:#f2994a;
+    --red:#ff5577;
+    --green:#3ddc84;
+    --blue:#5b9df0;
+    --input-bg:#0e0e1c;
+    --map-bg:#e8eaef;
+    --map-text:#888;
+    --button-text:#fff;
+    --button-dark-text:#1a1a1a;
+    --pink:#ff2e63;
+    --pink-border:#7449dd;
+  }
+  html[data-site-theme="light"]{
+    --bg:#f7f7ff;
+    --panel:#f1f0ff;
+    --panel-alt:#e9e8fa;
+    --border:#c9c8e5;
+    --header:#deddf1;
+    --purple:#5b568d;
+    --purple-light:#7a76a8;
+    --text:#171632;
+    --text-dim:#5f5d7b;
+    --yellow:#f0c419;
+    --blue:#4d5e9e;
+    --input-bg:#fbfaff;
+    --map-bg:#e9e9f5;
+    --map-text:#6f6d86;
+    --button-text:#fff;
+    --button-dark-text:#1a1a1a;
+    --pink:#d62e63;
+    --pink-border:#8a78c7;
+  }
+  *{box-sizing:border-box;}
+  body{
+    margin:0;
+    background:var(--bg);
+    color:var(--text);
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+    font-size:13px;
+  }
+  .topbar{
+    display:flex;
+    align-items:center;
+    gap:10px;
+    background:var(--header);
+    padding:10px 14px;
+    border-bottom:1px solid var(--border);
+  }
+  .topbar input{
+    flex:1;
+    background:var(--input-bg);
+    border:1px solid var(--border);
+    color:var(--text-dim);
+    padding:8px 12px;
+    border-radius:6px;
+    font-size:12px;
+  }
+  .btn{
+    border:none;
+    padding:8px 16px;
+    border-radius:6px;
+    font-size:12px;
+    font-weight:600;
+    cursor:pointer;
+    white-space:nowrap;
+  }
+  .btn-purple{ background:var(--purple); color:var(--button-text); }
+  .btn-outline{ background:transparent; border:1px solid var(--purple-light); color:var(--purple-light); }
+  .btn-yellow{ background:var(--yellow); color:var(--button-dark-text); }
+
+  .user-summary{
+    display:grid;
+    grid-template-columns:minmax(400px,500px) minmax(0,1fr);
+    gap:20px;
+    align-items:stretch;
+    margin:12px 16px 0;
+    padding:16px;
+    background:var(--panel);
+    border:1px solid var(--border);
+    border-radius:8px;
+  }
+  .user-summary-placeholder{
+    position:relative;
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    min-height:280px;
+    overflow:hidden;
+    border:1px solid var(--border);
+    border-radius:7px;
+    background:var(--panel-alt);
+    color:var(--text-dim);
+    font-size:11px;
+    text-align:center;
+  }
+  .verification-image{ display:block; width:100%; height:280px; object-fit:contain; }
+  .verification-image-control{
+    position:absolute;
+    top:50%;
+    width:28px;
+    height:36px;
+    transform:translateY(-50%);
+    border:1px solid var(--border);
+    border-radius:5px;
+    background:color-mix(in srgb,var(--panel) 82%,transparent);
+    color:var(--text);
+    cursor:pointer;
+    font-size:20px;
+    line-height:1;
+    z-index:1;
+  }
+  .verification-image-control:hover{ background:var(--panel); }
+  .verification-image-control.previous{ left:8px; }
+  .verification-image-control.next{ right:8px; }
+  .verification-image-indicator{
+    position:absolute;
+    right:10px;
+    bottom:8px;
+    padding:3px 7px;
+    border:1px solid var(--border);
+    border-radius:10px;
+    background:color-mix(in srgb,var(--panel) 82%,transparent);
+    color:var(--text-dim);
+    font-size:10px;
+  }
+  .user-summary-details{
+    display:grid;
+    grid-template-columns:repeat(3,minmax(0,1fr));
+    gap:10px 18px;
+    align-content:center;
+  }
+  .user-summary-field{ min-width:0; }
+  .user-summary-label{
+    display:block;
+    margin-bottom:3px;
+    color:var(--text-dim);
+    font-size:10px;
+    letter-spacing:.04em;
+    text-transform:uppercase;
+  }
+  .user-summary-value{
+    display:block;
+    overflow-wrap:anywhere;
+    color:var(--text);
+    font-size:12px;
+    font-weight:600;
+  }
+  .user-summary-value.is-positive{ color:var(--green); }
+  @media (max-width:700px){
+    .user-summary{ grid-template-columns:1fr; }
+    .user-summary-placeholder{ min-height:240px; }
+    .verification-image{ height:240px; }
+    .user-summary-details{ grid-template-columns:repeat(2,minmax(0,1fr)); }
+  }
+  @media (max-width:420px){
+    .user-summary{ margin-left:10px; margin-right:10px; }
+    .user-summary-details{ grid-template-columns:1fr; }
+    .user-summary-placeholder{ min-height:220px; }
+    .verification-image{ height:220px; }
+  }
+
+  .tabbar{
+    display:flex;
+    align-items:center;
+    gap:4px;
+    margin:12px 16px 0;
+    background:var(--panel);
+    padding:8px 14px;
+    border:1px solid var(--border);
+    border-radius:8px;
+    overflow-x:auto;
+  }
+  .tab{
+    display:flex;
+    align-items:center;
+    gap:6px;
+    background:transparent;
+    border:none;
+    color:var(--text-dim);
+    padding:8px 12px;
+    border-radius:6px;
+    cursor:pointer;
+    font-size:12.5px;
+    white-space:nowrap;
+    transition: background .15s, color .15s;
+  }
+  .tab:hover{ background:var(--panel-alt); color:var(--text); }
+  .tab.active{ background:var(--purple); color:var(--button-text); }
+  .tab .key{
+    background:rgba(255,255,255,0.15);
+    border-radius:4px;
+    padding:1px 6px;
+    font-size:10px;
+    font-weight:700;
+  }
+  .tab.active .key{ background:rgba(255,255,255,0.3); }
+
+  .content{
+    display:flex;
+    flex-direction:column;
+    gap:16px;
+    padding:16px;
+  }
+
+  .val-green{ color:var(--green); }
+  .val-red{ color:var(--red); }
+  .val-yellow{ color:var(--yellow); }
+  .val-blue{ color:var(--blue); }
+
+  .action-btn{
+    display:block;
+    width:100%;
+    text-align:center;
+    border:none;
+    padding:12px;
+    border-radius:6px;
+    margin-bottom:10px;
+    font-size:13px;
+    font-weight:600;
+    cursor:pointer;
+    color:var(--button-text);
+    max-width:340px;
+  }
+  .ab-yellow{ background:var(--yellow); color:var(--button-dark-text); }
+  .ab-purple{ background:var(--purple); color:var(--button-text); }
+  .ab-pink{ background:var(--pink); color:var(--button-text); }
+
+  /* Main panel */
+  .main{
+    flex:1;
+    min-width:0;
+    background:var(--panel);
+    border:1px solid var(--border);
+    border-radius:8px;
+    padding:16px;
+  }
+  .main h2{
+    margin:0 0 12px 0;
+    font-size:15px;
+  }
+  
+  /* Grouped profile information */
+.info-grid{
+  display:grid;
+  grid-template-columns:repeat(auto-fit, minmax(280px, 1fr));
+  gap:14px;
+  margin-bottom:18px;
+}
+
+.info-card{
+  min-width:0;
+  background:var(--panel-alt);
+  border:1px solid var(--border);
+  border-radius:8px;
+  overflow:hidden;
+}
+
+.survey-session-summary .info-list{
+  display:grid;
+  grid-template-columns:repeat(4,minmax(0,1fr));
+}
+
+.survey-session-summary .info-row{
+  display:flex;
+  flex-direction:column;
+  gap:3px;
+  padding:7px 10px;
+  border-right:1px solid var(--border);
+}
+
+.survey-session-summary .info-row:nth-child(4n){ border-right:none; }
+.survey-session-summary .info-label{ font-size:9px; }
+.survey-session-summary .info-value{ font-size:11px; }
+
+.compact-metric-card .info-list{ display:grid; grid-template-columns:repeat(4,minmax(0,1fr)); }
+.compact-metric-card .info-row{ display:flex; flex-direction:column; gap:3px; padding:7px 10px; border-right:1px solid var(--border); }
+.compact-metric-card .info-row:nth-child(4n){ border-right:none; }
+.compact-metric-card .info-label{ font-size:9px; }
+.compact-metric-card .info-value{ font-size:11px; }
+
+.surveys-sessions-content .group-section-body{
+  max-height:60vh;
+  overflow:auto;
+}
+.compact-tab-content .group-section-body{ max-height:60vh; overflow:auto; }
+.table-content-scroll .group-section-body{ max-height:calc(100vh - 300px); overflow:auto; }
+.table-content-scroll .group-section-body .table-scroll{ overflow:auto; max-height:100%; }
+.table-content-scroll thead th{ position:sticky; top:0; z-index:1; }
+
+@media (max-width:900px){
+  .survey-session-summary .info-list{ grid-template-columns:repeat(3,minmax(0,1fr)); }
+  .survey-session-summary .info-row:nth-child(4n){ border-right:1px solid var(--border); }
+  .survey-session-summary .info-row:nth-child(3n){ border-right:none; }
+  .compact-metric-card .info-list{ grid-template-columns:repeat(3,minmax(0,1fr)); }
+  .compact-metric-card .info-row:nth-child(4n){ border-right:1px solid var(--border); }
+  .compact-metric-card .info-row:nth-child(3n){ border-right:none; }
+  .table-content-scroll .group-section-body{ max-height:55vh; }
+}
+
+@media (max-width:560px){
+  .survey-session-summary .info-list{ grid-template-columns:repeat(2,minmax(0,1fr)); }
+  .survey-session-summary .info-row:nth-child(3n){ border-right:1px solid var(--border); }
+  .survey-session-summary .info-row:nth-child(2n){ border-right:none; }
+  .compact-metric-card .info-list{ grid-template-columns:repeat(2,minmax(0,1fr)); }
+  .compact-metric-card .info-row:nth-child(3n){ border-right:1px solid var(--border); }
+  .compact-metric-card .info-row:nth-child(2n){ border-right:none; }
+  .table-content-scroll .group-section-body{ max-height:60vh; }
+}
+
+.info-card h3{
+  margin:0;
+  padding:10px 12px;
+  background:var(--header);
+  border-bottom:1px solid var(--border);
+  font-size:12px;
+  color:var(--text);
+}
+
+.info-list{
+  display:flex;
+  flex-direction:column;
+}
+
+.info-row{
+  display:grid;
+  grid-template-columns:minmax(120px, 42%) minmax(0, 1fr);
+  gap:12px;
+  padding:8px 12px;
+  border-bottom:1px solid var(--border);
+}
+
+.info-row:last-child{
+  border-bottom:none;
+}
+
+.info-label{
+  color:var(--text-dim);
+  font-size:10px;
+  line-height:1.4;
+  text-transform:uppercase;
+  letter-spacing:.03em;
+}
+
+.info-value{
+  min-width:0;
+  color:var(--text);
+  font-size:12px;
+  font-weight:600;
+  line-height:1.4;
+  overflow-wrap:anywhere;
+}
+
+.group-stack{
+  display:flex;
+  flex-direction:column;
+  gap:12px;
+}
+
+.group-section{
+  background:var(--panel-alt);
+  border:1px solid var(--border);
+  border-radius:8px;
+  overflow:hidden;
+}
+
+.group-section summary{
+  cursor:pointer;
+  padding:11px 13px;
+  background:var(--header);
+  color:var(--text);
+  font-size:12px;
+  font-weight:700;
+  user-select:none;
+}
+
+.group-section summary:hover{
+  color:var(--purple-light);
+}
+
+.group-section-body{
+  padding:12px;
+}
+
+.group-section-body h2{
+  display:none;
+}
+
+/* Action tab */
+.action-note{
+  display:block;
+  width:100%;
+  min-height:90px;
+  resize:vertical;
+  margin-bottom:14px;
+  padding:10px 12px;
+  background:var(--input-bg);
+  border:1px solid var(--border);
+  border-radius:7px;
+  color:var(--text);
+  font:inherit;
+  line-height:1.5;
+}
+
+.action-note:focus{
+  outline:none;
+  border-color:var(--purple-light);
+  box-shadow:0 0 0 2px rgba(139,127,245,.15);
+}
+
+.action-note::placeholder{
+  color:var(--text-dim);
+}
+
+.action-groups{
+  display:grid;
+  grid-template-columns:repeat(auto-fit, minmax(260px, 1fr));
+  gap:14px;
+}
+
+.action-group{
+  padding:14px;
+  background:var(--panel-alt);
+  border:1px solid var(--border);
+  border-radius:8px;
+}
+
+.action-group h3{
+  margin:0 0 12px;
+  font-size:12px;
+}
+
+.action-btn{
+  max-width:none;
+  margin:0 0 9px;
+  padding:10px 12px;
+}
+
+.action-btn:last-child{
+  margin-bottom:0;
+}
+
+  .ab-orange{
+  background:var(--orange);
+  color:var(--button-dark-text);
+}
+
+  .ab-purple{
+  background:var(--purple);
+  border:1px solid var(--pink-border);
+  }
+
+  .ab-pink{
+  background:var(--pink);
+  }
+
+  @media (max-width:700px){
+  .info-grid,
+  .action-groups{
+    grid-template-columns:1fr;
+  }
+
+  .info-row{
+    grid-template-columns:1fr;
+    gap:3px;
+  }
+  }
+  
+  table{
+    width:100%;
+    border-collapse:collapse;
+    font-size:12px;
+  }
+  thead th{
+    background:var(--panel-alt);
+    color:var(--yellow);
+    text-align:left;
+    padding:8px 10px;
+    border:1px solid var(--border);
+    font-weight:600;
+    white-space:nowrap;
+  }
+  tbody td{
+    padding:7px 10px;
+    border:1px solid var(--border);
+    white-space:nowrap;
+    color:var(--text);
+  }
+  tbody tr:hover{ background:var(--panel-alt); }
+  .empty-row td{
+    color:var(--text-dim);
+    text-align:center;
+    padding:40px;
+  }
+  .link{ color:var(--blue); text-decoration:none; }
+  .link:hover{ text-decoration:underline; }
+  .pill{
+    background:var(--purple);
+    color:var(--button-text);
+    padding:2px 10px;
+    border-radius:12px;
+    font-size:11px;
+    font-weight:700;
+  }
+  .badge-green{ color:var(--green); font-weight:600; }
+  .badge-red{ color:var(--red); font-weight:600; }
+  .badge-orange{ color:var(--orange); font-weight:600; }
+  .badge-blue{ color:var(--blue); font-weight:600; }
+  .table-scroll{ overflow-x:auto; }
+
+  /* Map tab specific */
+  .map-wrap{ display:flex; gap:16px; }
+  .map-box{
+    flex:2;
+    background:var(--map-bg);
+    border-radius:6px;
+    height:340px;
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    color:var(--map-text);
+    font-size:13px;
+    position:relative;
+    overflow:hidden;
+  }
+  .ip-chip{
+    position:absolute;
+    top:10px;
+    left:10px;
+    background:var(--purple);
+    color:var(--button-text);
+    padding:4px 10px;
+    border-radius:12px;
+    font-size:11px;
+    font-weight:700;
+  }
+  .map-table{ flex:1; }
+  .home-link{
+    color:var(--text);
+    text-decoration:none;
+    border:1px solid var(--border);
+    border-radius:4px;
+    padding:6px 10px;
+    white-space:nowrap;
+  }
+  .home-link:hover{ border-color:var(--purple-light); color:var(--text); }
+</style>
+</head>
+<body>
+
+<div class="topbar">
+  <a class="home-link" href="./home.html">← Home</a>
+  <input type="text" value="sfb3aIVQAUfwJCDhQRvPEgEbzfj1" readonly>
+  <button class="btn btn-purple">Filter Tables</button>
+  <button class="btn btn-yellow">Search</button>
+  <button class="btn btn-purple">Expand</button>
+  <button class="btn btn-purple">Use $</button>
+</div>
+
+<section class="user-summary" aria-labelledby="user-summary-title">
+  <div class="user-summary-placeholder" aria-label="Verification images">
+    <button class="verification-image-control previous" id="verificationImagePrevious" type="button" aria-label="Previous image">‹</button>
+    <img class="verification-image" id="verificationImage" src="./assets/dale-garthwaite.jpg" alt="Verification image 1 of 2">
+    <button class="verification-image-control next" id="verificationImageNext" type="button" aria-label="Next image">›</button>
+    <span class="verification-image-indicator" id="verificationImageIndicator">1 / 2</span>
+  </div>
+  <div class="user-summary-details">
+    <h2 id="user-summary-title" style="position:absolute;width:1px;height:1px;padding:0;margin:-1px;overflow:hidden;clip:rect(0,0,0,0);white-space:nowrap;border:0;">User summary</h2>
+    <div class="user-summary-field"><span class="user-summary-label">User ID</span><span class="user-summary-value">sfb3aIVQAUfwJCDhQRvPEgEbzfj1</span></div>
+    <div class="user-summary-field"><span class="user-summary-label">Name</span><span class="user-summary-value">Detron Terell Mitchell</span></div>
+    <div class="user-summary-field"><span class="user-summary-label">Number</span><span class="user-summary-value">+13212469018</span></div>
+    <div class="user-summary-field"><span class="user-summary-label">Lifetime Earnings</span><span class="user-summary-value">$5.02</span></div>
+    <div class="user-summary-field"><span class="user-summary-label">Lifetime Revenue</span><span class="user-summary-value">$6.76</span></div>
+    <div class="user-summary-field"><span class="user-summary-label">Lifetime Profit</span><span class="user-summary-value is-positive">$1.74</span></div>
+    <div class="user-summary-field"><span class="user-summary-label">Lifetime Reconciliation Rate</span><span class="user-summary-value">0.0% (0¢ / $6.76)</span></div>
+  </div>
+</section>
+
+<div class="tabbar" id="tabbar"></div>
+
+<div class="content">
+  <div class="main" id="main"></div>
+</div>
+
+<script>
+const verificationImages = [
+  { src:'./assets/dale-garthwaite.jpg', alt:'Dale Garthwaite verification image' },
+  { src:'./assets/aisha-tarrant.jpg', alt:'Aisha Tarrant verification image' }
+];
+let verificationImageIndex = 0;
+const verificationImage = document.getElementById('verificationImage');
+const verificationImageIndicator = document.getElementById('verificationImageIndicator');
+function showVerificationImage(nextIndex){
+  verificationImageIndex = (nextIndex + verificationImages.length) % verificationImages.length;
+  const image = verificationImages[verificationImageIndex];
+  verificationImage.src = image.src;
+  verificationImage.alt = `${image.alt} (${verificationImageIndex + 1} of ${verificationImages.length})`;
+  verificationImageIndicator.textContent = `${verificationImageIndex + 1} / ${verificationImages.length}`;
+}
+document.getElementById('verificationImagePrevious').addEventListener('click', () => showVerificationImage(verificationImageIndex - 1));
+document.getElementById('verificationImageNext').addEventListener('click', () => showVerificationImage(verificationImageIndex + 1));
+document.addEventListener('keydown', event => {
+  if (event.key === 'ArrowLeft') showVerificationImage(verificationImageIndex - 1);
+  if (event.key === 'ArrowRight') showVerificationImage(verificationImageIndex + 1);
+});
+
+const tabs = [
+  {id:'overview', label:'Overview', key:'1'},
+  {id:'surveys-sessions', label:'Surveys & Sessions', key:'2'},
+  {id:'offers', label:'Offers', key:'3'},
+  {id:'referrals', label:'Referrals', key:'4'},
+  {id:'profile', label:'Profile & Device', key:'5'},
+  {id:'cashouts', label:'Cashouts', key:'6'},
+  {id:'transactions', label:'Transactions', key:'7'},
+  {id:'associations', label:'Associations', key:'8'},
+  {id:'review', label:'Review', key:'9'},
+  {id:'action', label:'Action', key:'10'},
+];
+
+const tabbar = document.getElementById('tabbar');
+tabs.forEach(t=>{
+  const b = document.createElement('button');
+  b.className = 'tab';
+  b.dataset.id = t.id;
+  b.innerHTML = t.label + (t.key ? ` <span class="key">${t.key}</span>` : '');
+  b.onclick = ()=> selectTab(t.id);
+  tabbar.appendChild(b);
+});
+
+function emptyTable(cols, note){
+  return `<div class="table-scroll"><table><thead><tr>${cols.map(c=>`<th>${c}</th>`).join('')}</tr></thead>
+  <tbody><tr class="empty-row"><td colspan="${cols.length}">${note || 'No data'}</td></tr></tbody></table></div>`;
+}
+
+const tableContent = {
+  map: () => `
+    <h2>Map - last 4 locations</h2>
+    <div class="map-wrap">
+      <div class="map-box">
+        <span class="ip-chip">IP (4)</span>
+        Map view (Google Maps embed)
+      </div>
+      <div class="map-table">
+        <table>
+          <thead><tr><th>Pin</th><th>Location</th><th>Time</th><th>Location Type</th></tr></thead>
+          <tbody>
+            <tr><td>1</td><td>Current</td><td>22 minutes</td><td><span class="pill">IP</span></td></tr>
+            <tr><td>1</td><td>SMS Verify</td><td>19 hours</td><td><span class="pill">IP</span></td></tr>
+            <tr><td>1</td><td>Session</td><td>19 hours</td><td><span class="pill">IP</span></td></tr>
+            <tr><td>1</td><td>Email</td><td>19 hours</td><td><span class="pill">IP</span></td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>`,
+
+  cashouts: () => `
+    <h2>Cashouts</h2>
+    ${emptyTable(['#','Status','Reason','External','External','Current','Bonus','Fees (Def)','Cashout Email','Cashout','Platform','Created (ET)','Completed (ET)','Source','Country','Notes','Current Revenue','User Email','Margin','Lifetime Revenue','Device Location','External Address','External Name','Resend','Send','Skip','Unskip','Manual','Pending'])}`,
+
+  fraud: () => `
+    <h2>Fraud Events</h2>
+    <div class="table-scroll"><table>
+      <thead><tr><th>Date (ET)</th><th>Type</th><th>Platform</th><th>Fraud Change</th><th>Fraud Score</th><th>Cooldown Change</th><th>Cooldown Score</th><th>Notes</th></tr></thead>
+      <tbody>
+        <tr><td>12/03/2025, 12:26 PM</td><td class="badge-blue">Quality</td><td class="badge-blue">Android</td><td>+100</td><td>100</td><td>+10</td><td>10</td><td class="badge-blue">-10 qualityScore</td></tr>
+      </tbody>
+    </table></div>`,
+
+  notes: () => `
+    <h2>Notes</h2>
+    <div style="margin-bottom:10px;">
+      <input type="text" placeholder="Note" style="width:100%; background:var(--input-bg); border:1px solid var(--border); color:var(--text); padding:8px 12px; border-radius:6px;">
+    </div>
+    <div class="table-scroll"><table>
+      <thead><tr><th>Date</th><th>Author</th><th>Notes</th></tr></thead>
+      <tbody>
+        <tr><td>08/06/2026, 11:40 AM</td><td>Arby</td><td>Updated imageLastName to MITCHELL</td></tr>
+        <tr><td>08/06/2026, 11:40 AM</td><td>Arby</td><td>Updated imageFirstName to DETRON TERELL</td></tr>
+        <tr><td>03/29/2026, 8:29 AM</td><td>User</td><td class="badge-orange">SMS attempted to +13212469018 (Too many attempts. Please wait before trying again)</td></tr>
+        <tr><td>03/29/2026, 8:29 AM</td><td>User</td><td class="badge-orange">SMS attempted to +13212469018 (Too many attempts. Please wait before trying again)</td></tr>
+        <tr><td>03/29/2026, 8:29 AM</td><td>User</td><td class="badge-orange">SMS attempted to +13212469018 (Too many attempts. Please wait before trying again)</td></tr>
+        <tr><td>03/29/2026, 8:29 AM</td><td>User</td><td class="badge-orange">SMS attempted to +13212469018 (Too many attempts. Please wait before trying again)</td></tr>
+        <tr><td>03/29/2026, 8:29 AM</td><td>User</td><td class="badge-orange">SMS attempted to +13212469018 (Too many attempts. Please wait before trying again)</td></tr>
+      </tbody>
+    </table></div>`,
+
+  assocusers: () => `
+    <h2>Associated Users</h2>
+    <div class="table-scroll"><table>
+      <thead><tr><th>#</th><th>Client St</th><th>Email</th><th>Platform</th><th>Created</th><th>Country</th><th>Lifetime Revenue</th><th>Device Location</th><th>App</th><th>Association</th><th>UserId</th><th>First Last (SMS)</th><th>Device Id</th><th>Fraud Score</th><th>Skipped Cashouts</th><th>Last Active</th><th>Image URL</th><th>Lifetime Earnings</th><th>Profit</th><th>Survey Profit</th><th>Offer Profit</th><th>Recon Costs</th><th>Lifetime Recon Rate</th><th>Survey Recon Rate</th><th>Survey Recon Cost Rate</th><th>SMS Country</th></tr></thead>
+      <tbody>
+        <tr><td>1</td><td>Authent</td><td>detronmytchell</td><td>Anx</td><td>11/30/2025, 8:04 PM</td><td>US (2607:fb9)</td><td>$6.76</td><td>United States</td><td>Sur</td><td>Current User</td><td>Current I</td><td>Tron M (-)</td><td>89de77b4-</td><td>-200</td><td>0</td><td>08/06/2026</td><td class="badge-green">✓ (Score: 9)</td><td>$5.02</td><td>$1.74</td><td>42¢</td><td>$0.14</td><td>0.0% (0¢/$3.57)</td><td>0.0%</td><td>0.0%</td><td>-</td><td>US (active)</td></tr>
+        <tr><td>2</td><td>Authent</td><td>tronterel@gmai</td><td>Anx</td><td>08/04/2024, 5:37 AM</td><td>US (2607:fb9)</td><td>$34.12</td><td>United States</td><td>Sur</td><td>gaid</td><td>2dy...</td><td>Tron Mitchell (-)</td><td>89de77b4-</td><td>-</td><td>0</td><td>08/06/2026</td><td>-</td><td>$21.70</td><td>$12.42</td><td>$1.96</td><td>$10.29</td><td>0.0% (0¢/$14.18)</td><td>0.0%</td><td>0.0%</td><td>-</td><td>-</td></tr>
+        <tr><td>3</td><td>Unauth</td><td>tronmytchell31</td><td>Anx</td><td>06/27/2025, 4:43 PM</td><td>US (2607:fb9)</td><td>$27.00</td><td>United States</td><td>Sur</td><td>gaid,image</td><td>2r...</td><td>Tron Mitchell (-)</td><td>89de77b4-</td><td>-400</td><td>0</td><td>08/06/2026</td><td class="badge-green">✓ (Score: 10)</td><td>$16.34</td><td>$10.16</td><td>14¢</td><td>$10.18</td><td>1.9% (0¢/$4.65)</td><td>0.0%</td><td>0.0%</td><td>-</td><td>US (active)</td></tr>
+        <tr><td>4</td><td>Unauth</td><td>detronmytchell</td><td>Anx</td><td>11/17/2025, 12:14 PM</td><td>US (2607:fb9)</td><td>$28.41</td><td>United States</td><td>image</td><td></td><td>2c...</td><td>Trkon M (-)</td><td>84a4efd1-d</td><td>-</td><td>0</td><td>-</td><td class="badge-green">✓ (Score: 8)</td><td>$16.78</td><td>$11.63</td><td>-$2.70</td><td>$15.5</td><td>0.0% (0¢/76¢)</td><td>0.0%</td><td>0.0%</td><td>-</td><td>-</td></tr>
+        <tr><td>5</td><td>Unauth</td><td>detronmytchell</td><td>Anx</td><td>11/30/2025, 8:03 PM</td><td>US (2607:fb9)</td><td>$19.60</td><td>United States</td><td>Sur</td><td>ip email,gaid</td><td>3c...</td><td>Teon M (-)</td><td>89de77b4-</td><td>395</td><td>0</td><td>08/06/2026</td><td class="badge-green">✓ (Score: 8)</td><td>$9.73</td><td>$7.84</td><td>-$2.26</td><td>$9.61</td><td class="badge-red">68.5% ($2.00 / $2.9</td><td class="badge-red">10.4%</td><td class="badge-red">68.5%</td><td>-</td><td>US (active)</td></tr>
+        <tr><td>6</td><td>Unauth</td><td>tronm86@gm</td><td>Anx</td><td>01/22/2025, 5:06 AM</td><td>US (2607:fb9)</td><td>$176.97</td><td>United States</td><td>Sur</td><td>gaid</td><td>4d...</td><td>Tron Mitchell (-)</td><td>89de77b4-</td><td>-1935</td><td>0</td><td>08/05/2026</td><td>-</td><td>$98.16</td><td>$75.43</td><td>$17.08</td><td>$59.53</td><td>5.3% ($3.38 / $64</td><td>1.9%</td><td>9.5%</td><td>5.3%</td><td>US (active)</td></tr>
+        <tr><td>7</td><td>Unauth</td><td>tronm0911@gm</td><td>Anx</td><td>02/25/2025, 8:40 AM</td><td>US (2607:fb9)</td><td>$122.17</td><td>United States</td><td>Sur</td><td>gaid</td><td>3be...</td><td>Tron Mitchell (AK)</td><td>89de77b4-</td><td>-1893</td><td>2</td><td>08/05/2026</td><td>-</td><td>$65.13</td><td>$49.33</td><td>$7.48</td><td>$41.09</td><td class="badge-red">16.2% ($7.71 / $47.53</td><td>6.3%</td><td>9.9%</td><td class="badge-red">16.2%</td><td>US (active)</td></tr>
+        <tr><td>8</td><td>Unauth</td><td>terelimitche@g</td><td>Anx</td><td>01/28/2025, 7:01 PM</td><td>US (2607:fb9)</td><td>$159.48</td><td>United States</td><td>Sur</td><td>gaid</td><td>2ve...</td><td>Tri M (-)</td><td>89de77b4-</td><td>-</td><td>0</td><td>08/05/2026</td><td>-</td><td>$84.36</td><td>$67.89</td><td>$13.16</td><td>$54.01</td><td class="badge-red">11.8% ($7.23 / $61.29</td><td>4.5%</td><td>12.9%</td><td class="badge-red">11.8%</td><td>US (active)</td></tr>
+        <tr><td>9</td><td>Unauth</td><td>tronmitchellcu</td><td>Anx</td><td>06/23/2025, 5:41 AM</td><td>US (2607:fb9)</td><td>$19.05</td><td>United States</td><td></td><td>image</td><td>4s4...</td><td>Tron McKinney (A</td><td>84a4efd1-d</td><td>-200</td><td>1</td><td>08/06/2026</td><td class="badge-green">✓ (Score: 7)</td><td>$10.80</td><td>$8.25</td><td>-$2.78</td><td>$9.84</td><td>0.0% (0¢/0¢)</td><td>0.0%</td><td>0.0%</td><td>-</td><td>-</td></tr>
+        <tr><td>10</td><td>Unauth</td><td>tronmytchell88</td><td>Anx</td><td>02/26/2024, 5:50 AM</td><td>US (2607:fb9)</td><td>$111.03</td><td>United States</td><td>Sur</td><td>image</td><td>3zrv...</td><td>Tron M (-)</td><td>3870fa64-1</td><td>600</td><td>5</td><td>08/06/2026</td><td class="badge-green">✓ (Score: 6)</td><td>$59.22</td><td>$48.94</td><td>5¢</td><td>$48.45</td><td class="badge-red">11.7% ($2.87 / $24.5</td><td>2.6%</td><td>9.8%</td><td class="badge-red">11.7%</td><td>US (active)</td></tr>
+        <tr><td>11</td><td>Unauth</td><td>tronmitchell38</td><td>Anx</td><td>07/23/2025, 5:49 AM</td><td>US (2607:fb9)</td><td>$17.67</td><td>United States</td><td>Sur</td><td>oaid,image</td><td>2sc...</td><td>-- (-)</td><td>89de77b4-</td><td>-</td><td>1</td><td>08/05/2026</td><td class="badge-green">✓ (Score: 10)</td><td>$9.39</td><td>$8.28</td><td>-$1.79</td><td>$10.08</td><td>0.0% (0¢/0¢)</td><td>0.0%</td><td>0.0%</td><td>-</td><td>US (active)</td></tr>
+      </tbody>
+    </table></div>`,
+
+  assoccashouts: () => `
+    <h2>Associated Cashouts</h2>
+    ${emptyTable(['#','Status','Reason','External','Amount','Platform','Created (ET)','Completed (ET)','Source','Notes'])}`,
+
+  transactions: () => `
+    <h2>Transactions</h2>
+    <div class="table-scroll"><table>
+      <thead><tr><th>Date (ET)</th><th>Amount</th><th>Duration</th><th>Platform</th><th>Type</th><th>Revenue</th><th>Current Earnings</th><th>Current Revenue</th><th>Lifetime Revenue</th><th>Fraud Score</th><th>Cooldown S</th><th>Source</th></tr></thead>
+      <tbody>
+        <tr><td>03/29/2026, 8:29 AM</td><td>1¢</td><td>0s</td><td>Android</td><td class="badge-blue">DailyPollCompleted</td><td>0¢</td><td>$5.01</td><td>$6.76</td><td>$6.76</td><td>-200</td><td>-</td><td>xGxHrZrcR0HaWwAxOOaL</td></tr>
+        <tr><td>12/20/2025, 10:33 PM</td><td>1¢</td><td>0s</td><td>Android</td><td class="badge-blue">DailyPollCompleted</td><td>0¢</td><td>$5.00</td><td>$6.76</td><td>$6.76</td><td>-200</td><td>-</td><td>fPOAY3eY9qobhohH5Aae</td></tr>
+        <tr><td>12/18/2025, 1:21 PM</td><td>2¢</td><td>0s</td><td>Android</td><td class="badge-blue">RevuOfferCredited</td><td>4¢</td><td>$4.99</td><td>$6.72</td><td>$6.72</td><td>-200</td><td>-20</td><td>49241_install</td></tr>
+        <tr><td>12/18/2025, 1:20 PM</td><td>2¢</td><td>3%</td><td>Android</td><td class="badge-blue">RevuOfferCredited</td><td>6¢</td><td>$4.97</td><td>$6.66</td><td>$6.66</td><td>-200</td><td>-20</td><td>51012_install</td></tr>
+        <tr><td>12/18/2025, 1:20 PM</td><td>62¢</td><td>11m 36s</td><td>Android</td><td class="badge-blue">PureSpectrumSurveyC</td><td>$1.60</td><td>$4.35</td><td>$5.06</td><td>$5.06</td><td>-100</td><td>-</td><td>46342737</td></tr>
+        <tr><td>12/18/2025, 1:06 PM</td><td>5¢</td><td>0s</td><td>Android</td><td class="badge-blue">InmarketCheckinCred</td><td>14¢</td><td>$4.30</td><td>$4.92</td><td>$4.92</td><td>-100</td><td>-</td><td>13384620817</td></tr>
+        <tr><td>12/18/2025, 1:05 PM</td><td>1¢</td><td>0s</td><td>Android</td><td class="badge-blue">AchievementComplete</td><td>0¢</td><td>$4.29</td><td>$4.92</td><td>$4.92</td><td>-100</td><td>-</td><td>sfb3aIVQAUfwJCDhQRvPEgEbzfj1_S</td></tr>
+        <tr><td>12/18/2025, 1:05 PM</td><td>5¢</td><td>0s</td><td>Android</td><td class="badge-blue">AchievementComplete</td><td>0¢</td><td>$4.22</td><td>$4.92</td><td>$4.92</td><td>-100</td><td>-</td><td>sfb3aIVQAUfwJCDhQRvPEgEbzfj1_S</td></tr>
+        <tr><td>12/18/2025, 1:05 PM</td><td>2¢</td><td>0s</td><td>Android</td><td class="badge-blue">AchievementComplete</td><td>0¢</td><td>$4.17</td><td>$4.92</td><td>$4.92</td><td>-100</td><td>-</td><td>sfb3aIVQAUfwJCDhQRvPEgEbzfj1_A</td></tr>
+        <tr><td>12/18/2025, 1:05 PM</td><td>10¢</td><td>0s</td><td>Android</td><td class="badge-blue">AchievementComplete</td><td>0¢</td><td>$4.07</td><td>$4.92</td><td>$4.92</td><td>-100</td><td>-</td><td>sfb3aIVQAUfwJCDhQRvPEgEbzfj1_A</td></tr>
+      </tbody>
+    </table></div>`,
+
+  surveys: () => `
+    <h2>Surveys</h2>
+    <div class="table-scroll"><table>
+      <thead><tr><th>Date (ET)</th><th>State</th><th>Amount</th><th>Revenue</th><th>Duration</th><th>Avg Duration</th><th>Platform</th><th>Source</th><th>Account</th><th>Client St</th><th>Marketpl</th><th>Replay</th><th>Session Sc</th><th>Session Reason</th><th>Survey</th><th>IP Location</th><th>Reason</th></tr></thead>
+      <tbody>
+        <tr><td>12/20/2025, 10:33 PM</td><td class="badge-orange">OverQuotedNoReward</td><td>$1.38</td><td>0¢</td><td>1m 13s</td><td>19m 38s</td><td>Android</td><td>PureSpc</td><td>Qualtric</td><td>17</td><td>-</td><td><a class="link" href="#">Watch</a></td><td>-</td><td>-</td><td><a class="link" href="#">45364096</a></td><td>orlando, fl, US</td><td>-</td></tr>
+        <tr><td>12/18/2025, 1:20 PM</td><td class="badge-green">Completed</td><td>62¢</td><td>$1.60</td><td>11m 36s (1.1x)</td><td>10m 32s</td><td>Android</td><td>PureSpc</td><td>Qualtric</td><td>21</td><td>-</td><td><a class="link" href="#">Watch</a></td><td>-</td><td>-</td><td><a class="link" href="#">46342737</a></td><td>orlando, fl, US</td><td>-</td></tr>
+        <tr><td>12/18/2025, 1:07 PM</td><td class="badge-orange">OverQuotedNoReward</td><td>66¢</td><td>0¢</td><td>45s</td><td>1m 0s</td><td>Android</td><td>Lucid</td><td>Centime</td><td>40</td><td>3</td><td><a class="link" href="#">Watch</a></td><td>-</td><td>-</td><td><a class="link" href="#">7808S41</a></td><td>?, ga, US</td><td>-</td></tr>
+        <tr><td>12/17/2025, 3:07 PM</td><td class="badge-green">Completed</td><td>63¢</td><td>$1.50</td><td>7m 27s (1.2x)</td><td>6m 22s</td><td>Android</td><td>Repdatz</td><td>Repdatz</td><td>1000</td><td>-</td><td><a class="link" href="#">Watch</a></td><td>-</td><td>-</td><td><a class="link" href="#">7bZ3o0b7 S472 4aa3-948..</a></td><td>?, ga, US</td><td>-</td></tr>
+        <tr><td>12/16/2025, 9:32 PM</td><td class="badge-red">UserExited</td><td>19¢</td><td>0¢</td><td>4s</td><td>12m 57s</td><td>Android</td><td>OpenLa</td><td>OpenLa</td><td>-</td><td>-</td><td><a class="link" href="#">Watch</a></td><td>-</td><td>-</td><td><a class="link" href="#">85053a90f582d3f80z9i9...</a></td><td>houston, tx, US</td><td>SurveyIsBroken</td></tr>
+        <tr><td>12/04/2025, 4:29 PM</td><td class="badge-green">Completed</td><td>25¢</td><td>47¢</td><td>3m 34s (1.1x)</td><td>3m 18s</td><td>Android</td><td>Repdatz</td><td>Google</td><td>1000</td><td>-</td><td><a class="link" href="#">Watch</a></td><td>-</td><td>-</td><td><a class="link" href="#">0660e82c f166-430f-975a...</a></td><td>atlanta, ga, US</td><td>-</td></tr>
+      </tbody>
+    </table></div>`,
+
+  offers: () => `
+  <h2>Offers</h2>
+
+  <div class="table-scroll">
+    <table>
+      <thead>
+        <tr>
+          <th>Start Date (ET)</th>
+          <th>Complete Date (ET)</th>
+          <th>State</th>
+          <th>Source</th>
+          <th>Name</th>
+          <th>Offer ID</th>
+          <th>Events</th>
+          <th>Type</th>
+          <th>Completed User</th>
+          <th>Revenue</th>
+          <th>Duration</th>
+          <th>Avg Duration</th>
+          <th>Platform</th>
+          <th>Last Complete</th>
+        </tr>
+      </thead>
+
+      <tbody>
+        <!-- Started offers -->
+        <tr>
+          <td>08/06/2026, 7:58 AM</td>
+          <td>-</td>
+          <td class="badge-blue">Started (installed)</td>
+          <td>Bitlabs</td>
+          <td>Jackpota</td>
+          <td><a class="link" href="#">Bitlabs_1660188</a></td>
+          <td>• Registration (0¢, First ...</td>
+          <td>mr (0/7)</td>
+          <td>0¢ / $197.20</td>
+          <td>0¢ / $6.00</td>
+          <td>0s</td>
+          <td>0s</td>
+          <td>Android</td>
+          <td>-</td>
+        </tr>
+
+        <!-- Completed or expired offers -->
+        <tr>
+          <td>12/17/2025, 10:31 PM</td>
+          <td>01/16/2026, 10:45 PM</td>
+          <td class="badge-red">Expired (installed)</td>
+          <td>Revu</td>
+          <td>Plane: AI Money Assistant</td>
+          <td><a class="link" href="#">49567</a></td>
+          <td>• Sign up for the Free Tri...</td>
+          <td>cpe (0/2)</td>
+          <td>0¢ / $2.64</td>
+          <td>0¢ / $6.60</td>
+          <td>0s</td>
+          <td>11d 2h 45m 46s</td>
+          <td>Android</td>
+          <td>-</td>
+        </tr>
+
+        <tr>
+          <td>12/17/2025, 8:11 PM</td>
+          <td>01/16/2026, 8:15 PM</td>
+          <td class="badge-red">Expired (installed)</td>
+          <td>Revu</td>
+          <td>1-minute Daily</td>
+          <td><a class="link" href="#">49384</a></td>
+          <td>-</td>
+          <td>cpe (0/0)</td>
+          <td>0¢ / 0¢</td>
+          <td>0¢ / 0¢</td>
+          <td>0s</td>
+          <td>7m 49s</td>
+          <td>Android</td>
+          <td>-</td>
+        </tr>
+
+        <tr>
+          <td>12/17/2025, 3:16 PM</td>
+          <td>01/16/2026, 3:30 PM</td>
+          <td class="badge-red">Expired (installed)</td>
+          <td>Revu</td>
+          <td>Schizophrenia</td>
+          <td><a class="link" href="#">50221</a></td>
+          <td>-</td>
+          <td>cpe (0/0)</td>
+          <td>0¢ / 0¢</td>
+          <td>0¢ / 0¢</td>
+          <td>0s</td>
+          <td>1m 19s</td>
+          <td>Android</td>
+          <td>-</td>
+        </tr>
+
+        <tr>
+          <td>12/17/2025, 2:55 PM</td>
+          <td>01/16/2026, 3:00 PM</td>
+          <td class="badge-red">Expired (installed)</td>
+          <td>Revu</td>
+          <td>Idle Weapon Shop</td>
+          <td><a class="link" href="#">54331</a></td>
+          <td>-</td>
+          <td>cpi (0/0)</td>
+          <td>0¢ / 0¢</td>
+          <td>0¢ / 0¢</td>
+          <td>0s</td>
+          <td>2m 33s</td>
+          <td>Android</td>
+          <td>-</td>
+        </tr>
+
+        <tr>
+          <td>12/17/2025, 2:56 PM</td>
+          <td>01/16/2026, 3:00 PM</td>
+          <td class="badge-red">Expired (installed)</td>
+          <td>Revu</td>
+          <td>Trend'n Daily</td>
+          <td><a class="link" href="#">5919</a></td>
+          <td>-</td>
+          <td>cpe (0/0)</td>
+          <td>0¢ / 0¢</td>
+          <td>0¢ / 0¢</td>
+          <td>0s</td>
+          <td>53m 37s</td>
+          <td>Android</td>
+          <td>-</td>
+        </tr>
+
+        <tr>
+          <td>12/16/2025, 9:38 PM</td>
+          <td>01/16/2026, 9:45 PM</td>
+          <td class="badge-red">Expired (installed)</td>
+          <td>Revu</td>
+          <td>AARP Reward Sweaps</td>
+          <td><a class="link" href="#">55383</a></td>
+          <td>-</td>
+          <td>cpe (0/0)</td>
+          <td>0¢ / 0¢</td>
+          <td>0¢ / 0¢</td>
+          <td>0s</td>
+          <td>0s</td>
+          <td>Android</td>
+          <td>-</td>
+        </tr>
+
+        <tr>
+          <td>12/16/2025, 9:29 PM</td>
+          <td>01/16/2026, 9:30 PM</td>
+          <td class="badge-red">Expired (installed)</td>
+          <td>Revu</td>
+          <td>Alibaba</td>
+          <td><a class="link" href="#">55192</a></td>
+          <td>-</td>
+          <td>cpe (0/0)</td>
+          <td>0¢ / 0¢</td>
+          <td>0¢ / 0¢</td>
+          <td>0s</td>
+          <td>6m 16s</td>
+          <td>Android</td>
+          <td>-</td>
+        </tr>
+
+        <tr>
+          <td>12/07/2025, 1:50 AM</td>
+          <td>01/06/2026, 2:00 AM</td>
+          <td class="badge-red">Expired (installed)</td>
+          <td>Revu</td>
+          <td>Zebra</td>
+          <td><a class="link" href="#">52367</a></td>
+          <td>-</td>
+          <td>cpe (0/0)</td>
+          <td>0¢ / 0¢</td>
+          <td>0¢ / 0¢</td>
+          <td>0s</td>
+          <td>11m 41s</td>
+          <td>Android</td>
+          <td>-</td>
+        </tr>
+
+        <tr>
+          <td>12/07/2025, 1:48 AM</td>
+          <td>01/06/2026, 2:00 AM</td>
+          <td class="badge-red">Expired (installed)</td>
+          <td>Revu</td>
+          <td>USCCA</td>
+          <td><a class="link" href="#">50981</a></td>
+          <td>-</td>
+          <td>cpe (0/0)</td>
+          <td>0¢ / 0¢</td>
+          <td>0¢ / 0¢</td>
+          <td>0s</td>
+          <td>34s</td>
+          <td>Android</td>
+          <td>-</td>
+        </tr>
+
+        <tr>
+          <td>12/06/2025, 7:33 AM</td>
+          <td>01/05/2026, 7:45 AM</td>
+          <td class="badge-red">Expired (installed)</td>
+          <td>Revu</td>
+          <td>RewardSpark</td>
+          <td><a class="link" href="#">53619</a></td>
+          <td>-</td>
+          <td>cpe (0/0)</td>
+          <td>0¢ / 0¢</td>
+          <td>0¢ / 0¢</td>
+          <td>0s</td>
+          <td>1m 16s</td>
+          <td>Android</td>
+          <td>-</td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+`,
+
+  achievements: () => `
+    <h2>Achievements</h2>
+    <div class="table-scroll"><table>
+      <thead><tr><th>Name</th><th>Description</th><th>Type</th><th>Amount</th><th>State</th></tr></thead>
+      <tbody>
+        <tr><td>Fan</td><td>2 video bonuses w</td><td>Ad</td><td>5¢</td><td class="badge-green">Completed</td></tr>
+        <tr><td>Binger</td><td>5 video bonuses w</td><td>Ad</td><td>10¢</td><td class="badge-green">Completed</td></tr>
+        <tr><td>Movie Star</td><td>10 video bonuses w</td><td>Ad</td><td>20¢</td><td class="badge-green">Completed</td></tr>
+        <tr><td>Payday</td><td>0/1 cashouts</td><td>Cashout</td><td>50¢</td><td class="badge-blue">Started</td></tr>
+        <tr><td>Tycoon</td><td>0/10 cashouts</td><td>Cashout</td><td>$2.50</td><td class="badge-blue">Started</td></tr>
+        <tr><td>Monopoly</td><td>0/20 cashouts</td><td>Cashout</td><td>$5.00</td><td class="badge-blue">Started</td></tr>
+        <tr><td>Networker</td><td>0/1 referrals</td><td>Referral</td><td>25¢</td><td class="badge-blue">Started</td></tr>
+        <tr><td>Ambassador</td><td>0/5 referrals</td><td>Referral</td><td>$1.00</td><td class="badge-blue">Started</td></tr>
+        <tr><td>Solo</td><td>1 day streak</td><td>Streak</td><td>1¢</td><td class="badge-green">Completed</td></tr>
+        <tr><td>Double Down</td><td>2 day streak</td><td>Streak</td><td>2¢</td><td class="badge-green">Completed</td></tr>
+        <tr><td>Hat Trick</td><td>3 day streak</td><td>Streak</td><td>5¢</td><td class="badge-green">Completed</td></tr>
+      </tbody>
+    </table></div>`,
+
+  ipactions: () => `
+    <h2>IP Actions</h2>
+    <div class="table-scroll"><table>
+      <thead><tr><th>#</th><th>External Email/SMS</th><th>Platform</th><th>App</th><th>Association</th><th>Action</th><th>Date (ET)</th><th>Sent Date</th><th>Delivered Date</th><th>UserId</th><th>Token</th><th>Verified Count</th><th>IP Location</th><th>Device Id</th></tr></thead>
+      <tbody>
+        <tr><td>1</td><td>deliv...</td><td>+13212469018</td><td>Anx</td><td>Sur</td><td>-</td><td>SMS Verify</td><td>08/06/2026, 4:26:02 PM</td><td>08/06/2026, 4:26:03 PM</td><td>-</td><td>4zb...</td><td>107335</td><td>0</td><td>orlando, fl, US</td></tr>
+        <tr><td>2</td><td>-</td><td>-</td><td>Anx</td><td>Sur</td><td>-</td><td>Session</td><td>08/06/2026, 4:25:45 PM</td><td>-</td><td>-</td><td>4zb...</td><td>-</td><td>0</td><td>orlando, fl, US</td></tr>
+        <tr><td>3</td><td>deliv...</td><td>detronmytchell</td><td>Anx</td><td>Sur</td><td>-</td><td>Email</td><td>08/06/2026, 4:25:34 PM</td><td>-</td><td>08/06/2026, 4:25:47 PM</td><td>4zb...</td><td>590990</td><td>1 ✓</td><td>orlando, fl, US</td></tr>
+        <tr><td>4</td><td>undel</td><td>+13212469018</td><td>Anx</td><td>Sur</td><td>-</td><td>SMS Verify</td><td>03/29/2026, 8:28:18 AM</td><td>-</td><td>-</td><td>4zb...</td><td>240304</td><td>0</td><td>orlando, fl, US</td></tr>
+        <tr><td>5</td><td>undel</td><td>+13212469018</td><td>Anx</td><td>Sur</td><td>-</td><td>SMS Verify</td><td>03/29/2026, 8:27:49 AM</td><td>-</td><td>-</td><td>4zb...</td><td>400091</td><td>0</td><td>orlando, fl, US</td></tr>
+        <tr><td>6</td><td>undel</td><td>+13212469018</td><td>Anx</td><td>Sur</td><td>-</td><td>SMS Verify</td><td>03/29/2026, 8:27:18 AM</td><td>-</td><td>-</td><td>4zb...</td><td>757507</td><td>0</td><td>orlando, fl, US</td></tr>
+        <tr><td>7</td><td>undel</td><td>+13212469018</td><td>Anx</td><td>Sur</td><td>-</td><td>SMS Verify</td><td>03/29/2026, 8:26:04 AM</td><td>-</td><td>-</td><td>4zb...</td><td>951411</td><td>0</td><td>orlando, fl, US</td></tr>
+        <tr><td>8</td><td>deliv</td><td>detronmytchell</td><td>Anx</td><td>Sur</td><td>-</td><td>Email</td><td>03/29/2026, 8:25:34 AM</td><td>-</td><td>03/29/2026, 8:25:24 AM</td><td>4zb...</td><td>849062</td><td>1 ✓</td><td>orlando, fl, US</td></tr>
+        <tr><td>9</td><td>deliv</td><td>detronmytchell</td><td>Anx</td><td>iOS</td><td>-</td><td>Email</td><td>02/08/2026, 2:15:33 PM</td><td>-</td><td>02/16/2026, 2:15:40 PM</td><td>4zb...</td><td>358587</td><td>0</td><td>winter garden, fl, US</td></tr>
+        <tr><td>10</td><td>deliv</td><td>detronmytchell</td><td>iOS</td><td>Anx</td><td>-</td><td>Email</td><td>01/04/2026, 3:11:22 PM</td><td>-</td><td>-</td><td>4zb...</td><td>983756</td><td>0</td><td>orlando, fl, US</td></tr>
+        <tr><td>11</td><td>deliv</td><td>detronmytchell</td><td>Anx</td><td>Sur</td><td>-</td><td>SMS</td><td>12/18/2025, 1:21:48 PM</td><td>-</td><td>-</td><td>4zb...</td><td>736560</td><td>0</td><td>orlando, fl, US</td></tr>
+      </tbody>
+    </table></div>`,
+
+  referrals: () => `
+    <h2>Referrals</h2>
+    ${emptyTable(['Date (ET)','Amount','Duration','Platform','Type','Revenue','Current Earnings','Current Revenue','Lifetime Revenue','Fraud Score','Cooldown S','Source'])}`,
+
+  all: () => `<h2>All</h2><p style="color:var(--text-dim);">Combined view of all sections.</p>`,
+  sections: () => `<h2>Sections</h2><p style="color:var(--text-dim);">Sidebar section navigation.</p>`,
+};
+
+function createInfoCard(title, rows, className = ''){
+  return `
+    <section class="info-card ${className}">
+      <h3>${title}</h3>
+
+      <div class="info-list">
+        ${rows.map(([label, value, className = '']) => `
+          <div class="info-row">
+            <span class="info-label">${label}</span>
+            <span class="info-value ${className}">${value}</span>
+          </div>
+        `).join('')}
+      </div>
+    </section>
+  `;
+}
+
+function createGroupSection(title, html, isOpen = false){
+  return `
+    <details class="group-section" ${isOpen ? 'open' : ''}>
+      <summary>${title}</summary>
+
+      <div class="group-section-body">
+        ${html}
+      </div>
+    </details>
+  `;
+}
+
+const main = document.getElementById('main');
+
+function selectTab(id){
+  document.querySelectorAll('.tab').forEach(t=>{
+    t.classList.toggle('active', t.dataset.id === id);
+  });
+  main.innerHTML = content[id] ? content[id]() : `<h2>${id}</h2><p style="color:var(--text-dim);">No content.</p>`;
+}
+
+const sidePanels = {
+  user: () => createInfoCard('User', [
+    ['App', 'SurveySpin'],
+    ['User ID', 'sfb3aIVQAUfwJCDhQRvPEgEbzfj1'],
+    ['Email', 'detronmytchell2@gmail.com'],
+    ['Last active time', '4 hours ago on Android'],
+    ['Last cashout time', '-'],
+    ['Last ticket time', '-'],
+    ['Last survey reconciliation', '-'],
+    ['Last offer reconciliation', '-'],
+    ['Locked text', 'None'],
+    ['Fraud score', '-200', 'val-red'],
+    ['Quality score', '-10', 'val-red'],
+    ['Cooldown score', '0'],
+    ['Account created', '11/30/2025, 8:04 PM (Android)'],
+    ['Sign-in attempts / SMS attempts', '1 / 0'],
+    ['Streak', '0'],
+    ['Priority', 'normal']
+  ]),
+
+  money: () => createInfoCard('Money', [
+    ['Current earnings', '$5.02'],
+    ['Current revenue', '$6.76'],
+    ['Lifetime profit', '$1.74', 'val-green'],
+    ['Margin', '25.7%', 'val-green'],
+    ['Lifetime cashout margin', '0.0%', 'val-green'],
+    ['Lifetime earnings', '$5.02'],
+    ['Lifetime revenue', '$6.76'],
+    ['Lifetime reconciliation rate', '0.0% (0¢ / $6.76)'],
+    ['Current credit', '0¢'],
+    ['Lifetime credit', '0¢'],
+    ['Cashout threshold', '$5.00'],
+    ['Yearly earnings', '1¢']
+  ]),
+
+  associated: () => createInfoCard('Associated', [
+    ['Profit', '$362.66'],
+    ['Margin', '41.8%', 'val-green'],
+    ['Survey profit', '$28.32'],
+    ['Lifetime reconciliation rate', '2.8%'],
+    ['Survey reconciliation rate', '7.9%'],
+    ['Survey reconciliation cost rate', '9.4%'],
+    ['Offer profit', '$332.66'],
+    ['Offer reconciliation rate', '0.5%'],
+    ['Offer reconciliation cost rate', '0.1%']
+  ]),
+
+  surveySession: () => createInfoCard('Survey & Session Summary', [
+    ['Survey revenue', '$3.57'],
+    ['Survey earnings', '$3.15'],
+    ['Completes', '6'],
+    ['Attempts', '10'],
+    ['Started conversion rate', '60.0%'],
+    ['Ended conversion rate', '66.7%', 'val-red'],
+    ['Terminates', '0'],
+    ['User exits', '1'],
+    ['Over quotes', '2'],
+    ['Quality terminates', '0'],
+    ['Reconciliation rate', '0.0% (0 / 6)'],
+    ['Reconciliation cost', '0.0% (0¢ / $3.57)'],
+    ['Average user duration vs expected', '116.0x (1d 4h 6m 5s / 14m 32s)', 'val-red'],
+    ['Bans', 'Toluna', 'val-red'],
+    ['Session score', '-'],
+    ['Negative sessions', '-'],
+    ['Speeding', '-']
+  ], 'survey-session-summary'),
+
+  offers: () => createInfoCard('Offers', [
+    ['Offer revenue', '$1.86'],
+    ['Offer earnings', '72¢'],
+    ['Completed', '5'],
+    ['Check-ins', '6'],
+    ['Video bonuses', '10'],
+    ['Offers started', '16'],
+    ['Offers terminated', '0'],
+    ['Offers user exited', '0'],
+    ['Reconciliation rate', '0.0% (0 / 5)'],
+    ['Reconciliation cost', '0.0% (0¢ / $1.86)'],
+    ['Partner offerwalls', 'TapOffers, RevU, AdGem, AdJoe, Besitos, Bitlabs, Merged'],
+    ['Bans', '-']
+  ], 'compact-metric-card'),
+
+  referrals: () => createInfoCard('Referrals', [
+    ['Invited', '0'],
+    ['Referral earnings', '0¢'],
+    ['Referred users earnings', '0¢'],
+    ['Referred users revenue', '0¢'],
+    ['Referred by', 'No one'],
+    ['Referral code', 'ADBCT3']
+  ], 'compact-metric-card'),
+
+  attributes: () => createInfoCard('Attributes', [
+    ['Age', '38'],
+    ['US ZIP code', '32801'],
+    ['Gender', 'Male'],
+    ['Ethnicity', 'Black, or African American'],
+    ['Hispanic', 'No, not of Hispanic, Latino, or Spanish origin'],
+    ['Household income', '$85,000 to $99,999'],
+    ['Household income', '$60,000 to $64,999'],
+    ['Education', 'College Degree such as B.A., B.S.'],
+    ['Employment status', 'Employed full-time'],
+    ['Industry', 'Internet'],
+    ['Job title', 'None of the above'],
+    ['Company size', '2–10'],
+    ['Company revenue', 'Under $100,000'],
+    ['Department', 'Entertainment'],
+    ['Company purchasing decisions', 'Other'],
+    ['Parental status', 'No children and not expecting a child within 9 months'],
+    ['Children', 'None of the above'],
+    ['Relationship status', 'Single, never married'],
+    ['Voting status', 'Yes'],
+    ['Household', 'Rented apartment'],
+    ['Political views', 'Democrat']
+  ]),
+
+  verification: () => createInfoCard('Verification', [
+    ['Status', 'Verified', 'val-green'],
+    ['Number', '+13212469018'],
+    ['Carrier', 'Verizon Wireless'],
+    ['Country', 'US'],
+    ['SMS status', 'active', 'val-green'],
+    ['SMS type', 'UNDETERMINED'],
+    ['SMS name', '-'],
+    ['Profile survey name', 'Tron M'],
+    ['Profile survey DOB', '1988-07-11'],
+    ['Profile survey ZIP code', '32801'],
+    ['Device address', '512 East Washington Street, Orlando, Florida, 32801'],
+    ['PayPal name', '-'],
+    ['PayPal address', '-'],
+    ['Acquisition source', 'Organic'],
+    ['Welcome source', 'Google Play Store'],
+    ['Image score', '9'],
+    ['Image first name', 'DETRON TERELL'],
+    ['Image last name', 'MITCHELL'],
+    ['Image text', 'Clear photo of a real person holding a recognizable Florida Identification Card.']
+  ]),
+
+  android: () => createInfoCard('Android', [
+    ['Device location', 'United States (Orlando, Florida)'],
+    ['IP country, city, state, VPN', 'US (Orlando, FL, false)'],
+    ['Device country, locale, language, network, SIM', 'US (US, en, us, us)'],
+    ['Version / OS / device type', '26.7.1 (16, 16.0, Samsung SM-A166U)'],
+    ['Client state', 'Authenticated', 'val-green'],
+    ['GAID', '89de77b4-eacd-4765-b27f-2cf7a9b44507'],
+    ['UUID', 'undefined'],
+    ['Android platform verdicts', 'Licensing: LICENSED, Recognition: PLAY_RECOGNIZED, Activity: LEVEL_1, Device Recognition: MEETS_STRONG_INTEGRITY, Play Protect: NO_ISSUES'],
+    ['Development mode / emulator', 'undefined / undefined']
+  ])
+};
+
+const content = {
+  overview: () => `
+    <h2>Overview</h2>
+
+    <div class="info-grid">
+      ${sidePanels.user()}
+      ${sidePanels.money()}
+      ${sidePanels.associated()}
+    </div>
+  `,
+
+  'surveys-sessions': () => `
+  <h2>Surveys &amp; Sessions</h2>
+
+  <div class="info-grid surveys-sessions-content">
+    ${sidePanels.surveySession()}
+  </div>
+
+  <div class="group-stack">
+    ${createGroupSection(
+      'Survey History',
+      tableContent.surveys(),
+      true
+    )}
+
+  </div>
+  `,
+
+  offers: () => `
+  <h2>Offers</h2>
+
+  <div class="info-grid compact-tab-content">
+    ${sidePanels.offers()}
+  </div>
+
+  <div class="group-stack">
+    ${createGroupSection(
+      'Offers History',
+      tableContent.offers(),
+      true
+    )}
+  </div>
+  `,
+
+  referrals: () => `
+  <h2>Referrals</h2>
+
+  <div class="info-grid compact-tab-content">
+    ${sidePanels.referrals()}
+  </div>
+
+  <div class="group-stack">
+    ${createGroupSection(
+      'Referral History',
+      tableContent.referrals(),
+      true
+    )}
+  </div>
+  `,
+  
+  profile: () => `
+    <h2>Profile & Device</h2>
+
+    <div class="info-grid">
+      ${sidePanels.attributes()}
+      ${sidePanels.verification()}
+      ${sidePanels.android()}
+    </div>
+
+    <div class="group-stack">
+      ${createGroupSection(
+        'Map and Location History',
+        tableContent.map(),
+        true
+      )}
+
+      ${createGroupSection(
+        'IP Actions',
+        tableContent.ipactions()
+      )}
+    </div>
+  `,
+
+  cashouts: () => `
+    <h2>Cashouts</h2>
+
+    <div class="group-stack table-content-scroll">
+      ${createGroupSection(
+        'Cashouts',
+        tableContent.cashouts(),
+        true
+      )}
+
+      ${createGroupSection('Associated Cashouts', tableContent.assoccashouts(), true)}
+    </div>
+  `,
+
+  transactions: () => `
+    <h2>Transactions</h2>
+    <div class="group-stack table-content-scroll">
+      ${createGroupSection('Transactions', tableContent.transactions(), true)}
+    </div>
+  `,
+
+  associations: () => `
+    <h2>Associations</h2>
+
+    <div class="group-stack table-content-scroll">
+      ${createGroupSection(
+        'Associated Users',
+        tableContent.assocusers(),
+        true
+      )}
+    </div>
+  `,
+
+  review: () => `
+    <h2>Review</h2>
+
+    <div class="group-stack">
+      ${createGroupSection(
+        'Fraud Events',
+        tableContent.fraud(),
+        true
+      )}
+
+      ${createGroupSection(
+        'Notes',
+        tableContent.notes(),
+        true
+      )}
+
+      ${createGroupSection(
+        'Achievements',
+        tableContent.achievements()
+      )}
+    </div>
+  `,
+
+  action: () => `
+    <h2>Action</h2>
+
+    <textarea
+      id="actionNote"
+      class="action-note"
+      placeholder="Enter the reason or admin note before performing an action..."
+    ></textarea>
+
+    <div class="action-groups">
+      <section class="action-group">
+        <h3>Account Updates</h3>
+
+        <button
+          class="action-btn ab-orange"
+          type="button"
+          data-action="send-cash"
+        >
+          Send user cash (in USD cents)
+        </button>
+
+        <button
+          class="action-btn ab-orange"
+          type="button"
+          data-action="update-fraud-score"
+        >
+          Update fraud score
+        </button>
+
+        <button
+          class="action-btn ab-orange"
+          type="button"
+          data-action="update-streak"
+        >
+          Update streak
+        </button>
+      </section>
+
+      <section class="action-group">
+        <h3>Ban Controls</h3>
+
+        <button
+          class="action-btn ab-purple"
+          type="button"
+          data-action="ban-user-associate"
+        >
+          Ban user and associate
+        </button>
+
+        <button
+          class="action-btn ab-purple"
+          type="button"
+          data-action="ban-user"
+        >
+          Ban user
+        </button>
+
+        <button
+          class="action-btn ab-purple"
+          type="button"
+          data-action="unban-user-associate"
+        >
+          Unban user and associate
+        </button>
+
+        <button
+          class="action-btn ab-purple"
+          type="button"
+          data-action="unban-user"
+        >
+          Unban user
+        </button>
+      </section>
+
+      <section class="action-group">
+        <h3>User Services</h3>
+
+        <button
+          class="action-btn ab-purple"
+          type="button"
+          data-action="reset-sms"
+        >
+          Reset SMS
+        </button>
+
+        <button
+          class="action-btn ab-purple"
+          type="button"
+          data-action="resubscribe-user"
+        >
+          Resubscribe user
+        </button>
+
+        <button
+          class="action-btn ab-purple"
+          type="button"
+          data-action="upload-selfie"
+        >
+          Upload Selfie
+        </button>
+
+        <button
+          class="action-btn ab-purple"
+          type="button"
+          data-action="resend-w9"
+        >
+          Resend W9
+        </button>
+      </section>
+
+      <section class="action-group">
+        <h3>Danger Zone</h3>
+
+        <button
+          class="action-btn ab-pink"
+          type="button"
+          data-action="delete-user"
+        >
+          Delete User
+        </button>
+      </section>
+    </div>
+  `
+};
+
+selectTab('overview');
+
+</script>
+<script type="module" src="./scripts/admin-tool-entry.js?v=1"></script>
+</body>
+</html>

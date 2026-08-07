@@ -277,6 +277,7 @@ function setupModals() {
 document.addEventListener("DOMContentLoaded", async () => {
     try {
         await loadIncludes();
+        renderSupportedApps(document.getElementById('supportedAppsCards'));
         setupModals();
         reportModularStatus();
     } catch (error) {
@@ -288,3 +289,4 @@ document.addEventListener("DOMContentLoaded", async () => {
     }
 });
 
+import { renderSupportedApps } from './supported-apps.js?v=1'

@@ -15,6 +15,7 @@ import {
   hasWorkforcePermission
 } from './workforce-permissions.js'
 import { renderAnnouncementHtml } from './announcement-rich-text.js?v=2'
+import { canAccessAdminToolPlayground } from '../shared/admin-tool-access.js?v=1'
 
 const SVG_NAMESPACE = 'http://www.w3.org/2000/svg'
 const HOME_HISTORY_LIMIT = 14
@@ -164,6 +165,7 @@ function configureUserInterface(user, access) {
   const articleButton = document.getElementById('homeArticleManagementBtn')
   const announcementButton = document.getElementById('homeAnnouncementManagementBtn')
   const changePasswordButton = document.getElementById('homeChangePasswordBtn')
+  const adminToolPlaygroundButton = document.getElementById('homeAdminToolPlaygroundBtn')
 
   if (articleButton) {
     articleButton.hidden = !hasWorkforcePermission(access, 'edit_articles')
@@ -184,6 +186,10 @@ function configureUserInterface(user, access) {
         access.is_system_admin === true
       )
     )
+  }
+
+  if (adminToolPlaygroundButton) {
+    adminToolPlaygroundButton.hidden = !canAccessAdminToolPlayground(access)
   }
 }
 
