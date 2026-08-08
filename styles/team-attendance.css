@@ -79,7 +79,7 @@ body:has(.team-attendance-page){background:#eef1f5}
 .team-attendance-timeline-labels{display:flex;justify-content:space-between;margin-top:6px;color:#9aa4b2;font-size:10.5px}
 .team-attendance-stats{
   display:grid;
-  grid-template-columns:repeat(4,minmax(85px,max-content));
+  grid-template-columns:repeat(5,minmax(85px,max-content));
   gap:28px;
   padding:0;
   border:0;

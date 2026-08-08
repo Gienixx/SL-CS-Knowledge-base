@@ -49,9 +49,9 @@ test('Team Attendance displays original and billed timestamp fields without stri
   assert.match(script, /'Original Clock-out'/)
   assert.match(script, /'Billed Clock-in'/)
   assert.match(script, /'Billed Clock-out'/)
-  assert.match(script, /record\.billed_clock_in \|\| record\.clock_in/)
-  assert.match(script, /record\.billed_clock_out \|\| record\.clock_out/)
-  assert.match(script, /addMeta\(middle, formatDateTime\(record\.original_clock_in/)
+  assert.match(script, /effectiveAttendanceClocks/)
+  assert.match(script, /'Total Rendered Hours'/)
+  assert.match(script, /'Total Billed Hours'/)
   assert.doesNotMatch(script, /createElement\('del'\)/)
   assert.doesNotMatch(styles, /text-decoration:line-through/)
   assert.match(script, /'Total Billed Hours'/)
@@ -260,13 +260,25 @@ test('Team Attendance shows a compact filtered total billed hours summary', asyn
   assert.match(page, /id="teamAttendanceBilledHours"/)
   assert.match(page, /styles\/team-attendance\.css\?v=13/)
   assert.match(script, /billedHours: document\.getElementById\('teamAttendanceBilledHours'\)/)
-  assert.match(script, /row\.total_worked_minutes/)
+  assert.match(script, /attendanceHours\(row\)\.billedMinutes/)
   assert.match(script, /elements\.billedHours\.textContent = formatMinutes/)
+  assert.match(styles, /\.team-attendance-stats\{[\s\S]*grid-template-columns:repeat\(5,minmax\(85px,max-content\)\)/)
   assert.match(styles, /\.team-attendance-page \.wf-summary-grid\{grid-template-columns:repeat\(5/)
   assert.match(styles, /\.team-attendance-page \.wf-summary\{[^}]*min-height:70px/)
   assert.match(styles, /\.team-attendance-page \.wf-summary span\{[^}]*font-size:9px[^}]*white-space:nowrap/)
   assert.match(styles, /\.team-attendance-page \.wf-summary strong\{[^}]*font-size:18px[^}]*white-space:nowrap/)
   assert.match(styles, /\.team-attendance-page \.wf-summary:nth-child\(5\)>span\{[^}]*max-width:70px[^}]*white-space:normal/)
+})
+
+test('Team Attendance uses rendered hours until correction, then billed hours', async () => {
+  const script = await read('scripts/team-attendance.js')
+
+  assert.match(script, /if \(!hasBilledOverride\(record\)\)/)
+  assert.match(script, /billedClockIn: originalClockIn, billedClockOut: originalClockOut/)
+  assert.match(script, /billedClockIn: record\?\.billed_clock_in \|\| null/)
+  assert.match(script, /renderedMinutes: durationMinutes\(clocks\.renderedClockIn, clocks\.renderedClockOut\)/)
+  assert.match(script, /billedMinutes: durationMinutes\(clocks\.billedClockIn, clocks\.billedClockOut\)/)
+  assert.match(script, /durationMinutes\(clockIn, clockOut\)/)
 })
 
 test('Team Attendance preserves a distinct dark-mode card hierarchy', async () => {
@@ -284,7 +296,7 @@ test('Team Attendance does not flag fully classified long overtime records', asy
   const page = await read('team-attendance.html')
   const script = await read('scripts/team-attendance.js')
 
-  assert.match(page, /scripts\/team-attendance\.js\?v=13/)
+  assert.match(page, /scripts\/team-attendance\.js\?v=14/)
   assert.match(script, /const hasUnclassifiedWorkedMinutes = workedMinutes > regularMinutes \+ overtimeMinutes/)
   assert.match(script, /record\.schedule_id && hasUnclassifiedWorkedMinutes/)
   assert.match(script, /if \(overtimeMinutes > 0\) return \{ label: 'Overtime'/)
@@ -346,6 +358,9 @@ test('Team Attendance displays correction modal and submits through correction R
   const script = await read('scripts/team-attendance.js')
 
   assert.match(page, /id="teamAttendanceCorrectionModal"/)
+  assert.match(page, /class="wf-backdrop" type="button" data-close="teamAttendanceCorrectionModal" aria-label="Close attendance correction dialog"/)
+  assert.match(script, /event\.target\.closest\('\.team-attendance-record-actions'\)/)
+  assert.match(script, /menu\.open = false/)
   assert.match(page, /id="teamAttendanceCorrectionForm"/)
   assert.match(page, /id="teamAttendanceNewClockIn"/)
   assert.match(page, /id="teamAttendanceCorrectionSchedule"/)

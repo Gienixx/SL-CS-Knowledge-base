@@ -229,6 +229,40 @@ function formatOptionalMinutes(value) {
   return formatMinutes(value)
 }
 
+function hasBilledOverride(record) {
+  if (record?.is_corrected === true) return true
+  return Boolean(record?.billed_clock_in && record?.billed_clock_out
+    && (record.billed_clock_in !== (record.original_clock_in || record.clock_in)
+      || record.billed_clock_out !== (record.original_clock_out || record.clock_out)))
+}
+
+function effectiveAttendanceClocks(record) {
+  const originalClockIn = record?.original_clock_in || record?.clock_in || null
+  const originalClockOut = record?.original_clock_out || record?.clock_out || null
+  if (!hasBilledOverride(record)) {
+    return { renderedClockIn: originalClockIn, renderedClockOut: originalClockOut, billedClockIn: originalClockIn, billedClockOut: originalClockOut }
+  }
+  return {
+    renderedClockIn: originalClockIn,
+    renderedClockOut: originalClockOut,
+    billedClockIn: record?.billed_clock_in || null,
+    billedClockOut: record?.billed_clock_out || null
+  }
+}
+
+function durationMinutes(clockIn, clockOut) {
+  if (!clockIn || !clockOut) return 0
+  return Math.max(0, Math.round((new Date(clockOut).getTime() - new Date(clockIn).getTime()) / 60000))
+}
+
+function attendanceHours(record) {
+  const clocks = effectiveAttendanceClocks(record)
+  return {
+    renderedMinutes: durationMinutes(clocks.renderedClockIn, clocks.renderedClockOut),
+    billedMinutes: durationMinutes(clocks.billedClockIn, clocks.billedClockOut)
+  }
+}
+
 function prepaidStatusLabel(value, appliedMinutes = 0) {
   const labels = {
     open: 'Open',
@@ -504,7 +538,7 @@ function renderSummary(rows) {
   elements.missingCount.textContent = rows.filter(row => row.is_missing_clock_out).length
   elements.overtimeCount.textContent = rows.filter(row => Number(row.total_overtime_minutes) > 0).length
   elements.billedHours.textContent = formatMinutes(rows.reduce(
-    (total, row) => total + Math.max(0, Number(row.total_worked_minutes) || 0),
+    (total, row) => total + attendanceHours(row).billedMinutes,
     0
   ))
 }
@@ -660,19 +694,20 @@ function createAttendanceCard(record) {
   const middle = document.createElement('div')
   middle.className = 'team-attendance-record-mid'
   addMeta(middle, formatDate(record.work_date), formatShift(record))
-  const billedClockIn = record.billed_clock_in || record.clock_in
-  const billedClockOut = record.billed_clock_out || record.clock_out
-  addMeta(middle, formatDateTime(record.original_clock_in || record.clock_in, record.employee_timezone), 'Original Clock-in')
-  addMeta(middle, record.is_open ? 'In progress' : formatDateTime(record.original_clock_out || record.clock_out, record.employee_timezone), 'Original Clock-out')
-  addMeta(middle, billedClockIn ? formatDateTime(billedClockIn, record.employee_timezone) : '—', 'Billed Clock-in')
-  addMeta(middle, billedClockOut ? (record.is_open ? 'In progress' : formatDateTime(billedClockOut, record.employee_timezone)) : '—', 'Billed Clock-out')
+  const clocks = effectiveAttendanceClocks(record)
+  const hours = attendanceHours(record)
+  addMeta(middle, formatDateTime(clocks.renderedClockIn, record.employee_timezone), 'Original Clock-in')
+  addMeta(middle, record.is_open ? 'In progress' : formatDateTime(clocks.renderedClockOut, record.employee_timezone), 'Original Clock-out')
+  addMeta(middle, hasBilledOverride(record) && clocks.billedClockIn ? formatDateTime(clocks.billedClockIn, record.employee_timezone) : '—', 'Billed Clock-in')
+  addMeta(middle, hasBilledOverride(record) && clocks.billedClockOut ? (record.is_open ? 'In progress' : formatDateTime(clocks.billedClockOut, record.employee_timezone)) : '—', 'Billed Clock-out')
 
   const stats = document.createElement('div')
   stats.className = 'team-attendance-stats'
   addStat(stats, record.regular_minutes, 'Regular')
   addStat(stats, record.total_overtime_minutes, 'Overtime')
   addStat(stats, record.minutes_late, 'Late')
-  addStat(stats, record.total_worked_minutes, 'Total Billed Hours')
+  addStat(stats, hours.renderedMinutes, 'Total Rendered Hours')
+  addStat(stats, hours.billedMinutes, 'Total Billed Hours')
 
   const summary = document.createElement('div')
   summary.className = 'team-attendance-summary'
@@ -1084,6 +1119,13 @@ async function resetFilters() {
 }
 
 function bindEvents() {
+  document.addEventListener('click', event => {
+    const clickedMenu = event.target.closest('.team-attendance-record-actions')
+    document.querySelectorAll('.team-attendance-record-actions[open]').forEach(menu => {
+      if (!clickedMenu || menu !== clickedMenu) menu.open = false
+    })
+  })
+
   elements.refreshButton.addEventListener('click', refreshAttendance)
   elements.resetButton.addEventListener('click', resetFilters)
   elements.addButton?.addEventListener('click', () => {
