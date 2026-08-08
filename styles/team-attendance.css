@@ -96,12 +96,21 @@ body:has(.team-attendance-page){background:#eef1f5}
   color:var(--ta-ink);
 }
 
-.team-attendance-stat:nth-child(2) strong{
-  color:var(--ta-amber);
+.team-attendance-stat:nth-child(1) strong,.team-attendance-stat:nth-child(1) span,
+.team-attendance-stat:nth-child(2) strong,.team-attendance-stat:nth-child(2) span{
+  color:#fff;
 }
 
-.team-attendance-stat:nth-child(4) strong{
+.team-attendance-stat:nth-child(3) strong,.team-attendance-stat:nth-child(3) span{
+  color:var(--ta-red);
+}
+
+.team-attendance-stat:nth-child(4) strong,.team-attendance-stat:nth-child(4) span{
   color:var(--ta-green);
+}
+
+.team-attendance-stat:nth-child(5) strong,.team-attendance-stat:nth-child(5) span{
+  color:var(--ta-amber);
 }
 
 .team-attendance-stat span{

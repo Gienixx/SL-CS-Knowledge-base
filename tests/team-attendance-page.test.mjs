@@ -281,6 +281,14 @@ test('Team Attendance uses rendered hours until correction, then billed hours', 
   assert.match(script, /durationMinutes\(clockIn, clockOut\)/)
 })
 
+test('Team Attendance uses the required hour stat color mapping', async () => {
+  const styles = await read('styles/team-attendance.css')
+  assert.match(styles, /nth-child\(1\) strong,[\s\S]*nth-child\(2\) span\{\s*color:#fff/)
+  assert.match(styles, /nth-child\(3\) strong,[\s\S]*color:var\(--ta-red\)/)
+  assert.match(styles, /nth-child\(4\) strong,[\s\S]*color:var\(--ta-green\)/)
+  assert.match(styles, /nth-child\(5\) strong,[\s\S]*color:var\(--ta-amber\)/)
+})
+
 test('Team Attendance preserves a distinct dark-mode card hierarchy', async () => {
   const styles = await read('styles/team-attendance.css')
 
