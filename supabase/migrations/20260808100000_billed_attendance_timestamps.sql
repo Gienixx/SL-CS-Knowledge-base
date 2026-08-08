@@ -85,6 +85,7 @@ begin
   set billed_clock_in = p_new_clock_in,
       billed_clock_out = p_new_clock_out,
       attendance_status = p_new_status,
+      review_status = case when review_status = 'pending' then 'corrected' else review_status end,
       schedule_id = coalesce(p_schedule_id, schedule_id),
       admin_notes = coalesce(nullif(trim(coalesce(p_admin_notes, '')), ''), admin_notes),
       correction_reason = p_reason_code,
@@ -96,6 +97,10 @@ begin
   where id = v_old.id
   returning * into v_new;
 
+  -- Recalculate the attendance-derived totals from the newly billed values.
+  -- The recalculation function is billed-aware in the follow-up migration.
+  v_new := public.workforce_recalculate_attendance(v_new.id);
+
   insert into public.attendance_corrections (
     attendance_id, employee_user_id, schedule_id,
     previous_clock_in, previous_clock_out, new_clock_in, new_clock_out,
@@ -105,8 +110,8 @@ begin
     corrected_by, corrected_at
   ) values (
     v_new.id, v_new.user_id, v_new.schedule_id,
-    v_old.original_clock_in, v_old.original_clock_out,
-    v_new.original_clock_in, v_new.original_clock_out,
+    v_old.billed_clock_in, v_old.billed_clock_out,
+    v_new.billed_clock_in, v_new.billed_clock_out,
     v_old.billed_clock_in, v_old.billed_clock_out,
     v_new.billed_clock_in, v_new.billed_clock_out,
     v_old.attendance_status, v_new.attendance_status, p_reason_code, v_reason,
