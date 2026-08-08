@@ -159,7 +159,7 @@ grant execute on function public.payroll_create_prepaid_balance()
 comment on function public.payroll_create_prepaid_balance() is
   'Creates one prepaid-minute balance per approved ordinary schedule snapshot and safely supersedes an unsettled prior schedule version.';
 
--- When payroll-ready attendance is imported, apply ordinary rendered minutes
+-- When payroll-ready attendance is imported, apply approved billed rendered minutes
 -- to the employee's oldest eligible prepaid balance. Categories settle in this
 -- order: regular, normal pre-shift overtime, normal post-shift overtime.
 -- Special-day minutes never reach this trigger because they are explicitly
@@ -289,9 +289,7 @@ begin
     select category.minute_category, category.available_minutes
     from (
       values
-        ('regular'::text, new.regular_minutes),
-        ('pre_shift_overtime'::text, new.pre_shift_overtime_minutes),
-        ('post_shift_overtime'::text, new.post_shift_overtime_minutes)
+        ('regular'::text, greatest(0, floor(extract(epoch from (new.clock_out - new.clock_in)) / 60)::integer))
     ) as category(minute_category, available_minutes)
   loop
     v_available_minutes := greatest(v_category.available_minutes, 0);

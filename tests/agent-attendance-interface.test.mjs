@@ -14,9 +14,10 @@ test('attendance page exposes agent clock actions and history', async () => {
 })
 
 test('attendance redesign preserves functional hooks and accessible theme controls', async () => {
-  const [html, styles] = await Promise.all([
+  const [html, styles, lightStyles] = await Promise.all([
     read('attendance.html'),
-    read('styles/attendance.css')
+    read('styles/attendance.css'),
+    read('styles/attendance-theme-fix.css')
   ])
 
   for (const id of [
@@ -44,6 +45,10 @@ test('attendance redesign preserves functional hooks and accessible theme contro
   assert.doesNotMatch(styles, /#attendanceThemeToggle:checked ~ \.attendance-app/)
   assert.match(styles, /@media \(max-width: 680px\)/)
   assert.match(styles, /@media \(prefers-reduced-motion: reduce\)/)
+  assert.match(
+    lightStyles,
+    /html\[data-site-theme="light"\] \.attendance-note-cell\s*\{[\s\S]*color:\s*var\(--site-text\) !important/
+  )
 })
 
 test('attendance history defaults to a half-month and paginates five entries at a time', async () => {

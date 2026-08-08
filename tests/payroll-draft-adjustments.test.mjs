@@ -30,6 +30,24 @@ test('Step 9 supports only controlled manual earnings and deductions', async () 
   )
 })
 
+test('Draft payroll UI exposes billed hours, prepaid consumption, rate override, and estimates', async () => {
+  const [page, script] = await Promise.all([
+    read('payroll-period.html'),
+    read('scripts/payroll-period.js')
+  ])
+
+  assert.match(page, /<th>Hours<\/th>/)
+  assert.match(page, /<th>Rate<\/th>/)
+  assert.match(script, /approvedBilledMinutes/)
+  assert.match(script, /Prepaid consumed/)
+  assert.match(script, /New regular/)
+  assert.match(script, /New prepaid/)
+  assert.match(script, /Remaining prepaid/)
+  assert.match(script, /rateOverrides/)
+  assert.match(script, /period_status === 'finalized'/)
+  assert.match(script, /payroll-rate-override/)
+})
+
 test('every adjustment mutation rebuilds totals and writes a complete audit event', async () => {
   const migration = await read(migrationPath)
 

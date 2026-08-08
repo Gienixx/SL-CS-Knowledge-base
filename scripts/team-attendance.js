@@ -338,7 +338,7 @@ function createActionCell(row) {
   correctButton.type = 'button'
   correctButton.className = 'wf-btn secondary compact'
   correctButton.textContent = 'Correct'
-  correctButton.disabled = !access?.can_correct_attendance || !row.employee_user_id || row.review_status === 'locked'
+  correctButton.disabled = !access?.can_correct_attendance || !row.employee_user_id || ['approved', 'locked'].includes(row.review_status)
   correctButton.addEventListener('click', () => openCorrectionModal(row))
   actions.appendChild(correctButton)
 
@@ -660,45 +660,19 @@ function createAttendanceCard(record) {
   const middle = document.createElement('div')
   middle.className = 'team-attendance-record-mid'
   addMeta(middle, formatDate(record.work_date), formatShift(record))
-  const edited = record.is_corrected === true ||
-    (record.original_clock_in && record.original_clock_in !== record.clock_in) ||
-    (record.original_clock_out && record.original_clock_out !== record.clock_out)
-  if (edited) {
-    const addTimeChange = (parent, original, current, label, currentLabel) => {
-      const item = document.createElement('div')
-      item.className = 'team-attendance-time-change'
-      const fieldLabel = document.createElement('span')
-      fieldLabel.className = 'team-attendance-time-label'
-      fieldLabel.textContent = label
-      const values = document.createElement('div')
-      values.className = 'team-attendance-time-values'
-      const oldValue = document.createElement('del')
-      oldValue.textContent = formatDateTime(original, record.employee_timezone)
-      oldValue.setAttribute('aria-label', `Original ${label}`)
-      const arrow = document.createElement('span')
-      arrow.className = 'team-attendance-time-arrow'
-      arrow.textContent = '→'
-      arrow.setAttribute('aria-hidden', 'true')
-      const newValue = document.createElement('strong')
-      newValue.textContent = current
-      newValue.setAttribute('aria-label', currentLabel)
-      values.append(oldValue, arrow, newValue)
-      item.append(fieldLabel, values)
-      parent.appendChild(item)
-    }
-    addTimeChange(middle, record.original_clock_in, formatDateTime(record.clock_in, record.employee_timezone), 'Clock-in', 'New Clock-in')
-    addTimeChange(middle, record.original_clock_out, record.is_open ? 'In progress' : formatDateTime(record.clock_out, record.employee_timezone), 'Clock-out', 'New Clock-out')
-  } else {
-    addMeta(middle, formatDateTime(record.clock_in, record.employee_timezone), 'Clock-in')
-    addMeta(middle, record.is_open ? 'In progress' : formatDateTime(record.clock_out, record.employee_timezone), 'Clock-out')
-  }
+  const billedClockIn = record.billed_clock_in || record.clock_in
+  const billedClockOut = record.billed_clock_out || record.clock_out
+  addMeta(middle, formatDateTime(record.original_clock_in || record.clock_in, record.employee_timezone), 'Original Clock-in')
+  addMeta(middle, record.is_open ? 'In progress' : formatDateTime(record.original_clock_out || record.clock_out, record.employee_timezone), 'Original Clock-out')
+  addMeta(middle, billedClockIn ? formatDateTime(billedClockIn, record.employee_timezone) : '—', 'Billed Clock-in')
+  addMeta(middle, billedClockOut ? (record.is_open ? 'In progress' : formatDateTime(billedClockOut, record.employee_timezone)) : '—', 'Billed Clock-out')
 
   const stats = document.createElement('div')
   stats.className = 'team-attendance-stats'
   addStat(stats, record.regular_minutes, 'Regular')
   addStat(stats, record.total_overtime_minutes, 'Overtime')
   addStat(stats, record.minutes_late, 'Late')
-  addStat(stats, record.total_worked_minutes, 'Total billed hours')
+  addStat(stats, record.total_worked_minutes, 'Total Billed Hours')
 
   const summary = document.createElement('div')
   summary.className = 'team-attendance-summary'
@@ -1256,14 +1230,16 @@ async function openCorrectionModal(row) {
   const adminNotesInput = document.getElementById('teamAttendanceAdminNotes')
 
   modal.dataset.attendanceId = row.attendance_id || ''
+  modal.dataset.billedClockIn = row.billed_clock_in || row.clock_in || ''
+  modal.dataset.billedClockOut = row.billed_clock_out || row.clock_out || ''
   employeeInput.textContent = row.employee_name || 'Unknown employee'
   document.getElementById('teamAttendanceCorrectionEmployeeDetails').textContent = [row.employee_id, row.team_name].filter(Boolean).join(' · ') || '—'
   workDateInput.textContent = formatDate(row.work_date)
-  currentClockInInput.textContent = formatCorrectionDateTime(row.clock_in, row.employee_timezone)
-  currentClockOutInput.textContent = formatCorrectionDateTime(row.clock_out, row.employee_timezone)
+  currentClockInInput.textContent = formatCorrectionDateTime(row.original_clock_in || row.clock_in, row.employee_timezone)
+  currentClockOutInput.textContent = formatCorrectionDateTime(row.original_clock_out || row.clock_out, row.employee_timezone)
   currentStatusInput.textContent = row.is_open ? 'Open session' : ATTENDANCE_STATUS_LABELS[row.attendance_status] || row.attendance_status || '—'
-  newClockInInput.value = toDateTimeLocal(row.clock_in)
-  newClockOutInput.value = toDateTimeLocal(row.clock_out)
+  newClockInInput.value = toDateTimeLocal(row.billed_clock_in || row.clock_in)
+  newClockOutInput.value = toDateTimeLocal(row.billed_clock_out || row.clock_out)
   newStatusInput.value = row.attendance_status || 'present'
   reasonCodeInput.value = ''
   reasonNotesInput.value = ''
@@ -1305,8 +1281,17 @@ async function handleCorrectionSubmit(messageElement) {
     return
   }
 
-  if (!reasonCode) {
+  const currentBilledClockIn = toDateTimeLocal(modal.dataset.billedClockIn)
+  const currentBilledClockOut = toDateTimeLocal(modal.dataset.billedClockOut)
+  const billedTimeChanged = newClockIn !== currentBilledClockIn || newClockOut !== currentBilledClockOut
+
+  if (billedTimeChanged && !reasonCode) {
     setMessage(messageElement, 'Select a correction reason.', 'error')
+    return
+  }
+
+  if (billedTimeChanged && !reasonNotes.trim()) {
+    setMessage(messageElement, 'Remarks are required when billed time changes.', 'error')
     return
   }
 

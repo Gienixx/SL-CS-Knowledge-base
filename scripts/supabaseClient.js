@@ -15,9 +15,12 @@ export const supabase = window.__slSupabase || createClient(
 window.__slSupabase = supabase
 
 export const SESSION_MAX_AGE_MS = 24 * 60 * 60 * 1000
+export const HOURLY_REFRESH_INTERVAL_MS = 60 * 60 * 1000
 
 const SESSION_STARTED_AT_KEY = 'sl-cs-session-started-at'
+const HOURLY_REFRESH_STARTED_AT_KEY = 'sl-cs-hourly-refresh-started-at'
 let sessionExpiryTimer = null
+let hourlyRefreshTimer = null
 let sessionExpiryInProgress = false
 
 function decodeJwtPayload(accessToken) {
@@ -85,6 +88,67 @@ function clearSessionStart() {
   }
   if (sessionExpiryTimer) window.clearTimeout(sessionExpiryTimer)
   sessionExpiryTimer = null
+  try {
+    window.localStorage.removeItem(HOURLY_REFRESH_STARTED_AT_KEY)
+  } catch (error) {
+    console.warn('Unable to clear the hourly refresh time:', error)
+  }
+  if (hourlyRefreshTimer) window.clearTimeout(hourlyRefreshTimer)
+  hourlyRefreshTimer = null
+}
+
+function readHourlyRefreshStartedAt(session) {
+  const identity = sessionIdentity(session)
+
+  try {
+    const stored = JSON.parse(
+      window.localStorage.getItem(HOURLY_REFRESH_STARTED_AT_KEY) || 'null'
+    )
+    if (
+      stored?.identity === identity &&
+      Number.isFinite(stored?.startedAt)
+    ) {
+      return stored.startedAt
+    }
+  } catch {
+    // Start a new interval when browser storage is unavailable or invalid.
+  }
+
+  const startedAt = Date.now()
+  try {
+    window.localStorage.setItem(
+      HOURLY_REFRESH_STARTED_AT_KEY,
+      JSON.stringify({ identity, startedAt })
+    )
+  } catch (error) {
+    console.warn('Unable to persist the hourly refresh time:', error)
+  }
+  return startedAt
+}
+
+function scheduleHourlyRefresh(session) {
+  if (!session?.user) return
+  if (hourlyRefreshTimer) window.clearTimeout(hourlyRefreshTimer)
+
+  const startedAt = readHourlyRefreshStartedAt(session)
+  const remaining = HOURLY_REFRESH_INTERVAL_MS - (Date.now() - startedAt)
+  if (remaining <= 0) {
+    try {
+      window.localStorage.setItem(
+        HOURLY_REFRESH_STARTED_AT_KEY,
+        JSON.stringify({ identity: sessionIdentity(session), startedAt: Date.now() })
+      )
+    } catch (error) {
+      console.warn('Unable to advance the hourly refresh time:', error)
+    }
+    window.location.reload()
+    return
+  }
+
+  hourlyRefreshTimer = window.setTimeout(
+    () => scheduleHourlyRefresh(session),
+    remaining
+  )
 }
 
 function redirectToExpiredLogin() {
@@ -130,6 +194,7 @@ export function startSessionLifetime(session) {
   if (!session?.user) return
   writeSessionStart(session)
   scheduleSessionExpiry(session)
+  scheduleHourlyRefresh(session)
 }
 
 export async function enforceSessionLifetime() {
@@ -144,7 +209,9 @@ export async function enforceSessionLifetime() {
     return false
   }
 
-  return scheduleSessionExpiry(session)
+  const expired = scheduleSessionExpiry(session)
+  if (!expired) scheduleHourlyRefresh(session)
+  return expired
 }
 
 supabase.auth.onAuthStateChange((event, session) => {
@@ -154,6 +221,7 @@ supabase.auth.onAuthStateChange((event, session) => {
   }
 
   scheduleSessionExpiry(session)
+  scheduleHourlyRefresh(session)
 })
 
 export const sessionLifetimeReady = enforceSessionLifetime().catch(error => {

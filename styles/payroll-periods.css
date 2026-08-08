@@ -517,6 +517,7 @@ body { margin: 0; background-image: none; }
 .payroll-calculation-earnings {
   line-height: 1.45;
 }
+.payroll-rate-override{width:96px;margin-top:4px;font-variant-numeric:tabular-nums}
 
 .payroll-money {
   color: var(--payroll-text) !important;

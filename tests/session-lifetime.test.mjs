@@ -8,7 +8,12 @@ test('Supabase client enforces a fixed 24-hour browser session lifetime', async 
   const client = await read('scripts/supabaseClient.js')
 
   assert.match(client, /SESSION_MAX_AGE_MS = 24 \* 60 \* 60 \* 1000/)
+  assert.match(client, /HOURLY_REFRESH_INTERVAL_MS = 60 \* 60 \* 1000/)
   assert.match(client, /sl-cs-session-started-at/)
+  assert.match(client, /sl-cs-hourly-refresh-started-at/)
+  assert.match(client, /window\.location\.reload\(\)/)
+  assert.match(client, /scheduleHourlyRefresh\(session\)/)
+  assert.match(client, /removeItem\(HOURLY_REFRESH_STARTED_AT_KEY\)/)
   assert.match(client, /supabase\.auth\.signOut\(\{ scope: 'local' \}\)/)
   assert.match(client, /window\.setTimeout/)
   assert.match(client, /visibilitychange/)

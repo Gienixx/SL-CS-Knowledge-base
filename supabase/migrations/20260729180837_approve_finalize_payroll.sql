@@ -519,6 +519,47 @@ begin
         message = 'A source schedule changed after calculation. Review and recalculate payroll.';
   end if;
 
+  -- Every approved billed attendance entry in the period must have been
+  -- imported at its current attendance version before review/finalization.
+  if exists (
+    select 1
+    from public.workforce_attendance_payroll_readiness as readiness
+    join public.payroll_records as record
+      on record.employee_id = readiness.user_id
+     and record.payroll_period_id = p_payroll_period_id
+     and record.status <> 'void'
+    where readiness.work_date between v_period.period_start and v_period.period_end
+      and readiness.is_payroll_ready
+      and not exists (
+        select 1
+        from public.payroll_attendance_snapshots as snapshot
+        where snapshot.attendance_id = readiness.id
+          and snapshot.attendance_version = (
+            select attendance_row.attendance_version
+            from public.attendance as attendance_row
+            where attendance_row.id = readiness.id
+          )
+      )
+  ) then
+    raise exception
+      using errcode = '55000',
+        message = 'All approved billed attendance must be imported before payroll approval.';
+  end if;
+
+  -- Totals are rebuilt immediately before this assertion; audited manual
+  -- additions and deductions are included in the approval evidence.
+  if exists (
+    select 1
+    from public.payroll_records as record
+    where record.payroll_period_id = p_payroll_period_id
+      and record.status <> 'void'
+      and record.calculated_at is null
+  ) then
+    raise exception
+      using errcode = '55000',
+        message = 'Every employee payroll record must include current calculated totals and adjustments.';
+  end if;
+
   v_evidence :=
     public.payroll_collect_finalization_evidence(p_payroll_period_id);
 

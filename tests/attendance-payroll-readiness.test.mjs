@@ -28,7 +28,6 @@ test('Step 15 checks every payroll-readiness gate', async () => {
     'schedule_work_date_mismatch',
     'invalid_schedule_status',
     'calculations_missing',
-    'total_worked_mismatch',
     'total_overtime_mismatch',
     'work_date_overtime_limit_exceeded',
     'invalid_attendance_status',

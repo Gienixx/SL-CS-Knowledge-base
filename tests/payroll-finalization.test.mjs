@@ -37,6 +37,17 @@ test('Step 10 verifies and records review and final approval', async () => {
   assert.match(migration, /workforce_has_permission\('finalize_payroll'\)/)
 })
 
+test('approval readiness requires imported approved billed attendance and current totals', async () => {
+  const migration = await readFile(migrationPath, 'utf8')
+
+  assert.match(migration, /approved billed attendance entry/)
+  assert.match(migration, /workforce_attendance_payroll_readiness as readiness/)
+  assert.match(migration, /readiness\.is_payroll_ready/)
+  assert.match(migration, /attendance_version/)
+  assert.match(migration, /All approved billed attendance must be imported before payroll approval\./)
+  assert.match(migration, /calculated_at is null/)
+})
+
 test('finalized payroll history is immutable and reopening is controlled', async () => {
   const migration = await readFile(migrationPath, 'utf8')
   const hardening = await readFile(hardeningPath, 'utf8')

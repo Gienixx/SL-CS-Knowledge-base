@@ -120,7 +120,7 @@
         </div>
       </div>
 
-      <div class="team-attendance-column-contract" aria-hidden="true"><span>Employee</span><span>Team</span><span>Work date</span><span>Assigned shift</span><span>Clock-in</span><span>Clock-out</span><span>Regular time</span><span>Pre-shift overtime</span><span>Post-shift overtime</span><span>Total overtime</span><span>Late minutes</span><span>Total billed hours</span><span>Undertime</span><span>Prepaid login</span><span>Prepaid logout</span><span>Prepaid time</span><span>Actual eligible</span><span>Applied to prepaid</span><span>Remaining prepaid</span><span>Prepaid status</span><span>Status</span><span>Correction status</span><span>Actions</span><span>Last corrected by</span><span>Last corrected date</span></div>
+      <div class="team-attendance-column-contract" aria-hidden="true"><span>Employee</span><span>Team</span><span>Work date</span><span>Assigned shift</span><span>Original Clock-in</span><span>Original Clock-out</span><span>Billed Clock-in</span><span>Billed Clock-out</span><span>Regular time</span><span>Pre-shift overtime</span><span>Post-shift overtime</span><span>Total overtime</span><span>Late minutes</span><span>Total billed hours</span><span>Undertime</span><span>Prepaid login</span><span>Prepaid logout</span><span>Prepaid time</span><span>Actual eligible</span><span>Applied to prepaid</span><span>Remaining prepaid</span><span>Prepaid status</span><span>Status</span><span>Correction status</span><span>Actions</span><span>Last corrected by</span><span>Last corrected date</span></div>
       <div id="teamAttendanceTableBody" class="team-attendance-list" aria-live="polite">
         <div class="wf-empty">Loading team attendance...</div>
       </div>
@@ -223,7 +223,7 @@
             </div>
             <label>
               <span>Assigned shift</span>
-              <select id="teamAttendanceCorrectionSchedule" aria-label="Assigned shift">
+              <select id="teamAttendanceCorrectionSchedule" aria-label="Assigned shift" disabled>
                 <option value="">Unscheduled (RDOT)</option>
               </select>
               <small id="teamAttendanceCorrectionScheduleStatus">Unscheduled</small>
@@ -233,22 +233,22 @@
           <section class="team-attendance-correction-changes" aria-labelledby="teamAttendanceChangingTitle">
             <h3 id="teamAttendanceChangingTitle">What’s changing</h3>
             <div class="team-attendance-change-row">
-              <strong>Clock-in</strong>
-              <div class="team-attendance-current-value"><span>Current</span><output id="teamAttendanceCorrectionCurrentClockIn">—</output></div>
+              <strong>Billed Clock-in</strong>
+              <div class="team-attendance-current-value"><span>Original · read-only</span><output id="teamAttendanceCorrectionCurrentClockIn">—</output></div>
               <span class="team-attendance-change-arrow" aria-hidden="true">→</span>
               <label><span>New</span><input id="teamAttendanceNewClockIn" class="wf-control" type="datetime-local"></label>
             </div>
             <div class="team-attendance-change-row">
-              <strong>Clock-out</strong>
-              <div class="team-attendance-current-value"><span>Current</span><output id="teamAttendanceCorrectionCurrentClockOut">—</output></div>
+              <strong>Billed Clock-out</strong>
+              <div class="team-attendance-current-value"><span>Original · read-only</span><output id="teamAttendanceCorrectionCurrentClockOut">—</output></div>
               <span class="team-attendance-change-arrow" aria-hidden="true">→</span>
               <label><span>New</span><input id="teamAttendanceNewClockOut" class="wf-control" type="datetime-local"></label>
             </div>
             <div class="team-attendance-change-row">
-              <strong>Status</strong>
+              <strong>Status · read-only</strong>
               <div class="team-attendance-current-value"><span>Current</span><output id="teamAttendanceCorrectionCurrentStatus">—</output></div>
               <span class="team-attendance-change-arrow" aria-hidden="true">→</span>
-              <label><span>New</span><select id="teamAttendanceNewStatus" class="wf-control">
+              <label><span>Current</span><select id="teamAttendanceNewStatus" class="wf-control" disabled>
                 <option value="present">Present</option>
                 <option value="absent">Absent</option>
                 <option value="on_leave">On leave</option>
@@ -275,8 +275,8 @@
                 </select>
               </label>
               <label class="wf-field">
-                <span>Reason notes (optional)</span>
-                <textarea id="teamAttendanceReasonNotes" class="wf-control" rows="3" placeholder="Required when reason is Other"></textarea>
+                <span>Remarks</span>
+                <textarea id="teamAttendanceReasonNotes" class="wf-control" rows="3" placeholder="Required when billed time changes"></textarea>
               </label>
             </div>
           </section>

@@ -66,6 +66,7 @@ const state = {
   approvingPreplots: false,
   savingPrepaid: false,
   prepaidCandidate: null
+  ,rateOverrides: new Map()
 }
 
 const elements = {
@@ -254,6 +255,25 @@ function formatShiftTime(value, timezone = 'America/New_York') {
 function formatHours(minutes) {
   const hours = Number(minutes || 0) / 60
   return Number.isInteger(hours) ? String(hours) : hours.toFixed(2)
+}
+
+function approvedBilledMinutes(calculation) {
+  return [
+    calculation.regular_minutes,
+    calculation.overtime_minutes,
+    calculation.rest_day_minutes,
+    calculation.holiday_minutes
+  ].reduce((total, value) => total + Math.max(0, Number(value) || 0), 0)
+}
+
+function calculationHourlyRate(calculation) {
+  const regularLine = (calculation.line_items || []).find(
+    line => line.item_code === 'regular_earnings'
+  )
+  return Number(
+    state.rateOverrides.get(calculation.payroll_record_id) ??
+    regularLine?.unit_rate ?? 0
+  )
 }
 
 function formatMoney(value) {
@@ -1350,6 +1370,10 @@ function calculationLineSummary(calculation) {
 
 function calculationEarningsSummary(calculation) {
   const parts = []
+  const basePay = approvedBilledMinutes(calculation) / 60 * calculationHourlyRate(calculation)
+  const estimatedFinalPay = basePay + Number(calculation.other_earnings || 0) - Number(calculation.total_deductions || 0)
+  parts.push(`Base Pay ${formatMoney(basePay)}`)
+  parts.push(`Estimated Final Pay ${formatMoney(estimatedFinalPay)}`)
   const values = [
     ['Regular', calculation.basic_pay],
     ['Prepaid', calculation.prepaid_pay],
@@ -1480,13 +1504,39 @@ function renderCalculations() {
       )
     )
 
+    const billedMinutes = approvedBilledMinutes(calculation)
+    const prepaidMinutes = Number(calculation.prepaid_minutes || 0)
+    const consumedMinutes = Number(calculation.applied_prepaid_minutes || 0)
+    const regularPayableMinutes = Math.max(0, billedMinutes - consumedMinutes)
+    const newPrepaidMinutes = Math.max(0, prepaidMinutes - consumedMinutes)
+    const totalBilledMinutes = regularPayableMinutes + newPrepaidMinutes
+    const rateCell = document.createElement('td')
+    const rateInput = document.createElement('input')
+    rateInput.className = 'payroll-control payroll-rate-override'
+    rateInput.type = 'number'
+    rateInput.min = '0'
+    rateInput.step = '0.01'
+    rateInput.value = calculationHourlyRate(calculation).toFixed(2)
+    rateInput.disabled = state.period?.period_status === 'finalized' || !state.canCalculatePayroll
+    rateInput.title = 'Draft hourly-rate override'
+    rateInput.addEventListener('change', () => {
+      const value = Number(rateInput.value)
+      if (!Number.isFinite(value) || value < 0) return
+      state.rateOverrides.set(calculation.payroll_record_id, value)
+      renderCalculations()
+    })
+    rateCell.append(element('span', '', 'Hourly rate'), rateInput)
+
+    const hoursCell = element(
+      'td',
+      'payroll-calculation-time',
+      `Total billed ${formatHours(totalBilledMinutes)}h · Approved worked ${formatHours(billedMinutes)}h · Prepaid consumed ${formatHours(consumedMinutes)}h · New regular ${formatHours(regularPayableMinutes)}h · New prepaid ${formatHours(newPrepaidMinutes)}h · Remaining prepaid ${formatHours(newPrepaidMinutes)}h`
+    )
+
     row.append(
       employeeCell,
-      element(
-        'td',
-        'payroll-calculation-time',
-        calculationLineSummary(calculation)
-      ),
+      hoursCell,
+      rateCell,
       element(
         'td',
         'payroll-calculation-earnings',
@@ -1505,6 +1555,22 @@ function renderCalculations() {
       )
     )
     const detailCell = document.createElement('td')
+    if (
+      state.canCalculatePayroll &&
+      ['draft', 'reopened'].includes(state.period?.period_status) &&
+      !['finalized', 'void'].includes(calculation.record_status)
+    ) {
+      const recalculateButton = element(
+        'button',
+        'payroll-button payroll-button-secondary payroll-row-action',
+        'Recalculate'
+      )
+      recalculateButton.type = 'button'
+      recalculateButton.dataset.payrollRecordId = calculation.payroll_record_id
+      recalculateButton.dataset.payrollAction = 'recalculate'
+      recalculateButton.title = 'Recalculate this employee only'
+      detailCell.append(recalculateButton)
+    }
     detailCell.append(calculationDetails(calculation))
     if (state.period?.period_status === 'finalized') {
       const previewLink = element(
@@ -1520,6 +1586,36 @@ function renderCalculations() {
     fragment.append(row)
   }
   elements.calculationBody.replaceChildren(fragment)
+}
+
+async function recalculateEmployeeDraft(payrollRecordId) {
+  if (
+    !payrollRecordId ||
+    !state.canCalculatePayroll ||
+    !['draft', 'reopened'].includes(state.period?.period_status)
+  ) return
+
+  const calculation = state.calculations.find(
+    row => row.payroll_record_id === payrollRecordId
+  )
+  const employeeName = calculation?.employee_name || 'this employee'
+  if (!window.confirm(`Recalculate ${employeeName}'s Draft payroll only?`)) {
+    return
+  }
+
+  setMessage(`Recalculating ${employeeName} from approved snapshots…`)
+  const { error } = await supabase.rpc('payroll_calculate_employee_draft', {
+    p_payroll_record_id: payrollRecordId
+  })
+  if (error) {
+    setMessage(
+      error.message || 'Employee Draft payroll could not be recalculated.',
+      'error'
+    )
+    return
+  }
+  await loadPeriod()
+  setMessage(`${employeeName}'s Draft payroll was recalculated.`, 'success')
 }
 
 function renderAdjustments() {
@@ -2674,6 +2770,11 @@ async function initialize() {
 elements.refresh.addEventListener('click', loadPeriod)
 elements.importButton.addEventListener('click', importApprovedAttendance)
 elements.calculateButton.addEventListener('click', calculateDraftPayroll)
+elements.calculationBody.addEventListener('click', event => {
+  const button = event.target.closest('[data-payroll-action="recalculate"]')
+  if (!button) return
+  void recalculateEmployeeDraft(button.dataset.payrollRecordId)
+})
 elements.reviewPayrollButton.addEventListener('click', () => {
   openLifecycleDialog('review')
 })

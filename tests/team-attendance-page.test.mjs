@@ -8,6 +8,20 @@ const manualEntryMigrationPath = 'supabase/migrations/20260714070649_manual_atte
 const approvalLockingMigrationPath = 'supabase/migrations/20260717172240_attendance_approval_locking.sql'
 const writeBoundaryMigrationPath = 'supabase/migrations/20260721153218_harden_attendance_write_boundaries.sql'
 const timestampHistoryMigrationPath = 'supabase/migrations/20260806120000_team_attendance_original_timestamps.sql'
+const billedRpcMigrationPath = 'supabase/migrations/20260808113000_expose_billed_attendance_in_team_rpc.sql'
+
+test('Team Attendance listing RPC returns billed timestamps without changing its scope contract', async () => {
+  const migration = await read(billedRpcMigrationPath)
+
+  assert.match(migration, /billed_clock_in timestamptz,\s*billed_clock_out timestamptz/)
+  assert.match(migration, /attendance_row\.billed_clock_in/)
+  assert.match(migration, /attendance_row\.billed_clock_out/)
+  assert.match(migration, /workforce_can_manage_user\(attendance_row\.user_id, 'view_team_attendance'\)/)
+  assert.match(migration, /not v_is_admin and attendance_row\.clock_in is not null/)
+  assert.match(migration, /order by attendance_row\.work_date desc/)
+  assert.match(migration, /revoke all on function public\.workforce_list_team_attendance\(date, date\)/)
+  assert.match(migration, /grant execute on function public\.workforce_list_team_attendance\(date, date\)[\s\S]*to authenticated, service_role/)
+})
 
 test('Team Attendance returns immutable original timestamps for edited-card history', async () => {
   const [migration, baseline] = await Promise.all([
@@ -24,29 +38,46 @@ test('Team Attendance returns immutable original timestamps for edited-card hist
   assert.match(baseline, /original_clock_in is immutable after capture/)
 })
 
-test('Team Attendance uses conditional original and new timestamp labels', async () => {
+test('Team Attendance displays original and billed timestamp fields without strikethrough', async () => {
   const [script, page, styles] = await Promise.all([
     read('scripts/team-attendance.js'),
     read('team-attendance.html'),
     read('styles/team-attendance.css')
   ])
 
-  assert.match(script, /if \(edited\)/)
-  assert.match(script, /'Clock-in'/)
-  assert.match(script, /'Clock-out'/)
-  assert.match(script, /'New Clock-in'/)
-  assert.match(script, /'New Clock-out'/)
-  assert.match(script, /team-attendance-time-change/)
-  assert.match(script, /createElement\('del'\)/)
-  assert.match(script, /team-attendance-time-arrow/)
-  assert.match(styles, /\.team-attendance-time-values del\{[^}]*text-decoration/)
-  assert.match(styles, /\.team-attendance-time-values strong\{[^}]*color:var\(--ta-amber\)/)
-  assert.match(script, /'Total billed hours'/)
+  assert.match(script, /'Original Clock-in'/)
+  assert.match(script, /'Original Clock-out'/)
+  assert.match(script, /'Billed Clock-in'/)
+  assert.match(script, /'Billed Clock-out'/)
+  assert.match(script, /record\.billed_clock_in \|\| record\.clock_in/)
+  assert.match(script, /record\.billed_clock_out \|\| record\.clock_out/)
+  assert.match(script, /addMeta\(middle, formatDateTime\(record\.original_clock_in/)
+  assert.doesNotMatch(script, /createElement\('del'\)/)
+  assert.doesNotMatch(styles, /text-decoration:line-through/)
+  assert.match(script, /'Total Billed Hours'/)
   assert.match(script, /team-attendance-prepaid-caret/)
   assert.match(script, /aria-expanded/)
   assert.match(script, /prepaid\.addEventListener\('toggle'/)
   assert.match(styles, /\.team-attendance-prepaid-values\{display:grid;grid-template-columns:repeat\(3/)
   assert.match(page, /Total billed hours/)
+})
+
+test('Team Attendance edits billed timestamps only and locks normal edits after approval', async () => {
+  const [script, page] = await Promise.all([
+    read('scripts/team-attendance.js'),
+    read('team-attendance.html')
+  ])
+
+  assert.match(script, /row\.billed_clock_in \|\| row\.clock_in/)
+  assert.match(script, /row\.billed_clock_out \|\| row\.clock_out/)
+  assert.match(script, /\['approved', 'locked'\]\.includes\(row\.review_status\)/)
+  assert.match(script, /Remarks are required when billed time changes/)
+  assert.match(script, /supabase\.rpc\('workforce_review_attendance'/)
+  assert.match(page, /Billed Clock-in/)
+  assert.match(page, /Billed Clock-out/)
+  assert.match(page, /Original · read-only/)
+  assert.match(page, /id="teamAttendanceCorrectionSchedule"[^>]*disabled/)
+  assert.match(page, /id="teamAttendanceNewStatus"[^>]*disabled/)
 })
 
 test('Step 10 page contains every required attendance column and filter', async () => {
@@ -245,7 +276,7 @@ test('Team Attendance preserves a distinct dark-mode card hierarchy', async () =
   assert.match(styles, /html\[data-site-theme="dark"\] \.team-attendance-record\{[^}]*background:#10243a/)
   assert.match(styles, /html\[data-site-theme="dark"\] \.team-attendance-prepaid-title\{[^}]*background:#1a3149/)
   assert.doesNotMatch(styles, /html\[data-site-theme="dark"\] \.team-attendance-prepaid-title\{[^}]*background:#fff/)
-  assert.match(styles, /html\[data-site-theme="dark"\] \.team-attendance-time-values\{font-family:'Poppins',Arial,sans-serif/)
+  assert.match(styles, /html\[data-site-theme="dark"\] \.team-attendance-record-mid \.team-attendance-meta:nth-child\(n\+2\) strong\{font-family:'Poppins',Arial,sans-serif/)
   assert.match(styles, /html\[data-site-theme="dark"\] \.team-attendance-track\{background:#243a51/)
 })
 

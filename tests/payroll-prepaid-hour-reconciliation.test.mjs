@@ -61,7 +61,7 @@ test('approved attendance settles prepaid minutes FIFO and carries shortfalls', 
   )
   assert.match(
     migration,
-    /\('regular'::text, new\.regular_minutes\),\s*\('pre_shift_overtime'::text, new\.pre_shift_overtime_minutes\),\s*\('post_shift_overtime'::text, new\.post_shift_overtime_minutes\)/
+    /\('regular'::text, greatest\(0, floor\(extract\(epoch from \(new\.clock_out - new\.clock_in\)\)/
   )
   assert.match(
     migration,
@@ -83,6 +83,20 @@ test('approved attendance settles prepaid minutes FIFO and carries shortfalls', 
     migration,
     /new\.special_day_type <> 'ordinary'[\s\S]*?new\.is_rest_day[\s\S]*?new\.is_holiday/
   )
+  assert.match(migration, /approved billed rendered minutes/)
+})
+
+test('billed duration is consumed before new regular payroll hours and cannot be paid twice', async () => {
+  const [reconciliation, calculation] = await Promise.all([
+    read(migrationPath),
+    read('supabase/migrations/20260729151931_calculate_draft_payroll.sql')
+  ])
+
+  assert.match(reconciliation, /new\.clock_out - new\.clock_in/)
+  assert.match(reconciliation, /least\(v_available_minutes, v_balance\.remaining_minutes\)/)
+  assert.match(calculation, /snapshot\.clock_out - snapshot\.clock_in/)
+  assert.match(calculation, /- coalesce\(regular_allocation\.allocated_minutes, 0\)/)
+  assert.match(calculation, /payable_total_minutes/)
 })
 
 test('new attendance versions reverse prior allocations before recalculation', async () => {

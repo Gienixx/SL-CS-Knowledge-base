@@ -8,12 +8,12 @@ with evaluated as (
   select
     attendance_row.*,
     array_remove(array[
-      case when attendance_row.clock_in is null then 'missing_clock_in' end,
-      case when attendance_row.clock_out is null then 'missing_clock_out' end,
+      case when attendance_row.billed_clock_in is null then 'missing_clock_in' end,
+      case when attendance_row.billed_clock_out is null then 'missing_clock_out' end,
       case
-        when attendance_row.clock_in is not null
-         and attendance_row.clock_out is not null
-         and attendance_row.clock_out < attendance_row.clock_in
+        when attendance_row.billed_clock_in is not null
+         and attendance_row.billed_clock_out is not null
+         and attendance_row.billed_clock_out < attendance_row.billed_clock_in
         then 'invalid_clock_order'
       end,
       case when attendance_row.schedule_id is null then 'missing_schedule' end,
@@ -51,15 +51,6 @@ with evaluated as (
           or attendance_row.regular_minutes is null
           or attendance_row.post_shift_overtime_minutes is null
         then 'calculations_missing'
-      end,
-      case
-        when attendance_row.clock_in is not null
-         and attendance_row.clock_out is not null
-         and attendance_row.total_worked_minutes is distinct from greatest(
-           0,
-           floor(extract(epoch from (attendance_row.clock_out - attendance_row.clock_in)) / 60)::integer
-         )
-        then 'total_worked_mismatch'
       end,
       case
         when attendance_row.pre_shift_overtime_minutes is not null
@@ -101,8 +92,8 @@ select
   user_id,
   schedule_id,
   work_date,
-  clock_in,
-  clock_out,
+  billed_clock_in as clock_in,
+  billed_clock_out as clock_out,
   attendance_status,
   is_late,
   minutes_late,
@@ -118,6 +109,8 @@ select
   updated_at,
   original_clock_in,
   original_clock_out,
+  billed_clock_in,
+  billed_clock_out,
   pre_shift_overtime_minutes,
   regular_minutes,
   post_shift_overtime_minutes,

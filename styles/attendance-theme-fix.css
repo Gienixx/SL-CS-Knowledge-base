@@ -366,3 +366,8 @@ html[data-site-theme="light"] .attendance-brand-mark {
   color: var(--site-gold) !important;
   background: transparent !important;
 }
+
+/* Attendance history notes need body-text contrast in the light theme. */
+html[data-site-theme="light"] .attendance-note-cell {
+  color: var(--site-text) !important;
+}

@@ -29,7 +29,7 @@ test('Home separates and paginates announcements and Updates independently', asy
   assert.match(page, /id="updatePreviousPage"/)
   assert.match(page, /id="updateNextPage"/)
   assert.match(page, /id="updatePageStatus"[^>]*>Page 1 of 1</)
-  assert.match(page, /10 per page/g)
+  assert.match(script, /const ANNOUNCEMENT_PAGE_SIZE = 10/)
   assert.match(script, /\.from\('team_announcements'\)/)
   assert.match(script, /const ANNOUNCEMENT_PAGE_SIZE = 10/)
   assert.match(script, /announcements:\s*\{[\s\S]*?page: 1[\s\S]*?updatesOnly: false/)
@@ -58,6 +58,11 @@ test('Home separates and paginates announcements and Updates independently', asy
   assert.match(script, /dialog\.showModal\(\)/)
   assert.match(stylesheet, /\.team-update-pagination\s*\{/)
   assert.match(stylesheet, /\.team-update-pagination\[hidden\]\s*\{\s*display:\s*none/)
+  assert.match(stylesheet, /\.updates-panel \.team-update-feeds \{ flex: 1 1 auto; \}/)
+  assert.match(stylesheet, /\.updates-panel \{ align-self: stretch; \}/)
+  assert.match(stylesheet, /\.updates-panel \.team-update-feed \{ min-height: 0; flex: 1 1 0; \}/)
+  assert.match(stylesheet, /\.updates-panel \.team-updates-body\.has-updates[\s\S]*overflow-y: auto/)
+  assert.match(stylesheet, /\.updates-panel \.team-update-feed:first-child \.team-update-pagination \{\s*justify-content: center;/)
 
   const rowFunction = script.match(
     /function createTeamUpdate\(announcement\) \{[\s\S]*?\n\}/

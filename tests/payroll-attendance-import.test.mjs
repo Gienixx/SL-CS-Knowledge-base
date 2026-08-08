@@ -51,7 +51,7 @@ test('attendance import accepts only payroll-ready records through an authorized
 
   assert.match(
     migration,
-    /create or replace function public\.payroll_import_attendance\(\s*p_payroll_period_id uuid\s*\)/
+    /create (?:or replace )?function public\.payroll_import_attendance\(\s*p_payroll_period_id uuid[\s\S]*?p_payroll_record_id uuid default null/
   )
   assert.match(
     migration,
@@ -76,6 +76,47 @@ test('attendance import accepts only payroll-ready records through an authorized
     migration,
     /hourly_rate|daily_rate|monthly_rate|overtime_rate|holiday_rate/
   )
+})
+
+test('employee attendance reimport reuses the import body with a Draft-only record scope', async () => {
+  const migration = await read(migrationPath)
+
+  assert.match(migration, /payroll_import_employee_attendance\(\s*p_payroll_record_id uuid\s*\)/)
+  assert.match(migration, /payroll_import_attendance\(v_period_id, p_payroll_record_id\)/)
+  assert.match(migration, /p_payroll_record_id is null or record\.id = p_payroll_record_id/)
+  assert.match(migration, /selected_record\.status not in \('finalized', 'void'\)/)
+  assert.match(migration, /billed_clock_in,\s*billed_clock_out,/)
+  assert.match(migration, /source\.billed_clock_in,\s*source\.billed_clock_out,/)
+  assert.match(migration, /payroll_import_employee_attendance\(uuid\)[\s\S]*?to authenticated, service_role/)
+})
+
+test('employee reimport clears only the stale recalculation flag after latest snapshots match', async () => {
+  const migration = await read(migrationPath)
+
+  assert.match(migration, /set requires_recalculation = false/)
+  assert.match(migration, /readiness\.is_payroll_ready/)
+  assert.match(
+    migration,
+    /snapshot\.attendance_id = attendance_row\.id[\s\S]*?snapshot\.attendance_version = attendance_row\.attendance_version/
+  )
+  assert.match(migration, /and not exists \([\s\S]*?payroll_attendance_snapshots as snapshot/)
+  assert.match(migration, /record\.status not in \('finalized', 'void'\)/)
+})
+
+test('attendance import snapshots approved billed timestamps only', async () => {
+  const [importMigration, readinessMigration] = await Promise.all([
+    read(migrationPath),
+    read('supabase/migrations/20260722084820_harden_attendance_payroll_readiness.sql')
+  ])
+
+  assert.match(readinessMigration, /billed_clock_in is null then 'missing_clock_in'/)
+  assert.match(readinessMigration, /billed_clock_out is null then 'missing_clock_out'/)
+  assert.match(readinessMigration, /review_status not in \('approved', 'locked'\)/)
+  assert.match(importMigration, /attendance_row\.billed_clock_in as billed_clock_in/)
+  assert.match(importMigration, /attendance_row\.billed_clock_out as billed_clock_out/)
+  assert.match(importMigration, /source\.billed_clock_in/)
+  assert.match(importMigration, /source\.billed_clock_out/)
+  assert.doesNotMatch(importMigration, /source\.original_clock_in|source\.original_clock_out/)
 })
 
 test('changed attendance flags only non-finalized payroll for recalculation', async () => {

@@ -62,17 +62,11 @@ body:has(.team-attendance-page){background:#eef1f5}
 .team-attendance-record-actions summary::-webkit-details-marker{display:none}
 .team-attendance-record-actions[open] summary{background:#eef1f5}
 .team-attendance-record-actions>.wf-row-actions{position:absolute;right:0;top:34px;z-index:8;display:flex;width:max-content;padding:7px;border:1px solid var(--ta-line);border-radius:9px;background:#fff;box-shadow:0 12px 30px rgba(23,33,58,.14)}
-.team-attendance-record-mid{display:grid;grid-template-columns:1.25fr .8fr .8fr;max-width:520px;gap:28px;margin-bottom:12px}
+.team-attendance-record-mid{display:grid;grid-template-columns:1.25fr repeat(4,.8fr);max-width:900px;gap:18px;margin-bottom:12px}
 .team-attendance-meta{display:grid;gap:1px;min-width:0}
 .team-attendance-meta strong{font-size:13.5px;color:var(--ta-ink);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .team-attendance-record-mid .team-attendance-meta:nth-child(n+2) strong{font-family:'IBM Plex Mono','Courier New',monospace;font-weight:600;letter-spacing:-.01em}
 .team-attendance-meta span{color:var(--ta-muted);font-size:11.5px}
-.team-attendance-time-change{display:grid;gap:4px;min-width:0}
-.team-attendance-time-label{color:var(--ta-muted);font-size:10px;font-weight:800;letter-spacing:.055em;text-transform:uppercase}
-.team-attendance-time-values{display:flex;align-items:center;gap:5px;min-width:0;font-family:'IBM Plex Mono','Courier New',monospace;font-size:12px;white-space:nowrap}
-.team-attendance-time-values del{overflow:visible;color:#9aa4b2;text-decoration:line-through;text-overflow:clip}
-.team-attendance-time-values strong{overflow:visible;color:var(--ta-amber);text-overflow:clip}
-.team-attendance-time-arrow{color:#c97a28;font-family:Arial,sans-serif;font-weight:800}
 .team-attendance-timeline{margin-bottom:14px}
 .team-attendance-track{position:relative;height:10px;border-radius:99px;background:#f1f3f6;overflow:hidden}
 .team-attendance-shift-segment,.team-attendance-work-segment{position:absolute;top:0;height:100%;border-radius:99px}
@@ -192,10 +186,7 @@ html[data-site-theme="dark"] .team-attendance-avatar{background:rgba(127,156,255
 html[data-site-theme="dark"] .team-attendance-record .wf-badge.in-progress{background:rgba(127,156,255,.14);border:1px solid rgba(127,156,255,.24);color:#aebeff}
 html[data-site-theme="dark"] .team-attendance-record-actions summary:hover,html[data-site-theme="dark"] .team-attendance-record-actions[open] summary{background:rgba(170,181,201,.12);color:#d6dfec}
 html[data-site-theme="dark"] .team-attendance-record-actions>.wf-row-actions{background:#10243a;border-color:rgba(147,178,216,.22)}
-html[data-site-theme="dark"] .team-attendance-record-mid .team-attendance-meta:nth-child(n+2) strong,html[data-site-theme="dark"] .team-attendance-time-values{font-family:'Poppins',Arial,sans-serif}
-html[data-site-theme="dark"] .team-attendance-time-values del{color:#8798ad}
-html[data-site-theme="dark"] .team-attendance-time-values strong{color:#e2a14c}
-html[data-site-theme="dark"] .team-attendance-time-arrow{color:#a9b6c8}
+html[data-site-theme="dark"] .team-attendance-record-mid .team-attendance-meta:nth-child(n+2) strong{font-family:'Poppins',Arial,sans-serif}
 html[data-site-theme="dark"] .team-attendance-track{background:#243a51}
 html[data-site-theme="dark"] .team-attendance-shift-segment{background:#45617d}
 html[data-site-theme="dark"] .team-attendance-timeline-labels{color:#91a4ba}

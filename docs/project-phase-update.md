@@ -1,17 +1,17 @@
 # SL CS Knowledge Base — Project Phase Update
 
-**Status date:** August 6, 2026
+**Status date:** August 8, 2026
 
 **Repository:** `SL-CS-Knowledge-base`
 
-**Current active work:** Payroll acceptance for Phase 2, Step 14 — Two-Period Parallel Payroll Test
+**Current active work:** Revised Phase 2 payroll acceptance through two future linked controlled payroll periods
 
 ## Phase overview
 
 | Phase | Scope | Status | Current position |
 | --- | --- | --- | --- |
 | Phase 1 | Workforce, Attendance, and Leave Foundation | Complete and released | All 18 steps passed the production-release gate on July 22, 2026 |
-| Phase 2 | Rates, Payroll, and Payslips | In progress | Steps 1–13 complete; Step 14 blocked pending payroll acceptance; Step 15 not started |
+| Phase 2 | Rates, Payroll, and Payslips | In progress | Revised payroll workflow implemented; Step 14 controlled-period acceptance in progress; Step 15 not started |
 | Phase 3 | Reporting and Analytics | Complete in its current architecture | Reporting uses Google Sheet as its only active source; operational monitoring and secured exports are implemented |
 
 ## Phase 1 — Workforce, Attendance, and Leave Foundation
@@ -43,6 +43,8 @@ consume.
   statuses, and payroll-readiness blockers.
 - Built Team Attendance with permission and supervisor scope, filters,
   correction controls, approval, and locking.
+- Kept Original Clock-in/Clock-out immutable as attendance evidence and added
+  manager-adjustable Billed Clock-in/Billed Clock-out values.
 - Added structured, audited attendance corrections with mandatory reasons and
   preserved correction history.
 - Completed the agent and administrator leave-request workflow and approved
@@ -63,34 +65,39 @@ Reference: [Phase 1 production release](workforce-step-18-production-release.md)
 
 ### Objective
 
-Use approved Phase 1 attendance and approved prepaid schedules to calculate
-payroll, reconcile prepaid hours, preserve historical rates, and provide
-private immutable payslips.
+Use manager-approved billed attendance and approved prepaid schedules to
+calculate payroll, reconcile prepaid hours, preserve historical rates, and
+provide private immutable payslips. Users do not submit separate payroll
+timesheets.
 
-### Steps 1–13 completed
+### Approved payroll workflow
 
-1. Created the secured payroll and prepaid-hour reconciliation tables.
-2. Added granular payroll permissions independent of general administrator
-   access.
-3. Assigned payroll access and own-payslip permissions with audited changes.
-4. Implemented effective-dated USD rates without overwriting rate history.
-5. Built payroll-period and prepaid-schedule management.
-6. Added immutable attendance and approved-schedule imports.
-7. Implemented atomic draft-payroll calculation and FIFO prepaid-hour
-   reconciliation.
-8. Built payroll exception review and prepaid reconciliation visibility.
-9. Added audited manual earnings and deductions for editable payroll drafts.
-10. Implemented review, approval, finalization, immutable locks, and controlled
-    reopening.
-11. Built the secured finalized-payslip preview.
-12. Added server-rendered A4 PDFs, private storage, immutable PDF versions, and
-    short-lived signed downloads.
-13. Built My Payslips so employees can access only their own finalized
-    payslips.
+- Original Clock-in/Clock-out remain immutable attendance evidence. Managers
+  may adjust Billed Clock-in/Billed Clock-out; every billed-time edit retains
+  its audit history and reason.
+- Managers review and approve attendance. Only approved attendance is
+  payroll-ready, and approved Total Billed Hours are the payroll time source.
+- No premium pay applies to overtime, holidays, rest days, special days, or
+  excess hours. These remain classifications only; payable hours use the
+  normal entered rate.
+- Payroll managers may set or override the employee hourly rate in Draft
+  payroll and may add audited reimbursements, incentives, bonuses, and other
+  additions or deductions.
+- Total Billed Hours is the complete payroll-hour basis: newly payable approved
+  worked hours plus new prepaid hours paid in that cutoff. Previously paid
+  prepaid hours being rendered only reduce the balance and are not paid again.
+  Payroll estimate = Total Billed Hours × rate + additions − deductions.
+- Existing prepaid-hour FIFO logic remains: approved billed hours consume
+  previously paid prepaid hours first; only hours after the prepaid balance
+  reaches zero become new regular payable hours. New prepaid schedules may be
+  paid in advance and carried forward until rendered.
+- Finalized payroll remains audited and locked under the existing workflow.
 
-### Step 14 blocked — Parallel payroll test and acceptance
+### Step 14 in progress — Revised controlled payroll acceptance
 
-The July 1–15 system payroll is ready for manual comparison:
+July historical testing is evidence-limited. Arby's manual payslip evidence is
+the only available manual evidence, so the July findings are preserved but do
+not support a full-population manual comparison:
 
 - 9 payable employee payroll records remain after both testing-only profiles
   were excluded. The separate `Test` profile's prior zero-pay record is void
@@ -117,7 +124,7 @@ version-2 balances are void and linked to the replacements. All four shifts
 that were open at the July 30 checkpoint have clock-outs, and no July shift or
 attendance review remains open.
 
-The following work is still required before Step 14 can be approved:
+The July findings remain part of the acceptance record:
 
 - Resolve Arby Jann Benito's completed payslip comparison. The Jul 1–15
   system gross/net is USD 173.61 below the manual USD 860.01; the Jul 16–31
@@ -128,30 +135,28 @@ The following work is still required before Step 14 can be approved:
 - Keep the other eight payable employees marked `Manual evidence unavailable`
   for both July periods. Their missing values must not be inferred or entered
   as zero.
-- Run a later full-population, two-period comparison because the approved
-  partial July evidence scope cannot meet the existing Step 14 completion
-  gate.
-- Capture the remaining rate-change and post-finalization-correction scenario
-  evidence.
-- Resolve every variance and capture the payroll owner's signed and dated
-  approval.
+Historical missing evidence no longer prevents testing the revised workflow.
+July remains evidence-limited historical validation because only Arby's manual
+payslip evidence is available; missing values for the other employees are not
+inferred and do not permanently block workflow validation. Step 14 will be
+approved only after two future linked controlled payroll periods are actually
+performed and validate billed hours, prepaid reconciliation, rate, additions
+and deductions, payroll estimate, attendance approval, payroll finalization,
+and payslip output, with signed payroll-owner approval. Those controlled
+periods are not complete and must not be marked complete in advance.
 
-Core payroll development for the current scope is complete. The remaining
-work is payroll acceptance: documented manual evidence, variance resolution,
-and payroll-owner approval. Missing evidence remains a blocker and is not
-treated as zero.
+### Step 15 not started — Phase 2 rollout and final acceptance
 
-### Step 15 not started — Controlled payroll periods
-
-Step 15 will run two linked controlled payroll periods with complete manual
-verification. It must not begin until Step 14 is fully reconciled and approved.
+Step 15 follows the two controlled periods and covers final Phase 2 approval
+and operational rollout. It must not be marked complete until the controlled
+period evidence and approvals are actually recorded.
 
 References:
 
 - [Phase 2 implementation](payroll-phase-2-implementation.md)
 - [Step 14 parallel payroll test](payroll-step-14-parallel-test.md)
 
-## Recent changes — August 4–5, 2026
+## Recent changes — August 4–8, 2026
 
 - Resolved the My Schedule automated test failures. Schedule drafts remain
   visible to authorized schedule managers through the canonical controller;
@@ -165,8 +170,10 @@ References:
   theme CSS; Home remains the primary theme control. Correction visibility
   continues to use `redactAttendanceCorrectionForViewer` without permission
   changes.
-- The complete automated quality gate now reports 489 tests passing and 0
-  failing. The build produced 200 production assets; build tests passed 1/1;
+- The revised billed-attendance and payroll workflow was verified through the
+  focused attendance/payroll suite and complete automated quality gate. The
+  repository now reports 510 tests passing and 0 failing. The build produced
+  206 production assets; build tests passed 1/1;
   repository checks passed 11/11.
 
 ## Phase 3 — Reporting and Analytics
@@ -202,10 +209,10 @@ Reference: [Reporting system](reporting-system.md)
 
 ## Repository verification
 
-The repository was checked on August 6, 2026:
+The repository was checked on August 8, 2026:
 
-- The complete automated repository suite passed: **489 passed, 0 failed**.
-- The build completed successfully with **200 production assets**.
+- The complete automated repository suite passed: **510 passed, 0 failed**.
+- The build completed successfully with **206 production assets**.
 - Build tests passed: **1 passed, 0 failed**.
 - Repository checks passed: **11 passed, 0 failed**.
 
@@ -253,8 +260,10 @@ the current result.
 - [x] Approve Almar's current July 28–31 prepaid schedule versions
 - [x] Review and approve the remaining payable July attendance records
 - [x] Calculate the July 16–31 draft payroll for all 9 payable employees
-- [ ] Complete and approve the two-period manual comparison
-- [ ] Run two linked controlled payroll periods
+- [ ] Perform and approve two future linked controlled payroll periods using
+      manager-approved billed attendance as the payroll source
+- [ ] Validate billed hours, prepaid reconciliation, rate, additions,
+      deductions, payroll estimate, approval, finalization, and payslip output
 - [ ] Approve Phase 2 as the primary payroll process
 
 ### Phase 3
