@@ -61,6 +61,7 @@ const elements = {
 let access = null
 let profileIds = []
 let visibleSchedules = []
+let todaySchedules = []
 let recentAttendance = []
 let historyRows = []
 let historyPage = 1
@@ -278,6 +279,13 @@ function scheduleAvailability(schedule, now = new Date()) {
   const endsAt = new Date(schedule.shift_end)
   const nowMs = now.getTime()
 
+  const tomorrow = offsetDateKey(localDateKey(now), 1)
+  const isEarlyTomorrow = schedule.shift_date === tomorrow && startsAt.getHours() < 12
+
+  if (isEarlyTomorrow && nowMs < startsAt.getTime()) {
+    return { state: 'next-day-overnight', startsAt, endsAt }
+  }
+
   if (nowMs >= endsAt.getTime()) return { state: 'ended', startsAt, endsAt }
   if (nowMs < startsAt.getTime()) return { state: 'early', startsAt, endsAt }
   return { state: 'active', startsAt, endsAt }
@@ -367,9 +375,8 @@ function renderScheduleChooser() {
 
   elements.scheduleSelect.replaceChildren()
 
-  elements.scheduleSelect.appendChild(new Option('Unscheduled attendance', ''))
-
   if (selectableSchedules.length) {
+    elements.scheduleSelect.appendChild(new Option('Select a schedule', ''))
     selectableSchedules.forEach(schedule => {
       elements.scheduleSelect.appendChild(new Option(scheduleOptionLabel(schedule), schedule.id))
     })
@@ -387,13 +394,14 @@ function renderScheduleChooser() {
         'active'
       ].includes(availability.state)
     })
-    const preferred = optionValues.includes(previous)
+    const preferred = optionValues.includes(previous) && previous
       ? previous
-      : availableSchedule?.id || ''
+      : ''
 
     elements.scheduleSelect.value = preferred
     elements.scheduleChooser.hidden = false
   } else {
+    elements.scheduleSelect.appendChild(new Option('Unscheduled attendance', ''))
     elements.scheduleChooser.hidden = false
   }
 }
@@ -401,10 +409,20 @@ function renderScheduleChooser() {
 function renderScheduleNotice() {
   const selected = selectedSchedule()
   const changedSchedules = visibleSchedules.filter(schedule => schedule.status === 'changed')
+  const paidLeaveToday = todaySchedules.some(schedule =>
+    schedule.shift_date === activeLocalDate &&
+    schedule.is_leave &&
+    ['incentive_vl', 'birthday_vl'].includes(schedule.leave_type)
+  )
 
   elements.scheduleNotice.hidden = true
   elements.scheduleNotice.className = 'attendance-notice'
   elements.scheduleNotice.textContent = ''
+
+  if (paidLeaveToday) {
+    elements.scheduleNotice.textContent = 'Paid Leave — work hours will be additional.'
+    elements.scheduleNotice.hidden = false
+  }
 
   if (selected?.is_rest_day) {
     elements.scheduleNotice.textContent = selected.is_holiday
@@ -447,6 +465,8 @@ function updateScheduleHelp() {
     elements.scheduleHelp.textContent = schedule.is_rest_day
       ? 'Today’s attendance is complete. You can clock in early for tomorrow’s rest day, and all credited worked minutes will count as RDOT.'
       : 'Today’s attendance is complete. You can clock in early for tomorrow’s holiday, and all credited worked minutes will count as overtime.'
+  } else if (availability.state === 'next-day-overnight') {
+    elements.scheduleHelp.textContent = 'This early-morning shift is available for clock-in before midnight. The attendance will belong to the scheduled work date.'
   } else if (availability.state === 'special') {
     elements.scheduleHelp.textContent = schedule.is_rest_day
       ? 'Clock-in is available for this rest day. All credited worked minutes count as RDOT, subject to the 20-hour work-date limit.'
@@ -472,8 +492,8 @@ function updateActionState() {
   const selectedRecord = attendanceForSelectedSchedule()
   const availability = schedule ? scheduleAvailability(schedule) : null
   const scheduleClockInOpen = schedule
-    ? ['next-day-special', 'special', 'early', 'active'].includes(availability.state)
-    : true
+    ? ['next-day-special', 'next-day-overnight', 'special', 'early', 'active'].includes(availability.state)
+    : visibleSchedules.length === 0
   const selectedCompleted = Boolean(selectedRecord?.clock_in && selectedRecord.clock_out)
 
   elements.clockInButton.disabled = busy || Boolean(openRecord) || selectedCompleted || !scheduleClockInOpen
@@ -698,7 +718,7 @@ async function loadToday() {
 
   const scheduleQuery = supabase
     .from('work_schedules')
-    .select('id, user_id, shift_date, shift_sequence, shift_start, shift_end, timezone, status, is_rest_day, is_holiday, is_leave, is_absent, holiday_name, notes')
+    .select('id, user_id, shift_date, shift_sequence, shift_start, shift_end, timezone, status, is_rest_day, is_holiday, is_leave, is_absent, leave_type, holiday_name, notes')
     .in('user_id', profileIds)
     .gte('shift_date', rangeStart)
     .lte('shift_date', rangeEnd)
@@ -720,7 +740,8 @@ async function loadToday() {
   if (scheduleResult.error) throw scheduleResult.error
   if (attendanceResult.error) throw attendanceResult.error
 
-  visibleSchedules = (scheduleResult.data || []).filter(schedule => !schedule.is_leave && !schedule.is_absent)
+  todaySchedules = scheduleResult.data || []
+  visibleSchedules = todaySchedules.filter(schedule => !schedule.is_leave && !schedule.is_absent)
   recentAttendance = (attendanceResult.data || [])
     .map(record => redactAttendanceCorrectionForViewer(access, record))
   renderToday()

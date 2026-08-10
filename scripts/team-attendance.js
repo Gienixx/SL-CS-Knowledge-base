@@ -372,8 +372,8 @@ function createActionCell(row) {
   const correctButton = document.createElement('button')
   correctButton.type = 'button'
   correctButton.className = 'wf-btn secondary compact'
-  correctButton.textContent = row.schedule_id ? 'Correct' : 'Assign Schedule'
-  correctButton.disabled = !access?.can_correct_attendance || !row.employee_user_id || ['approved', 'locked'].includes(row.review_status)
+  correctButton.textContent = row.schedule_id ? 'Edit' : 'Assign Schedule'
+  correctButton.disabled = !access?.can_correct_attendance || !row.employee_user_id || row.review_status === 'locked'
   correctButton.addEventListener('click', () => openCorrectionModal(row))
   actions.appendChild(correctButton)
 

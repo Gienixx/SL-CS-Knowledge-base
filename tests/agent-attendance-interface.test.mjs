@@ -18,7 +18,8 @@ test('agents can use the unscheduled attendance path when no released schedule e
   const migration = await read('supabase/migrations/20260731065252_allow_next_day_special_schedule_clock_in.sql')
   assert.match(script, /No assigned schedule\. Your time will be recorded as unscheduled attendance\./)
   assert.match(script, /new Option\('Unscheduled attendance', ''\)/)
-  assert.match(script, /availableSchedule\?\.id \|\| ''/)
+  assert.match(script, /new Option\('Select a schedule', ''\)/)
+  assert.match(script, /const preferred = optionValues\.includes\(previous\) && previous[\s\S]*?: ''/)
   assert.match(script, /const scheduleId = elements\.scheduleSelect\.value \|\| null/)
   assert.match(migration, /if p_schedule_id is null then/)
   assert.match(migration, /schedule_id,\s*\n\s*work_date,\s*\n\s*clock_in/)
@@ -109,8 +110,16 @@ test('attendance summary does not fall back to an ended prior-day schedule', asy
 
   assert.match(script, /const fallbackSchedule = selectedSchedule\(\) \|\| null/)
   assert.doesNotMatch(script, /selectedSchedule\(\) \|\| visibleSchedules\[0\]/)
-  assert.match(script, /const scheduleClockInOpen = schedule[\s\S]*: true/)
-  assert.doesNotMatch(script, /: visibleSchedules\.length === 0/)
+  assert.match(script, /const scheduleClockInOpen = schedule[\s\S]*: visibleSchedules\.length === 0/)
+})
+
+test('attendance requires an explicit eligible schedule and supports tomorrow early shifts', async () => {
+  const script = await read('scripts/attendance.js')
+
+  assert.match(script, /state: 'next-day-overnight'/)
+  assert.match(script, /'next-day-overnight', 'special', 'early', 'active'/)
+  assert.match(script, /new Option\('Select a schedule', ''\)/)
+  assert.match(script, /new Option\('Unscheduled attendance', ''\)/)
 })
 
 test('attendance automatically refreshes when the agent work date changes', async () => {

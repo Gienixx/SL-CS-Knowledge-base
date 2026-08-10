@@ -412,13 +412,14 @@ if (section) {
           const editButton = document.createElement('button')
           editButton.type = 'button'
           editButton.className = 'wf-chip-main'
+          const sequenceLabel = `Sequence ${schedule.shift_sequence}`
           const scheduleMeta = schedule.is_leave
-            ? 'Leave'
+            ? `Leave · ${sequenceLabel}`
             : schedule.is_absent
-              ? 'Absent'
+              ? `Absent · ${sequenceLabel}`
             : isOpenSchedule
-            ? `${formatPlannedHours(schedule.planned_paid_minutes)} · Sequence ${schedule.shift_sequence}`
-            : schedule.is_rest_day ? '' : `Sequence ${schedule.shift_sequence}`
+            ? `${formatPlannedHours(schedule.planned_paid_minutes)} · ${sequenceLabel}`
+            : schedule.is_rest_day ? '' : sequenceLabel
           editButton.innerHTML = `<strong>${schedule.is_leave || schedule.is_absent ? specialScheduleLabel(schedule) : schedule.is_rest_day ? 'Rest day' : schedule.is_holiday ? schedule.holiday_name || 'Holiday' : formatShift(schedule)}</strong><small>${scheduleMeta}</small>`
           editButton.addEventListener('click', () => openSchedule(schedule.id))
           const deleteButton = document.createElement('button')
@@ -743,6 +744,7 @@ if (section) {
     setMessage(formMessage, 'Saving schedule entry...')
 
     try {
+      let lastSavedSchedule = null
       for (const targetDate of scheduleDates) {
         const targetStart = isRestDay || isLeave || isAbsent || isOpenSchedule
           ? null
@@ -751,17 +753,20 @@ if (section) {
         const targetEnd = isRestDay || isLeave || isAbsent || isOpenSchedule
           ? null
           : zonedDateTimeToIso(`${targetEndDate}T${endTime}`, timezone)
-        const { error } = isLeave || isAbsent
+        const rpcArgs = {
+          p_schedule_id: scheduleId,
+          p_user_id: userId,
+          p_shift_date: targetDate,
+          p_shift_sequence: sequence,
+          p_timezone: timezone,
+          p_status: status,
+          p_schedule_type: otherType,
+          p_subtype: specialSubtype,
+          p_notes: notes
+        }
+        const { data: savedSchedule, error } = isLeave || isAbsent
           ? await supabase.rpc('workforce_admin_save_nonworking_schedule', {
-              p_schedule_id: scheduleId,
-              p_user_id: userId,
-              p_shift_date: targetDate,
-              p_shift_sequence: sequence,
-              p_timezone: timezone,
-              p_status: status,
-              p_schedule_type: otherType,
-              p_subtype: specialSubtype,
-              p_notes: notes
+              ...rpcArgs
             })
           : isOpenSchedule
             ? await supabase.rpc('workforce_admin_save_open_schedule', {
@@ -790,11 +795,17 @@ if (section) {
               p_repeat_weekly: repeatWeekly
             })
         if (error) throw error
+        lastSavedSchedule = savedSchedule
       }
 
+      const separateLeaveCreated = isLeave && scheduleId &&
+        scheduleDates.length === 1 &&
+        lastSavedSchedule?.id !== scheduleId
       setMessage(
         formMessage,
-        repeatWeekly
+        separateLeaveCreated
+          ? 'Attendance-linked work schedule preserved; leave saved as a separate sequence.'
+          : repeatWeekly
           ? `${scheduleDates.length} schedule entr${scheduleDates.length === 1 ? 'y was' : 'ies were'} saved and added to weekly automation.`
           : `${scheduleDates.length} schedule entr${scheduleDates.length === 1 ? 'y' : 'ies'} saved successfully.`,
         'success'

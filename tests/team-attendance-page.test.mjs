@@ -62,7 +62,7 @@ test('Team Attendance displays original and billed timestamp fields without stri
   assert.match(page, /Total billed hours/)
 })
 
-test('Team Attendance edits billed timestamps only and locks normal edits after approval', async () => {
+test('Team Attendance edits billed timestamps only and locks final edits after approval', async () => {
   const [script, page] = await Promise.all([
     read('scripts/team-attendance.js'),
     read('team-attendance.html')
@@ -70,7 +70,7 @@ test('Team Attendance edits billed timestamps only and locks normal edits after 
 
   assert.match(script, /row\.billed_clock_in \|\| row\.clock_in/)
   assert.match(script, /row\.billed_clock_out \|\| row\.clock_out/)
-  assert.match(script, /\['approved', 'locked'\]\.includes\(row\.review_status\)/)
+  assert.match(script, /row\.review_status === 'locked'/)
   assert.match(script, /Remarks are required when billed time or schedule changes/)
   assert.match(script, /supabase\.rpc\('workforce_review_attendance'/)
   assert.match(page, /Billed Clock-in/)
@@ -280,7 +280,7 @@ test('Team Attendance exposes unscheduled filtering and audited schedule assignm
   ])
   assert.match(page, /id="teamAttendanceUnscheduledFilter"/)
   assert.match(page, />Unscheduled</)
-  assert.match(script, /correctButton\.textContent = row\.schedule_id \? 'Correct' : 'Assign Schedule'/)
+  assert.match(script, /correctButton\.textContent = row\.schedule_id \? 'Edit' : 'Assign Schedule'/)
   assert.match(script, /\.rpc\(rpcName, rpcParams\)/)
   assert.match(script, /gte\('shift_date'/)
   assert.match(migration, /workforce_assign_attendance_schedule/)
