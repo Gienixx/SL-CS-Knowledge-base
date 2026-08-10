@@ -37,6 +37,7 @@ const elements = {
   teamFilter: document.getElementById('teamAttendanceTeamFilter'),
   statusFilter: document.getElementById('teamAttendanceStatusFilter'),
   correctedFilter: document.getElementById('teamAttendanceCorrectedFilter'),
+  unscheduledFilter: document.getElementById('teamAttendanceUnscheduledFilter'),
   openFilter: document.getElementById('teamAttendanceOpenFilter'),
   missingFilter: document.getElementById('teamAttendanceMissingFilter'),
   overtimeFilter: document.getElementById('teamAttendanceOvertimeFilter'),
@@ -371,7 +372,7 @@ function createActionCell(row) {
   const correctButton = document.createElement('button')
   correctButton.type = 'button'
   correctButton.className = 'wf-btn secondary compact'
-  correctButton.textContent = 'Correct'
+  correctButton.textContent = row.schedule_id ? 'Correct' : 'Assign Schedule'
   correctButton.disabled = !access?.can_correct_attendance || !row.employee_user_id || ['approved', 'locked'].includes(row.review_status)
   correctButton.addEventListener('click', () => openCorrectionModal(row))
   actions.appendChild(correctButton)
@@ -509,6 +510,7 @@ function filteredRows() {
   const teamId = elements.teamFilter.value
   const status = elements.statusFilter.value
   const corrected = elements.correctedFilter.value
+  const scheduleFilter = elements.unscheduledFilter?.value || ''
   const openOnly = elements.openFilter.checked
   const missingOnly = elements.missingFilter.checked
   const overtimeOnly = elements.overtimeFilter.checked
@@ -525,6 +527,8 @@ function filteredRows() {
     if (status && row.attendance_status !== status) return false
     if (corrected === 'corrected' && !row.is_corrected) return false
     if (corrected === 'not_corrected' && row.is_corrected) return false
+    if (scheduleFilter === 'unscheduled' && row.schedule_id) return false
+    if (scheduleFilter === 'scheduled' && !row.schedule_id) return false
     if (openOnly && !row.is_open) return false
     if (missingOnly && !row.is_missing_clock_out) return false
     if (overtimeOnly && Number(row.total_overtime_minutes) <= 0) return false
@@ -924,7 +928,7 @@ async function loadAddSchedules() {
 
   const { data, error } = await supabase
     .from('work_schedules')
-    .select('id, shift_start, shift_end, timezone, status, is_rest_day, is_holiday, is_leave, is_absent, holiday_name')
+    .select('id, shift_date, shift_start, shift_end, timezone, status, is_rest_day, is_holiday, is_leave, is_absent, holiday_name')
     .eq('user_id', employeeId)
     .eq('shift_date', workDate)
     .eq('is_leave', false)
@@ -1106,6 +1110,7 @@ async function resetFilters() {
   elements.teamFilter.value = ''
   elements.statusFilter.value = ''
   elements.correctedFilter.value = ''
+  elements.unscheduledFilter.value = ''
   elements.openFilter.checked = false
   elements.missingFilter.checked = false
   elements.overtimeFilter.checked = false
@@ -1151,6 +1156,7 @@ function bindEvents() {
     elements.teamFilter,
     elements.statusFilter,
     elements.correctedFilter,
+    elements.unscheduledFilter,
     elements.openFilter,
     elements.missingFilter,
     elements.overtimeFilter
@@ -1219,7 +1225,8 @@ async function loadCorrectionSchedules(row) {
     .from('work_schedules')
     .select('id, shift_start, shift_end, timezone, status, is_rest_day, is_holiday, is_leave, is_absent, holiday_name')
     .eq('user_id', row.employee_user_id)
-    .eq('shift_date', row.work_date)
+    .gte('shift_date', localDateKey(new Date(parseDateKey(row.work_date).getTime() - 86400000)))
+    .lte('shift_date', localDateKey(new Date(parseDateKey(row.work_date).getTime() + 86400000)))
     .eq('is_leave', false)
     .eq('is_absent', false)
     .in('status', ['published', 'changed'])
@@ -1237,7 +1244,8 @@ async function loadCorrectionSchedules(row) {
     const times = schedule.shift_start && schedule.shift_end
       ? `${formatDateTime(schedule.shift_start, schedule.timezone)} – ${formatDateTime(schedule.shift_end, schedule.timezone)}`
       : schedule.is_rest_day || schedule.is_holiday ? 'No shift times' : 'Open schedule'
-    const option = new Option(times, schedule.id)
+    const dateLabel = schedule.shift_date === row.work_date ? '' : `${formatDate(schedule.shift_date)} · `
+    const option = new Option(`${dateLabel}${times}`, schedule.id)
     option.dataset.status = [specialDay, schedule.status].filter(Boolean).join(' · ')
     select.appendChild(option)
   }
@@ -1272,6 +1280,7 @@ async function openCorrectionModal(row) {
   const adminNotesInput = document.getElementById('teamAttendanceAdminNotes')
 
   modal.dataset.attendanceId = row.attendance_id || ''
+  modal.dataset.scheduleId = row.schedule_id || ''
   modal.dataset.billedClockIn = row.billed_clock_in || row.clock_in || ''
   modal.dataset.billedClockOut = row.billed_clock_out || row.clock_out || ''
   employeeInput.textContent = row.employee_name || 'Unknown employee'
@@ -1311,6 +1320,7 @@ async function handleCorrectionSubmit(messageElement) {
 
   const attendanceId = modal.dataset.attendanceId
   const scheduleId = document.getElementById('teamAttendanceCorrectionSchedule').value
+  const currentScheduleId = modal.dataset.scheduleId || ''
   const newClockIn = document.getElementById('teamAttendanceNewClockIn').value
   const newClockOut = document.getElementById('teamAttendanceNewClockOut').value
   const newStatus = document.getElementById('teamAttendanceNewStatus').value
@@ -1326,14 +1336,15 @@ async function handleCorrectionSubmit(messageElement) {
   const currentBilledClockIn = toDateTimeLocal(modal.dataset.billedClockIn)
   const currentBilledClockOut = toDateTimeLocal(modal.dataset.billedClockOut)
   const billedTimeChanged = newClockIn !== currentBilledClockIn || newClockOut !== currentBilledClockOut
+  const scheduleChanged = currentScheduleId !== scheduleId && Boolean(scheduleId)
 
-  if (billedTimeChanged && !reasonCode) {
+  if ((billedTimeChanged || scheduleChanged) && !reasonCode) {
     setMessage(messageElement, 'Select a correction reason.', 'error')
     return
   }
 
-  if (billedTimeChanged && !reasonNotes.trim()) {
-    setMessage(messageElement, 'Remarks are required when billed time changes.', 'error')
+  if ((billedTimeChanged || scheduleChanged) && !reasonNotes.trim()) {
+    setMessage(messageElement, 'Remarks are required when billed time or schedule changes.', 'error')
     return
   }
 
@@ -1344,16 +1355,22 @@ async function handleCorrectionSubmit(messageElement) {
 
   setMessage(messageElement, 'Submitting correction…')
 
-  const { data, error } = await supabase.rpc('workforce_correct_attendance', {
-    p_attendance_id: attendanceId,
-    p_new_clock_in: dateTimeLocalToIso(newClockIn),
-    p_new_clock_out: dateTimeLocalToIso(newClockOut),
-    p_new_status: newStatus,
-    p_schedule_id: scheduleId || null,
-    p_admin_notes: adminNotes || null,
-    p_reason_code: reasonCode,
-    p_reason_notes: reasonNotes || null
-  })
+  const rpcName = !currentScheduleId && scheduleId
+    ? 'workforce_assign_attendance_schedule'
+    : 'workforce_correct_attendance'
+  const rpcParams = rpcName === 'workforce_assign_attendance_schedule'
+    ? { p_attendance_id: attendanceId, p_schedule_id: scheduleId, p_reason_code: reasonCode, p_reason_notes: reasonNotes || null }
+    : {
+        p_attendance_id: attendanceId,
+        p_new_clock_in: dateTimeLocalToIso(newClockIn),
+        p_new_clock_out: dateTimeLocalToIso(newClockOut),
+        p_new_status: newStatus,
+        p_schedule_id: scheduleId || null,
+        p_admin_notes: adminNotes || null,
+        p_reason_code: reasonCode,
+        p_reason_notes: reasonNotes || null
+      }
+  const { data, error } = await supabase.rpc(rpcName, rpcParams)
 
   if (error) {
     setMessage(messageElement, errorMessage(error), 'error')

@@ -13,6 +13,18 @@ test('attendance page exposes agent clock actions and history', async () => {
   assert.match(html, /scripts\/attendance\.js/)
 })
 
+test('agents can use the unscheduled attendance path when no released schedule exists', async () => {
+  const script = await read('scripts/attendance.js')
+  const migration = await read('supabase/migrations/20260731065252_allow_next_day_special_schedule_clock_in.sql')
+  assert.match(script, /No assigned schedule\. Your time will be recorded as unscheduled attendance\./)
+  assert.match(script, /new Option\('Unscheduled attendance', ''\)/)
+  assert.match(script, /availableSchedule\?\.id \|\| ''/)
+  assert.match(script, /const scheduleId = elements\.scheduleSelect\.value \|\| null/)
+  assert.match(migration, /if p_schedule_id is null then/)
+  assert.match(migration, /schedule_id,\s*\n\s*work_date,\s*\n\s*clock_in/)
+  assert.match(migration, /already clocked in to another shift/)
+})
+
 test('attendance redesign preserves functional hooks and accessible theme controls', async () => {
   const [html, styles, lightStyles] = await Promise.all([
     read('attendance.html'),

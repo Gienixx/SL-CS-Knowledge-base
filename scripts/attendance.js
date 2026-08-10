@@ -367,6 +367,8 @@ function renderScheduleChooser() {
 
   elements.scheduleSelect.replaceChildren()
 
+  elements.scheduleSelect.appendChild(new Option('Unscheduled attendance', ''))
+
   if (selectableSchedules.length) {
     selectableSchedules.forEach(schedule => {
       elements.scheduleSelect.appendChild(new Option(scheduleOptionLabel(schedule), schedule.id))
@@ -387,12 +389,11 @@ function renderScheduleChooser() {
     })
     const preferred = optionValues.includes(previous)
       ? previous
-      : availableSchedule?.id || selectableSchedules[0].id
+      : availableSchedule?.id || ''
 
     elements.scheduleSelect.value = preferred
     elements.scheduleChooser.hidden = false
   } else {
-    elements.scheduleSelect.appendChild(new Option('No linked schedule', ''))
     elements.scheduleChooser.hidden = false
   }
 }
@@ -432,7 +433,7 @@ function updateScheduleHelp() {
   const record = attendanceForSelectedSchedule()
 
   if (!schedule) {
-    elements.scheduleHelp.textContent = 'No released shift is currently available. You may clock in, and all credited worked minutes will count as RDOT.'
+    elements.scheduleHelp.textContent = 'No assigned schedule. Your time will be recorded as unscheduled attendance.'
     return
   }
 

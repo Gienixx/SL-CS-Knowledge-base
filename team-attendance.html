@@ -86,6 +86,14 @@
             <option value="not_corrected">Not corrected</option>
           </select>
         </label>
+        <label class="wf-field">
+          <span>Schedule</span>
+          <select id="teamAttendanceUnscheduledFilter" class="wf-control">
+            <option value="">All schedule states</option>
+            <option value="unscheduled">Unscheduled</option>
+            <option value="scheduled">Scheduled</option>
+          </select>
+        </label>
       </div>
 
       <fieldset class="team-attendance-flag-filters">
@@ -223,7 +231,7 @@
             </div>
             <label>
               <span>Assigned shift</span>
-              <select id="teamAttendanceCorrectionSchedule" aria-label="Assigned shift" disabled>
+              <select id="teamAttendanceCorrectionSchedule" aria-label="Assigned shift">
                 <option value="">Unscheduled (RDOT)</option>
               </select>
               <small id="teamAttendanceCorrectionScheduleStatus">Unscheduled</small>

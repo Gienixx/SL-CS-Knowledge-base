@@ -71,12 +71,13 @@ test('Team Attendance edits billed timestamps only and locks normal edits after 
   assert.match(script, /row\.billed_clock_in \|\| row\.clock_in/)
   assert.match(script, /row\.billed_clock_out \|\| row\.clock_out/)
   assert.match(script, /\['approved', 'locked'\]\.includes\(row\.review_status\)/)
-  assert.match(script, /Remarks are required when billed time changes/)
+  assert.match(script, /Remarks are required when billed time or schedule changes/)
   assert.match(script, /supabase\.rpc\('workforce_review_attendance'/)
   assert.match(page, /Billed Clock-in/)
   assert.match(page, /Billed Clock-out/)
   assert.match(page, /Original · read-only/)
-  assert.match(page, /id="teamAttendanceCorrectionSchedule"[^>]*disabled/)
+  assert.match(page, /id="teamAttendanceCorrectionSchedule"/)
+  assert.doesNotMatch(page, /id="teamAttendanceCorrectionSchedule"[^>]*disabled/)
   assert.match(page, /id="teamAttendanceNewStatus"[^>]*disabled/)
 })
 
@@ -173,7 +174,8 @@ test('Team Attendance gives regular agents live access while retaining admin per
   assert.match(script, /workforce_list_team_attendance/)
   assert.doesNotMatch(script, /\.from\('attendance'\)\s*\.update\(/)
   assert.doesNotMatch(script, /\.from\('attendance'\)\s*\.insert\(/)
-  assert.match(script, /supabase\.rpc\('workforce_correct_attendance'/)
+  assert.match(script, /workforce_assign_attendance_schedule/)
+  assert.match(script, /workforce_correct_attendance/)
 })
 
 test('Team Attendance lets schedule administrators delete an attendance record with confirmation', async () => {
@@ -268,6 +270,23 @@ test('Team Attendance shows a compact filtered total billed hours summary', asyn
   assert.match(styles, /\.team-attendance-page \.wf-summary span\{[^}]*font-size:9px[^}]*white-space:nowrap/)
   assert.match(styles, /\.team-attendance-page \.wf-summary strong\{[^}]*font-size:18px[^}]*white-space:nowrap/)
   assert.match(styles, /\.team-attendance-page \.wf-summary:nth-child\(5\)>span\{[^}]*max-width:70px[^}]*white-space:normal/)
+})
+
+test('Team Attendance exposes unscheduled filtering and audited schedule assignment', async () => {
+  const [page, script, migration] = await Promise.all([
+    read('team-attendance.html'),
+    read('scripts/team-attendance.js'),
+    read('supabase/migrations/20260810100000_unscheduled_attendance_schedule_assignment.sql')
+  ])
+  assert.match(page, /id="teamAttendanceUnscheduledFilter"/)
+  assert.match(page, />Unscheduled</)
+  assert.match(script, /correctButton\.textContent = row\.schedule_id \? 'Correct' : 'Assign Schedule'/)
+  assert.match(script, /\.rpc\(rpcName, rpcParams\)/)
+  assert.match(script, /gte\('shift_date'/)
+  assert.match(migration, /workforce_assign_attendance_schedule/)
+  assert.match(migration, /previous_schedule_id/)
+  assert.match(migration, /Only published or changed schedules may be assigned/)
+  assert.match(migration, /attendance_schedule_assigned/)
 })
 
 test('Team Attendance uses rendered hours until correction, then billed hours', async () => {
@@ -376,10 +395,11 @@ test('Team Attendance displays correction modal and submits through correction R
   assert.match(page, /class="team-attendance-change-row"/)
   assert.match(page, /id="teamAttendanceCorrectionCurrentStatus"/)
   assert.match(page, /id="teamAttendanceReasonCode"/)
-  assert.match(script, /supabase\.rpc\('workforce_correct_attendance'/)
+  assert.match(script, /workforce_assign_attendance_schedule/)
+  assert.match(script, /workforce_correct_attendance/)
   assert.match(script, /function openCorrectionModal\(/)
   assert.match(script, /function loadCorrectionSchedules\(/)
-  assert.match(script, /\.eq\('shift_date', row\.work_date\)/)
+  assert.match(script, /\.gte\('shift_date'/)
   assert.match(script, /modal\.dataset\.attendanceId = row\.attendance_id \|\| ''/)
   assert.match(script, /function handleCorrectionSubmit\(/)
   assert.match(script, /p_new_clock_in: dateTimeLocalToIso\(newClockIn\)/)
