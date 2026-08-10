@@ -207,6 +207,23 @@
   }
   .tab:hover{ background:var(--panel-alt); color:var(--text); }
   .tab.active{ background:var(--purple); color:var(--button-text); }
+  .tab-events{ position:relative; }
+  .tab-notification{
+    position:absolute;
+    top:5px;
+    right:5px;
+    min-width:16px;
+    height:16px;
+    padding:0 3px;
+    border-radius:50%;
+    background:#ef3340;
+    color:#fff;
+    font-size:10px;
+    font-weight:700;
+    line-height:16px;
+    text-align:center;
+    box-shadow:0 0 0 2px var(--panel);
+  }
   .tab .key{
     background:rgba(255,255,255,0.15);
     border-radius:4px;
@@ -214,6 +231,48 @@
     font-size:10px;
     font-weight:700;
   }
+  .cashout-action{
+    width:58px;
+    height:28px;
+    border:1px solid var(--border);
+    border-radius:4px;
+    padding:4px 6px;
+    background:var(--panel-alt);
+    color:var(--text-dim);
+    font:inherit;
+    font-size:11px;
+    white-space:nowrap;
+  }
+  .cashout-frame{ width:100%; min-width:0; overflow:hidden; border:1px solid var(--border); border-radius:6px; background:var(--panel); }
+  .cashout-split{ display:flex; width:100%; min-width:0; }
+  .cashout-data-panel{ min-width:0; flex:1 1 auto; }
+  .cashout-actions-panel{ flex:0 0 396px; border-left:1px solid var(--border); background:var(--panel); }
+  .cashout-data-scroll,
+  .cashout-actions-scroll{ height:330px; overflow:auto; }
+  .cashout-data-scroll{ overflow-y:scroll; scrollbar-width:none; }
+  .cashout-data-scroll::-webkit-scrollbar{ height:0; width:0; }
+  .cashout-actions-scroll{ overflow-x:hidden; }
+  .cashout-split table{ border-collapse:separate; border-spacing:0; }
+  .cashout-split th,
+  .cashout-split td{ height:42px; vertical-align:middle; }
+  .cashout-actions-table{ width:396px; table-layout:fixed; }
+  .cashout-actions-table th,
+  .cashout-actions-table td{ width:66px; min-width:66px; max-width:66px; padding:6px 4px; text-align:center; }
+  .cashout-actions-table th{ background:var(--header); }
+  .cashout-actions-table td{ background:var(--panel); border-left:1px solid var(--border); }
+  .cashout-horizontal-rail{ height:16px; width:100%; background:var(--panel-alt); border-top:1px solid var(--border); overflow:hidden; cursor:pointer; }
+  .cashout-horizontal-thumb{ height:100%; width:20%; min-width:24px; border-radius:8px; background:var(--text-dim); opacity:.65; }
+  .cashout-action.is-enabled{
+    background:var(--purple);
+    border-color:var(--purple-light);
+    color:var(--button-text);
+  }
+  .cashout-action:disabled{ opacity:.55; cursor:not-allowed; }
+  th[data-column-key]{ cursor:grab; user-select:none; }
+  th[data-column-key]:active{ cursor:grabbing; }
+  th.column-dragging{ opacity:.45; }
+  th.column-drop-before{ box-shadow:inset 3px 0 0 var(--purple-light); }
+  th.column-drop-after{ box-shadow:inset -3px 0 0 var(--purple-light); }
   .tab.active .key{ background:rgba(255,255,255,0.3); }
 
   .content{
@@ -307,6 +366,20 @@
 .table-content-scroll .group-section-body{ max-height:calc(100vh - 300px); overflow:auto; }
 .table-content-scroll .group-section-body .table-scroll{ overflow:auto; max-height:100%; }
 .table-content-scroll thead th{ position:sticky; top:0; z-index:1; }
+.events-layout{ align-items:stretch; }
+.events-layout .group-section{ min-height:0; }
+.events-layout .group-section-body{
+  height:300px;
+  min-height:300px;
+  overflow:hidden;
+  padding:0;
+}
+.events-layout .group-section-body .table-scroll{
+  width:100%;
+  height:100%;
+  max-height:none;
+  overflow:auto;
+}
 
 @media (max-width:900px){
   .survey-session-summary .info-list{ grid-template-columns:repeat(3,minmax(0,1fr)); }
@@ -316,6 +389,7 @@
   .compact-metric-card .info-row:nth-child(4n){ border-right:1px solid var(--border); }
   .compact-metric-card .info-row:nth-child(3n){ border-right:none; }
   .table-content-scroll .group-section-body{ max-height:55vh; }
+  .events-layout .group-section-body{ height:280px; min-height:280px; }
 }
 
 @media (max-width:560px){
@@ -326,6 +400,14 @@
   .compact-metric-card .info-row:nth-child(3n){ border-right:1px solid var(--border); }
   .compact-metric-card .info-row:nth-child(2n){ border-right:none; }
   .table-content-scroll .group-section-body{ max-height:60vh; }
+  .events-layout .group-section-body{ height:260px; min-height:260px; }
+}
+
+@media (max-width:700px){
+  .cashout-actions-panel{ flex-basis:348px; }
+  .cashout-actions-table{ width:348px; }
+  .cashout-actions-table th,
+  .cashout-actions-table td{ width:58px; min-width:58px; max-width:58px; }
 }
 
 .info-card h3{
@@ -571,7 +653,6 @@
 <div class="topbar">
   <a class="home-link" href="./home.html">← Home</a>
   <input type="text" value="sfb3aIVQAUfwJCDhQRvPEgEbzfj1" readonly>
-  <button class="btn btn-purple">Filter Tables</button>
   <button class="btn btn-yellow">Search</button>
   <button class="btn btn-purple">Expand</button>
   <button class="btn btn-purple">Use $</button>
@@ -629,9 +710,10 @@ const tabs = [
   {id:'surveys-sessions', label:'Surveys & Sessions', key:'2'},
   {id:'offers', label:'Offers', key:'3'},
   {id:'referrals', label:'Referrals', key:'4'},
-  {id:'profile', label:'Profile & Device', key:'5'},
-  {id:'cashouts', label:'Cashouts', key:'6'},
-  {id:'transactions', label:'Transactions', key:'7'},
+  {id:'profile', label:'Profile', key:'5'},
+  {id:'device-location', label:'Device & Location', key:'6'},
+  {id:'cashouts', label:'Cashouts', key:'7'},
+  {id:'transactions', label:'Events', key:'7'},
   {id:'associations', label:'Associations', key:'8'},
   {id:'review', label:'Review', key:'9'},
   {id:'action', label:'Action', key:'10'},
@@ -641,8 +723,9 @@ const tabbar = document.getElementById('tabbar');
 tabs.forEach(t=>{
   const b = document.createElement('button');
   b.className = 'tab';
+  if (t.id === 'transactions') b.classList.add('tab-events');
   b.dataset.id = t.id;
-  b.innerHTML = t.label + (t.key ? ` <span class="key">${t.key}</span>` : '');
+  b.innerHTML = t.label + (t.id === 'transactions' ? '<span class="tab-notification" aria-label="Fraud event count"></span>' : '');
   b.onclick = ()=> selectTab(t.id);
   tabbar.appendChild(b);
 });
@@ -650,6 +733,192 @@ tabs.forEach(t=>{
 function emptyTable(cols, note){
   return `<div class="table-scroll"><table><thead><tr>${cols.map(c=>`<th>${c}</th>`).join('')}</tr></thead>
   <tbody><tr class="empty-row"><td colspan="${cols.length}">${note || 'No data'}</td></tr></tbody></table></div>`;
+}
+
+// Playground fraud-event payload. Keep this user-scoped so the indicator follows
+// whichever user payload is loaded into the page.
+const fraudEvents = [
+  { date:'12/03/2025, 12:26 PM', type:'Quality', platform:'Android', fraudChange:'+100', fraudScore:'100', cooldownChange:'+10', cooldownScore:'10', notes:'-10 qualityScore' },
+  { date:'12/04/2025, 9:14 AM', type:'Cooldown', platform:'Android', fraudChange:'-50', fraudScore:'50', cooldownChange:'+20', cooldownScore:'30', notes:'-5 cooldownScore' }
+];
+
+function updateEventsNotification(){
+  const notification = document.querySelector('[data-id="transactions"] .tab-notification');
+  if (notification) {
+    notification.textContent = fraudEvents.length;
+    notification.hidden = fraudEvents.length === 0;
+  }
+}
+
+const cashoutActionAvailability = {
+  Created: ['resend', 'send', 'skip', 'unskip', 'manual', 'pending'],
+  Pending: ['resend', 'send', 'pending'],
+  Skipped: ['unskip'],
+  Manual: ['resend'],
+  Sent: ['resend']
+};
+
+const cashoutSamples = [
+  { status:'Created', reason:'', platform:'Android', created:'08/06/2026, 9:00 AM' },
+  { status:'Pending', reason:'Awaiting processing', platform:'Android', created:'08/06/2026, 9:05 AM' },
+  { status:'Skipped', reason:'User skipped cashout', platform:'Android', created:'08/06/2026, 9:10 AM' },
+  { status:'Manual', reason:'Manual review', platform:'Android', created:'08/06/2026, 9:15 AM' },
+  { status:'Sent', reason:'Delivered', platform:'Android', created:'08/06/2026, 9:20 AM' }
+];
+
+const cashoutActionLabels = [
+  ['resend', 'Resend'], ['send', 'Send'], ['skip', 'Skip'],
+  ['unskip', 'Unskip'], ['manual', 'Manual'], ['pending', 'Pending']
+];
+
+function cashoutActionCell(status, action, label){
+  const enabled = cashoutActionAvailability[status]?.includes(action);
+  return `<td><button type="button" class="cashout-action${enabled ? ' is-enabled' : ''}"${enabled ? '' : ' disabled'}>${label}</button></td>`;
+}
+
+function renderCashoutDataRows(){
+  return cashoutSamples.map((cashout, index) => `
+    <tr>
+      <td>${index + 1}</td><td>${cashout.status}</td><td>${cashout.reason || '-'}</td>
+      <td>-</td><td>-</td><td>-</td><td>-</td><td>-</td><td>-</td><td>$1.00</td>
+      <td>${cashout.platform}</td><td>${cashout.created}</td><td>-</td><td>Playground</td><td>US</td><td>-</td>
+      <td>$1.00</td><td>sample@example.com</td><td>0.0%</td><td>$1.00</td><td>-</td><td>-</td><td>-</td>
+    </tr>`).join('');
+}
+
+function renderCashoutActionRows(){
+  return cashoutSamples.map(cashout => `<tr>${cashoutActionLabels.map(([action, label]) => cashoutActionCell(cashout.status, action, label)).join('')}</tr>`).join('');
+}
+
+function syncCashoutScroll(){
+  const dataScroll = document.querySelector('.cashout-data-scroll');
+  const actionsScroll = document.querySelector('.cashout-actions-scroll');
+  const rail = document.querySelector('.cashout-horizontal-rail');
+  const thumb = document.querySelector('.cashout-horizontal-thumb');
+  if (!dataScroll || !actionsScroll || !rail || !thumb) return;
+  const rowCount = document.querySelectorAll('.cashout-data-scroll tbody tr').length;
+  const panelHeight = Math.min(330, 42 * (rowCount + 1) + 2);
+  dataScroll.style.height = `${panelHeight}px`;
+  actionsScroll.style.height = `${panelHeight}px`;
+  let syncing = false;
+  dataScroll.addEventListener('scroll', () => {
+    if (syncing) return;
+    syncing = true;
+    actionsScroll.scrollTop = dataScroll.scrollTop;
+    syncing = false;
+  });
+  actionsScroll.addEventListener('scroll', () => {
+    if (syncing) return;
+    syncing = true;
+    dataScroll.scrollTop = actionsScroll.scrollTop;
+    syncing = false;
+  });
+  const updateRail = () => {
+    const max = dataScroll.scrollWidth - dataScroll.clientWidth;
+    const track = rail.clientWidth;
+    const thumbWidth = max > 0 ? Math.max(24, track * dataScroll.clientWidth / dataScroll.scrollWidth) : track;
+    thumb.style.width = `${thumbWidth}px`;
+    thumb.style.transform = `translateX(${max > 0 ? (track - thumbWidth) * dataScroll.scrollLeft / max : 0}px)`;
+  };
+  dataScroll.addEventListener('scroll', updateRail);
+  window.addEventListener('resize', updateRail);
+  rail.addEventListener('click', event => {
+    if (event.target === thumb) return;
+    const max = dataScroll.scrollWidth - dataScroll.clientWidth;
+    const track = rail.clientWidth - thumb.offsetWidth;
+    dataScroll.scrollLeft = track > 0 ? max * Math.max(0, Math.min(1, (event.offsetX - thumb.offsetWidth / 2) / track)) : 0;
+  });
+  let dragging = false;
+  thumb.addEventListener('pointerdown', event => { dragging = true; thumb.setPointerCapture(event.pointerId); });
+  thumb.addEventListener('pointermove', event => {
+    if (!dragging) return;
+    const max = dataScroll.scrollWidth - dataScroll.clientWidth;
+    const track = rail.clientWidth - thumb.offsetWidth;
+    dataScroll.scrollLeft = track > 0 ? max * Math.max(0, Math.min(1, (event.offsetX - thumb.offsetWidth / 2) / track)) : 0;
+  });
+  thumb.addEventListener('pointerup', () => { dragging = false; });
+  requestAnimationFrame(updateRail);
+}
+
+const COLUMN_ORDER_STORAGE_PREFIX = 'admin-tool-playground:column-order:';
+
+function columnKey(text, occurrence){
+  const base = text.trim().toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '') || 'column';
+  return occurrence > 1 ? `${base}-${occurrence}` : base;
+}
+
+function tablePreferenceId(table, index){
+  const section = table.closest('details')?.querySelector('summary')?.textContent?.trim();
+  const kind = table.classList.contains('cashout-actions-table') ? 'cashout-actions' : table.className || 'table';
+  return `${section || 'tab'}:${kind}:${index}`.replace(/\s+/g, '-').toLowerCase();
+}
+
+function moveTableColumn(table, from, to){
+  if (from === to) return;
+  const rows = [...table.rows];
+  rows.forEach(row => {
+    const cells = [...row.children];
+    const cell = cells[from];
+    row.insertBefore(cell, to > from ? cells[to].nextSibling : cells[to]);
+  });
+}
+
+function enableColumnReordering(){
+  const tables = [...main.querySelectorAll('table')].filter(table => !table.classList.contains('cashout-actions-table'));
+  tables.forEach((table, tableIndex) => {
+    const headers = [...table.tHead?.rows[0]?.cells || []];
+    if (!headers.length) return;
+    const occurrences = {};
+    headers.forEach(header => {
+      const base = header.textContent.trim().toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '') || 'column';
+      occurrences[base] = (occurrences[base] || 0) + 1;
+      header.dataset.columnKey = columnKey(header.textContent, occurrences[base]);
+      header.draggable = true;
+    });
+    const preferenceKey = `${COLUMN_ORDER_STORAGE_PREFIX}${tablePreferenceId(table, tableIndex)}`;
+    let saved = [];
+    try { saved = JSON.parse(localStorage.getItem(preferenceKey) || '[]'); } catch {}
+    const current = headers.map(header => header.dataset.columnKey);
+    const order = [...saved.filter(key => current.includes(key)), ...current.filter(key => !saved.includes(key))];
+    order.forEach((key, position) => {
+      const from = [...table.tHead.rows[0].cells].findIndex(cell => cell.dataset.columnKey === key);
+      moveTableColumn(table, from, position);
+    });
+    let draggedKey = null;
+    table.tHead.rows[0].addEventListener('dragstart', event => {
+      const header = event.target.closest('th[data-column-key]');
+      if (!header) return;
+      draggedKey = header.dataset.columnKey;
+      header.classList.add('column-dragging');
+      event.dataTransfer.effectAllowed = 'move';
+      event.dataTransfer.setData('text/plain', draggedKey);
+    });
+    table.tHead.rows[0].addEventListener('dragover', event => {
+      const target = event.target.closest('th[data-column-key]');
+      if (!target || target.dataset.columnKey === draggedKey) return;
+      event.preventDefault();
+      table.tHead.rows[0].querySelectorAll('th').forEach(cell => cell.classList.remove('column-drop-before', 'column-drop-after'));
+      target.classList.add(event.offsetX < target.offsetWidth / 2 ? 'column-drop-before' : 'column-drop-after');
+    });
+    table.tHead.rows[0].addEventListener('dragleave', event => {
+      if (event.target === table.tHead.rows[0]) table.tHead.rows[0].querySelectorAll('th').forEach(cell => cell.classList.remove('column-drop-before', 'column-drop-after'));
+    });
+    table.tHead.rows[0].addEventListener('drop', event => {
+      event.preventDefault();
+      const target = event.target.closest('th[data-column-key]');
+      if (!target || target.dataset.columnKey === draggedKey) return;
+      const headersNow = [...table.tHead.rows[0].cells];
+      const from = headersNow.findIndex(cell => cell.dataset.columnKey === draggedKey);
+      let to = headersNow.indexOf(target);
+      if (event.offsetX >= target.offsetWidth / 2) to += 1;
+      moveTableColumn(table, from, to);
+      localStorage.setItem(preferenceKey, JSON.stringify([...table.tHead.rows[0].cells].map(cell => cell.dataset.columnKey)));
+    });
+    table.tHead.rows[0].addEventListener('dragend', () => {
+      draggedKey = null;
+      table.tHead.rows[0].querySelectorAll('th').forEach(cell => cell.classList.remove('column-dragging', 'column-drop-before', 'column-drop-after'));
+    });
+  });
 }
 
 const tableContent = {
@@ -675,15 +944,29 @@ const tableContent = {
 
   cashouts: () => `
     <h2>Cashouts</h2>
-    ${emptyTable(['#','Status','Reason','External','External','Current','Bonus','Fees (Def)','Cashout Email','Cashout','Platform','Created (ET)','Completed (ET)','Source','Country','Notes','Current Revenue','User Email','Margin','Lifetime Revenue','Device Location','External Address','External Name','Resend','Send','Skip','Unskip','Manual','Pending'])}`,
+    <div class="cashout-frame">
+      <div class="cashout-split">
+        <div class="cashout-data-panel">
+        <div class="cashout-data-scroll"><table>
+          <thead><tr>${['#','Status','Reason','External','External','Current','Bonus','Fees (Def)','Cashout Email','Cashout','Platform','Created (ET)','Completed (ET)','Source','Country','Notes','Current Revenue','User Email','Margin','Lifetime Revenue','Device Location','External Address','External Name'].map(column => `<th>${column}</th>`).join('')}</tr></thead>
+          <tbody>${renderCashoutDataRows()}</tbody>
+        </table></div>
+        </div>
+        <div class="cashout-actions-panel">
+        <div class="cashout-actions-scroll"><table class="cashout-actions-table">
+          <thead><tr>${cashoutActionLabels.map(([, label]) => `<th>${label}</th>`).join('')}</tr></thead>
+          <tbody>${renderCashoutActionRows()}</tbody>
+        </table></div>
+        </div>
+      </div>
+      <div class="cashout-horizontal-rail" aria-label="Scroll cashout data columns horizontally"><div class="cashout-horizontal-thumb"></div></div>
+    </div>`,
 
   fraud: () => `
     <h2>Fraud Events</h2>
     <div class="table-scroll"><table>
       <thead><tr><th>Date (ET)</th><th>Type</th><th>Platform</th><th>Fraud Change</th><th>Fraud Score</th><th>Cooldown Change</th><th>Cooldown Score</th><th>Notes</th></tr></thead>
-      <tbody>
-        <tr><td>12/03/2025, 12:26 PM</td><td class="badge-blue">Quality</td><td class="badge-blue">Android</td><td>+100</td><td>100</td><td>+10</td><td>10</td><td class="badge-blue">-10 qualityScore</td></tr>
-      </tbody>
+      <tbody>${fraudEvents.map(event => `<tr><td>${event.date}</td><td class="badge-blue">${event.type}</td><td class="badge-blue">${event.platform}</td><td>${event.fraudChange}</td><td>${event.fraudScore}</td><td>${event.cooldownChange}</td><td>${event.cooldownScore}</td><td class="badge-blue">${event.notes}</td></tr>`).join('')}</tbody>
     </table></div>`,
 
   notes: () => `
@@ -1040,9 +1323,9 @@ function createInfoCard(title, rows, className = ''){
   `;
 }
 
-function createGroupSection(title, html, isOpen = false){
+function createGroupSection(title, html, isOpen = false, className = ''){
   return `
-    <details class="group-section" ${isOpen ? 'open' : ''}>
+    <details class="group-section ${className}" ${isOpen ? 'open' : ''}>
       <summary>${title}</summary>
 
       <div class="group-section-body">
@@ -1059,6 +1342,9 @@ function selectTab(id){
     t.classList.toggle('active', t.dataset.id === id);
   });
   main.innerHTML = content[id] ? content[id]() : `<h2>${id}</h2><p style="color:var(--text-dim);">No content.</p>`;
+  enableColumnReordering();
+  updateEventsNotification();
+  if (id === 'cashouts') syncCashoutScroll();
 }
 
 const sidePanels = {
@@ -1272,10 +1558,17 @@ const content = {
   `,
   
   profile: () => `
-    <h2>Profile & Device</h2>
+    <h2>Profile</h2>
 
     <div class="info-grid">
       ${sidePanels.attributes()}
+    </div>
+  `,
+
+  'device-location': () => `
+    <h2>Device &amp; Location</h2>
+
+    <div class="info-grid">
       ${sidePanels.verification()}
       ${sidePanels.android()}
     </div>
@@ -1309,9 +1602,10 @@ const content = {
   `,
 
   transactions: () => `
-    <h2>Transactions</h2>
-    <div class="group-stack table-content-scroll">
-      ${createGroupSection('Transactions', tableContent.transactions(), true)}
+    <h2>Events</h2>
+    <div class="group-stack table-content-scroll events-layout">
+      ${createGroupSection('Fraud Events', tableContent.fraud(), true, 'events-table-section')}
+      ${createGroupSection('Transactions', tableContent.transactions(), true, 'events-table-section')}
     </div>
   `,
 
