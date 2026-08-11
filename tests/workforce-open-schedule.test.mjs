@@ -13,6 +13,8 @@ const [html, client, migration, attendanceMigration, classificationMigration, th
   read('styles/site-theme.css')
 ])
 
+const billedFixMigration = await read('supabase/migrations/20260811093241_fix_open_schedule_billed_attendance_calculation.sql')
+
 test('create schedule offers an open schedule option', () => {
   assert.match(html, /id="scheduleIsOpen" type="checkbox"/)
   assert.match(html, /Open schedule \(no fixed clock-in or clock-out\)/)
@@ -83,4 +85,11 @@ test('open schedules classify actual time using planned paid duration', () => {
   assert.match(classificationMigration, /open_schedule_planned_time_missing/)
   assert.match(classificationMigration, /worked_minutes_unclassified/)
   assert.match(classificationMigration, /attendance_row\.review_status <> 'locked'/)
+})
+
+test('billed-timestamp recalculation keeps Open Schedule fields numeric', () => {
+  assert.match(billedFixMigration, /v_is_open_schedule boolean := false/)
+  assert.match(billedFixMigration, /coalesce\(v_attendance\.billed_clock_in, v_attendance\.clock_in\)/)
+  assert.match(billedFixMigration, /if v_is_open_schedule then[\s\S]*?as regular_minutes[\s\S]*?as post_shift_overtime_minutes/)
+  assert.match(billedFixMigration, /else[\s\S]*?workforce_calculate_attendance\(/)
 })

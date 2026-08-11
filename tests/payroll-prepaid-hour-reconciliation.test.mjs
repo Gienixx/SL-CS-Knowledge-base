@@ -142,9 +142,21 @@ test('payroll admins can review balances without exposing rates', async () => {
 
   assert.match(page, /id="payrollPreplotRemainingHours"/)
   assert.match(page, /Actual approved hours settle the oldest balance first/)
-  assert.match(script, /supabase\.rpc\('payroll_get_period_prepaid_hours'/)
+  assert.match(script, /safePayrollRpc\('prepaidBalances', 'payroll_get_period_prepaid_hours'/)
   assert.match(script, /remaining_minutes/)
   assert.match(script, /rendered ·/)
+})
+
+test('light theme gives payroll pre-plot row text readable semantic colors', async () => {
+  const theme = await read('styles/payroll-periods.css')
+
+  assert.match(theme, /html\[data-site-theme="light"\] \.payroll-preplot-table/)
+  assert.match(theme, /color: #17233f/)
+  assert.match(theme, /color: #4f6178/)
+  assert.match(theme, /\.payroll-employee-cell strong[\s\S]*?payroll-preplot-shift/)
+  assert.match(theme, /\.payroll-employee-cell small[\s\S]*?payroll-cell-note[\s\S]*?payroll-prepaid-balance-note/)
+  assert.match(theme, /\.payroll-prepaid-review-link[\s\S]*?color: #155a92/)
+  assert.match(theme, /html\[data-site-theme="dark"\] \.payroll-preplot-table/)
 })
 
 test('updated payroll period browser module has valid JavaScript syntax', () => {

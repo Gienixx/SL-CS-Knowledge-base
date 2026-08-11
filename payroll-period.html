@@ -6,8 +6,8 @@
   <title>Payroll Period | SocialLoop CS Base</title>
   <link rel="stylesheet" href="./styles/button-theme.css?v=1">
   <link rel="stylesheet" href="./styles/workforce-admin.css?v=8">
-  <link rel="stylesheet" href="./styles/payroll-periods.css?v=10">
-  <link rel="stylesheet" href="./styles/site-theme.css?v=1">
+  <link rel="stylesheet" href="./styles/payroll-periods.css?v=14">
+  <link rel="stylesheet" href="./styles/site-theme.css?v=6">
   <script src="./scripts/site-theme.js?v=1"></script>
 </head>
 <body class="payroll-access-pending">
@@ -58,6 +58,24 @@
     </section>
 
     <p id="payrollPeriodMessage" class="wf-message payroll-page-message" role="status" aria-live="polite"></p>
+
+    <nav class="payroll-stepper" aria-label="Payroll workflow">
+      <button type="button" class="payroll-step active" data-payroll-step="readiness" aria-selected="true"><span class="payroll-step-number">1</span><span class="payroll-step-copy"><strong>Readiness</strong><small>Employees &amp; attendance</small></span><span class="payroll-step-badge" data-step-badge="readiness"></span></button><span class="payroll-step-arrow" aria-hidden="true">→</span>
+      <button type="button" class="payroll-step" data-payroll-step="prepaid" aria-selected="false"><span class="payroll-step-number">2</span><span class="payroll-step-copy"><strong>Prepaid</strong><small>Early-payment schedules</small></span><span class="payroll-step-badge" data-step-badge="prepaid"></span></button><span class="payroll-step-arrow" aria-hidden="true">→</span>
+      <button type="button" class="payroll-step" data-payroll-step="exceptions" aria-selected="false"><span class="payroll-step-number">3</span><span class="payroll-step-copy"><strong>Exceptions</strong><small>Blocking issues</small></span><span class="payroll-step-badge" data-step-badge="exceptions"></span></button><span class="payroll-step-arrow" aria-hidden="true">→</span>
+      <button type="button" class="payroll-step" data-payroll-step="payroll" aria-selected="false"><span class="payroll-step-number">4</span><span class="payroll-step-copy"><strong>Payroll</strong><small>Draft calculations</small></span><span class="payroll-step-badge" data-step-badge="payroll"></span></button><span class="payroll-step-arrow" aria-hidden="true">→</span>
+      <button type="button" class="payroll-step" data-payroll-step="adjustments" aria-selected="false"><span class="payroll-step-number">5</span><span class="payroll-step-copy"><strong>Adjustments</strong><small>Manual items</small></span><span class="payroll-step-badge" data-step-badge="adjustments"></span></button><span class="payroll-step-arrow" aria-hidden="true">→</span>
+      <button type="button" class="payroll-step" data-payroll-step="review" aria-selected="false"><span class="payroll-step-number">6</span><span class="payroll-step-copy"><strong>Review</strong><small>Approve &amp; finalize</small></span><span class="payroll-step-badge" data-step-badge="review"></span></button>
+    </nav>
+
+    <section class="payroll-step-panel" data-payroll-step-panel="readiness"></section>
+    <section class="payroll-step-panel" data-payroll-step-panel="prepaid" hidden></section>
+    <section class="payroll-step-panel" data-payroll-step-panel="exceptions" hidden></section>
+    <section class="payroll-step-panel" data-payroll-step-panel="payroll" hidden></section>
+    <section class="payroll-step-panel" data-payroll-step-panel="adjustments" hidden>
+      <section class="payroll-card payroll-adjustments-step-card" aria-labelledby="payrollAdjustmentStepTitle"><h2 id="payrollAdjustmentStepTitle" class="sr-only">Manual adjustments</h2></section>
+    </section>
+    <section class="payroll-step-panel" data-payroll-step-panel="review" hidden></section>
 
     <section class="payroll-card payroll-preplot-card" aria-labelledby="payrollPreplotTitle">
       <div class="payroll-section-heading payroll-preplot-heading">
@@ -269,6 +287,12 @@
       </div>
 
       <p id="payrollCalculationStatus" class="payroll-import-status">Draft payroll has not been calculated.</p>
+
+      <div class="payroll-calculation-filter" role="search" aria-label="Filter employee payroll totals">
+        <label for="payrollEmployeeSearch">Search employee</label>
+        <input id="payrollEmployeeSearch" class="payroll-control" type="search" placeholder="Search name, ID, or email" autocomplete="off">
+        <span id="payrollEmployeeSearchCount" class="payroll-calculation-filter-count" aria-live="polite">0 employees</span>
+      </div>
 
       <div class="payroll-table-wrap payroll-calculation-wrap">
         <table class="payroll-calculation-table">
@@ -539,6 +563,6 @@
     </section>
   </main>
 
-  <script type="module" src="./scripts/payroll-period.js?v=10"></script>
+  <script type="module" src="./scripts/payroll-period.js?v=15"></script>
 </body>
 </html>

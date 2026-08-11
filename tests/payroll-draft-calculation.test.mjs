@@ -30,43 +30,50 @@ test('Step 7 calculates draft payroll from exact snapshots and work-date rates',
   )
   assert.match(
     migration,
-    /round\([\s\S]*?payable\.payable_regular_minutes::numeric[\s\S]*?60 \* payable\.hourly_rate,[\s\S]*?v_money_scale/
+    /round\([\s\S]*?payable\.payable_total_minutes::numeric[\s\S]*?60 \* payable\.hourly_rate,[\s\S]*?v_money_scale/
   )
   assert.match(migration, /v_rounding_mode <> 'half_up'/)
   assert.match(migration, /v_minute_conversion <> 'exact'/)
 })
 
-test('Step 7 separates prepaid, overtime, and special-day earnings', async () => {
+test('draft payroll pays every approved classified hour at the normal hourly rate', async () => {
   const migration = await read(migrationPath)
 
-  for (const code of [
-    'regular_earnings',
-    'prepaid_scheduled_earnings',
-    'pre_shift_overtime',
-    'post_shift_overtime',
-    'rest_day_work',
-    'rest_day_excess',
-    'holiday_guarantee',
-    'holiday_work',
-    'holiday_excess'
-  ]) {
-    assert.match(migration, new RegExp(`'${code}'`))
-  }
+  assert.match(migration, /'regular_earnings'/)
+  assert.match(migration, /'Approved payable hours'/)
+  assert.match(migration, /payable_total_minutes/)
+  assert.match(migration, /payable\.payable_total_minutes::numeric \/ 60 as quantity/)
+  assert.match(migration, /payable\.payable_total_minutes::numeric[\s\S]*?payable\.hourly_rate/)
+  assert.match(migration, /'New prepaid hours included in Total Billed Hours'/)
+  assert.doesNotMatch(migration, /'prepaid_scheduled_earnings'/)
 
-  assert.match(
-    migration,
-    /least\([\s\S]*?payable\.rest_day_overtime_minutes[\s\S]*?480/
-  )
-  assert.match(
-    migration,
-    /greatest\([\s\S]*?payable\.rest_day_overtime_minutes[\s\S]*?- 480/
-  )
-  assert.match(migration, /payable\.effective_overtime_rate \* 2/)
-  assert.match(migration, /payable\.effective_holiday_rate \* 2/)
+  assert.match(migration, /where false/)
+  assert.doesNotMatch(migration, /effective_overtime_rate \* 2/)
+  assert.doesNotMatch(migration, /effective_holiday_rate \* 2/)
   assert.match(
     migration,
     /schedule\.is_holiday[\s\S]*?round\(rate\.daily_rate/
   )
+})
+
+test('Total Billed Hours includes new prepaid hours exactly once', async () => {
+  const [migration, script] = await Promise.all([
+    read(migrationPath),
+    read('scripts/payroll-period.js')
+  ])
+
+  assert.match(migration, /'regular_earnings'[\s\S]*?'New prepaid hours included in Total Billed Hours'/)
+  assert.match(migration, /item_code = 'regular_earnings'/)
+  assert.match(script, /const totalBilledMinutes = regularPayableMinutes \+ newPrepaidMinutes/)
+  assert.match(script, /Total billed/)
+})
+
+test('138 worked hours plus 92 new prepaid hours pays 230 hours once', () => {
+  const totalBilledHours = 138 + 92
+  const grossPay = totalBilledHours * 3.2
+  assert.equal(totalBilledHours, 230)
+  assert.equal(grossPay, 736)
+  assert.notEqual(grossPay, grossPay + (92 * 3.2))
 })
 
 test('Step 7 is atomic, permission-scoped, auditable, and protects finalized payroll', async () => {
@@ -95,6 +102,25 @@ test('Step 7 is atomic, permission-scoped, auditable, and protects finalized pay
   )
 })
 
+test('employee Draft recalculation reuses the period calculator with a record scope', async () => {
+  const [migration, script] = await Promise.all([
+    read(migrationPath),
+    read('scripts/payroll-period.js')
+  ])
+
+  assert.match(migration, /p_payroll_record_id uuid default null/)
+  assert.match(migration, /payroll_calculate_employee_draft\(/)
+  assert.match(migration, /payroll_calculate_draft\(v_period_id, p_payroll_record_id\)/)
+  assert.match(migration, /p_payroll_record_id is null or record\.id = p_payroll_record_id/)
+  assert.match(migration, /delete from public\.payroll_items[\s\S]*?not item\.is_manual/)
+  assert.match(migration, /status <> 'void'/)
+  assert.match(migration, /create_payroll/)
+  assert.match(migration, /status not in \('draft', 'reopened'\)/)
+  assert.match(script, /payroll_calculate_employee_draft/)
+  assert.match(script, /Recalculate/)
+  assert.match(script, /window\.confirm/)
+})
+
 test('payroll period exposes permission-aware calculation totals and line details', async () => {
   const [page, script, styles, readCorrection] = await Promise.all([
     read('payroll-period.html'),
@@ -105,10 +131,10 @@ test('payroll period exposes permission-aware calculation totals and line detail
 
   assert.match(page, /id="calculatePayrollButton"/)
   assert.match(page, /id="payrollCalculationBody"/)
-  assert.match(page, /scripts\/payroll-period\.js\?v=10/)
-  assert.match(page, /styles\/payroll-periods\.css\?v=10/)
+  assert.match(page, /scripts\/payroll-period\.js\?v=15/)
+  assert.match(page, /styles\/payroll-periods\.css\?v=14/)
   assert.match(script, /supabase\.rpc\('payroll_calculate_draft'/)
-  assert.match(script, /supabase\.rpc\('payroll_get_period_calculation'/)
+  assert.match(script, /safePayrollRpc\('calculation', 'payroll_get_period_calculation'/)
   assert.match(
     script,
     /state\.exceptions\.filter\([\s\S]*?issue => issue\.is_blocking/

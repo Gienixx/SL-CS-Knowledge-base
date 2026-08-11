@@ -56,8 +56,13 @@ const state = {
   canFinalizePayroll: false,
   canReopenPayroll: false,
   loading: false,
+  loadSucceeded: false,
+  loadError: null,
+  sectionErrors: new Map(),
+  payrollEmployeeSearch: '',
   importing: false,
   calculating: false,
+  refreshingEmployee: false,
   savingAdjustment: false,
   savingLifecycle: false,
   lifecycleMode: 'review',
@@ -66,7 +71,8 @@ const state = {
   approvingPreplots: false,
   savingPrepaid: false,
   prepaidCandidate: null
-  ,rateOverrides: new Map()
+  ,rateOverrides: new Map(),
+  activeStep: 'readiness'
 }
 
 const elements = {
@@ -132,6 +138,8 @@ const elements = {
   exceptionBody: document.getElementById('payrollExceptionBody'),
   calculateButton: document.getElementById('calculatePayrollButton'),
   calculationStatus: document.getElementById('payrollCalculationStatus'),
+  calculationSearch: document.getElementById('payrollEmployeeSearch'),
+  calculationSearchCount: document.getElementById('payrollEmployeeSearchCount'),
   calculationBody: document.getElementById('payrollCalculationBody'),
   calculatedEmployeeCount: document.getElementById(
     'payrollCalculatedEmployeeCount'
@@ -645,6 +653,7 @@ function renderPeriod() {
   elements.calculateButton.disabled =
     state.loading ||
     state.calculating ||
+    !state.loadSucceeded ||
     !importable ||
     blockingCount > 0
   elements.calculateButton.textContent = state.calculating
@@ -652,7 +661,9 @@ function renderPeriod() {
     : state.calculations.length
       ? 'Recalculate draft payroll'
       : 'Calculate draft payroll'
-  elements.calculateButton.title = !importable
+  elements.calculateButton.title = !state.loadSucceeded
+    ? 'Refresh the period before calculating'
+    : !importable
     ? 'Only draft or reopened payroll periods can be calculated'
     : blockingCount
       ? `Resolve ${blockingCount} blocking ${blockingCount === 1 ? 'exception' : 'exceptions'} before calculating`
@@ -899,6 +910,10 @@ function preplotStatusLabel(candidate) {
 }
 
 function renderPreplots() {
+  if (state.sectionErrors.has('prepaid')) {
+    elements.preplotBody.replaceChildren(errorRow('Prepaid schedules could not be loaded. Refresh to try again.', 8))
+    return
+  }
   const eligible = state.preplots.filter(candidate => candidate.can_approve)
   const approved = state.preplots.filter(
     candidate => candidate.approval_status === 'approved'
@@ -1096,6 +1111,10 @@ function addExceptionChip(fragment, count, label) {
 }
 
 function renderExceptions() {
+  if (state.sectionErrors.has('exceptions')) {
+    elements.exceptionBody.replaceChildren(errorRow('Payroll exceptions could not be loaded. Refresh to try again.', 8))
+    return
+  }
   const blockingExceptions = state.exceptions.filter(issue => issue.is_blocking)
   const warningExceptions = state.exceptions.filter(issue => !issue.is_blocking)
   const hasExceptions = blockingExceptions.length > 0
@@ -1213,6 +1232,11 @@ function exceptionAction(issue) {
 }
 
 function renderExceptionReview() {
+  if (state.sectionErrors.has('exceptions')) {
+    elements.exceptionCount.textContent = 'Unavailable'
+    elements.exceptionBody.replaceChildren(errorRow('Payroll exceptions could not be loaded. Refresh to try again.', 5))
+    return
+  }
   syncExceptionFilter()
   const visibleIssues = state.exceptionFilter === 'all'
     ? state.exceptions
@@ -1307,6 +1331,11 @@ function importStatusFor(employee) {
 }
 
 function renderImportStatus() {
+  if (state.sectionErrors.has('readiness')) {
+    elements.importStatus.className = 'payroll-import-status error'
+    elements.importStatus.textContent = 'Attendance snapshot status could not be loaded. Refresh to try again.'
+    return
+  }
   const statuses = [...state.importStatuses.values()]
   const readyAttendanceCount = state.employees.reduce(
     (total, employee) =>
@@ -1434,7 +1463,19 @@ function calculationDetails(calculation) {
 }
 
 function renderCalculations() {
+  if (state.sectionErrors.has('payroll')) {
+    elements.calculationBody.replaceChildren(errorRow('Payroll calculations could not be loaded. Refresh to try again.', 8))
+    return
+  }
   const calculations = state.calculations
+  const query = state.payrollEmployeeSearch.trim().toLowerCase()
+  const visibleCalculations = query
+    ? calculations.filter(calculation => [
+      calculation.employee_name,
+      calculation.employee_number,
+      calculation.employee_email
+    ].filter(Boolean).join(' ').toLowerCase().includes(query))
+    : calculations
   const totals = calculations.reduce(
     (sum, calculation) => ({
       gross: sum.gross + Number(calculation.gross_pay || 0),
@@ -1450,6 +1491,8 @@ function renderCalculations() {
   elements.calculatedDeductions.textContent =
     formatMoney(totals.deductions)
   elements.calculatedNet.textContent = formatMoney(totals.net)
+  elements.calculationSearchCount.textContent =
+    `${visibleCalculations.length} of ${calculations.length} employee${calculations.length === 1 ? '' : 's'}`
   elements.calculationStatus.className = 'payroll-import-status'
 
   if (!calculations.length) {
@@ -1486,7 +1529,12 @@ function renderCalculations() {
   elements.calculationStatus.classList.add('ready')
 
   const fragment = document.createDocumentFragment()
-  for (const calculation of calculations) {
+  if (!visibleCalculations.length) {
+    fragment.append(errorRow('No employees match this search.', 8))
+    elements.calculationBody.replaceChildren(fragment)
+    return
+  }
+  for (const calculation of visibleCalculations) {
     const row = document.createElement('tr')
     const employeeCell = element('td', 'payroll-employee-cell')
     employeeCell.append(
@@ -1571,6 +1619,23 @@ function renderCalculations() {
       recalculateButton.title = 'Recalculate this employee only'
       detailCell.append(recalculateButton)
     }
+    if (
+      state.canImportAttendance &&
+      state.canCalculatePayroll &&
+      ['draft', 'reopened'].includes(state.period?.period_status) &&
+      !['finalized', 'void'].includes(calculation.record_status)
+    ) {
+      const refreshButton = element(
+        'button',
+        'payroll-button payroll-button-secondary payroll-row-action',
+        'Refresh attendance & recalculate'
+      )
+      refreshButton.type = 'button'
+      refreshButton.dataset.payrollRecordId = calculation.payroll_record_id
+      refreshButton.dataset.payrollAction = 'refresh-employee'
+      refreshButton.title = 'Refresh attendance and recalculate this employee only'
+      detailCell.append(refreshButton)
+    }
     detailCell.append(calculationDetails(calculation))
     if (state.period?.period_status === 'finalized') {
       const previewLink = element(
@@ -1586,6 +1651,14 @@ function renderCalculations() {
     fragment.append(row)
   }
   elements.calculationBody.replaceChildren(fragment)
+}
+
+function errorRow(message, colspan = 1) {
+  const row = document.createElement('tr')
+  const cell = element('td', 'payroll-table-empty error', message)
+  cell.colSpan = colspan
+  row.append(cell)
+  return row
 }
 
 async function recalculateEmployeeDraft(payrollRecordId) {
@@ -1618,7 +1691,79 @@ async function recalculateEmployeeDraft(payrollRecordId) {
   setMessage(`${employeeName}'s Draft payroll was recalculated.`, 'success')
 }
 
+async function refreshEmployeeAttendanceAndRecalculate(payrollRecordId) {
+  if (
+    !payrollRecordId ||
+    state.refreshingEmployee ||
+    !state.canImportAttendance ||
+    !state.canCalculatePayroll ||
+    !['draft', 'reopened'].includes(state.period?.period_status)
+  ) return
+
+  const calculation = state.calculations.find(
+    row => row.payroll_record_id === payrollRecordId
+  )
+  if (!calculation || ['finalized', 'void'].includes(calculation.record_status)) {
+    return
+  }
+
+  const employeeName = calculation.employee_name || 'this employee'
+  if (!window.confirm(
+    `Refresh attendance and recalculate ${employeeName}'s payroll only?\n\n` +
+    'Only this employee will be refreshed. Historical snapshots remain preserved, ' +
+    'derived payroll items may be recalculated, and payroll will not be approved or finalized.'
+  )) {
+    return
+  }
+
+  state.refreshingEmployee = true
+  elements.refresh.disabled = true
+  renderPeriod()
+  setMessage(`Refreshing attendance for ${employeeName}…`)
+
+  const { error: importError } = await supabase.rpc(
+    'payroll_import_employee_attendance',
+    { p_payroll_record_id: payrollRecordId }
+  )
+  if (importError) {
+    state.refreshingEmployee = false
+    elements.refresh.disabled = false
+    renderPeriod()
+    setMessage(
+      importError.message || 'Employee attendance could not be refreshed.',
+      'error'
+    )
+    return
+  }
+
+  const { error: calculationError } = await supabase.rpc(
+    'payroll_calculate_employee_draft',
+    { p_payroll_record_id: payrollRecordId }
+  )
+  state.refreshingEmployee = false
+  elements.refresh.disabled = false
+
+  if (calculationError) {
+    renderPeriod()
+    setMessage(
+      calculationError.message || 'Employee Draft payroll could not be recalculated.',
+      'error'
+    )
+    return
+  }
+
+  await loadPeriod()
+  setMessage(
+    `${employeeName}'s attendance was refreshed and Draft payroll recalculated.`,
+    'success'
+  )
+}
+
 function renderAdjustments() {
+  if (state.sectionErrors.has('adjustments')) {
+    elements.adjustmentBody.replaceChildren(errorRow('Payroll adjustments could not be loaded. Refresh to try again.', 7))
+    return
+  }
   const adjustments = state.adjustments
   elements.adjustmentCount.textContent =
     `${adjustments.length} ${adjustments.length === 1 ? 'adjustment' : 'adjustments'}`
@@ -1822,6 +1967,10 @@ function attendanceStatus(employee) {
 }
 
 function renderEmployees() {
+  if (state.sectionErrors.has('readiness')) {
+    elements.body.replaceChildren(errorRow('Employee readiness could not be loaded. Refresh to try again.', 6))
+    return
+  }
   if (!state.employees.length) {
     const row = document.createElement('tr')
     const cell = element(
@@ -1970,11 +2119,134 @@ function renderAll() {
   renderAdjustments()
   renderLifecycle()
   renderEmployees()
+  renderStepStates()
+  setPayrollStep(state.activeStep)
 }
 
-async function loadPeriod() {
+const PAYROLL_STEPS = ['readiness', 'prepaid', 'exceptions', 'payroll', 'adjustments', 'review']
+
+function setPayrollStep(step, options = {}) {
+  if (!PAYROLL_STEPS.includes(step)) return
+  state.activeStep = step
+  document.querySelectorAll('[data-payroll-step]').forEach(button => {
+    const active = button.dataset.payrollStep === step
+    button.classList.toggle('active', active)
+    button.setAttribute('aria-selected', String(active))
+  })
+  document.querySelectorAll('[data-payroll-step-panel]').forEach(panel => {
+    panel.hidden = panel.dataset.payrollStepPanel !== step
+  })
+  if (options.focus) {
+    document.querySelector(`[data-payroll-step-panel="${step}"]`)?.scrollIntoView({ behavior: 'smooth', block: 'start' })
+  }
+}
+
+function organizePayrollStepPanels() {
+  const panel = step => document.querySelector(`[data-payroll-step-panel="${step}"]`)
+  const move = (selector, step) => {
+    const node = document.querySelector(selector)
+    if (node) panel(step)?.append(node)
+  }
+  move('.payroll-import-card', 'readiness')
+  move('.payroll-readiness-card', 'readiness')
+  move('.payroll-preplot-card', 'prepaid')
+  move('#payrollExceptionSummary', 'exceptions')
+  move('.payroll-exception-review-card', 'exceptions')
+  move('.payroll-calculation-card', 'payroll')
+  const adjustmentCard = document.querySelector('.payroll-adjustments-step-card')
+  const oldAdjustmentHeading = document.querySelector('.payroll-adjustment-heading')
+  const oldAdjustmentTable = document.querySelector('.payroll-adjustment-table')?.closest('.payroll-table-wrap')
+  if (adjustmentCard && oldAdjustmentHeading && oldAdjustmentTable) {
+    adjustmentCard.replaceChildren(oldAdjustmentHeading, oldAdjustmentTable)
+    oldAdjustmentHeading.append(elements.addAdjustmentButton)
+  }
+  move('.payroll-lifecycle-card', 'review')
+}
+
+function renderStepStates() {
+  if (!state.loadSucceeded) {
+    const statuses = {
+      readiness: { label: '!', className: 'warning' },
+      prepaid: { label: '!', className: 'warning' },
+      exceptions: { label: '!', className: 'warning' },
+      payroll: { label: '!', className: 'warning' },
+      adjustments: { label: '—', className: '' },
+      review: { label: '—', className: '' }
+    }
+    Object.entries(statuses).forEach(([step, status]) => {
+      const button = document.querySelector(`[data-payroll-step="${step}"]`)
+      const badge = document.querySelector(`[data-step-badge="${step}"]`)
+      button?.classList.remove('complete', 'warning', 'blocked')
+      if (status.className) button?.classList.add(status.className)
+      if (badge) badge.textContent = status.label
+    })
+    return
+  }
+  const blocking = state.exceptions.filter(issue => issue.is_blocking).length
+  const attention = state.employees.filter(employee => Number(employee.missing_attendance_count || 0) + Number(employee.incomplete_attendance_count || 0) > 0).length
+  const eligiblePreplots = state.preplots.filter(item => item.approval_status === 'eligible').length
+  const recalculation = state.calculations.filter(item => item.requires_recalculation).length
+  const statuses = {
+    readiness: attention ? { label: String(attention), className: 'warning' } : { label: '✓', className: 'complete' },
+    prepaid: eligiblePreplots ? { label: String(eligiblePreplots), className: 'warning' } : { label: '✓', className: 'complete' },
+    exceptions: blocking ? { label: String(blocking), className: 'blocked' } : { label: '✓', className: 'complete' },
+    payroll: !state.loadSucceeded
+      ? { label: '!', className: 'warning' }
+      : recalculation
+        ? { label: String(recalculation), className: 'warning' }
+        : state.calculations.length
+          ? { label: '✓', className: 'complete' }
+          : { label: '—', className: '' },
+    adjustments: { label: elements.adjustmentCount?.textContent || '0', className: '' },
+    review: { label: state.period?.period_status || 'Draft', className: '' }
+  }
+  Object.entries(statuses).forEach(([step, status]) => {
+    const button = document.querySelector(`[data-payroll-step="${step}"]`)
+    const badge = document.querySelector(`[data-step-badge="${step}"]`)
+    button?.classList.remove('complete', 'warning', 'blocked')
+    if (status.className) button?.classList.add(status.className)
+    if (badge) badge.textContent = status.label
+  })
+}
+
+function clearUnresolvedLoadingStates() {
+  const placeholders = [
+    ['payrollReadinessBody', 'Employee readiness could not be loaded. Refresh to try again.', 6],
+    ['payrollPreplotBody', 'Prepaid schedules could not be loaded. Refresh to try again.', 8],
+    ['payrollExceptionBody', 'Payroll exceptions could not be loaded. Refresh to try again.', 5],
+    ['payrollCalculationBody', 'Payroll calculations could not be loaded. Refresh to try again.', 8],
+    ['payrollAdjustmentBody', 'Payroll adjustments could not be loaded. Refresh to try again.', 7]
+  ]
+  for (const [id, message, colspan] of placeholders) {
+    const body = document.getElementById(id)
+    if (!body || !body.textContent.includes('Loading')) continue
+    body.replaceChildren(errorRow(message, colspan))
+  }
+}
+
+async function safePayrollRpc(name, rpcName, params) {
+  try {
+    const result = params === undefined
+      ? await supabase.rpc(rpcName)
+      : await supabase.rpc(rpcName, params)
+    return {
+      name,
+      ok: !result.error,
+      data: result.data ?? null,
+      error: result.error ?? null
+    }
+  } catch (error) {
+    return { name, ok: false, data: null, error }
+  }
+}
+
+async function loadPeriodUnsafe() {
   if (state.loading) return
   state.loading = true
+  state.loadSucceeded = false
+  state.loadError = null
+  renderPeriod()
+  renderStepStates()
   elements.refresh.disabled = true
   elements.importButton.disabled = true
   setMessage('Checking rates and attendance readiness…')
@@ -1992,32 +2264,32 @@ async function loadPeriod() {
     lifecycleResult
   ] =
     await Promise.all([
-      supabase.rpc('payroll_get_period_dashboard'),
-      supabase.rpc('payroll_get_period_employee_readiness', {
+      safePayrollRpc('dashboard', 'payroll_get_period_dashboard'),
+      safePayrollRpc('readiness', 'payroll_get_period_employee_readiness', {
         p_payroll_period_id: state.periodId
       }),
-      supabase.rpc('payroll_get_period_missing_attendance', {
+      safePayrollRpc('missingAttendance', 'payroll_get_period_missing_attendance', {
         p_payroll_period_id: state.periodId
       }),
-      supabase.rpc('payroll_get_period_attendance_import_status', {
+      safePayrollRpc('importStatus', 'payroll_get_period_attendance_import_status', {
         p_payroll_period_id: state.periodId
       }),
-      supabase.rpc('payroll_get_period_exceptions', {
+      safePayrollRpc('exceptions', 'payroll_get_period_exceptions', {
         p_payroll_period_id: state.periodId
       }),
-      supabase.rpc('payroll_get_preplot_candidates', {
+      safePayrollRpc('preplots', 'payroll_get_preplot_candidates', {
         p_payroll_period_id: state.periodId
       }),
-      supabase.rpc('payroll_get_period_prepaid_hours', {
+      safePayrollRpc('prepaidBalances', 'payroll_get_period_prepaid_hours', {
         p_payroll_period_id: state.periodId
       }),
-      supabase.rpc('payroll_get_period_calculation', {
+      safePayrollRpc('calculation', 'payroll_get_period_calculation', {
         p_payroll_period_id: state.periodId
       }),
-      supabase.rpc('payroll_get_period_adjustments', {
+      safePayrollRpc('adjustments', 'payroll_get_period_adjustments', {
         p_payroll_period_id: state.periodId
       }),
-      supabase.rpc('payroll_get_period_lifecycle', {
+      safePayrollRpc('lifecycle', 'payroll_get_period_lifecycle', {
         p_payroll_period_id: state.periodId
       })
     ])
@@ -2025,55 +2297,99 @@ async function loadPeriod() {
   state.loading = false
   elements.refresh.disabled = false
 
-  if (
-    dashboardResult.error ||
-    readinessResult.error ||
-    missingAttendanceResult.error ||
-    importStatusResult.error ||
-    exceptionsResult.error ||
-    preplotsResult.error ||
-    prepaidBalancesResult.error ||
-    calculationResult.error ||
-    adjustmentsResult.error ||
-    lifecycleResult.error
-  ) {
-    setMessage(
-      'Payroll readiness could not be loaded. Refresh or contact a system administrator.',
-      'error'
-    )
-    return
+  const rpcResults = [
+    ['payroll_get_period_dashboard', dashboardResult],
+    ['payroll_get_period_employee_readiness', readinessResult],
+    ['payroll_get_period_missing_attendance', missingAttendanceResult],
+    ['payroll_get_period_attendance_import_status', importStatusResult],
+    ['payroll_get_period_exceptions', exceptionsResult],
+    ['payroll_get_preplot_candidates', preplotsResult],
+    ['payroll_get_period_prepaid_hours', prepaidBalancesResult],
+    ['payroll_get_period_calculation', calculationResult],
+    ['payroll_get_period_adjustments', adjustmentsResult],
+    ['payroll_get_period_lifecycle', lifecycleResult]
+  ]
+  const failedRpcs = rpcResults.filter(([, result]) => result.error)
+  state.sectionErrors = new Map()
+  for (const [rpcName, result] of failedRpcs) {
+    const section = rpcName.includes('exceptions')
+      ? 'exceptions'
+      : rpcName.includes('calculation')
+        ? 'payroll'
+        : rpcName.includes('adjustment')
+          ? 'adjustments'
+          : rpcName.includes('preplot') || rpcName.includes('prepaid')
+            ? 'prepaid'
+            : 'readiness'
+    state.sectionErrors.set(section, { rpcName, error: result.error })
+    console.error(`Payroll Period load RPC failed: ${rpcName}`, result.error)
   }
+  state.loadSucceeded = failedRpcs.length === 0
+  state.loadError = failedRpcs.length
+    ? failedRpcs.map(([rpcName, result]) => ({ rpcName, error: result.error }))
+    : null
 
-  state.period = (dashboardResult.data || []).find(
-    period => period.payroll_period_id === state.periodId
-  ) || null
+  if (!dashboardResult.error) {
+    state.period = (dashboardResult.data || []).find(
+      period => period.payroll_period_id === state.periodId
+    ) || null
+  }
 
   if (!state.period) {
     setMessage('Payroll period was not found.', 'error')
     return
   }
 
-  state.employees = readinessResult.data || []
-  state.preplots = preplotsResult.data || []
-  state.prepaidBalances = prepaidBalancesResult.data || []
-  state.exceptions = exceptionsResult.data || []
-  state.calculations = calculationResult.data || []
-  state.adjustments = adjustmentsResult.data || []
-  state.lifecycle = lifecycleResult.data?.[0] || null
+  if (!readinessResult.error) state.employees = readinessResult.data || []
+  if (!preplotsResult.error) state.preplots = preplotsResult.data || []
+  if (!prepaidBalancesResult.error) state.prepaidBalances = prepaidBalancesResult.data || []
+  if (!exceptionsResult.error) state.exceptions = exceptionsResult.data || []
+  if (!calculationResult.error) state.calculations = calculationResult.data || []
+  if (!adjustmentsResult.error) state.adjustments = adjustmentsResult.data || []
+  if (!lifecycleResult.error) state.lifecycle = lifecycleResult.data?.[0] || null
+  state.loadSucceeded = true
+  state.loadError = null
   state.missingAttendance = new Map()
-  for (const entry of missingAttendanceResult.data || []) {
+  for (const entry of missingAttendanceResult.error ? [] : missingAttendanceResult.data || []) {
     const rows = state.missingAttendance.get(entry.employee_user_id) || []
     rows.push(entry)
     state.missingAttendance.set(entry.employee_user_id, rows)
   }
   state.importStatuses = new Map(
-    (importStatusResult.data || []).map(status => [
+    (importStatusResult.error ? [] : importStatusResult.data || []).map(status => [
       status.employee_user_id,
       status
     ])
   )
   renderAll()
-  setMessage('')
+  if (failedRpcs.length) {
+    setMessage(
+      `Payroll Period refresh incomplete. ${failedRpcs.map(([, result]) => result.error.message || 'A section failed').join(' ')}`,
+      'error'
+    )
+  } else {
+    setMessage('')
+  }
+}
+
+async function loadPeriod() {
+  try {
+    await loadPeriodUnsafe()
+  } catch (error) {
+    state.loadSucceeded = false
+    state.loadError = { error }
+    console.error('[Payroll] loadPeriod failed', error)
+    clearUnresolvedLoadingStates()
+    setMessage(
+      `Payroll Period could not load: ${error.message || 'Unexpected loading error'}. Refresh and try again.`,
+      'error'
+    )
+  } finally {
+    state.loading = false
+    if (elements.refresh) elements.refresh.disabled = false
+    if (elements.importButton) elements.importButton.disabled = false
+    clearUnresolvedLoadingStates()
+  }
 }
 
 function setAdjustmentMessage(message = '', type = '') {
@@ -2703,6 +3019,8 @@ async function savePrepaidSchedule(event) {
 }
 
 async function initialize() {
+  organizePayrollStepPanels()
+  setPayrollStep(state.activeStep)
   if (!isValidUuid(state.periodId)) {
     window.location.replace('./payroll-dashboard.html')
     return
@@ -2762,18 +3080,45 @@ async function initialize() {
     )
     document.body.classList.remove('payroll-access-pending')
     await loadPeriod()
-  } catch {
-    window.location.replace('./home.html')
+  } catch (error) {
+    console.error('Payroll Period initialization failed.', error)
+    document.body.classList.remove('payroll-access-pending')
+    setMessage(
+      'Payroll Period could not load. Refresh the page or return to the Payroll Dashboard.',
+      'error'
+    )
   }
 }
 
+document.querySelectorAll('[data-payroll-step]').forEach(button => {
+  button.addEventListener('click', () => setPayrollStep(button.dataset.payrollStep, { focus: true }))
+})
+
+document.addEventListener('click', event => {
+  const link = event.target.closest('a[href^="#"]')
+  if (!link) return
+  const target = link.getAttribute('href')
+  if (target?.includes('payrollPreplot')) setPayrollStep('prepaid')
+  if (target?.includes('payrollException')) setPayrollStep('exceptions')
+})
+
 elements.refresh.addEventListener('click', loadPeriod)
+elements.calculationSearch.addEventListener('input', event => {
+  state.payrollEmployeeSearch = event.target.value
+  renderCalculations()
+})
 elements.importButton.addEventListener('click', importApprovedAttendance)
 elements.calculateButton.addEventListener('click', calculateDraftPayroll)
 elements.calculationBody.addEventListener('click', event => {
-  const button = event.target.closest('[data-payroll-action="recalculate"]')
+  const button = event.target.closest('[data-payroll-action]')
   if (!button) return
-  void recalculateEmployeeDraft(button.dataset.payrollRecordId)
+  if (button.dataset.payrollAction === 'refresh-employee') {
+    void refreshEmployeeAttendanceAndRecalculate(button.dataset.payrollRecordId)
+    return
+  }
+  if (button.dataset.payrollAction === 'recalculate') {
+    void recalculateEmployeeDraft(button.dataset.payrollRecordId)
+  }
 })
 elements.reviewPayrollButton.addEventListener('click', () => {
   openLifecycleDialog('review')
@@ -2839,6 +3184,7 @@ elements.preplotBody.addEventListener('click', event => {
   if (!link) return
   event.preventDefault()
   state.exceptionFilter = link.dataset.exceptionFilter || 'all'
+  setPayrollStep('exceptions', { focus: false })
   renderExceptionReview()
   document.getElementById('payrollExceptionReviewTitle')?.scrollIntoView({
     behavior: 'smooth',

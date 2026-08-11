@@ -146,8 +146,11 @@ using (
   )
 );
 
+drop function if exists public.payroll_calculate_draft(uuid);
+
 create function public.payroll_calculate_draft(
-  p_payroll_period_id uuid
+  p_payroll_period_id uuid,
+  p_payroll_record_id uuid default null
 )
 returns jsonb
 language plpgsql
@@ -203,6 +206,17 @@ begin
       using errcode = 'P0002', message = 'Payroll period was not found.';
   end if;
 
+  if p_payroll_record_id is not null and not exists (
+    select 1
+    from public.payroll_records as selected_record
+    where selected_record.id = p_payroll_record_id
+      and selected_record.payroll_period_id = v_period.id
+      and selected_record.status not in ('void', 'finalized')
+  ) then
+    raise exception
+      using errcode = 'P0002', message = 'Payroll record was not found in this period.';
+  end if;
+
   if v_period.status not in ('draft', 'reopened') then
     raise exception
       using
@@ -237,7 +251,16 @@ begin
   from public.payroll_get_period_exceptions(
     p_payroll_period_id
   ) as issue
-  where issue.is_blocking;
+  where issue.is_blocking
+    and (
+      p_payroll_record_id is null
+      or issue.payroll_record_id = p_payroll_record_id
+      or issue.employee_user_id = (
+        select selected_record.employee_id
+        from public.payroll_records as selected_record
+        where selected_record.id = p_payroll_record_id
+      )
+    );
 
   if v_blocking_exception_count > 0 then
     raise exception
@@ -271,6 +294,7 @@ begin
         snapshot.attendance_version desc
     ) as current_snapshot on true
     where record.payroll_period_id = v_period.id
+      and (p_payroll_record_id is null or record.id = p_payroll_record_id)
       and record.status <> 'void'
       and current_snapshot.special_day_type = 'unknown'
   ) then
@@ -286,6 +310,7 @@ begin
     join public.payroll_records as record
       on record.id = item.payroll_record_id
     where record.payroll_period_id = v_period.id
+      and (p_payroll_record_id is null or record.id = p_payroll_record_id)
       and item.is_manual
       and item.item_code in (
         'government_deduction',
@@ -307,11 +332,13 @@ begin
   into v_before_data
   from public.payroll_records as record
   where record.payroll_period_id = v_period.id
+    and (p_payroll_record_id is null or record.id = p_payroll_record_id)
     and record.status <> 'void';
 
   perform 1
   from public.payroll_records as record
   where record.payroll_period_id = v_period.id
+    and (p_payroll_record_id is null or record.id = p_payroll_record_id)
     and record.status <> 'void'
   for update;
 
@@ -319,6 +346,7 @@ begin
   using public.payroll_records as record
   where record.id = item.payroll_record_id
     and record.payroll_period_id = v_period.id
+    and (p_payroll_record_id is null or record.id = p_payroll_record_id)
     and not item.is_manual;
 
   update public.payroll_records as record
@@ -358,6 +386,7 @@ begin
     calculated_at = statement_timestamp(),
     updated_at = statement_timestamp()
   where record.payroll_period_id = v_period.id
+    and (p_payroll_record_id is null or record.id = p_payroll_record_id)
     and record.status <> 'void';
 
   -- Ordinary approved attendance: allocations remove already-prepaid minutes.
@@ -375,6 +404,7 @@ begin
     join public.payroll_records as record
       on record.id = snapshot.payroll_record_id
     where record.payroll_period_id = v_period.id
+      and (p_payroll_record_id is null or record.id = p_payroll_record_id)
       and record.status <> 'void'
     order by
       snapshot.payroll_record_id,
@@ -388,6 +418,14 @@ begin
       sum(allocation.allocated_minutes)::integer as allocated_minutes
     from public.payroll_hour_allocations as allocation
     where allocation.allocation_type = 'settlement'
+      and not exists (
+        select 1
+        from public.payroll_prepaid_hours as historical_prepaid
+        join public.payroll_schedule_snapshots as historical_snapshot
+          on historical_snapshot.id = historical_prepaid.source_schedule_snapshot_id
+        where historical_prepaid.id = allocation.prepaid_hour_id
+          and historical_snapshot.source_metadata ->> 'historical_restore' = 'true'
+      )
       and not exists (
         select 1
         from public.payroll_hour_allocations as reversal
@@ -417,6 +455,13 @@ begin
           coalesce(post_allocation.allocated_minutes, 0),
         0
       )::integer as payable_post_overtime_minutes,
+      greatest(
+        floor(extract(epoch from (snapshot.clock_out - snapshot.clock_in)) / 60)::integer
+        - coalesce(regular_allocation.allocated_minutes, 0)
+        - coalesce(pre_allocation.allocated_minutes, 0)
+        - coalesce(post_allocation.allocated_minutes, 0),
+        0
+      )::integer as payable_total_minutes,
       coalesce(regular_allocation.allocated_minutes, 0)::integer
         as applied_regular_minutes,
       coalesce(pre_allocation.allocated_minutes, 0)::integer
@@ -456,11 +501,11 @@ begin
       payable.payroll_record_id,
       'earning'::text as item_type,
       'regular_earnings'::text as item_code,
-      'Approved regular earnings'::text as description,
-      payable.payable_regular_minutes::numeric / 60 as quantity,
+      'Approved payable hours'::text as description,
+      payable.payable_total_minutes::numeric / 60 as quantity,
       payable.hourly_rate as unit_rate,
       round(
-        payable.payable_regular_minutes::numeric /
+        payable.payable_total_minutes::numeric /
           60 * payable.hourly_rate,
         v_money_scale
       ) as amount,
@@ -478,8 +523,7 @@ begin
         'rounding_mode', v_rounding_mode
       ) as metadata
     from payable
-    where payable.special_day_type = 'ordinary'
-      and payable.payable_regular_minutes > 0
+    where payable.payable_total_minutes > 0
 
     union all
 
@@ -511,8 +555,7 @@ begin
         'rounding_mode', v_rounding_mode
       )
     from payable
-    where payable.special_day_type = 'ordinary'
-      and payable.payable_pre_overtime_minutes > 0
+    where false
 
     union all
 
@@ -544,8 +587,7 @@ begin
         'rounding_mode', v_rounding_mode
       )
     from payable
-    where payable.special_day_type = 'ordinary'
-      and payable.payable_post_overtime_minutes > 0
+    where false
 
     union all
 
@@ -580,8 +622,7 @@ begin
         'rounding_mode', v_rounding_mode
       )
     from payable
-    where payable.special_day_type = 'rest_day'
-      and coalesce(payable.rest_day_overtime_minutes, 0) > 0
+    where false
 
     union all
 
@@ -594,12 +635,12 @@ begin
         coalesce(payable.rest_day_overtime_minutes, 0) - 480,
         0
       )::numeric / 60,
-      payable.effective_overtime_rate * 2,
+      payable.hourly_rate,
       round(
         greatest(
           coalesce(payable.rest_day_overtime_minutes, 0) - 480,
           0
-        )::numeric / 60 * payable.effective_overtime_rate * 2,
+          )::numeric / 60 * payable.hourly_rate,
         v_money_scale
       ),
       payable.rate_id,
@@ -616,8 +657,7 @@ begin
         'rounding_mode', v_rounding_mode
       )
     from payable
-    where payable.special_day_type = 'rest_day'
-      and coalesce(payable.rest_day_overtime_minutes, 0) > 480
+    where false
 
     union all
 
@@ -652,8 +692,7 @@ begin
         'rounding_mode', v_rounding_mode
       )
     from payable
-    where payable.special_day_type = 'holiday'
-      and coalesce(payable.holiday_overtime_minutes, 0) > 0
+    where false
 
     union all
 
@@ -666,12 +705,12 @@ begin
         coalesce(payable.holiday_overtime_minutes, 0) - 480,
         0
       )::numeric / 60,
-      payable.effective_holiday_rate * 2,
+      payable.hourly_rate,
       round(
         greatest(
           coalesce(payable.holiday_overtime_minutes, 0) - 480,
           0
-        )::numeric / 60 * payable.effective_holiday_rate * 2,
+          )::numeric / 60 * payable.hourly_rate,
         v_money_scale
       ),
       payable.rate_id,
@@ -688,8 +727,7 @@ begin
         'rounding_mode', v_rounding_mode
       )
     from payable
-    where payable.special_day_type = 'holiday'
-      and coalesce(payable.holiday_overtime_minutes, 0) > 480
+    where false
 
     union all
 
@@ -807,8 +845,8 @@ begin
   select
     record.id,
     'earning',
-    'prepaid_scheduled_earnings',
-    'Approved prepaid scheduled earnings',
+    'regular_earnings',
+    'New prepaid hours included in Total Billed Hours',
     prepaid.prepaid_minutes::numeric / 60,
     rate.hourly_rate,
     round(
@@ -849,7 +887,9 @@ begin
     limit 1
   ) as rate on true
   where record.payroll_period_id = v_period.id
-    and record.status <> 'void';
+    and (p_payroll_record_id is null or record.id = p_payroll_record_id)
+    and record.status <> 'void'
+    and coalesce(snapshot.source_metadata ->> 'historical_restore', 'false') <> 'true';
 
   -- A published holiday guarantees one full 8-hour day. Actual holiday work
   -- is paid separately by the attendance lines above.
@@ -870,6 +910,7 @@ begin
      and schedule.status in ('published', 'changed', 'completed')
      and schedule.is_holiday
     where record.payroll_period_id = v_period.id
+      and (p_payroll_record_id is null or record.id = p_payroll_record_id)
       and record.status <> 'void'
     order by
       record.id,
@@ -929,7 +970,8 @@ begin
       and effective_rate.effective_date <= holiday.work_date
     order by effective_rate.effective_date desc
     limit 1
-  ) as rate on true;
+  ) as rate on true
+  where false;
 
   -- Rebuild non-monetary minute summaries from immutable snapshots and the
   -- append-only allocation ledger.
@@ -947,6 +989,7 @@ begin
     join public.payroll_records as record
       on record.id = snapshot.payroll_record_id
     where record.payroll_period_id = v_period.id
+      and (p_payroll_record_id is null or record.id = p_payroll_record_id)
       and record.status <> 'void'
     order by
       snapshot.payroll_record_id,
@@ -1045,6 +1088,7 @@ begin
       on post_allocation.attendance_snapshot_id = snapshot.id
      and post_allocation.minute_category = 'post_shift_overtime'
     where record.payroll_period_id = v_period.id
+      and (p_payroll_record_id is null or record.id = p_payroll_record_id)
       and record.status <> 'void'
     group by record.id
   ),
@@ -1059,6 +1103,7 @@ begin
      and prepaid.employee_id = record.employee_id
      and prepaid.voided_at is null
     where record.payroll_period_id = v_period.id
+      and (p_payroll_record_id is null or record.id = p_payroll_record_id)
       and record.status <> 'void'
     group by record.id
   )
@@ -1088,6 +1133,7 @@ begin
     left join public.payroll_items as item
       on item.payroll_record_id = record.id
     where record.payroll_period_id = v_period.id
+      and (p_payroll_record_id is null or record.id = p_payroll_record_id)
       and record.status <> 'void'
     group by record.id
     having
@@ -1117,10 +1163,7 @@ begin
         where item.item_type = 'earning'
           and item.item_code = 'regular_earnings'
       ), 0) as basic_pay,
-      coalesce(sum(item.amount) filter (
-        where item.item_type = 'earning'
-          and item.item_code = 'prepaid_scheduled_earnings'
-      ), 0) as prepaid_pay,
+      0::numeric as prepaid_pay,
       coalesce(sum(item.amount) filter (
         where item.item_type = 'earning'
           and item.item_code in (
@@ -1182,6 +1225,7 @@ begin
     left join public.payroll_items as item
       on item.payroll_record_id = record.id
     where record.payroll_period_id = v_period.id
+      and (p_payroll_record_id is null or record.id = p_payroll_record_id)
       and record.status <> 'void'
     group by record.id
   )
@@ -1225,7 +1269,8 @@ begin
   from public.payroll_items as item
   join public.payroll_records as record
     on record.id = item.payroll_record_id
-  where record.payroll_period_id = v_period.id;
+  where record.payroll_period_id = v_period.id
+    and (p_payroll_record_id is null or record.id = p_payroll_record_id);
 
   v_after_data := jsonb_build_object(
     'record_count', v_record_count,
@@ -1281,9 +1326,54 @@ begin
 end;
 $$;
 
+create function public.payroll_calculate_draft(
+  p_payroll_period_id uuid
+)
+returns jsonb
+language sql
+security definer
+set search_path = ''
+as $$
+  select public.payroll_calculate_draft(p_payroll_period_id, null::uuid);
+$$;
+
+create function public.payroll_calculate_employee_draft(
+  p_payroll_record_id uuid
+)
+returns jsonb
+language plpgsql
+security definer
+set search_path = ''
+as $$
+declare
+  v_period_id uuid;
+begin
+  select record.payroll_period_id
+    into v_period_id
+  from public.payroll_records as record
+  where record.id = p_payroll_record_id;
+
+  if v_period_id is null then
+    raise exception 'Payroll record not found.';
+  end if;
+
+  return public.payroll_calculate_draft(v_period_id, p_payroll_record_id);
+end;
+$$;
+
+revoke all on function public.payroll_calculate_draft(uuid, uuid)
+  from public, anon;
+grant execute on function public.payroll_calculate_draft(uuid, uuid)
+  to authenticated, service_role;
+
 revoke all on function public.payroll_calculate_draft(uuid)
   from public, anon;
 grant execute on function public.payroll_calculate_draft(uuid)
+  to authenticated, service_role;
+
+revoke all on function public.payroll_calculate_employee_draft(uuid)
+  from public, anon;
+grant execute on function public.payroll_calculate_employee_draft(uuid)
   to authenticated, service_role;
 
 comment on function public.payroll_calculate_draft(uuid) is

@@ -108,6 +108,7 @@ begin
       snapshot.approval_reason,
       snapshot.source_type,
       snapshot.source_reference,
+      snapshot.source_metadata,
       schedule.user_id as schedule_employee_id,
       schedule.schedule_version as current_schedule_version,
       schedule.shift_date as current_work_date,
@@ -202,13 +203,23 @@ begin
       ) as details
     from active_prepaid as prepaid
     where prepaid.source_schedule_snapshot_id is not null
+      and not (
+        prepaid.remaining_minutes = 0
+        and exists (
+          select 1
+          from public.attendance as rendered
+          where rendered.user_id = prepaid.employee_id
+            and rendered.work_date = prepaid.work_date
+            and rendered.review_status in ('approved', 'locked')
+            and rendered.billed_clock_in is not null
+            and rendered.billed_clock_out is not null
+            and floor(extract(epoch from (rendered.billed_clock_out - rendered.billed_clock_in)) / 60)::integer = prepaid.prepaid_minutes
+        )
+      )
       and (
         prepaid.current_schedule_version is distinct from
           prepaid.snapshot_schedule_version
         or prepaid.current_work_date is distinct from prepaid.work_date
-        or prepaid.current_shift_start is distinct from prepaid.shift_start
-        or prepaid.current_shift_end is distinct from prepaid.shift_end
-        or prepaid.current_timezone is distinct from prepaid.timezone
         or prepaid.current_schedule_status is distinct from
           prepaid.schedule_status
         or prepaid.current_is_rest_day is distinct from prepaid.is_rest_day
@@ -289,6 +300,7 @@ begin
       )
     from active_prepaid as prepaid
     where prepaid.source_schedule_snapshot_id is not null
+      and not coalesce(prepaid.source_metadata ->> 'historical_restore', 'false') = 'true'
       and (
         prepaid.prepaid_minutes <= 0
         or prepaid.scheduled_minutes is null
@@ -424,6 +436,7 @@ begin
       )
     from active_prepaid as prepaid
     where prepaid.source_schedule_snapshot_id is not null
+      and not coalesce(prepaid.source_metadata ->> 'historical_restore', 'false') = 'true'
       and (
         (
           prepaid.source_type = 'website_schedule'

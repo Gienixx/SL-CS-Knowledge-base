@@ -162,7 +162,7 @@ test('payroll period page exposes explicit batch approval without pay rates', as
 
   assert.match(
     script,
-    /supabase\.rpc\('payroll_get_preplot_candidates'/
+    /safePayrollRpc\('preplots', 'payroll_get_preplot_candidates'/
   )
   assert.match(
     script,

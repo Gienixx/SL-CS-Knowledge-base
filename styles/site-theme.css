@@ -1404,6 +1404,38 @@ html[data-site-theme="dark"] body:has(.password-card) .back-link {
   backdrop-filter: none;
 }
 
+/* Login keeps its cream/navy palette in dark mode, but the inline page
+   defaults are light-theme values. Keep secondary copy subdued while making
+   controls and supporting text readable against the dark card. */
+html[data-site-theme="dark"] body:has(#loginForm) .left p,
+html[data-site-theme="dark"] body:has(#loginForm) .remember,
+html[data-site-theme="dark"] body:has(#loginForm) .sub,
+html[data-site-theme="dark"] body:has(#loginForm) .status,
+html[data-site-theme="dark"] body:has(#loginForm) .foot-note,
+html[data-site-theme="dark"] body:has(#loginForm) .modal-close {
+  color: var(--site-muted);
+}
+
+html[data-site-theme="dark"] body:has(#loginForm) .left p {
+  color: #c2cada;
+}
+
+html[data-site-theme="dark"] body:has(#loginForm) .btn-primary {
+  color: #061323;
+}
+
+html[data-site-theme="dark"] body:has(#loginForm) .btn-primary:hover:not(:disabled) {
+  color: #061323;
+}
+
+html[data-site-theme="dark"] body:has(#loginForm) .btn-outline {
+  color: #061323;
+}
+
+html[data-site-theme="dark"] body:has(#loginForm) .btn-outline:hover {
+  color: #061323;
+}
+
 html[data-site-theme="dark"] body:has(.password-card) .back-link a {
   color: var(--site-blue);
 }

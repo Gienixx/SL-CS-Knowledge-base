@@ -162,11 +162,11 @@ test('payroll period page imports and displays snapshot status', async () => {
     assert.match(page, new RegExp(`id="${id}"`))
   }
 
-  assert.match(page, /scripts\/payroll-period\.js\?v=10/)
-  assert.match(page, /styles\/payroll-periods\.css\?v=10/)
+  assert.match(page, /scripts\/payroll-period\.js\?v=15/)
+  assert.match(page, /styles\/payroll-periods\.css\?v=14/)
   assert.match(
     script,
-    /supabase\.rpc\('payroll_get_period_attendance_import_status'/
+    /safePayrollRpc\('importStatus', 'payroll_get_period_attendance_import_status'/
   )
   assert.match(script, /supabase\.rpc\('payroll_import_attendance'/)
   assert.match(
@@ -180,6 +180,31 @@ test('payroll period page imports and displays snapshot status', async () => {
     encoding: 'utf8'
   })
   assert.equal(syntax.status, 0, syntax.stderr)
+})
+
+test('employee attendance refresh imports only the selected record before recalculation', async () => {
+  const script = await read('scripts/payroll-period.js')
+
+  assert.match(
+    script,
+    /refreshEmployeeAttendanceAndRecalculate[\s\S]*?supabase\.rpc\(\s*'payroll_import_employee_attendance',[\s\S]*?p_payroll_record_id: payrollRecordId[\s\S]*?\)[\s\S]*?supabase\.rpc\(\s*'payroll_calculate_employee_draft'/
+  )
+  assert.match(script, /if \(importError\)[\s\S]*?return/)
+  assert.match(
+    script,
+    /state\.refreshingEmployee \|\|[\s\S]*?state\.canImportAttendance[\s\S]*?state\.canCalculatePayroll/
+  )
+  assert.match(script, /Only this employee will be refreshed\./)
+  assert.match(script, /Historical snapshots remain preserved/)
+  assert.match(script, /payroll will not be approved or finalized/)
+  assert.match(script, /dataset\.payrollAction = 'refresh-employee'/)
+  assert.match(script, /state\.canImportAttendance &&[\s\S]*?state\.canCalculatePayroll/)
+  assert.match(script, /supabase\.rpc\('payroll_import_attendance'/)
+  const employeeRefresh = script.slice(
+    script.indexOf('async function refreshEmployeeAttendanceAndRecalculate'),
+    script.indexOf('function renderAdjustments')
+  )
+  assert.doesNotMatch(employeeRefresh, /payroll_import_attendance\s*'/)
 })
 
 test('Step 6 verification checks security, immutability, and stale flags', async () => {
