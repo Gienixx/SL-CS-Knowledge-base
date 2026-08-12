@@ -3,7 +3,7 @@ import { readFile } from 'node:fs/promises'
 import test from 'node:test'
 
 const read = path => readFile(new URL(`../${path}`, import.meta.url), 'utf8')
-const migrationPath = 'supabase/migrations/20260801055751_agent_live_team_attendance.sql'
+const migrationPath = 'supabase/migrations/20260812070158_unify_team_attendance_read_visibility.sql'
 
 test('regular agents default Team Attendance to the current New York work date', async () => {
   const script = await read('scripts/team-attendance.js')
@@ -12,11 +12,15 @@ test('regular agents default Team Attendance to the current New York work date',
   assert.ok(functionSource, 'defaultAgentDateRange should remain independently testable')
   const defaultRangeFor = dateKey => Function(
     'localDateKey',
+    'parseDateKey',
     `${functionSource}\nreturn defaultAgentDateRange()`
-  )(() => dateKey)
+  )(() => dateKey, value => {
+    const [year, month, day] = value.split('-').map(Number)
+    return new Date(Date.UTC(year, month - 1, day))
+  })
 
   assert.deepEqual(defaultRangeFor('2026-08-01'), {
-    start: '2026-08-01',
+    start: '2026-07-31',
     end: '2026-08-01'
   })
   assert.match(script, /access\.is_admin === true[\s\S]*?defaultDateRange\(\)[\s\S]*?: defaultAgentDateRange\(\)/)
@@ -36,14 +40,12 @@ test('regular agents receive only the live attendance card surface', async () =>
   assert.match(script, /including early clock-ins assigned to today's schedule/)
 })
 
-test('database keeps admin history and restricts agents to todays open scheduled sessions', async () => {
+test('database uses one date-range visibility predicate for admins and agents', async () => {
   const migration = await read(migrationPath)
 
-  assert.match(migration, /v_is_admin[\s\S]*?attendance_row\.work_date between p_start_date and p_end_date/)
-  assert.match(migration, /workforce_can_manage_user\([\s\S]*?'view_team_attendance'/)
-  assert.match(migration, /not v_is_admin[\s\S]*?attendance_row\.clock_in is not null[\s\S]*?attendance_row\.clock_out is null/)
-  assert.match(migration, /coalesce\(schedule\.shift_date, attendance_row\.work_date\) = v_today/)
-  assert.doesNotMatch(migration, /clock_in::date\s*=\s*v_today/)
+  assert.match(migration, /where attendance_row\.work_date between p_start_date and p_end_date/)
+  assert.doesNotMatch(migration, /coalesce\(schedule\.shift_date, attendance_row\.work_date\) = v_today/)
+  assert.doesNotMatch(migration, /where \(v_is_admin[\s\S]*?or \(not v_is_admin/)
   assert.match(migration, /case when v_is_admin then attendance_row\.correction_reason else null end/)
   assert.match(migration, /revoke all on function public\.workforce_list_team_attendance\(date, date\)[\s\S]*?from public, anon, authenticated/)
   assert.match(migration, /grant execute on function public\.workforce_list_team_attendance\(date, date\)[\s\S]*?to authenticated, service_role/)
