@@ -215,7 +215,7 @@ html[data-site-theme="light"] .attendance-actions :is(
   ) !important;
   background: linear-gradient(135deg, var(--site-gold-soft), var(--site-gold)) !important;
   color: #201400 !important;
-  box-shadow: 0 10px 24px color-mix(in srgb, var(--site-gold) 22%, transparent) !important;
+  box-shadow: none !important;
 }
 
 html[data-site-theme="light"] .attendance-actions button:disabled {
@@ -318,6 +318,56 @@ html[data-site-theme="light"] .attendance-prepaid-card {
   color: var(--site-text) !important;
   background: var(--site-surface-solid) !important;
   box-shadow: none !important;
+}
+
+html[data-site-theme="light"] .attendance-admin-assist {
+  border-color: color-mix(in srgb, var(--site-gold) 48%, var(--site-border));
+  color: var(--site-text);
+  background: color-mix(in srgb, var(--site-gold) 8%, var(--site-surface-solid));
+}
+
+html[data-site-theme="light"] .attendance-admin-assist-copy strong {
+  color: var(--site-heading);
+}
+
+html[data-site-theme="light"] .attendance-admin-assist-copy span {
+  color: var(--site-muted);
+}
+
+html[data-site-theme="light"] .attendance-admin-assist-enter,
+html[data-site-theme="light"] .attendance-admin-assist-arrow,
+html[data-site-theme="light"] .attendance-admin-assist .wf-row-btn {
+  border-color: var(--site-border) !important;
+  color: var(--site-heading) !important;
+  background: var(--site-surface-solid) !important;
+  box-shadow: none !important;
+}
+
+html[data-site-theme="light"] .attendance-admin-assist-enter:hover:not(:disabled),
+html[data-site-theme="light"] .attendance-admin-assist-arrow:hover:not(:disabled),
+html[data-site-theme="light"] .attendance-admin-assist .wf-row-btn:hover:not(:disabled) {
+  border-color: color-mix(in srgb, var(--site-blue) 72%, var(--site-border)) !important;
+  color: var(--site-blue-strong) !important;
+  background: color-mix(in srgb, var(--site-blue) 10%, var(--site-surface-solid)) !important;
+  box-shadow: none !important;
+  transform: none !important;
+}
+
+html[data-site-theme="light"] .attendance-admin-assist-enter:active:not(:disabled),
+html[data-site-theme="light"] .attendance-admin-assist-arrow:active:not(:disabled),
+html[data-site-theme="light"] .attendance-admin-assist .wf-row-btn:active:not(:disabled) {
+  border-color: var(--site-blue) !important;
+  color: var(--site-blue-strong) !important;
+  background: color-mix(in srgb, var(--site-blue) 16%, var(--site-surface-solid)) !important;
+  box-shadow: none !important;
+  transform: none !important;
+}
+
+html[data-site-theme="light"] .attendance-admin-assist-enter:focus-visible,
+html[data-site-theme="light"] .attendance-admin-assist-arrow:focus-visible,
+html[data-site-theme="light"] .attendance-admin-assist .wf-row-btn:focus-visible {
+  outline: 2px solid var(--site-blue);
+  outline-offset: 2px;
 }
 
 html[data-site-theme="light"] .attendance-prepaid-balance-heading strong {

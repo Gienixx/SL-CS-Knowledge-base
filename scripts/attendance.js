@@ -48,6 +48,13 @@ const elements = {
   clockOutButton: document.getElementById('attendanceClockOutButton'),
   refreshButton: document.getElementById('attendanceRefreshButton'),
   actionMessage: document.getElementById('attendanceActionMessage'),
+  adminAssist: document.getElementById('attendanceAdminAssist'),
+  adminAssistTitle: document.getElementById('attendanceAdminAssistTitle'),
+  adminAssistTeam: document.getElementById('attendanceAdminAssistTeam'),
+  adminAssistEnter: document.getElementById('attendanceAdminAssistEnter'),
+  adminAssistExit: document.getElementById('attendanceAdminAssistExit'),
+  adminAssistPrevious: document.getElementById('attendanceAdminAssistPrevious'),
+  adminAssistNext: document.getElementById('attendanceAdminAssistNext'),
   prepaidBalance: document.getElementById('attendancePrepaidBalance'),
   prepaidBalanceBody: document.getElementById('attendancePrepaidBalanceBody'),
   historyMonth: document.getElementById('attendanceHistoryMonth'),
@@ -73,6 +80,14 @@ let busy = false
 let clockTimer = null
 let activeLocalDate = ''
 let localDateRefreshPending = false
+let adminAssistAllowed = false
+let adminAssistMode = false
+let adminAssistEmployees = []
+let adminAssistIndex = -1
+let adminAssistTarget = null
+let adminAssistSnapshot = null
+let adminAssistOriginalAccess = null
+let adminAssistOriginalProfileIds = []
 
 function errorMessage(error) {
   if (/abort|timeout/i.test(`${error?.name || ''} ${error?.message || ''}`)) {
@@ -308,6 +323,123 @@ function formatMinutes(totalMinutes) {
   const minutes = safeMinutes % 60
   if (!hours) return `${minutes}m`
   return `${hours}h ${minutes}m`
+}
+
+function canUseAdminAssist() {
+  return access?.is_admin === true &&
+    hasWorkforcePermission(access, 'view_team_attendance') &&
+    hasWorkforcePermission(access, 'correct_attendance')
+}
+
+function renderAdminAssistControls() {
+  const active = adminAssistMode && adminAssistTarget
+  elements.adminAssistEnter.hidden = !adminAssistAllowed || active
+  elements.adminAssist.hidden = !active
+  elements.adminAssistPrevious.hidden = !active
+  elements.adminAssistNext.hidden = !active
+  if (!active) return
+
+  elements.adminAssistTitle.textContent = `Admin Assist · Viewing ${adminAssistTarget.full_name}`
+  elements.adminAssistTeam.textContent = adminAssistTarget.team_name || 'Workforce employee'
+  elements.adminAssistPrevious.disabled = adminAssistIndex <= 0
+  elements.adminAssistNext.disabled = adminAssistIndex >= adminAssistEmployees.length - 1
+}
+
+async function loadAdminAssistEmployees() {
+  const { data, error } = await supabase.rpc('workforce_admin_assist_list_employees')
+  if (error) throw error
+  adminAssistEmployees = data || []
+}
+
+function assistSnapshotRange() {
+  const today = localDateKey()
+  const history = historyRange(elements.historyMonth.value, elements.historyPeriod.value)
+  return {
+    start: history.start < offsetDateKey(today, -1) ? history.start : offsetDateKey(today, -1),
+    end: history.end > offsetDateKey(today, 1) ? history.end : offsetDateKey(today, 1)
+  }
+}
+
+async function loadAdminAssistSnapshot() {
+  const range = assistSnapshotRange()
+  const { data, error } = await supabase.rpc('workforce_admin_assist_snapshot', {
+    p_target_user_id: adminAssistTarget.user_id,
+    p_start_date: range.start,
+    p_end_date: range.end
+  })
+  if (error) throw error
+
+  adminAssistSnapshot = data || {}
+  if (adminAssistTarget?.timezone) {
+    elements.timeZone.textContent = adminAssistTarget.timezone
+  }
+  todaySchedules = adminAssistSnapshot.schedules || []
+  visibleSchedules = todaySchedules.filter(schedule => !schedule.is_leave && !schedule.is_absent)
+  recentAttendance = adminAssistSnapshot.attendance || []
+  historyRows = (adminAssistSnapshot.history || []).map(record => ({
+    ...record,
+    work_schedules: record.schedule_id || record.schedule_start
+      ? {
+          id: record.schedule_id,
+          shift_start: record.schedule_start,
+          shift_end: record.schedule_end,
+          timezone: record.schedule_timezone,
+          status: record.schedule_status,
+          is_rest_day: record.schedule_is_rest_day,
+          is_holiday: record.schedule_is_holiday,
+          holiday_name: record.holiday_name
+        }
+      : null
+  }))
+  prepaidBalances = adminAssistSnapshot.prepaid_balances || []
+  renderToday()
+  activeHistoryRange = historyRange(elements.historyMonth.value, elements.historyPeriod.value)
+  historyPage = 1
+  renderHistory()
+  renderPrepaidBalances()
+}
+
+async function enterAdminAssist() {
+  if (!adminAssistAllowed) return
+  await loadAdminAssistEmployees()
+  if (!adminAssistEmployees.length) throw new Error('No active employees are available for Admin Assist.')
+
+  adminAssistOriginalAccess = access
+  adminAssistOriginalProfileIds = [...profileIds]
+  adminAssistIndex = Math.max(0, adminAssistEmployees.findIndex(employee => employee.user_id !== access.user_id))
+  adminAssistTarget = adminAssistEmployees[adminAssistIndex]
+  adminAssistMode = true
+  access = { ...access, timezone: adminAssistTarget.timezone || access.timezone }
+  profileIds = [adminAssistTarget.user_id]
+  renderAdminAssistControls()
+  await loadAdminAssistSnapshot()
+  setActionMessage('Admin Assist is ready.')
+}
+
+async function exitAdminAssist() {
+  adminAssistMode = false
+  adminAssistTarget = null
+  adminAssistSnapshot = null
+  adminAssistIndex = -1
+  access = adminAssistOriginalAccess || access
+  profileIds = adminAssistOriginalProfileIds.length ? adminAssistOriginalProfileIds : [access.user_id]
+  renderAdminAssistControls()
+  await refreshAll()
+}
+
+async function selectAdminAssistEmployee(index) {
+  if (!adminAssistMode || !adminAssistEmployees[index]) return
+  adminAssistIndex = index
+  adminAssistTarget = adminAssistEmployees[index]
+  access = { ...adminAssistOriginalAccess, timezone: adminAssistTarget.timezone || adminAssistOriginalAccess.timezone }
+  profileIds = [adminAssistTarget.user_id]
+  renderAdminAssistControls()
+  await loadAdminAssistSnapshot()
+}
+
+function assistReason(action) {
+  const reason = window.prompt(`Reason for Admin Assist ${action}:`, 'Agent unable to use Attendance page')
+  return typeof reason === 'string' && reason.trim().length >= 5 ? reason.trim() : null
 }
 
 function formatPrepaidTime(value, timezone = access?.timezone || 'America/New_York') {
@@ -803,6 +935,10 @@ function renderHistory() {
 }
 
 async function loadToday() {
+  if (adminAssistMode) {
+    await loadAdminAssistSnapshot()
+    return
+  }
   const today = localDateKey()
   const rangeStart = offsetDateKey(today, -1)
   const rangeEnd = offsetDateKey(today, 1)
@@ -839,6 +975,10 @@ async function loadToday() {
 }
 
 async function loadHistory() {
+  if (adminAssistMode) {
+    await loadAdminAssistSnapshot()
+    return
+  }
   const range = historyRange(elements.historyMonth.value, elements.historyPeriod.value)
   activeHistoryRange = range
   historyPage = 1
@@ -872,6 +1012,10 @@ async function loadHistory() {
 }
 
 async function loadPrepaidBalances() {
+  if (adminAssistMode) {
+    renderPrepaidBalances()
+    return
+  }
   const { data, error } = await supabase.rpc(
     'workforce_list_my_prepaid_balances'
   )
@@ -909,6 +1053,30 @@ async function clockIn() {
   if (busy || elements.clockInButton.disabled) return
   const scheduleId = elements.scheduleSelect.value || null
   const schedule = selectedSchedule()
+  if (adminAssistMode) {
+    const reason = assistReason('Clock In')
+    if (!reason) {
+      setActionMessage('A reason of at least 5 characters is required.', 'error')
+      return
+    }
+    setBusy(true, 'clock-in')
+    try {
+      const { error } = await supabase.rpc('workforce_admin_assist_clock_in', {
+        p_target_user_id: adminAssistTarget.user_id,
+        p_schedule_id: scheduleId,
+        p_work_date: schedule?.shift_date || localDateKey(),
+        p_reason: reason
+      })
+      if (error) throw error
+      await loadAdminAssistSnapshot()
+      setActionMessage('Admin-assisted clock-in recorded.', 'success')
+    } catch (error) {
+      setActionMessage(errorMessage(error), 'error')
+    } finally {
+      setBusy(false)
+    }
+    return
+  }
   setBusy(true, 'clock-in')
   setActionMessage(
     schedule?.is_rest_day
@@ -945,6 +1113,28 @@ async function clockIn() {
 
 async function clockOut() {
   if (busy || elements.clockOutButton.disabled) return
+  if (adminAssistMode) {
+    const reason = assistReason('Clock Out')
+    if (!reason) {
+      setActionMessage('A reason of at least 5 characters is required.', 'error')
+      return
+    }
+    setBusy(true, 'clock-out')
+    try {
+      const { error } = await supabase.rpc('workforce_admin_assist_clock_out', {
+        p_target_user_id: adminAssistTarget.user_id,
+        p_reason: reason
+      })
+      if (error) throw error
+      await loadAdminAssistSnapshot()
+      setActionMessage('Admin-assisted clock-out recorded.', 'success')
+    } catch (error) {
+      setActionMessage(errorMessage(error), 'error')
+    } finally {
+      setBusy(false)
+    }
+    return
+  }
   setBusy(true, 'clock-out')
   setActionMessage('Recording your clock-out...')
 
@@ -989,9 +1179,15 @@ async function initialize() {
 
   const workforceLink = document.getElementById('attendanceWorkforceLink')
   workforceLink.hidden = !(access.is_admin === true && hasWorkforcePermission(access, 'manage_employees'))
+  adminAssistAllowed = canUseAdminAssist()
+  renderAdminAssistControls()
 
   elements.clockInButton.addEventListener('click', clockIn)
   elements.clockOutButton.addEventListener('click', clockOut)
+  elements.adminAssistEnter.addEventListener('click', () => enterAdminAssist().catch(error => setActionMessage(errorMessage(error), 'error')))
+  elements.adminAssistExit.addEventListener('click', () => exitAdminAssist().catch(error => setActionMessage(errorMessage(error), 'error')))
+  elements.adminAssistPrevious.addEventListener('click', () => selectAdminAssistEmployee(adminAssistIndex - 1).catch(error => setActionMessage(errorMessage(error), 'error')))
+  elements.adminAssistNext.addEventListener('click', () => selectAdminAssistEmployee(adminAssistIndex + 1).catch(error => setActionMessage(errorMessage(error), 'error')))
   elements.refreshButton.addEventListener('click', () => refreshAll())
   elements.scheduleSelect.addEventListener('change', renderToday)
   elements.historyMonth.addEventListener('change', async () => {

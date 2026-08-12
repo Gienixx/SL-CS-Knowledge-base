@@ -324,7 +324,7 @@
   height: 9px;
   border-radius: 50%;
   background: var(--att-green);
-  box-shadow: 0 0 12px color-mix(in srgb, var(--att-green) 60%, transparent);
+  box-shadow: none;
   flex: none;
 }
 
@@ -626,13 +626,139 @@
   border-color: var(--att-gold) !important;
   background: linear-gradient(135deg, var(--att-gold-soft), var(--att-gold)) !important;
   color: #201400 !important;
-  box-shadow: 0 10px 24px color-mix(in srgb, var(--att-gold) 22%, transparent) !important;
+  box-shadow: none !important;
 }
+
+.attendance-admin-assist {
+  position: relative;
+  z-index: 2;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  margin: 0 auto 7px;
+  padding: 7px 10px;
+  border: 1px solid color-mix(in srgb, var(--att-gold) 48%, var(--att-border));
+  border-radius: 8px;
+  color: var(--att-text);
+  background: color-mix(in srgb, var(--att-gold) 8%, var(--att-surface-solid));
+}
+
+.attendance-admin-assist-copy {
+  display: grid;
+  gap: 1px;
+  min-width: 0;
+}
+
+.attendance-admin-assist-copy strong {
+  color: var(--att-heading);
+  font-size: .82rem;
+  line-height: 1.2;
+}
+
+.attendance-admin-assist-copy span {
+  color: var(--att-muted);
+  overflow: hidden;
+  font-size: .68rem;
+  line-height: 1.2;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.attendance-admin-assist .wf-row-btn {
+  min-height: 28px;
+  padding: 5px 9px;
+  font-size: .68rem;
+  line-height: 1;
+  white-space: nowrap;
+}
+
+.attendance-admin-assist-enter {
+  position: relative;
+  z-index: 2;
+  margin: 0 auto 10px;
+  border: 1px solid var(--site-border);
+  color: var(--site-heading);
+  background: var(--site-surface-solid);
+  box-shadow: none !important;
+}
+
+.attendance-admin-assist-enter:hover:not(:disabled),
+.attendance-admin-assist .wf-row-btn:hover:not(:disabled) {
+  border-color: color-mix(in srgb, var(--site-blue) 72%, var(--site-border)) !important;
+  color: var(--site-blue-strong);
+  background: color-mix(in srgb, var(--site-blue) 10%, var(--site-surface-solid)) !important;
+  box-shadow: none !important;
+  transform: none !important;
+}
+
+.attendance-admin-assist-enter:focus-visible,
+.attendance-admin-assist-arrow:focus-visible,
+.attendance-admin-assist .wf-row-btn:focus-visible {
+  outline: 2px solid var(--site-blue);
+  outline-offset: 2px;
+}
+
+.attendance-admin-assist-arrow {
+  position: fixed;
+  z-index: 8;
+  top: calc(50% - 24px);
+  width: 34px;
+  height: 48px;
+  border: 1px solid var(--site-border);
+  border-radius: 8px;
+  color: var(--site-blue);
+  background: var(--site-surface-solid);
+  box-shadow: none !important;
+  font-size: 1.8rem;
+  line-height: 1;
+  cursor: pointer;
+  transform: none !important;
+  transition: color .15s ease, border-color .15s ease, background-color .15s ease;
+}
+
+.attendance-admin-assist-arrow:hover:not(:disabled) {
+  color: var(--site-blue-strong);
+  border-color: color-mix(in srgb, var(--site-blue) 72%, var(--site-border)) !important;
+  background: color-mix(in srgb, var(--site-blue) 10%, var(--site-surface-solid)) !important;
+  box-shadow: none !important;
+  transform: none !important;
+}
+
+.attendance-admin-assist-enter:active:not(:disabled),
+.attendance-admin-assist .wf-row-btn:active:not(:disabled) {
+  border-color: var(--site-blue) !important;
+  color: var(--site-blue-strong);
+  background: color-mix(in srgb, var(--site-blue) 16%, var(--site-surface-solid)) !important;
+  box-shadow: none !important;
+  transform: none !important;
+}
+
+.attendance-admin-assist-arrow:active {
+  color: var(--site-blue-strong);
+  border-color: var(--site-blue) !important;
+  background: color-mix(in srgb, var(--site-blue) 16%, var(--site-surface-solid)) !important;
+  box-shadow: none !important;
+  transform: none !important;
+}
+
+.attendance-admin-assist-arrow:disabled {
+  cursor: not-allowed;
+  opacity: .42;
+  color: var(--site-muted);
+  border-color: var(--site-border);
+  background: var(--site-surface-soft);
+  box-shadow: none;
+}
+
+.attendance-admin-assist-arrow-previous { left: 12px; }
+.attendance-admin-assist-arrow-next { right: 12px; }
 
 .attendance-app .attendance-actions button:hover:not(:disabled) {
   border-color: currentColor !important;
   background: color-mix(in srgb, var(--att-blue) 8%, transparent) !important;
-  transform: translateY(-1px);
+  transform: none !important;
+  box-shadow: none !important;
 }
 
 .attendance-app :is(#attendanceClockInButton, #attendanceClockOutButton):hover:not(:disabled) {
@@ -692,6 +818,50 @@
   font-size: 1.02rem;
   font-weight: 600;
   letter-spacing: .01em;
+}
+
+/* Attendance controls stay stationary and use borders/tints instead of glow. */
+.attendance-app :is(
+  button,
+  a.wf-link,
+  .wf-control,
+  select,
+  input
+):hover:not(:disabled),
+.attendance-app :is(
+  button,
+  a.wf-link,
+  .wf-control,
+  select,
+  input
+):focus,
+.attendance-app :is(
+  button,
+  a.wf-link,
+  .wf-control,
+  select,
+  input
+):focus-visible,
+.attendance-app :is(
+  button,
+  a.wf-link,
+  .wf-control,
+  select,
+  input
+):active:not(:disabled) {
+  transform: none !important;
+  box-shadow: none !important;
+}
+
+.attendance-app :is(
+  button,
+  a.wf-link,
+  .wf-control,
+  select,
+  input
+):focus-visible {
+  outline: 2px solid var(--att-blue);
+  outline-offset: 2px;
 }
 
 .attendance-prepaid-card {

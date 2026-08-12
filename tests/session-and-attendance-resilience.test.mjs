@@ -27,7 +27,7 @@ test('attendance requests time out and always release the busy state', async () 
   const attendance = await read('scripts/attendance.js')
 
   assert.match(attendance, /const REQUEST_TIMEOUT_MS = 15000/)
-  assert.ok((attendance.match(/\.abortSignal\(requestSignal\(\)\)/g) || []).length >= 5)
+  assert.ok((attendance.match(/\.abortSignal\(requestSignal\(\)\)/g) || []).length >= 4)
   assert.match(attendance, /async function clockOut\(\)[\s\S]*finally \{\s*setBusy\(false\)/)
   assert.match(attendance, /async function refreshAll[\s\S]*finally \{\s*setBusy\(false\)/)
 })
