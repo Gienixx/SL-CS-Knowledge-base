@@ -1244,7 +1244,7 @@ async function loadCorrectionSchedules(row) {
     const times = schedule.shift_start && schedule.shift_end
       ? `${formatDateTime(schedule.shift_start, schedule.timezone)} – ${formatDateTime(schedule.shift_end, schedule.timezone)}`
       : schedule.is_rest_day || schedule.is_holiday ? 'No shift times' : 'Open schedule'
-    const dateLabel = schedule.shift_date === row.work_date ? '' : `${formatDate(schedule.shift_date)} · `
+    const dateLabel = `${formatDate(schedule.shift_date)} · `
     const option = new Option(`${dateLabel}${times}`, schedule.id)
     option.dataset.status = [specialDay, schedule.status].filter(Boolean).join(' · ')
     select.appendChild(option)

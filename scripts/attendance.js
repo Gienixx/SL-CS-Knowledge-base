@@ -349,7 +349,7 @@ function setBadge(element, text, modifier = 'muted') {
 }
 
 function scheduleOptionLabel(schedule) {
-  const dateLabel = schedule.shift_date === localDateKey() ? '' : `${formatDate(schedule.shift_date, false)} · `
+  const dateLabel = `${formatDate(schedule.shift_date, false)} · `
   const statusLabel = schedule.status === 'changed' ? ' · Changed' : ''
   const overtimeLabel = schedule.is_rest_day
     ? ' · RDOT'
