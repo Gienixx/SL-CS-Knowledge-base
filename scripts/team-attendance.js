@@ -98,7 +98,10 @@ function defaultDateRange() {
 
 function defaultAgentDateRange() {
   const today = localDateKey()
-  return { start: today, end: today }
+  const yesterday = new Date(parseDateKey(today).getTime() - 86400000)
+    .toISOString()
+    .slice(0, 10)
+  return { start: yesterday, end: today }
 }
 
 function isValidUuid(value) {
@@ -1070,6 +1073,9 @@ async function loadAttendance() {
       ...(prepaidByAttendance.get(row.attendance_id) || {})
     })
   ))
+  if (access?.is_admin !== true) {
+    attendanceRows = attendanceRows.filter(row => row.is_open)
+  }
   mergeAttendanceReferences(attendanceRows)
   renderTable()
   setMessage(
