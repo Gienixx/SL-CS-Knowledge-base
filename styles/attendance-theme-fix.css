@@ -204,13 +204,18 @@ html[data-site-theme="light"] .attendance-actions button:hover:not(:disabled) {
   background: var(--site-blue-soft) !important;
 }
 
-html[data-site-theme="light"] .attendance-actions .attendance-action-primary {
+html[data-site-theme="light"] .attendance-actions :is(
+  .attendance-action-primary,
+  .attendance-action-secondary
+):not(:disabled) {
   border-color: color-mix(
     in srgb,
-    var(--site-green) 55%,
+    var(--site-gold) 55%,
     var(--site-border)
   ) !important;
-  color: var(--site-green) !important;
+  background: linear-gradient(135deg, var(--site-gold-soft), var(--site-gold)) !important;
+  color: #201400 !important;
+  box-shadow: 0 10px 24px color-mix(in srgb, var(--site-gold) 22%, transparent) !important;
 }
 
 html[data-site-theme="light"] .attendance-actions button:disabled {

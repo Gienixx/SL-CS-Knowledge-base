@@ -622,7 +622,7 @@
 .attendance-app #attendanceClockOutButton::before { content: "↱"; }
 .attendance-app #attendanceRefreshButton::before { content: "↻"; }
 
-.attendance-app #attendanceClockOutButton:not(:disabled) {
+.attendance-app :is(#attendanceClockInButton, #attendanceClockOutButton):not(:disabled) {
   border-color: var(--att-gold) !important;
   background: linear-gradient(135deg, var(--att-gold-soft), var(--att-gold)) !important;
   color: #201400 !important;
@@ -635,7 +635,7 @@
   transform: translateY(-1px);
 }
 
-.attendance-app #attendanceClockOutButton:hover:not(:disabled) {
+.attendance-app :is(#attendanceClockInButton, #attendanceClockOutButton):hover:not(:disabled) {
   background: linear-gradient(135deg, #ffd46d, #ffae18) !important;
 }
 

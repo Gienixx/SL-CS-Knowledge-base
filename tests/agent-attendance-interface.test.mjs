@@ -64,6 +64,26 @@ test('attendance redesign preserves functional hooks and accessible theme contro
   )
 })
 
+test('clock-in and clock-out share the enabled gold action styling', async () => {
+  const [styles, lightStyles] = await Promise.all([
+    read('styles/attendance.css'),
+    read('styles/attendance-theme-fix.css')
+  ])
+
+  assert.match(
+    styles,
+    /:is\(#attendanceClockInButton, #attendanceClockOutButton\):not\(:disabled\)/
+  )
+  assert.match(
+    styles,
+    /:is\(#attendanceClockInButton, #attendanceClockOutButton\):hover:not\(:disabled\)/
+  )
+  assert.match(
+    lightStyles,
+    /\.attendance-action-primary,\s*\.attendance-action-secondary\s*\):not\(:disabled\)/
+  )
+})
+
 test('attendance history defaults to a half-month and paginates five entries at a time', async () => {
   const [html, script, styles] = await Promise.all([
     read('attendance.html'),

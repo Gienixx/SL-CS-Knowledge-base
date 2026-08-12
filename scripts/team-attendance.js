@@ -1073,6 +1073,9 @@ async function loadAttendance() {
       ...(prepaidByAttendance.get(row.attendance_id) || {})
     })
   ))
+  if (access?.is_admin !== true) {
+    attendanceRows = attendanceRows.filter(row => row.clock_in && !row.clock_out)
+  }
   mergeAttendanceReferences(attendanceRows)
   renderTable()
   setMessage(

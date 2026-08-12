@@ -33,6 +33,7 @@ test('regular agents default Team Attendance to the current New York work date',
 test('regular agents receive only the live attendance card surface', async () => {
   const script = await read('scripts/team-attendance.js')
 
+  assert.match(script, /if \(access\?\.is_admin !== true\) \{[\s\S]*?attendanceRows = attendanceRows\.filter\(row => row\.clock_in && !row\.clock_out\)[\s\S]*?\}/)
   assert.match(script, /if \(isAdminView\) badges\.appendChild\(actionMenu\)/)
   assert.match(script, /if \(isAdminView\) \{[\s\S]*?card\.append\(summary\)/)
   assert.match(script, /access\?\.is_admin === true[\s\S]*?workforce_list_team_attendance_prepaid/)
