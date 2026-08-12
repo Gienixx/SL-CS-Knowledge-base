@@ -7,9 +7,9 @@
   <title>Attendance | SocialLoop CS Base</title>
   <link rel="stylesheet" href="./styles/button-theme.css?v=1">
   <link rel="stylesheet" href="./styles/workforce-admin.css?v=2">
-  <link rel="stylesheet" href="./styles/attendance.css?v=6">
+  <link rel="stylesheet" href="./styles/attendance.css?v=7">
   <link rel="stylesheet" href="./styles/site-theme.css?v=1">
-  <link rel="stylesheet" href="./styles/attendance-theme-fix.css?v=4">
+  <link rel="stylesheet" href="./styles/attendance-theme-fix.css?v=5">
   <script src="./scripts/site-theme.js?v=1"></script>
 </head>
 <body class="attendance-shell">
@@ -141,6 +141,17 @@
         </div>
       </section>
 
+      <section id="attendancePrepaidBalance" class="wf-card attendance-prepaid-card" aria-labelledby="attendancePrepaidBalanceTitle" hidden>
+        <div class="wf-card-header">
+          <div>
+            <p class="attendance-card-kicker">Operational balance</p>
+            <h2 id="attendancePrepaidBalanceTitle">Prepaid Hours Balance</h2>
+            <p class="wf-message">Hours paid ahead and still being fulfilled.</p>
+          </div>
+        </div>
+        <div id="attendancePrepaidBalanceBody" class="attendance-prepaid-balance-list"></div>
+      </section>
+
       <div class="attendance-lower-grid">
         <section class="wf-card attendance-snapshot" aria-labelledby="attendanceSnapshotTitle">
           <div class="wf-card-header">
@@ -222,12 +233,13 @@
                   <th>Clock out</th>
                   <th>Worked</th>
                   <th>Status</th>
+                  <th>Pay type</th>
                   <th>Adjustments</th>
                   <th>Notes</th>
                 </tr>
               </thead>
               <tbody id="attendanceHistoryBody">
-                <tr><td colspan="8" class="wf-empty">Loading attendance history...</td></tr>
+                <tr><td colspan="9" class="wf-empty">Loading attendance history...</td></tr>
               </tbody>
             </table>
           </div>
@@ -244,6 +256,6 @@
     </main>
   </div>
 
-  <script type="module" src="./scripts/attendance.js?v=13"></script>
+  <script type="module" src="./scripts/attendance.js?v=16"></script>
 </body>
 </html>

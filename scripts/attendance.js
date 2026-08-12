@@ -48,6 +48,8 @@ const elements = {
   clockOutButton: document.getElementById('attendanceClockOutButton'),
   refreshButton: document.getElementById('attendanceRefreshButton'),
   actionMessage: document.getElementById('attendanceActionMessage'),
+  prepaidBalance: document.getElementById('attendancePrepaidBalance'),
+  prepaidBalanceBody: document.getElementById('attendancePrepaidBalanceBody'),
   historyMonth: document.getElementById('attendanceHistoryMonth'),
   historyPeriod: document.getElementById('attendanceHistoryPeriod'),
   historyStatus: document.getElementById('attendanceHistoryStatus'),
@@ -64,6 +66,7 @@ let visibleSchedules = []
 let todaySchedules = []
 let recentAttendance = []
 let historyRows = []
+let prepaidBalances = []
 let historyPage = 1
 let activeHistoryRange = null
 let busy = false
@@ -305,6 +308,44 @@ function formatMinutes(totalMinutes) {
   const minutes = safeMinutes % 60
   if (!hours) return `${minutes}m`
   return `${hours}h ${minutes}m`
+}
+
+function formatPrepaidTime(value, timezone = access?.timezone || 'America/New_York') {
+  if (!value) return '—'
+  return new Intl.DateTimeFormat('en-US', {
+    timeZone: timezone,
+    hour: 'numeric',
+    minute: '2-digit'
+  }).format(new Date(value))
+}
+
+function renderPrepaidBalances() {
+  if (!prepaidBalances.length) {
+    elements.prepaidBalance.hidden = true
+    elements.prepaidBalanceBody.replaceChildren()
+    return
+  }
+
+  const fragment = document.createDocumentFragment()
+  prepaidBalances.forEach(balance => {
+    const item = document.createElement('article')
+    item.className = 'attendance-prepaid-balance-item'
+
+    const heading = document.createElement('div')
+    heading.className = 'attendance-prepaid-balance-heading'
+    const date = document.createElement('strong')
+    date.textContent = `${formatDate(balance.work_date, false)} · ${formatPrepaidTime(balance.prepaid_clock_in, balance.timezone)}–${formatPrepaidTime(balance.prepaid_clock_out, balance.timezone)}`
+    heading.appendChild(date)
+
+    const detail = document.createElement('p')
+    detail.textContent = `Original: ${formatMinutes(balance.prepaid_minutes)} | Fulfilled: ${formatMinutes(balance.settled_minutes)} | Remaining: ${formatMinutes(balance.remaining_minutes)}`
+
+    item.append(heading, detail)
+    fragment.appendChild(item)
+  })
+
+  elements.prepaidBalanceBody.replaceChildren(fragment)
+  elements.prepaidBalance.hidden = false
 }
 
 function workedMinutes(record, now = new Date()) {
@@ -599,8 +640,15 @@ function createStatusCell(record) {
   const line = document.createElement('div')
   line.className = 'attendance-status-line'
   const status = document.createElement('span')
-  status.className = `wf-badge ${badgeClass(record.attendance_status)}`
-  status.textContent = ATTENDANCE_STATUS_LABELS[record.attendance_status] || record.attendance_status
+  const pendingApproval = !record.is_prepaid_schedule &&
+    record.clock_out &&
+    !['approved', 'locked'].includes(record.review_status)
+  status.className = `wf-badge ${record.is_prepaid_schedule ? 'info' : pendingApproval ? 'warning' : badgeClass(record.attendance_status)}`
+  status.textContent = record.is_prepaid_schedule
+    ? 'Prepaid scheduled'
+    : pendingApproval
+      ? 'For review'
+      : ATTENDANCE_STATUS_LABELS[record.attendance_status] || record.attendance_status
   line.appendChild(status)
 
   if (record.is_late) {
@@ -611,6 +659,47 @@ function createStatusCell(record) {
   }
 
   cell.appendChild(line)
+  return cell
+}
+
+function createPayTypeCell(record) {
+  const cell = document.createElement('td')
+  const wrap = document.createElement('div')
+  wrap.className = 'attendance-pay-type'
+
+  if (record.is_prepaid_schedule) {
+    const badge = document.createElement('span')
+    badge.className = 'wf-badge info'
+    badge.textContent = `Prepaid ${formatMinutes(record.prepaid_minutes)}`
+    wrap.appendChild(badge)
+  } else {
+    const pendingApproval = record.clock_out && !['approved', 'locked'].includes(record.review_status)
+    const fulfilledMinutes = Math.max(0, Number(record.fulfilled_prepaid_minutes) || 0)
+    const regularMinutes = pendingApproval
+      ? 0
+      : Math.max(0, Number(record.regular_payable_minutes) || 0)
+    if (fulfilledMinutes) {
+      const badge = document.createElement('span')
+      badge.className = 'wf-badge success'
+      badge.textContent = `Prepaid ${formatMinutes(fulfilledMinutes)}`
+      wrap.appendChild(badge)
+    }
+    if (regularMinutes) {
+      const badge = document.createElement('span')
+      badge.className = 'wf-badge muted'
+      badge.textContent = `Regular ${formatMinutes(regularMinutes)}`
+      wrap.appendChild(badge)
+    }
+    if (pendingApproval && !fulfilledMinutes) {
+      const badge = document.createElement('span')
+      badge.className = 'wf-badge warning'
+      badge.textContent = 'For review'
+      wrap.appendChild(badge)
+    }
+  }
+
+  if (!wrap.childElementCount) wrap.textContent = '—'
+  cell.appendChild(wrap)
   return cell
 }
 
@@ -655,7 +744,7 @@ function renderHistory() {
   if (!visibleRows.length) {
     const row = document.createElement('tr')
     const cell = document.createElement('td')
-    cell.colSpan = 8
+    cell.colSpan = 9
     cell.className = 'wf-empty'
     cell.textContent = 'No attendance records match the selected period and status.'
     row.appendChild(cell)
@@ -663,6 +752,7 @@ function renderHistory() {
   } else {
     visibleRows.forEach(record => {
       const row = document.createElement('tr')
+      if (record.is_prepaid_schedule) row.classList.add('attendance-prepaid-schedule-row')
       const schedule = record.work_schedules || null
       const scheduleNote = schedule?.is_rest_day
         ? 'Rest-day overtime'
@@ -682,6 +772,7 @@ function renderHistory() {
         createTextCell(formatTime(record.clock_out)),
         createTextCell(record.clock_in ? formatMinutes(workedMinutes(record)) : '—'),
         createStatusCell(record),
+        createPayTypeCell(record),
         createAdjustmentsCell(record),
         noteCell
       )
@@ -753,20 +844,41 @@ async function loadHistory() {
   historyPage = 1
   setHistoryMessage('Loading attendance history...')
 
-  const { data, error } = await supabase
-    .from('attendance')
-    .select('id, user_id, schedule_id, work_date, clock_in, clock_out, attendance_status, is_late, minutes_late, overtime_minutes, pre_shift_overtime_minutes, regular_minutes, post_shift_overtime_minutes, rest_day_overtime_minutes, holiday_overtime_minutes, total_overtime_minutes, total_worked_minutes, undertime_minutes, correction_reason, admin_notes, corrected_at, created_at, updated_at, work_schedules(id, shift_date, shift_start, shift_end, timezone, status, is_rest_day, is_holiday, is_leave, is_absent, holiday_name)')
-    .in('user_id', profileIds)
-    .gte('work_date', range.start)
-    .lte('work_date', range.end)
-    .order('work_date', { ascending: false })
-    .order('created_at', { ascending: false })
-    .abortSignal(requestSignal())
+  const { data, error } = await supabase.rpc(
+    'workforce_list_my_attendance_log',
+    {
+      p_start_date: range.start,
+      p_end_date: range.end
+    }
+  )
 
   if (error) throw error
-  historyRows = (data || [])
-    .map(record => redactAttendanceCorrectionForViewer(access, record))
+  historyRows = (data || []).map(record => ({
+    ...record,
+    work_schedules: record.schedule_id || record.schedule_start
+      ? {
+          id: record.schedule_id,
+          shift_start: record.schedule_start,
+          shift_end: record.schedule_end,
+          timezone: record.schedule_timezone,
+          status: record.schedule_status,
+          is_rest_day: record.schedule_is_rest_day,
+          is_holiday: record.schedule_is_holiday,
+          holiday_name: record.holiday_name
+        }
+      : null
+  }))
   renderHistory()
+}
+
+async function loadPrepaidBalances() {
+  const { data, error } = await supabase.rpc(
+    'workforce_list_my_prepaid_balances'
+  )
+
+  if (error) throw error
+  prepaidBalances = data || []
+  renderPrepaidBalances()
 }
 
 function setBusy(value, label = '') {
@@ -783,7 +895,7 @@ async function refreshAll({ silent = false } = {}) {
   if (!silent) setActionMessage('Refreshing attendance...')
 
   try {
-    await Promise.all([loadToday(), loadHistory()])
+    await Promise.all([loadToday(), loadHistory(), loadPrepaidBalances()])
     if (!silent) setActionMessage('Attendance is up to date.', 'success')
   } catch (error) {
     setActionMessage(errorMessage(error), 'error')
@@ -813,7 +925,7 @@ async function clockIn() {
       .rpc('workforce_clock_in', { p_schedule_id: scheduleId })
       .abortSignal(requestSignal())
     if (error) throw error
-    await Promise.all([loadToday(), loadHistory()])
+    await Promise.all([loadToday(), loadHistory(), loadPrepaidBalances()])
     setActionMessage(
       schedule?.is_rest_day
         ? 'Rest-day overtime clock-in recorded successfully.'
@@ -841,7 +953,7 @@ async function clockOut() {
       .rpc('workforce_clock_out')
       .abortSignal(requestSignal())
     if (error) throw error
-    await Promise.all([loadToday(), loadHistory()])
+    await Promise.all([loadToday(), loadHistory(), loadPrepaidBalances()])
     setActionMessage('Clock-out recorded successfully.', 'success')
   } catch (error) {
     setActionMessage(errorMessage(error), 'error')

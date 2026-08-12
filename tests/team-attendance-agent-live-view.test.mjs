@@ -41,6 +41,37 @@ test('regular agents receive only the live attendance card surface', async () =>
   assert.match(script, /including early clock-ins assigned to today's schedule/)
 })
 
+test('open and missing-clock-out states are mutually exclusive at the 20-hour boundary', async () => {
+  const script = await read('scripts/team-attendance.js')
+  const durationSource = script.match(/function durationMinutes\(clockIn, clockOut\) \{[\s\S]*?\n\}/)?.[0]
+  const classifySource = script.match(/function classifyOpenSession\(record, now = new Date\(\)\) \{[\s\S]*?\n\}/)?.[0]
+
+  assert.ok(durationSource)
+  assert.ok(classifySource)
+  const classify = Function(
+    'durationMinutes',
+    'OPEN_SESSION_LIMIT_MINUTES',
+    `${durationSource}\n${classifySource}\nreturn classifyOpenSession`
+  )(null, 20 * 60)
+
+  const clockIn = new Date(Date.UTC(2026, 7, 12, 12, 0, 0))
+  const record = { original_clock_in: clockIn.toISOString(), original_clock_out: null }
+  const at = minutes => new Date(clockIn.getTime() + minutes * 60000)
+
+  assert.deepEqual(classify(record, at(19 * 60 + 59)), {
+    is_open: true,
+    is_missing_clock_out: false
+  })
+  assert.deepEqual(classify(record, at(20 * 60)), {
+    is_open: true,
+    is_missing_clock_out: false
+  })
+  assert.deepEqual(classify(record, at(20 * 60 + 1)), {
+    is_open: false,
+    is_missing_clock_out: true
+  })
+})
+
 test('database uses one date-range visibility predicate for admins and agents', async () => {
   const migration = await read(migrationPath)
 

@@ -694,6 +694,38 @@
   letter-spacing: .01em;
 }
 
+.attendance-prepaid-card {
+  margin-top: 10px !important;
+}
+
+.attendance-prepaid-balance-list {
+  display: grid;
+  gap: 0;
+}
+
+.attendance-prepaid-balance-item {
+  padding: 11px 14px 12px;
+  border-bottom: 1px solid var(--att-border);
+}
+
+.attendance-prepaid-balance-item:last-child {
+  border-bottom: 0;
+}
+
+.attendance-prepaid-balance-heading strong {
+  color: var(--att-heading);
+  font-family: "Cascadia Code", "SFMono-Regular", Consolas, monospace;
+  font-size: .72rem;
+  font-weight: 600;
+}
+
+.attendance-prepaid-balance-item p {
+  margin: 5px 0 0;
+  color: var(--att-muted);
+  font-family: "Cascadia Code", "SFMono-Regular", Consolas, monospace;
+  font-size: .67rem;
+}
+
 .attendance-card-icon {
   color: var(--att-gold);
 }
@@ -840,11 +872,20 @@
 }
 
 .attendance-adjustments,
-.attendance-status-line {
+.attendance-status-line,
+.attendance-pay-type {
   display: flex;
   align-items: center;
   gap: 5px;
   flex-wrap: wrap;
+}
+
+.attendance-prepaid-schedule-row {
+  background: color-mix(in srgb, var(--att-gold) 5%, transparent);
+}
+
+.attendance-prepaid-schedule-row .wf-person {
+  color: var(--att-gold-soft);
 }
 
 .attendance-note-cell {

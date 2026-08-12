@@ -21,6 +21,7 @@ const REVIEW_STATUS_LABELS = Object.freeze({
 })
 const ATTENDANCE_PAGE_SIZE = 5
 const WORKFORCE_TIMEZONE = 'America/New_York'
+const OPEN_SESSION_LIMIT_MINUTES = 20 * 60
 
 const elements = {
   workforceLink: document.getElementById('teamAttendanceWorkforceLink'),
@@ -257,6 +258,18 @@ function effectiveAttendanceClocks(record) {
 function durationMinutes(clockIn, clockOut) {
   if (!clockIn || !clockOut) return 0
   return Math.max(0, Math.round((new Date(clockOut).getTime() - new Date(clockIn).getTime()) / 60000))
+}
+
+function classifyOpenSession(record, now = new Date()) {
+  const clockIn = record?.original_clock_in || record?.clock_in || null
+  const clockOut = record?.original_clock_out || record?.clock_out || null
+  if (!clockIn || clockOut) return { is_open: false, is_missing_clock_out: false }
+
+  const elapsedMinutes = durationMinutes(clockIn, now.toISOString())
+  if (elapsedMinutes > OPEN_SESSION_LIMIT_MINUTES) {
+    return { is_open: false, is_missing_clock_out: true }
+  }
+  return { is_open: true, is_missing_clock_out: false }
 }
 
 function attendanceHours(record) {
@@ -1060,6 +1073,7 @@ async function loadAttendance() {
   const prepaidByAttendance = new Map(
     (prepaidResult.data || []).map(row => [row.attendance_id, row])
   )
+  const classificationNow = new Date()
   attendanceRows = (attendanceResult.data || []).map(row => (
     redactAttendanceCorrectionForViewer(access, {
       prepaid_clock_in: null,
@@ -1072,7 +1086,10 @@ async function loadAttendance() {
       ...row,
       ...(prepaidByAttendance.get(row.attendance_id) || {})
     })
-  ))
+  )).map(row => ({
+    ...row,
+    ...classifyOpenSession(row, classificationNow)
+  }))
   if (access?.is_admin !== true) {
     attendanceRows = attendanceRows.filter(row => row.clock_in && !row.clock_out)
   }

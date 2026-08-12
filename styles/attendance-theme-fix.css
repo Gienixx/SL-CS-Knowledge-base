@@ -312,6 +312,26 @@ html[data-site-theme="light"] .attendance-snapshot {
   background: var(--site-surface-solid) !important;
 }
 
+/* Prepaid Attendance Log rows and balance card */
+html[data-site-theme="light"] .attendance-prepaid-card {
+  border-color: var(--site-border) !important;
+  color: var(--site-text) !important;
+  background: var(--site-surface-solid) !important;
+  box-shadow: none !important;
+}
+
+html[data-site-theme="light"] .attendance-prepaid-balance-heading strong {
+  color: var(--site-heading) !important;
+}
+
+html[data-site-theme="light"] .attendance-prepaid-balance-item p {
+  color: var(--site-muted) !important;
+}
+
+html[data-site-theme="light"] .attendance-prepaid-schedule-row {
+  background: color-mix(in srgb, var(--site-gold) 8%, transparent) !important;
+}
+
 /* Individual snapshot metric cells */
 html[data-site-theme="light"] .attendance-summary-grid .wf-summary {
   border-color: var(--site-border) !important;
