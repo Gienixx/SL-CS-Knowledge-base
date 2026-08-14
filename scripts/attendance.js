@@ -6,6 +6,8 @@ import {
 } from './workforce-permissions.js?v=2'
 
 const RELEASED_SCHEDULE_STATUSES = Object.freeze(['published', 'changed'])
+const SCHEDULE_PLACEHOLDER = '__SCHEDULE_PLACEHOLDER__'
+const ADDITIONAL_WORK_SESSION = '__ADDITIONAL_WORK_SESSION__'
 const REQUEST_TIMEOUT_MS = 15000
 const HISTORY_PAGE_SIZE = 5
 const ATTENDANCE_STATUS_LABELS = Object.freeze({
@@ -239,6 +241,10 @@ function scheduleById(scheduleId) {
 
 function selectedSchedule() {
   return scheduleById(elements.scheduleSelect.value)
+}
+
+function isAdditionalWorkSessionSelected() {
+  return elements.scheduleSelect.value === ADDITIONAL_WORK_SESSION
 }
 
 function scheduleForAttendance(record) {
@@ -492,9 +498,21 @@ function openAttendanceRecord() {
   return recentAttendance.find(record => record.clock_in && !record.clock_out) || null
 }
 
+function canClockAdditionalSession() {
+  const completedForWorkDate = hasCompletedAttendanceForDate(activeLocalDate)
+  const hasUnusedEligibleSchedule = visibleSchedules.some(schedule => {
+    if (schedule.shift_date !== activeLocalDate || schedule.is_leave || schedule.is_absent) return false
+    const availability = scheduleAvailability(schedule)
+    const unused = !recentAttendance.some(record => record.schedule_id === schedule.id && record.clock_in)
+    return unused && ['next-day-special', 'next-day-overnight', 'special', 'early', 'active'].includes(availability.state)
+  })
+
+  return completedForWorkDate && !hasUnusedEligibleSchedule && !openAttendanceRecord()
+}
+
 function attendanceForSelectedSchedule() {
   const scheduleId = elements.scheduleSelect.value
-  if (!scheduleId) {
+  if (!scheduleId || scheduleId === ADDITIONAL_WORK_SESSION) {
     return recentAttendance.find(record => !record.schedule_id && record.work_date === localDateKey()) || null
   }
   return recentAttendance.find(record => record.schedule_id === scheduleId) || null
@@ -549,10 +567,22 @@ function renderScheduleChooser() {
   elements.scheduleSelect.replaceChildren()
 
   if (selectableSchedules.length) {
-    elements.scheduleSelect.appendChild(new Option('Select a schedule', ''))
+    const assignedGroup = document.createElement('optgroup')
+    assignedGroup.label = 'Assigned schedules'
+    const placeholder = new Option('Select a schedule', SCHEDULE_PLACEHOLDER)
+    placeholder.disabled = true
+    assignedGroup.appendChild(placeholder)
     selectableSchedules.forEach(schedule => {
-      elements.scheduleSelect.appendChild(new Option(scheduleOptionLabel(schedule), schedule.id))
+      assignedGroup.appendChild(new Option(scheduleOptionLabel(schedule), schedule.id))
     })
+    elements.scheduleSelect.appendChild(assignedGroup)
+
+    if (canClockAdditionalSession()) {
+      const additionalGroup = document.createElement('optgroup')
+      additionalGroup.label = 'Additional session'
+      additionalGroup.appendChild(new Option(`${formatDate(activeLocalDate, false)} · Additional work session · Needs review`, ADDITIONAL_WORK_SESSION))
+      elements.scheduleSelect.appendChild(additionalGroup)
+    }
 
     const optionValues = [...elements.scheduleSelect.options].map(option => option.value)
     const availableSchedule = selectableSchedules.find(schedule => {
@@ -569,13 +599,33 @@ function renderScheduleChooser() {
     })
     const preferred = optionValues.includes(previous) && previous
       ? previous
-      : ''
+      : selectableSchedules.length === 1
+        ? selectableSchedules[0].id
+        : SCHEDULE_PLACEHOLDER
 
     elements.scheduleSelect.value = preferred
     elements.scheduleChooser.hidden = false
   } else {
-    elements.scheduleSelect.appendChild(new Option('Unscheduled attendance', ''))
+    const assignedGroup = document.createElement('optgroup')
+    assignedGroup.label = 'Assigned schedules'
+    const unscheduledOption = new Option('Unscheduled attendance', SCHEDULE_PLACEHOLDER)
+    unscheduledOption.disabled = true
+    assignedGroup.appendChild(unscheduledOption)
+    elements.scheduleSelect.appendChild(assignedGroup)
     elements.scheduleChooser.hidden = false
+    elements.scheduleSelect.value = SCHEDULE_PLACEHOLDER
+  }
+
+  if (canClockAdditionalSession() && ![...elements.scheduleSelect.options].some(option => option.value === ADDITIONAL_WORK_SESSION)) {
+    const additionalGroup = document.createElement('optgroup')
+    additionalGroup.label = 'Additional session'
+    additionalGroup.appendChild(new Option(`${formatDate(activeLocalDate, false)} · Additional work session · Needs review`, ADDITIONAL_WORK_SESSION))
+    elements.scheduleSelect.appendChild(additionalGroup)
+    elements.scheduleChooser.hidden = false
+  }
+
+  if ([...elements.scheduleSelect.options].some(option => option.value === previous)) {
+    elements.scheduleSelect.value = previous
   }
 }
 
@@ -624,7 +674,9 @@ function updateScheduleHelp() {
   const record = attendanceForSelectedSchedule()
 
   if (!schedule) {
-    elements.scheduleHelp.textContent = 'No released shift is currently available. You may clock in and credited minutes count as RDOT.'
+    elements.scheduleHelp.textContent = canClockAdditionalSession()
+      ? 'No assigned second shift found. Clock in as an additional work session for admin review.'
+      : 'No released shift is currently available. You may clock in and credited minutes count as RDOT.'
     return
   }
 
@@ -663,13 +715,14 @@ function updateActionState() {
   const openRecord = openAttendanceRecord()
   const schedule = selectedSchedule()
   const selectedRecord = attendanceForSelectedSchedule()
+  const hasExplicitSelection = Boolean(schedule) || isAdditionalWorkSessionSelected()
   const availability = schedule ? scheduleAvailability(schedule) : null
   const scheduleClockInOpen = schedule
     ? ['next-day-special', 'next-day-overnight', 'special', 'early', 'active'].includes(availability.state)
-    : visibleSchedules.length === 0
+    : isAdditionalWorkSessionSelected() && canClockAdditionalSession()
   const selectedCompleted = Boolean(selectedRecord?.clock_in && selectedRecord.clock_out)
 
-  elements.clockInButton.disabled = busy || Boolean(openRecord) || selectedCompleted || !scheduleClockInOpen
+  elements.clockInButton.disabled = busy || Boolean(openRecord) || selectedCompleted || !hasExplicitSelection || !scheduleClockInOpen
   elements.clockOutButton.disabled = busy || !openRecord
   elements.scheduleSelect.disabled = busy || Boolean(openRecord)
   updateScheduleHelp()
@@ -1051,7 +1104,12 @@ async function refreshAll({ silent = false } = {}) {
 
 async function clockIn() {
   if (busy || elements.clockInButton.disabled) return
-  const scheduleId = elements.scheduleSelect.value || null
+  const selectedValue = elements.scheduleSelect.value
+  if (selectedValue === SCHEDULE_PLACEHOLDER || !selectedValue) {
+    setActionMessage('Please select a schedule or additional work session before clocking in.', 'error')
+    return
+  }
+  const scheduleId = selectedValue === ADDITIONAL_WORK_SESSION ? null : selectedValue
   const schedule = selectedSchedule()
   if (adminAssistMode) {
     const reason = assistReason('Clock In')
