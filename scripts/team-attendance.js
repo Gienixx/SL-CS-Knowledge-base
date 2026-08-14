@@ -61,6 +61,7 @@ let attendanceRows = []
 let busy = false
 let attendancePage = 1
 let attendanceQuickFilter = 'all'
+let pendingDelete = null
 
 function errorMessage(error) {
   return error?.message || 'An unexpected error occurred.'
@@ -417,7 +418,7 @@ function createActionCell(row) {
     deleteButton.type = 'button'
     deleteButton.className = 'wf-btn danger compact'
     deleteButton.textContent = 'Delete'
-    deleteButton.addEventListener('click', () => deleteAttendance(row, deleteButton))
+    deleteButton.addEventListener('click', () => openDeleteModal(row, deleteButton))
     actions.appendChild(deleteButton)
   }
 
@@ -480,43 +481,73 @@ function formatCorrectionDateTime(value, timezone) {
   }).format(new Date(value))
 }
 
-async function deleteAttendance(row, button) {
+function openDeleteModal(row, button) {
   if (!row.attendance_id || busy) return
+  pendingDelete = { row, button }
+  const modal = document.getElementById('teamAttendanceDeleteModal')
+  document.getElementById('teamAttendanceDeleteSummary').textContent = `${row.employee_name || 'This employee'} · ${formatDate(row.work_date)}`
+  document.getElementById('teamAttendanceDeleteReason').value = ''
+  setMessage(document.getElementById('teamAttendanceDeleteMessage'), '')
+  modal.hidden = false
+  document.body.classList.add('modal-open')
+  document.getElementById('teamAttendanceDeleteReason').focus()
+}
 
-  const employee = row.employee_name || 'this employee'
-  const workDate = formatDate(row.work_date)
-  const reason = window.prompt(
-    `Why are you deleting ${employee}'s attendance record for ${workDate}? This cannot be undone.`
-  )
+function closeDeleteModal() {
+  const modal = document.getElementById('teamAttendanceDeleteModal')
+  if (!modal) return
+  modal.hidden = true
+  pendingDelete = null
+  document.body.classList.remove('modal-open')
+}
 
-  if (reason === null) return
-  if (reason.trim().length < 3) {
-    setMessage(elements.tableMessage, 'Enter a deletion reason of at least 3 characters.', 'error')
+async function deleteAttendance() {
+  const pending = pendingDelete
+  const reasonElement = document.getElementById('teamAttendanceDeleteReason')
+  const messageElement = document.getElementById('teamAttendanceDeleteMessage')
+  if (!pending || !reasonElement || busy) return
+  const reason = reasonElement.value.trim()
+  if (reason.length < 3) {
+    setMessage(messageElement, 'Enter a deletion reason of at least 3 characters.', 'error')
+    reasonElement.focus()
     return
   }
 
   busy = true
-  button.disabled = true
-  button.textContent = 'Deleting...'
+  const submit = document.getElementById('teamAttendanceDeleteSubmit')
+  submit.disabled = true
+  submit.textContent = 'Deleting...'
+  pending.button.disabled = true
   setMessage(elements.tableMessage, 'Deleting attendance record...')
+  setMessage(messageElement, 'Deleting attendance record...')
 
   try {
     const { data, error } = await supabase.rpc('workforce_delete_attendance', {
-      p_attendance_id: row.attendance_id,
-      p_reason: reason.trim()
+      p_attendance_id: pending.row.attendance_id,
+      p_reason: reason
     })
-
     if (error) throw error
     if (!data) throw new Error('Attendance record was not deleted. Check your permissions and try again.')
 
+    const verification = await supabase.rpc('workforce_verify_attendance_void', {
+      p_attendance_id: pending.row.attendance_id
+    })
+    if (verification.error) throw verification.error
+    if (!verification.data?.[0]?.voided_at) {
+      throw new Error('Attendance record was not deleted. Please try again or contact admin.')
+    }
+
+    closeDeleteModal()
     await loadAttendance()
-    setMessage(elements.tableMessage, 'Attendance record deleted successfully.', 'success')
+    setMessage(elements.tableMessage, 'Attendance record deleted.', 'success')
   } catch (error) {
     setMessage(elements.tableMessage, errorMessage(error), 'error')
-    button.disabled = false
-    button.textContent = 'Delete'
+    setMessage(messageElement, errorMessage(error), 'error')
+    pending.button.disabled = false
   } finally {
     busy = false
+    submit.disabled = false
+    submit.textContent = 'Confirm delete'
   }
 }
 
@@ -532,6 +563,7 @@ function filteredRows() {
   const overtimeOnly = elements.overtimeFilter.checked
 
   return attendanceRows.filter(row => {
+    if (row.review_status === 'voided') return false
     if (search && ![row.employee_name, row.employee_id, row.employee_email]
       .some(value => String(value || '').toLowerCase().includes(search))) return false
     if (attendanceQuickFilter === 'open' && !row.is_open) return false
@@ -1209,10 +1241,15 @@ function bindEvents() {
   const correctionMessage = document.getElementById('teamAttendanceCorrectionMessage')
   const addForm = document.getElementById('teamAttendanceAddForm')
   const addMessage = document.getElementById('teamAttendanceAddMessage')
+  const deleteForm = document.getElementById('teamAttendanceDeleteForm')
 
   addForm?.addEventListener('submit', event => {
     event.preventDefault()
     handleAddSubmit(addMessage)
+  })
+  deleteForm?.addEventListener('submit', event => {
+    event.preventDefault()
+    deleteAttendance()
   })
   document.getElementById('teamAttendanceAddEmployee')?.addEventListener('change', () => {
     loadAddSchedules().catch(error => setMessage(addMessage, errorMessage(error), 'error'))
@@ -1231,6 +1268,7 @@ function bindEvents() {
   document.querySelectorAll('[data-close]').forEach(button => {
     button.addEventListener('click', () => {
       if (button.dataset.close === 'teamAttendanceAddModal') closeAddModal()
+      else if (button.dataset.close === 'teamAttendanceDeleteModal') closeDeleteModal()
       else closeCorrectionModal()
     })
   })
