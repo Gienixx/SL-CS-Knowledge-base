@@ -23,7 +23,7 @@ test('live clock-in baseline preserves dormant unscheduled-session capability', 
   assert.match(migration, /values \(\s*v_profile_user_id, p_schedule_id, v_work_date/)
 })
 
-test('baseline does not expose the Additional session frontend', () => {
-  assert.doesNotMatch(attendance, /ADDITIONAL_WORK_SESSION/)
-  assert.doesNotMatch(attendance, /canClockAdditionalSession/)
+test('baseline backend remains present beneath the Additional session frontend', () => {
+  assert.match(attendance, /workforce_clock_in/)
+  assert.match(attendance, /ADDITIONAL_WORK_SESSION/)
 })
