@@ -993,7 +993,7 @@ async function loadHistory() {
   )
 
   if (error) throw error
-  historyRows = (data || []).map(record => ({
+  historyRows = (data || []).filter(record => record.review_status !== 'voided').map(record => ({
     ...record,
     work_schedules: record.schedule_id || record.schedule_start
       ? {

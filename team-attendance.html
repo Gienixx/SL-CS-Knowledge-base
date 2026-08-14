@@ -300,6 +300,30 @@
       </form>
     </section>
   </div>
-  <script type="module" src="./scripts/team-attendance.js?v=17"></script>
+  <div class="wf-modal" id="teamAttendanceDeleteModal" role="dialog" aria-modal="true" aria-labelledby="teamAttendanceDeleteModalTitle" hidden>
+    <button class="wf-backdrop" type="button" data-close="teamAttendanceDeleteModal" aria-label="Close delete dialog"></button>
+    <section class="wf-dialog compact" role="document">
+      <div class="wf-dialog-header">
+        <div>
+          <h2 id="teamAttendanceDeleteModalTitle">Delete this attendance record?</h2>
+          <p class="wf-message">This will remove it from Team Attendance but keep an audit record.</p>
+        </div>
+        <button class="wf-close" type="button" data-close="teamAttendanceDeleteModal" aria-label="Close">×</button>
+      </div>
+      <form id="teamAttendanceDeleteForm" class="wf-form">
+        <p id="teamAttendanceDeleteSummary" class="wf-message"></p>
+        <label class="wf-field">
+          <span>Delete/void reason</span>
+          <textarea id="teamAttendanceDeleteReason" class="wf-control" rows="3" minlength="3" required></textarea>
+        </label>
+        <p id="teamAttendanceDeleteMessage" class="wf-message" aria-live="polite"></p>
+        <div class="wf-dialog-actions">
+          <button class="wf-btn secondary" type="button" data-close="teamAttendanceDeleteModal">Cancel</button>
+          <button id="teamAttendanceDeleteSubmit" class="wf-btn danger" type="submit">Confirm delete</button>
+        </div>
+      </form>
+    </section>
+  </div>
+  <script type="module" src="./scripts/team-attendance.js?v=19"></script>
 </body>
 </html>
