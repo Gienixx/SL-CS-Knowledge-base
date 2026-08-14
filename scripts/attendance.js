@@ -624,7 +624,7 @@ function updateScheduleHelp() {
   const record = attendanceForSelectedSchedule()
 
   if (!schedule) {
-    elements.scheduleHelp.textContent = 'No assigned schedule. Your time will be recorded as unscheduled attendance.'
+    elements.scheduleHelp.textContent = 'No released shift is currently available. You may clock in and credited minutes count as RDOT.'
     return
   }
 
