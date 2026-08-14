@@ -26,6 +26,14 @@ test('Additional selection is preserved and submits null schedule_id', () => {
   assert.match(script, /Please select a schedule or additional work session/)
 })
 
+test('Additional selection enables Clock In without weakening normal schedule guards', () => {
+  assert.match(script, /const hasExplicitSelection = Boolean\(schedule\) \|\| isAdditionalWorkSessionSelected\(\)/)
+  assert.match(script, /isAdditionalWorkSessionSelected\(\) && canClockAdditionalSession\(\)/)
+  assert.match(script, /const selectedCompleted = !isAdditionalWorkSessionSelected\(\) && Boolean\(selectedRecord\?\.clock_in && selectedRecord\.clock_out\)/)
+  assert.match(script, /Boolean\(openRecord\)/)
+  assert.match(script, /SCHEDULE_PLACEHOLDER/)
+})
+
 test('Additional submission uses a separate pending unscheduled attendance row', () => {
   assert.match(migration, /p_schedule_id is null/)
   assert.match(migration, /a\.schedule_id is null/)

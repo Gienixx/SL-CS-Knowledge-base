@@ -720,7 +720,7 @@ function updateActionState() {
   const scheduleClockInOpen = schedule
     ? ['next-day-special', 'next-day-overnight', 'special', 'early', 'active'].includes(availability.state)
     : isAdditionalWorkSessionSelected() && canClockAdditionalSession()
-  const selectedCompleted = Boolean(selectedRecord?.clock_in && selectedRecord.clock_out)
+  const selectedCompleted = !isAdditionalWorkSessionSelected() && Boolean(selectedRecord?.clock_in && selectedRecord.clock_out)
 
   elements.clockInButton.disabled = busy || Boolean(openRecord) || selectedCompleted || !hasExplicitSelection || !scheduleClockInOpen
   elements.clockOutButton.disabled = busy || !openRecord
