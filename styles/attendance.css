@@ -291,6 +291,13 @@
   font-weight: 600;
   letter-spacing: .04em;
 }
+.attendance-live-clock-date {
+  margin: 6px 0 0;
+  color: var(--att-muted);
+  font-size: .78rem;
+  font-weight: 500;
+  letter-spacing: .01em;
+}
 .attendance-timezone {
   margin: 7px 0 0;
   color: var(--att-blue);

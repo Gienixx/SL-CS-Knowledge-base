@@ -33,6 +33,7 @@ const elements = {
   liveClock: document.getElementById('attendanceLiveClock'),
   liveClockValue: document.getElementById('attendanceLiveClockValue'),
   liveClockPeriod: document.getElementById('attendanceLiveClockPeriod'),
+  liveClockDate: document.getElementById('attendanceLiveClockDate'),
   timeZone: document.getElementById('attendanceTimeZone'),
   todayTitle: document.getElementById('attendanceTodayTitle'),
   todayBadge: document.getElementById('attendanceTodayBadge'),
@@ -792,6 +793,13 @@ function updateLiveClock() {
     `${clockPart('hour')}:${clockPart('minute')}:${clockPart('second')}`
 
   elements.liveClockPeriod.textContent = clockPart('dayPeriod')
+  elements.liveClockDate.textContent = new Intl.DateTimeFormat('en-US', {
+    timeZone: access?.timezone || 'America/New_York',
+    weekday: 'short',
+    month: 'short',
+    day: 'numeric',
+    year: 'numeric'
+  }).format(now)
   elements.liveClock.dateTime = now.toISOString()
 
   const record = openAttendanceRecord()
