@@ -1,0 +1,11 @@
+.activity-toolbar{grid-template-columns:minmax(220px,1fr) repeat(4,minmax(140px,190px))}
+.activity-table{min-width:1250px}
+.activity-table td:nth-child(1){white-space:nowrap;font-variant-numeric:tabular-nums}
+.activity-table td:nth-child(6){max-width:280px;white-space:normal}
+.activity-details{max-width:340px;white-space:pre-wrap;word-break:break-word;color:var(--wf-muted);font-size:.78rem}
+.activity-table td:nth-child(6){min-width:300px;line-height:1.45}
+.activity-display-details{display:block;min-width:280px;line-height:1.45}
+.activity-table td details{margin-top:8px}
+.activity-table td details summary{cursor:pointer;color:var(--wf-muted);font-size:.75rem}
+.activity-table td details pre{max-width:340px;max-height:220px;overflow:auto;margin:8px 0 0;padding:8px;white-space:pre-wrap;word-break:break-word;color:var(--wf-muted);background:var(--wf-surface-muted);font-size:.72rem}
+@media (max-width:900px){.activity-toolbar{grid-template-columns:repeat(2,minmax(0,1fr))}.activity-toolbar .wide{grid-column:1/-1}}
