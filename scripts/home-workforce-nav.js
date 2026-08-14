@@ -19,6 +19,7 @@ async function configureHomeWorkforceNavigation() {
   const payrollDashboardButton = document.getElementById(
     'homePayrollDashboardBtn'
   )
+  const activityLogButton = document.getElementById('homeActivityLogBtn')
 
   if (
     !myScheduleButton &&
@@ -27,7 +28,8 @@ async function configureHomeWorkforceNavigation() {
     !myPayslipsButton &&
     !teamAttendanceButton &&
     !workforceManagementButton &&
-    !payrollDashboardButton
+    !payrollDashboardButton &&
+    !activityLogButton
   ) {
     return
   }
@@ -124,6 +126,10 @@ async function configureHomeWorkforceNavigation() {
 
     if (payrollDashboardButton) {
       payrollDashboardButton.hidden = !canAccessPayrollDashboard
+    }
+
+    if (activityLogButton) {
+      activityLogButton.hidden = access.is_admin !== true
     }
   } catch (error) {
     console.error('Home workforce navigation failed:', error)
