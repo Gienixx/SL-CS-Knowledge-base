@@ -16,11 +16,10 @@ test('attendance page exposes agent clock actions and history', async () => {
 test('agents can use the unscheduled attendance path when no released schedule exists', async () => {
   const script = await read('scripts/attendance.js')
   const migration = await read('supabase/migrations/20260731065252_allow_next_day_special_schedule_clock_in.sql')
-  assert.match(script, /No assigned schedule\. Your time will be recorded as unscheduled attendance\./)
-  assert.match(script, /new Option\('Unscheduled attendance', ''\)/)
-  assert.match(script, /new Option\('Select a schedule', ''\)/)
-  assert.match(script, /const preferred = optionValues\.includes\(previous\) && previous[\s\S]*?: ''/)
-  assert.match(script, /const scheduleId = elements\.scheduleSelect\.value \|\| null/)
+  assert.match(script, /No released work schedule is available\. Your time will be recorded as unscheduled attendance for manager review\./)
+  assert.match(script, /new Option\('Unscheduled work · Needs review', UNSCHEDULED_WORK\)/)
+  assert.match(script, /const preferred = optionValues\.includes\(previous\) && previous[\s\S]*?: SCHEDULE_PLACEHOLDER/)
+  assert.match(script, /const scheduleId = \[ADDITIONAL_WORK_SESSION, UNSCHEDULED_WORK\]\.includes\(selectedValue\) \? null : selectedValue/)
   assert.match(migration, /if p_schedule_id is null then/)
   assert.match(migration, /schedule_id,\s*\n\s*work_date,\s*\n\s*clock_in/)
   assert.match(migration, /already clocked in to another shift/)
@@ -131,7 +130,7 @@ test('attendance summary does not fall back to an ended prior-day schedule', asy
 
   assert.match(script, /const fallbackSchedule = selectedSchedule\(\) \|\| null/)
   assert.doesNotMatch(script, /selectedSchedule\(\) \|\| visibleSchedules\[0\]/)
-  assert.match(script, /const scheduleClockInOpen = schedule[\s\S]*: visibleSchedules\.length === 0/)
+  assert.match(script, /const scheduleClockInOpen = schedule[\s\S]*isUnscheduledWorkSelected\(\)/)
 })
 
 test('attendance requires an explicit eligible schedule and supports tomorrow early shifts', async () => {
@@ -139,8 +138,8 @@ test('attendance requires an explicit eligible schedule and supports tomorrow ea
 
   assert.match(script, /state: 'next-day-overnight'/)
   assert.match(script, /'next-day-overnight', 'special', 'early', 'active'/)
-  assert.match(script, /new Option\('Select a schedule', ''\)/)
-  assert.match(script, /new Option\('Unscheduled attendance', ''\)/)
+  assert.match(script, /new Option\('Select a schedule', SCHEDULE_PLACEHOLDER\)/)
+  assert.match(script, /new Option\('Unscheduled work · Needs review', UNSCHEDULED_WORK\)/)
 })
 
 test('attendance automatically refreshes when the agent work date changes', async () => {
@@ -149,7 +148,7 @@ test('attendance automatically refreshes when the agent work date changes', asyn
     read('scripts/attendance.js')
   ])
 
-  assert.match(html, /scripts\/attendance\.js\?v=17/)
+  assert.match(html, /scripts\/attendance\.js\?v=18/)
   assert.match(script, /const nextLocalDate = localDateKey\(now\)/)
   assert.match(script, /nextLocalDate !== activeLocalDate/)
   assert.match(script, /localDateRefreshPending = true/)
