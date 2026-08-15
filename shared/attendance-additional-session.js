@@ -29,7 +29,13 @@ export function canUseUnscheduledWorkSession({
   if (!workDate) return false
   if (attendance.some(record => record.clock_in && !record.clock_out)) return false
 
-  return !schedules.some(schedule =>
-    schedule.shift_date === workDate && !schedule.is_leave && !schedule.is_absent
-  )
+  return !schedules.some(schedule => {
+    if (schedule.shift_date !== workDate || schedule.is_leave || schedule.is_absent) return false
+    if (schedule.status && !['published', 'changed'].includes(schedule.status)) return false
+    return !attendance.some(record => record.schedule_id === schedule.id && record.clock_in)
+  })
+}
+
+export function restoreScheduleSelection(previous, optionValues, fallback) {
+  return previous && optionValues.includes(previous) ? previous : fallback
 }

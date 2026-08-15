@@ -18,7 +18,7 @@ test('agents can use the unscheduled attendance path when no released schedule e
   const migration = await read('supabase/migrations/20260731065252_allow_next_day_special_schedule_clock_in.sql')
   assert.match(script, /No released work schedule is available\. Your time will be recorded as unscheduled attendance for manager review\./)
   assert.match(script, /new Option\('Unscheduled work · Needs review', UNSCHEDULED_WORK\)/)
-  assert.match(script, /const preferred = optionValues\.includes\(previous\) && previous[\s\S]*?: SCHEDULE_PLACEHOLDER/)
+  assert.match(script, /restoreScheduleSelection\(\s*previous,\s*optionValues/)
   assert.match(script, /const scheduleId = \[ADDITIONAL_WORK_SESSION, UNSCHEDULED_WORK\]\.includes\(selectedValue\) \? null : selectedValue/)
   assert.match(migration, /if p_schedule_id is null then/)
   assert.match(migration, /schedule_id,\s*\n\s*work_date,\s*\n\s*clock_in/)

@@ -3,7 +3,8 @@ import fs from 'node:fs/promises'
 import test from 'node:test'
 import {
   canUseAdditionalWorkSession,
-  canUseUnscheduledWorkSession
+  canUseUnscheduledWorkSession,
+  restoreScheduleSelection
 } from '../shared/attendance-additional-session.js'
 
 const script = await fs.readFile(new URL('../scripts/attendance.js', import.meta.url), 'utf8')
@@ -98,6 +99,17 @@ test('an unused published schedule suppresses Unscheduled work', () => {
   }), false)
 })
 
+test('completed RDOT does not suppress Unscheduled work or reset its sentinel selection', () => {
+  const rdot = { id: 'rdot-aug14', shift_date: '2026-08-14', status: 'published', is_rest_day: true }
+  const attendance = [{ work_date: '2026-08-14', schedule_id: rdot.id, clock_in: '10:00', clock_out: '12:00' }]
+  assert.equal(canUseUnscheduledWorkSession({
+    workDate: '2026-08-14',
+    attendance,
+    schedules: [rdot]
+  }), true)
+  assert.equal(restoreScheduleSelection('__UNSCHEDULED_WORK__', ['rdot-aug14', '__UNSCHEDULED_WORK__'], 'rdot-aug14'), '__UNSCHEDULED_WORK__')
+})
+
 test('leave-only schedules still make Unscheduled work available', () => {
   assert.equal(canUseUnscheduledWorkSession({
     workDate: '2026-08-15',
@@ -129,7 +141,7 @@ test('an open attendance blocks both unscheduled fallback and concurrent clock-i
 })
 
 test('Additional selection is preserved and submits null schedule_id', () => {
-  assert.match(script, /optionValues\.includes\(previous\)/)
+  assert.match(script, /restoreScheduleSelection\(\s*previous,\s*optionValues/)
   assert.match(script, /elements\.scheduleSelect\.value = previous/)
   assert.match(script, /\[ADDITIONAL_WORK_SESSION, UNSCHEDULED_WORK\]\.includes\(selectedValue\) \? null : selectedValue/)
   assert.match(script, /Please select a schedule or additional work session/)
@@ -142,6 +154,7 @@ test('Additional selection enables Clock In without weakening normal schedule gu
   assert.match(script, /const selectedCompleted = !isAdditionalWorkSessionSelected\(\) && !isUnscheduledWorkSelected\(\)/)
   assert.match(script, /Boolean\(openRecord\)/)
   assert.match(script, /SCHEDULE_PLACEHOLDER/)
+  assert.match(script, /restoreScheduleSelection\(\s*previous,\s*optionValues/)
 })
 
 test('Unscheduled work selection is distinct and preserves the pending null-schedule workflow', () => {

@@ -11,7 +11,8 @@ import {
 } from '../shared/attendance-clock-out-confirmation.js'
 import {
   canUseAdditionalWorkSession,
-  canUseUnscheduledWorkSession
+  canUseUnscheduledWorkSession,
+  restoreScheduleSelection
 } from '../shared/attendance-additional-session.js'
 
 const RELEASED_SCHEDULE_STATUSES = Object.freeze(['published', 'changed'])
@@ -695,11 +696,11 @@ function renderScheduleChooser() {
         'active'
       ].includes(availability.state)
     })
-    const preferred = optionValues.includes(previous) && previous
-      ? previous
-      : selectableSchedules.length === 1
-        ? selectableSchedules[0].id
-        : SCHEDULE_PLACEHOLDER
+    const preferred = restoreScheduleSelection(
+      previous,
+      optionValues,
+      selectableSchedules.length === 1 ? selectableSchedules[0].id : SCHEDULE_PLACEHOLDER
+    )
 
     elements.scheduleSelect.value = preferred
     const preferredSchedule = visibleSchedules.find(schedule => schedule.id === preferred)
