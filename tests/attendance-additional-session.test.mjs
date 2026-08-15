@@ -9,7 +9,7 @@ import {
 const script = await fs.readFile(new URL('../scripts/attendance.js', import.meta.url), 'utf8')
 const eligibility = await fs.readFile(new URL('../shared/attendance-additional-session.js', import.meta.url), 'utf8')
 const migration = await fs.readFile(new URL('../supabase/migrations/20260814153838_reconcile_live_workforce_clock_in.sql', import.meta.url), 'utf8')
-const fallbackMigration = await fs.readFile(new URL('../supabase/migrations/20260815133647_unscheduled_attendance_clock_in_fallback.sql', import.meta.url), 'utf8')
+const fallbackMigration = await fs.readFile(new URL('../supabase/migrations/20260816100000_unscheduled_attendance_clock_in_fallback.sql', import.meta.url), 'utf8')
 
 test('Additional work session has a dedicated sentinel and is rendered before selection is calculated', () => {
   assert.match(script, /const ADDITIONAL_WORK_SESSION = '__ADDITIONAL_WORK_SESSION__'/)
@@ -137,7 +137,7 @@ test('Additional selection is preserved and submits null schedule_id', () => {
 
 test('Additional selection enables Clock In without weakening normal schedule guards', () => {
   assert.match(script, /const hasExplicitSelection = Boolean\(schedule\) \|\| isAdditionalWorkSessionSelected\(\) \|\| isUnscheduledWorkSelected\(\)/)
-  assert.match(script, /isAdditionalWorkSessionSelected\(\)\n\s+\? canClockAdditionalSession\(\)/)
+  assert.match(script, /isAdditionalWorkSessionSelected\(\)\s*\?\s*canClockAdditionalSession\(\)\s*:\s*isUnscheduledWorkSelected\(\)/)
   assert.match(script, /isUnscheduledWorkSelected\(\) && canClockUnscheduledWork\(\)/)
   assert.match(script, /const selectedCompleted = !isAdditionalWorkSessionSelected\(\) && !isUnscheduledWorkSelected\(\)/)
   assert.match(script, /Boolean\(openRecord\)/)
