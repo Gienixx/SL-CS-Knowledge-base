@@ -4,11 +4,7 @@ import {
   loadCurrentWorkforceAccess,
   redactAttendanceCorrectionForViewer
 } from './workforce-permissions.js?v=2'
-import {
-  confirmClockOutIfNeeded,
-  formatClockOutElapsed,
-  shouldConfirmClockOut
-} from '../shared/attendance-clock-out-confirmation.js'
+import { confirmClockOutIfNeeded } from '../shared/attendance-clock-out-confirmation.js'
 import {
   canUseAdditionalWorkSession,
   canUseUnscheduledWorkSession,
@@ -144,7 +140,7 @@ function showClockOutConfirmation(elapsedText) {
     title.textContent = 'Clock out already?'
 
     const message = document.createElement('p')
-    message.textContent = `You've only been clocked in for ${elapsedText}. Are you sure you want to clock out?`
+    message.textContent = `You've been clocked in for ${elapsedText}. Are you sure you want to clock out?`
 
     const actions = document.createElement('div')
     actions.className = 'attendance-clock-out-confirmation-actions'
@@ -1320,19 +1316,17 @@ async function clockOut() {
 
   const openRecord = openAttendanceRecord()
   if (!openRecord) return
-  if (shouldConfirmClockOut(openRecord?.clock_in, new Date())) {
-    clockOutConfirmationOpen = true
-    let confirmed = false
-    try {
-      confirmed = await confirmClockOutIfNeeded({
-        clockIn: openRecord.clock_in,
-        requestConfirmation: elapsedText => showClockOutConfirmation(elapsedText)
-      })
-    } finally {
-      clockOutConfirmationOpen = false
-    }
-    if (!confirmed) return
+  clockOutConfirmationOpen = true
+  let confirmed = false
+  try {
+    confirmed = await confirmClockOutIfNeeded({
+      clockIn: openRecord.clock_in,
+      requestConfirmation: elapsedText => showClockOutConfirmation(elapsedText)
+    })
+  } finally {
+    clockOutConfirmationOpen = false
   }
+  if (!confirmed) return
 
   const clientRequestId = crypto.randomUUID()
   setBusy(true, 'clock-out')
