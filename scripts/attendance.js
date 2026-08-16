@@ -7,8 +7,7 @@ import {
 import { confirmClockOutIfNeeded } from '../shared/attendance-clock-out-confirmation.js'
 import {
   canUseAdditionalWorkSession,
-  canUseUnscheduledWorkSession,
-  restoreScheduleSelection
+  canUseUnscheduledWorkSession
 } from '../shared/attendance-additional-session.js'
 
 const RELEASED_SCHEDULE_STATUSES = Object.freeze(['published', 'changed'])
@@ -321,8 +320,14 @@ function isUnscheduledWorkSelected() {
   return elements.scheduleSelect.value === UNSCHEDULED_WORK
 }
 
+function isNullScheduleSelection(value) {
+  return [ADDITIONAL_WORK_SESSION, UNSCHEDULED_WORK].includes(value)
+}
+
 function selectedWorkDate() {
-  return selectedSchedule()?.shift_date || selectedWorkDateOverride || activeLocalDate
+  return isNullScheduleSelection(elements.scheduleSelect.value)
+    ? activeLocalDate
+    : selectedSchedule()?.shift_date || selectedWorkDateOverride || activeLocalDate
 }
 
 function isUntimedRestDayWithinClockInWindow(schedule, now = new Date()) {
@@ -398,6 +403,71 @@ function scheduleAvailability(schedule, now = new Date()) {
   if (nowMs >= endsAt.getTime()) return { state: 'ended', startsAt, endsAt }
   if (nowMs < startsAt.getTime()) return { state: 'early', startsAt, endsAt }
   return { state: 'active', startsAt, endsAt }
+}
+
+function isReleasedSchedule(schedule) {
+  return Boolean(
+    schedule &&
+    RELEASED_SCHEDULE_STATUSES.includes(schedule.status) &&
+    !schedule.is_leave &&
+    !schedule.is_absent
+  )
+}
+
+function isScheduleClockInEligible(schedule, now = new Date()) {
+  const availability = scheduleAvailability(schedule, now)
+  return [
+    'next-day-special',
+    'next-day-overnight',
+    'special',
+    'early',
+    'active'
+  ].includes(availability.state) || isUntimedRestDayWithinClockInWindow(schedule, now)
+}
+
+function isBackendReleasedScheduleCandidate(schedule, today, now = new Date()) {
+  if (!isReleasedSchedule(schedule)) return false
+
+  const yesterday = offsetDateKey(today, -1)
+  const tomorrow = offsetDateKey(today, 1)
+  const hasTimedCandidate = Boolean(
+    schedule.shift_start &&
+    schedule.shift_end &&
+    schedule.shift_date >= yesterday &&
+    schedule.shift_date <= tomorrow &&
+    new Date(schedule.shift_end).getTime() > now.getTime()
+  )
+  const hasTodaySpecialCandidate = Boolean(
+    (schedule.is_rest_day || schedule.is_holiday) &&
+    schedule.shift_date === today
+  )
+
+  return hasTimedCandidate || hasTodaySpecialCandidate
+}
+
+function hasBackendReleasedScheduleCandidate(now = new Date()) {
+  const today = activeLocalDate || localDateKey(now)
+  return visibleSchedules.some(schedule => isBackendReleasedScheduleCandidate(schedule, today, now))
+}
+
+function preferredScheduleSelection(previous, previousSchedule, optionValues, availableScheduleId, fallback) {
+  const previousRealSelectionIsValid = previousSchedule && optionValues.includes(previous)
+  const previousSentinelIsValid = isNullScheduleSelection(previous) &&
+    optionValues.includes(previous) &&
+    !availableScheduleId
+  return previousRealSelectionIsValid || previousSentinelIsValid ? previous : (availableScheduleId || fallback)
+}
+
+function hasUnusedEligibleRealSchedule(now = new Date()) {
+  return visibleSchedules.some(schedule => {
+    if (!isReleasedSchedule(schedule)) return false
+    if (recentAttendance.some(record => record.schedule_id === schedule.id && record.clock_in)) return false
+    return isScheduleClockInEligible(schedule, now)
+  })
+}
+
+function canUseNullScheduleSession(now = new Date()) {
+  return !hasBackendReleasedScheduleCandidate(now) || hasCompletedAttendanceForDate(activeLocalDate)
 }
 
 function minutesBetween(start, end = new Date()) {
@@ -583,21 +653,22 @@ function openAttendanceRecord() {
   return recentAttendance.find(record => record.clock_in && !record.clock_out) || null
 }
 
-function canClockAdditionalSession(workDate = selectedWorkDate()) {
+function canClockAdditionalSession() {
+  if (!canUseNullScheduleSession() || hasUnusedEligibleRealSchedule()) return false
+
   return canUseAdditionalWorkSession({
-    workDate,
+    workDate: activeLocalDate,
     attendance: recentAttendance,
     schedules: visibleSchedules,
-    isEligibleSchedule: schedule => {
-      const availability = scheduleAvailability(schedule)
-      return ['next-day-special', 'next-day-overnight', 'special', 'early', 'active'].includes(availability.state)
-    }
+    isEligibleSchedule: schedule => isScheduleClockInEligible(schedule)
   })
 }
 
-function canClockUnscheduledWork(workDate = selectedWorkDate()) {
+function canClockUnscheduledWork() {
+  if (!canUseNullScheduleSession() || hasUnusedEligibleRealSchedule()) return false
+
   return canUseUnscheduledWorkSession({
-    workDate,
+    workDate: activeLocalDate,
     attendance: recentAttendance,
     schedules: visibleSchedules
   })
@@ -605,8 +676,8 @@ function canClockUnscheduledWork(workDate = selectedWorkDate()) {
 
 function attendanceForSelectedSchedule() {
   const scheduleId = elements.scheduleSelect.value
-  if (!scheduleId || scheduleId === ADDITIONAL_WORK_SESSION || scheduleId === UNSCHEDULED_WORK) {
-    return recentAttendance.find(record => !record.schedule_id && record.work_date === selectedWorkDate()) || null
+  if (isNullScheduleSelection(scheduleId)) {
+    return recentAttendance.find(record => !record.schedule_id && record.work_date === activeLocalDate) || null
   }
   return recentAttendance.find(record => record.schedule_id === scheduleId) || null
 }
@@ -646,7 +717,6 @@ function scheduleOptionLabel(schedule) {
 function renderScheduleChooser() {
   const previous = elements.scheduleSelect.value
   const previousSchedule = visibleSchedules.find(schedule => schedule.id === previous)
-  const chooserWorkDate = previousSchedule?.shift_date || selectedWorkDateOverride || activeLocalDate
   const now = new Date()
   const selectableSchedules = visibleSchedules
     .filter(schedule => {
@@ -672,14 +742,14 @@ function renderScheduleChooser() {
     })
     elements.scheduleSelect.appendChild(assignedGroup)
 
-    if (canClockAdditionalSession(chooserWorkDate)) {
+    if (canClockAdditionalSession()) {
       const additionalGroup = document.createElement('optgroup')
       additionalGroup.label = 'Additional session'
-      additionalGroup.appendChild(new Option(`${formatDate(chooserWorkDate, false)} · Additional work session · Needs review`, ADDITIONAL_WORK_SESSION))
+      additionalGroup.appendChild(new Option(`${formatDate(activeLocalDate, false)} · Additional work session · Needs review`, ADDITIONAL_WORK_SESSION))
       elements.scheduleSelect.appendChild(additionalGroup)
     }
 
-    if (canClockUnscheduledWork(chooserWorkDate)) {
+    if (canClockUnscheduledWork()) {
       const unscheduledGroup = document.createElement('optgroup')
       unscheduledGroup.label = 'Unscheduled work'
       unscheduledGroup.appendChild(new Option('Unscheduled work · Needs review', UNSCHEDULED_WORK))
@@ -691,28 +761,26 @@ function renderScheduleChooser() {
       const alreadyRecorded = recentAttendance.some(record =>
         record.schedule_id === schedule.id && Boolean(record.clock_in)
       )
-      const availability = scheduleAvailability(schedule, now)
-      return !alreadyRecorded && [
-        'next-day-special',
-        'special',
-        'early',
-        'active'
-      ].includes(availability.state)
+      return !alreadyRecorded && isScheduleClockInEligible(schedule, now)
     })
-    const preferred = restoreScheduleSelection(
+    const fallback = selectableSchedules.length === 1 ? selectableSchedules[0].id : SCHEDULE_PLACEHOLDER
+    const preferred = preferredScheduleSelection(
       previous,
+      previousSchedule,
       optionValues,
-      selectableSchedules.length === 1 ? selectableSchedules[0].id : SCHEDULE_PLACEHOLDER
+      availableSchedule?.id,
+      fallback
     )
 
     elements.scheduleSelect.value = preferred
     const preferredSchedule = visibleSchedules.find(schedule => schedule.id === preferred)
     if (preferredSchedule) selectedWorkDateOverride = preferredSchedule.shift_date
+    else if (preferred === SCHEDULE_PLACEHOLDER || isNullScheduleSelection(preferred)) selectedWorkDateOverride = ''
     elements.scheduleChooser.hidden = false
   } else {
     const assignedGroup = document.createElement('optgroup')
     assignedGroup.label = 'Assigned schedules'
-    const unscheduledOption = canClockUnscheduledWork(chooserWorkDate)
+    const unscheduledOption = canClockUnscheduledWork()
       ? new Option('Unscheduled work · Needs review', UNSCHEDULED_WORK)
       : new Option('No released schedule', SCHEDULE_PLACEHOLDER)
     unscheduledOption.disabled = unscheduledOption.value === SCHEDULE_PLACEHOLDER
@@ -722,16 +790,15 @@ function renderScheduleChooser() {
     elements.scheduleSelect.value = SCHEDULE_PLACEHOLDER
   }
 
-  const selectedWorkDate = visibleSchedules.find(schedule => schedule.id === elements.scheduleSelect.value)?.shift_date || chooserWorkDate
-  if (canClockAdditionalSession(selectedWorkDate) && ![...elements.scheduleSelect.options].some(option => option.value === ADDITIONAL_WORK_SESSION)) {
+  if (canClockAdditionalSession() && ![...elements.scheduleSelect.options].some(option => option.value === ADDITIONAL_WORK_SESSION)) {
     const additionalGroup = document.createElement('optgroup')
     additionalGroup.label = 'Additional session'
-    additionalGroup.appendChild(new Option(`${formatDate(selectedWorkDate, false)} · Additional work session · Needs review`, ADDITIONAL_WORK_SESSION))
+    additionalGroup.appendChild(new Option(`${formatDate(activeLocalDate, false)} · Additional work session · Needs review`, ADDITIONAL_WORK_SESSION))
     elements.scheduleSelect.appendChild(additionalGroup)
     elements.scheduleChooser.hidden = false
   }
 
-  if (canClockUnscheduledWork(selectedWorkDate) && ![...elements.scheduleSelect.options].some(option => option.value === UNSCHEDULED_WORK)) {
+  if (canClockUnscheduledWork() && ![...elements.scheduleSelect.options].some(option => option.value === UNSCHEDULED_WORK)) {
     const unscheduledGroup = document.createElement('optgroup')
     unscheduledGroup.label = 'Unscheduled work'
     unscheduledGroup.appendChild(new Option('Unscheduled work · Needs review', UNSCHEDULED_WORK))
@@ -739,9 +806,6 @@ function renderScheduleChooser() {
     elements.scheduleChooser.hidden = false
   }
 
-  if ([...elements.scheduleSelect.options].some(option => option.value === previous)) {
-    elements.scheduleSelect.value = previous
-  }
 }
 
 function renderScheduleNotice() {
@@ -1237,7 +1301,7 @@ async function clockIn() {
     setActionMessage('Please select a schedule or additional work session before clocking in.', 'error')
     return
   }
-  const scheduleId = [ADDITIONAL_WORK_SESSION, UNSCHEDULED_WORK].includes(selectedValue) ? null : selectedValue
+  const scheduleId = isNullScheduleSelection(selectedValue) ? null : selectedValue
   const schedule = selectedSchedule()
   if (adminAssistMode) {
     const reason = assistReason('Clock In')
@@ -1398,6 +1462,7 @@ async function initialize() {
   elements.scheduleSelect.addEventListener('change', () => {
     const selected = visibleSchedules.find(schedule => schedule.id === elements.scheduleSelect.value)
     if (selected) selectedWorkDateOverride = selected.shift_date
+    else if (isNullScheduleSelection(elements.scheduleSelect.value)) selectedWorkDateOverride = ''
     renderToday()
   })
   elements.historyMonth.addEventListener('change', async () => {

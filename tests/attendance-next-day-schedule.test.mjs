@@ -26,7 +26,7 @@ test('the chooser skips a used shift and prefers the next unused eligible schedu
     script,
     /const alreadyRecorded = recentAttendance\.some\(record =>[\s\S]*record\.schedule_id === schedule\.id && Boolean\(record\.clock_in\)/
   )
-  assert.match(script, /return !alreadyRecorded && \[/)
+  assert.match(script, /return !alreadyRecorded && isScheduleClockInEligible\(schedule, now\)/)
   assert.match(script, /if \(selectedSchedule\(\)\) return attendanceForSelectedSchedule\(\)/)
 })
 

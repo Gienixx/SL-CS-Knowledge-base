@@ -44,22 +44,19 @@ test('completed Rest Day/RDOT with no second schedule enables Additional Work Se
   }), true)
 })
 
-test('selected Aug 14 completed RDOT is eligible while the current date is Aug 15', () => {
-  const currentLocalDate = '2026-08-15'
-  const selectedSchedule = { id: 'rdot-aug14-sequence-1', shift_date: '2026-08-14', is_rest_day: true }
-
+test('historical completed RDOT cannot enable a sentinel for the current date', () => {
+  const selectedSchedule = { id: 'rdot-aug15-sequence-1', shift_date: '2026-08-15', is_rest_day: true }
   assert.equal(canUseAdditionalWorkSession({
-    workDate: selectedSchedule.shift_date,
+    workDate: '2026-08-16',
     attendance: [{
-      work_date: '2026-08-14',
+      work_date: '2026-08-15',
       schedule_id: selectedSchedule.id,
-      clock_in: '2026-08-14T10:00:00+08:00',
-      clock_out: '2026-08-14T12:00:00+08:00'
+      clock_in: '2026-08-15T10:00:00+08:00',
+      clock_out: '2026-08-15T12:00:00+08:00'
     }],
-    schedules: [selectedSchedule],
+    schedules: [selectedSchedule, { id: 'timed-aug17', shift_date: '2026-08-17' }],
     isEligibleSchedule: () => true
-  }), true)
-  assert.notEqual(currentLocalDate, selectedSchedule.shift_date)
+  }), false)
 })
 
 test('an unused eligible second schedule takes priority over Additional Work Session', () => {
@@ -141,9 +138,9 @@ test('an open attendance blocks both unscheduled fallback and concurrent clock-i
 })
 
 test('Additional selection is preserved and submits null schedule_id', () => {
-  assert.match(script, /restoreScheduleSelection\(\s*previous,\s*optionValues/)
-  assert.match(script, /elements\.scheduleSelect\.value = previous/)
-  assert.match(script, /\[ADDITIONAL_WORK_SESSION, UNSCHEDULED_WORK\]\.includes\(selectedValue\) \? null : selectedValue/)
+  assert.match(script, /preferredScheduleSelection\(\s*previous,\s*previousSchedule,\s*optionValues/)
+  assert.match(script, /elements\.scheduleSelect\.value = preferred/)
+  assert.match(script, /isNullScheduleSelection\(selectedValue\) \? null : selectedValue/)
   assert.match(script, /Please select a schedule or additional work session/)
 })
 
@@ -152,15 +149,17 @@ test('Additional selection enables Clock In without weakening normal schedule gu
   assert.match(script, /isAdditionalWorkSessionSelected\(\)\s*\?\s*canClockAdditionalSession\(\)\s*:\s*isUnscheduledWorkSelected\(\)/)
   assert.match(script, /isUnscheduledWorkSelected\(\) && canClockUnscheduledWork\(\)/)
   assert.match(script, /const selectedCompleted = !isAdditionalWorkSessionSelected\(\) && !isUnscheduledWorkSelected\(\)/)
+  assert.match(script, /canUseNullScheduleSession\(\)/)
+  assert.match(script, /hasBackendReleasedScheduleCandidate\(/)
   assert.match(script, /Boolean\(openRecord\)/)
   assert.match(script, /SCHEDULE_PLACEHOLDER/)
-  assert.match(script, /restoreScheduleSelection\(\s*previous,\s*optionValues/)
+  assert.match(script, /preferredScheduleSelection\(\s*previous,\s*previousSchedule,\s*optionValues/)
 })
 
 test('Unscheduled work selection is distinct and preserves the pending null-schedule workflow', () => {
   assert.match(script, /const UNSCHEDULED_WORK = '__UNSCHEDULED_WORK__'/)
   assert.match(script, /Unscheduled work · Needs review/)
-  assert.match(script, /\[ADDITIONAL_WORK_SESSION, UNSCHEDULED_WORK\]\.includes\(selectedValue\) \? null : selectedValue/)
+  assert.match(script, /isNullScheduleSelection\(selectedValue\) \? null : selectedValue/)
   assert.match(script, /isUnscheduledWorkSelected\(\) && canClockUnscheduledWork\(\)/)
   assert.match(migration, /review_status = case when p_schedule_id is null then 'pending'/)
 })
