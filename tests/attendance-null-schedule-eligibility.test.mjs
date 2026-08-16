@@ -4,7 +4,7 @@ import test from 'node:test'
 import { canUseUnscheduledWorkSession } from '../shared/attendance-additional-session.js'
 
 const script = await fs.readFile(new URL('../scripts/attendance.js', import.meta.url), 'utf8')
-const migration = await fs.readFile(new URL('../supabase/migrations/20260816125127_align_null_schedule_clock_in_eligibility.sql', import.meta.url), 'utf8')
+const migration = await fs.readFile(new URL('../supabase/migrations/20260816141353_align_null_schedule_clock_in_eligibility.sql', import.meta.url), 'utf8')
 
 function extractFunction(name) {
   const start = script.indexOf(`function ${name}`)
