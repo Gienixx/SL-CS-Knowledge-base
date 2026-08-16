@@ -17,7 +17,7 @@ test('agents can use the unscheduled attendance path when no released schedule e
   const script = await read('scripts/attendance.js')
   const migration = await read('supabase/migrations/20260731065252_allow_next_day_special_schedule_clock_in.sql')
   assert.match(script, /No released work schedule is available\. Your time will be recorded as unscheduled attendance for manager review\./)
-  assert.match(script, /new Option\('Unscheduled work · Needs review', UNSCHEDULED_WORK\)/)
+  assert.match(script, /formatDate\(activeLocalDate, false\).*Unscheduled work · Needs review/)
   assert.match(script, /preferredScheduleSelection\(\s*previous,\s*previousSchedule,\s*optionValues/)
   assert.match(script, /isNullScheduleSelection\(selectedValue\) \? null : selectedValue/)
   assert.match(migration, /if p_schedule_id is null then/)
@@ -139,7 +139,7 @@ test('attendance requires an explicit eligible schedule and supports tomorrow ea
   assert.match(script, /state: 'next-day-overnight'/)
   assert.match(script, /'next-day-overnight', 'special', 'early', 'active'/)
   assert.match(script, /new Option\('Select a schedule', SCHEDULE_PLACEHOLDER\)/)
-  assert.match(script, /new Option\('Unscheduled work · Needs review', UNSCHEDULED_WORK\)/)
+  assert.match(script, /formatDate\(activeLocalDate, false\).*Unscheduled work · Needs review/)
 })
 
 test('attendance automatically refreshes when the agent work date changes', async () => {
@@ -148,7 +148,7 @@ test('attendance automatically refreshes when the agent work date changes', asyn
     read('scripts/attendance.js')
   ])
 
-  assert.match(html, /scripts\/attendance\.js\?v=18/)
+  assert.match(html, /scripts\/attendance\.js\?v=19/)
   assert.match(script, /const nextLocalDate = localDateKey\(now\)/)
   assert.match(script, /nextLocalDate !== activeLocalDate/)
   assert.match(script, /localDateRefreshPending = true/)

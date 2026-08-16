@@ -53,9 +53,16 @@ const offsetDateKey = (value, days) => {
 
 const isBackendReleasedScheduleCandidate = new Function(
   'isReleasedSchedule',
+  'isSpecialDay',
+  'hasCompletedAttendanceForDate',
   'offsetDateKey',
   `${extractFunction('isBackendReleasedScheduleCandidate')}; return isBackendReleasedScheduleCandidate`
-)(isReleasedSchedule, offsetDateKey)
+)(
+  isReleasedSchedule,
+  schedule => Boolean(schedule?.is_rest_day || schedule?.is_holiday),
+  () => false,
+  offsetDateKey
+)
 
 const preferredScheduleSelection = new Function(
   'isNullScheduleSelection',
@@ -93,11 +100,12 @@ const completedAug15 = {
   clock_out: '2026-08-15T17:00:17Z'
 }
 
-test('backend guard identifies Jean Aug 17 timed schedule, not completed Aug 15 RDOT', () => {
+test('backend guard allows Jean Aug 16 Unscheduled while Aug 17 remains a real selectable schedule', () => {
   const now = new Date('2026-08-16T12:01:48Z')
 
   assert.equal(isBackendReleasedScheduleCandidate(jeanRestDay, '2026-08-16', now), false)
-  assert.equal(isBackendReleasedScheduleCandidate(jeanAug17, '2026-08-16', now), true)
+  assert.equal(isBackendReleasedScheduleCandidate(jeanAug17, '2026-08-16', now), false)
+  assert.match(script, /new Option\(scheduleOptionLabel\(schedule\), schedule\.id\)/)
 })
 
 test('historical completed RDOT cannot enable a current-date Additional session', () => {
@@ -153,13 +161,15 @@ test('valid sentinel selection is preserved only when no real schedule is availa
   ), '__UNSCHEDULED_WORK__')
 })
 
-test('unscheduled exposure is guarded by the backend released-schedule window', () => {
+test('future schedules do not block current-date Unscheduled exposure', () => {
   assert.equal(canUseUnscheduledWorkSession({
     workDate: '2026-08-16',
     attendance: [],
     schedules: [{ ...jeanAug17, shift_date: '2026-08-17' }]
-  }), true, 'the script-level backend-window guard must reject this future candidate before exposure')
-  assert.match(script, /function canClockUnscheduledWork\(\) \{[\s\S]*canUseNullScheduleSession\(\)[\s\S]*hasUnusedEligibleRealSchedule\(\)/)
+  }), true)
+  const unscheduledBody = extractFunction('canClockUnscheduledWork')
+  assert.match(unscheduledBody, /canUseNullScheduleSession\(\)/)
+  assert.doesNotMatch(unscheduledBody, /hasUnusedEligibleRealSchedule\(\)/)
 })
 
 test('normal, special, open, leave, admin-assist, and RPC paths remain wired', () => {

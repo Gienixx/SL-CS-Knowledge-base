@@ -429,20 +429,26 @@ function isBackendReleasedScheduleCandidate(schedule, today, now = new Date()) {
   if (!isReleasedSchedule(schedule)) return false
 
   const yesterday = offsetDateKey(today, -1)
-  const tomorrow = offsetDateKey(today, 1)
-  const hasTimedCandidate = Boolean(
+  const isSpecial = isSpecialDay(schedule)
+  const hasCurrentDateTimedCandidate = Boolean(
+    !isSpecial &&
     schedule.shift_start &&
     schedule.shift_end &&
-    schedule.shift_date >= yesterday &&
-    schedule.shift_date <= tomorrow &&
+    schedule.shift_date === today &&
     new Date(schedule.shift_end).getTime() > now.getTime()
   )
-  const hasTodaySpecialCandidate = Boolean(
-    (schedule.is_rest_day || schedule.is_holiday) &&
-    schedule.shift_date === today
+  const hasCurrentDateSpecialCandidate = Boolean(
+    isSpecial && schedule.shift_date === today
   )
 
-  return hasTimedCandidate || hasTodaySpecialCandidate
+  const hasActiveOvernightCandidate = Boolean(
+    schedule.shift_date === yesterday &&
+    schedule.shift_end &&
+    new Date(schedule.shift_end).getTime() > now.getTime() &&
+    (isSpecial || (schedule.shift_start && schedule.shift_end))
+  )
+
+  return hasCurrentDateTimedCandidate || hasCurrentDateSpecialCandidate || hasActiveOvernightCandidate
 }
 
 function hasBackendReleasedScheduleCandidate(now = new Date()) {
@@ -665,7 +671,7 @@ function canClockAdditionalSession() {
 }
 
 function canClockUnscheduledWork() {
-  if (!canUseNullScheduleSession() || hasUnusedEligibleRealSchedule()) return false
+  if (!canUseNullScheduleSession()) return false
 
   return canUseUnscheduledWorkSession({
     workDate: activeLocalDate,
@@ -752,7 +758,7 @@ function renderScheduleChooser() {
     if (canClockUnscheduledWork()) {
       const unscheduledGroup = document.createElement('optgroup')
       unscheduledGroup.label = 'Unscheduled work'
-      unscheduledGroup.appendChild(new Option('Unscheduled work · Needs review', UNSCHEDULED_WORK))
+      unscheduledGroup.appendChild(new Option(`${formatDate(activeLocalDate, false)} · Unscheduled work · Needs review`, UNSCHEDULED_WORK))
       elements.scheduleSelect.appendChild(unscheduledGroup)
     }
 
@@ -781,7 +787,7 @@ function renderScheduleChooser() {
     const assignedGroup = document.createElement('optgroup')
     assignedGroup.label = 'Assigned schedules'
     const unscheduledOption = canClockUnscheduledWork()
-      ? new Option('Unscheduled work · Needs review', UNSCHEDULED_WORK)
+      ? new Option(`${formatDate(activeLocalDate, false)} · Unscheduled work · Needs review`, UNSCHEDULED_WORK)
       : new Option('No released schedule', SCHEDULE_PLACEHOLDER)
     unscheduledOption.disabled = unscheduledOption.value === SCHEDULE_PLACEHOLDER
     assignedGroup.appendChild(unscheduledOption)
@@ -801,7 +807,7 @@ function renderScheduleChooser() {
   if (canClockUnscheduledWork() && ![...elements.scheduleSelect.options].some(option => option.value === UNSCHEDULED_WORK)) {
     const unscheduledGroup = document.createElement('optgroup')
     unscheduledGroup.label = 'Unscheduled work'
-    unscheduledGroup.appendChild(new Option('Unscheduled work · Needs review', UNSCHEDULED_WORK))
+    unscheduledGroup.appendChild(new Option(`${formatDate(activeLocalDate, false)} · Unscheduled work · Needs review`, UNSCHEDULED_WORK))
     elements.scheduleSelect.appendChild(unscheduledGroup)
     elements.scheduleChooser.hidden = false
   }
