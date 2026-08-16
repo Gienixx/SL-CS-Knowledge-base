@@ -91,6 +91,22 @@ test('Jean Aug 16 Unscheduled is allowed while Aug 17 timed schedule remains sel
   assert.doesNotMatch(script, /EARLY_CLOCK_IN_WINDOW_MINUTES/)
 })
 
+test('rest day / no plotted schedule offers Unscheduled Work without inventing an RDOT row', () => {
+  const schedules = [timed('2026-08-17')]
+  const attendance = []
+
+  assert.equal(schedules.some(schedule => schedule.shift_date === currentDate), false)
+  assert.equal(canUseUnscheduledWorkSession({
+    workDate: currentDate,
+    attendance,
+    schedules
+  }), true)
+  assert.equal(isBackendReleasedScheduleCandidate(schedules[0], currentDate, now), false)
+  assert.match(script, /formatDate\(activeLocalDate, false\).*Unscheduled work · Needs review/)
+  assert.doesNotMatch(script, /insert into public\.work_schedules/)
+  assert.doesNotMatch(migration, /insert into public\.work_schedules/)
+})
+
 test('a schedule beyond the supported date window does not block current-date Unscheduled work', () => {
   assert.equal(isBackendReleasedScheduleCandidate(timed('2026-08-18'), currentDate, now), false)
   assert.equal(canUseUnscheduledWorkSession({
