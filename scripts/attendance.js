@@ -325,6 +325,13 @@ function selectedWorkDate() {
   return selectedSchedule()?.shift_date || selectedWorkDateOverride || activeLocalDate
 }
 
+function isUntimedRestDayWithinClockInWindow(schedule, now = new Date()) {
+  if (!schedule?.is_rest_day || schedule.shift_start || schedule.shift_end) return false
+
+  const today = localDateKey(now)
+  return [today, offsetDateKey(today, 1)].includes(schedule.shift_date)
+}
+
 function scheduleForAttendance(record) {
   if (!record?.schedule_id) return null
   return record.work_schedules || scheduleById(record.schedule_id)
@@ -828,7 +835,8 @@ function updateActionState() {
   const hasExplicitSelection = Boolean(schedule) || isAdditionalWorkSessionSelected() || isUnscheduledWorkSelected()
   const availability = schedule ? scheduleAvailability(schedule) : null
   const scheduleClockInOpen = schedule
-    ? ['next-day-special', 'next-day-overnight', 'special', 'early', 'active'].includes(availability.state)
+    ? ['next-day-special', 'next-day-overnight', 'special', 'early', 'active'].includes(availability.state) ||
+      isUntimedRestDayWithinClockInWindow(schedule)
     : isAdditionalWorkSessionSelected()
       ? canClockAdditionalSession()
       : isUnscheduledWorkSelected() && canClockUnscheduledWork()
