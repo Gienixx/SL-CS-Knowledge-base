@@ -1,0 +1,33 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Activity Log | SocialLoop CS Base</title>
+  <link rel="stylesheet" href="./styles/workforce-admin.css?v=15">
+  <link rel="stylesheet" href="./styles/site-theme.css?v=5">
+  <link rel="stylesheet" href="./styles/activity-log.css?v=1">
+  <script src="./scripts/site-theme.js?v=1"></script>
+</head>
+<body>
+  <main class="wf-page activity-page">
+    <header class="wf-topbar">
+      <div class="wf-title"><h1>Activity Log</h1><p>Important system changes and events, newest first.</p></div>
+      <nav class="wf-nav" aria-label="Activity Log navigation"><a class="wf-link" href="./home.html">← Back to Home</a></nav>
+    </header>
+    <section class="wf-card">
+      <div class="wf-toolbar activity-toolbar">
+        <label class="wf-field wide"><span>Search</span><input id="activitySearch" class="wf-control" type="search" placeholder="Search activity"></label>
+        <label class="wf-field"><span>Category</span><select id="activityCategory" class="wf-control"><option value="">All categories</option><option>Payroll</option><option>Attendance</option><option>Schedules</option><option>Leave</option><option>Users & Access</option><option>Admin Tools</option><option>Settings</option><option>System</option></select></label>
+        <label class="wf-field"><span>Status</span><select id="activityStatus" class="wf-control"><option value="">All statuses</option><option>Completed</option><option>Needs attention</option></select></label>
+        <label class="wf-field"><span>From</span><input id="activityFrom" class="wf-control" type="date"></label>
+        <label class="wf-field"><span>To</span><input id="activityTo" class="wf-control" type="date"></label>
+      </div>
+      <p id="activityMessage" class="wf-message" aria-live="polite">Loading activity...</p>
+      <div class="wf-table-wrap"><table class="wf-table activity-table"><thead><tr><th>Date &amp; Time</th><th>Category</th><th>Action</th><th>Done By</th><th>Affected Employee/User</th><th>Summary</th><th>Status</th><th>Details</th></tr></thead><tbody id="activityBody"><tr><td colspan="8" class="wf-empty">Loading activity...</td></tr></tbody></table></div>
+      <nav id="activityPagination" class="wf-table-pagination" aria-label="Activity Log pages"><button id="activityPrevious" class="wf-row-btn" type="button">Previous</button><span id="activityPageStatus">Page 1</span><button id="activityNext" class="wf-row-btn" type="button">Next</button></nav>
+    </section>
+  </main>
+  <script type="module" src="./scripts/activity-log.js?v=3"></script>
+</body>
+</html>

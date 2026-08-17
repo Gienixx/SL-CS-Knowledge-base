@@ -104,6 +104,10 @@ html[data-site-theme="light"] .attendance-timezone {
   color: var(--site-blue);
 }
 
+html[data-site-theme="light"] .attendance-live-clock-date {
+  color: var(--site-muted);
+}
+
 html[data-site-theme="light"] :is(
   .attendance-eyebrow,
   .attendance-clock-caption

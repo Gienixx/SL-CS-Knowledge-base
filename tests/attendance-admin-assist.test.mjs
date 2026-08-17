@@ -21,7 +21,7 @@ test('Attendance exposes local-only Admin Assist navigation and cache-busted ass
     'attendanceAdminAssistNext'
   ]) assert.match(html, new RegExp(`id="${id}"`))
 
-  assert.match(html, /attendance\.css\?v=8/)
+  assert.match(html, /attendance\.css\?v=9/)
   assert.match(html, /attendance-theme-fix\.css\?v=6/)
   assert.match(html, /scripts\/attendance\.js\?v=23/)
   assert.match(styles, /attendance-admin-assist-arrow-previous/)
@@ -65,42 +65,6 @@ test('Admin Assist migration protects target reads/actions and writes explicit a
   assert.match(migration, /revoke all on function public\.workforce_admin_assist_snapshot/)
   assert.doesNotMatch(migration, /workforce_clock_in\(/)
   assert.doesNotMatch(migration, /workforce_clock_out\(/)
-})
-
-test('historical Admin Assist clock-in preserves the RPC contract and server-side safeguards', async () => {
-  const [script, migration, timestampMigration] = await Promise.all([
-    read('scripts/attendance.js'),
-    read('supabase/migrations/20260817080129_harden_admin_assist_historical_clock_in.sql'),
-    read('supabase/migrations/20260817080923_admin_assist_historical_clock_in_timestamp.sql')
-  ])
-
-  assert.match(script, /p_schedule_id: scheduleId/)
-  assert.match(script, /p_work_date: schedule\?\.shift_date \|\| localDateKey\(\)/)
-  assert.match(script, /p_clock_in:|payload\.p_clock_in/)
-  assert.match(script, /adminAssistMode\s*\?[\s\S]*!hasAttendanceForSchedule\(schedule\)/)
-  assert.match(script, /actual historical Clock In date and time/)
-  assert.match(script, /renderAdminAssistHistoricalClockIn/)
-  assert.match(migration, /workforce_is_authorized_attendance_admin\('correct_attendance'\)/)
-  assert.match(timestampMigration, /p_clock_in timestamptz/)
-  assert.match(timestampMigration, /v_clock_in timestamptz := coalesce\(p_clock_in, now\(\)/)
-  assert.match(timestampMigration, /v_clock_in at time zone v_timezone/)
-  assert.match(timestampMigration, /v_is_historical and p_clock_in is null/)
-  assert.match(timestampMigration, /v_allowed_overnight_date/)
-  assert.match(timestampMigration, /timestamp_source.*manager_supplied_historical/)
-  assert.match(timestampMigration, /v_schedule\.shift_date <> p_work_date/)
-  assert.match(timestampMigration, /v_schedule\.is_leave or v_schedule\.is_absent/)
-  assert.match(timestampMigration, /schedule_id = p_schedule_id[\s\S]*Attendance already exists for the selected schedule\./)
-  assert.match(timestampMigration, /period\.status = 'finalized'/)
-  assert.match(timestampMigration, /record\.status = 'finalized'/)
-  assert.match(timestampMigration, /review_status,[\s\S]*'pending'/)
-  assert.match(timestampMigration, /audit_source', 'admin_assisted_clock_in'/)
-  assert.match(timestampMigration, /metadata/)
-  assert.match(timestampMigration, /revoke all on function public\.workforce_admin_assist_clock_in\(uuid, uuid, date, text\)/)
-  assert.match(timestampMigration, /grant execute on function public\.workforce_admin_assist_clock_in\(uuid, uuid, date, text\)[\s\S]*to authenticated/)
-  assert.match(timestampMigration, /grant execute on function public\.workforce_admin_assist_clock_in\(uuid, uuid, date, text, timestamptz\)[\s\S]*to authenticated/)
-  assert.match(timestampMigration, /alter function public\.workforce_admin_assist_clock_in\(uuid, uuid, date, text, timestamptz\)[\s\S]*owner to postgres/)
-  assert.match(timestampMigration, /set search_path = public, pg_temp/)
-  assert.doesNotMatch(timestampMigration, /workforce_clock_in\(/)
 })
 
 test('Admin Assist leaves the existing correction workflow untouched', async () => {

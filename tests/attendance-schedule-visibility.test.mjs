@@ -50,7 +50,7 @@ test('ended yesterday schedules are hidden for agents but available to Admin Ass
   assert.match(chooser, /option\.disabled = adminAssistMode \? hasAttendance : availability\.state === 'ended'/)
   assert.match(script, /function hasAttendanceForSchedule\(schedule\)/)
   assert.match(script, /const availabilityLabel = availability\.state === 'ended' \? ' · Ended' : ''/)
-  assert.match(script, /const scheduleClockInOpen = adminAssistMode[\s\S]*'ended'/)
+  assert.match(script, /const scheduleClockInOpen = schedule[\s\S]*adminAssistMode[\s\S]*'ended'/)
 
   const availability = loadScheduleAvailability(script)
   const now = new Date('2026-08-17T13:00:00.000Z')

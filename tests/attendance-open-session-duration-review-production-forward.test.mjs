@@ -50,7 +50,7 @@ test('production-forward migration preserves existing Attendance RPCs and adds o
 })
 
 test('manager sweep is permission-gated and cannot target arbitrary attendance ids', () => {
-  const managerFunction = migration.match(/create or replace function public\.workforce_flag_open_attendance_over_duration\(\)[\s\S]*?end;\n\$\$/)?.[0]
+  const managerFunction = migration.match(/create or replace function public\.workforce_flag_open_attendance_over_duration\(\)[\s\S]*?end;\r?\n\$\$/)?.[0]
 
   assert.ok(managerFunction)
   assert.match(managerFunction, /auth\.uid\(\) is null/)

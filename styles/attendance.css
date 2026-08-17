@@ -291,6 +291,13 @@
   font-weight: 600;
   letter-spacing: .04em;
 }
+.attendance-live-clock-date {
+  margin: 6px 0 0;
+  color: var(--att-muted);
+  font-size: .78rem;
+  font-weight: 500;
+  letter-spacing: .01em;
+}
 .attendance-timezone {
   margin: 7px 0 0;
   color: var(--att-blue);
@@ -785,6 +792,42 @@
   color: var(--att-muted) !important;
   box-shadow: none !important;
   opacity: .48;
+}
+
+.attendance-clock-out-confirmation {
+  position: fixed;
+  inset: 0;
+  z-index: 1000;
+  display: grid;
+  place-items: center;
+  padding: 1.25rem;
+  background: rgb(5 10 20 / 62%);
+}
+
+.attendance-clock-out-confirmation-dialog {
+  width: min(100%, 30rem);
+  padding: 1.5rem;
+  border: 1px solid var(--site-border);
+  border-radius: 1rem;
+  background: var(--site-surface-solid);
+  color: var(--site-text);
+  box-shadow: 0 1.5rem 4rem rgb(0 0 0 / 28%);
+}
+
+.attendance-clock-out-confirmation-dialog h2 {
+  margin: 0;
+  font-size: 1.2rem;
+}
+
+.attendance-clock-out-confirmation-dialog p {
+  margin: .75rem 0 1.25rem;
+  color: var(--site-muted);
+}
+
+.attendance-clock-out-confirmation-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: .75rem;
 }
 
 .attendance-action-message {

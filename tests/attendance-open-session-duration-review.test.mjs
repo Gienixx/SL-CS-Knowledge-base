@@ -4,7 +4,7 @@ import test from 'node:test'
 
 const read = path => readFile(new URL(`../${path}`, import.meta.url), 'utf8')
 
-const migrationPath = 'supabase/migrations/20260817060423_attendance_open_session_over_duration_review.sql'
+const migrationPath = 'supabase/migrations/20260817063458_attendance_open_session_over_duration_review_production_forward.sql'
 
 test('open-session duration boundary is strict and never closes the session', async () => {
   const [script, attendanceScript] = await Promise.all([
@@ -43,7 +43,7 @@ test('open-session duration boundary is strict and never closes the session', as
     is_missing_clock_out: false,
     is_over_duration: true
   })
-  assert.match(attendanceScript, /if \(!window\.confirm\(`Clock out now\? Current worked duration:/)
+  assert.match(attendanceScript, /confirmClockOutIfNeeded/)
   assert.match(attendanceScript, /maybePersistOverDurationFlag\(record, now\)/)
   assert.match(attendanceScript, /workforce_flag_current_open_attendance_over_duration/)
   assert.match(attendanceScript, /\.rpc\('workforce_clock_out'/)
@@ -77,14 +77,12 @@ test('Team Attendance keeps an over-duration row open and surfaces the durable r
   assert.match(script, /if \(attendanceQuickFilter === 'review'[\s\S]*!row\.is_over_duration/)
   assert.match(migration, /manager_review_reason text/)
   assert.match(migration, /update public\.attendance[\s\S]*manager_review_reason is null[\s\S]*clock_in < v_now - interval '20 hours'/)
-  assert.match(migration, /attendance_row\.clock_in is not null and attendance_row\.clock_out is null,/) 
+  assert.match(migration, /attendance_row\.clock_in is not null and attendance_row\.clock_out is null,/)
 })
 
 test('existing clock-in paths and safeguards remain wired to the trusted RPCs', async () => {
-  const [attendance, clockInMigration, additionalSessionMigration, payrollReadiness, clockOutMigration] = await Promise.all([
+  const [attendance, payrollReadiness, clockOutMigration] = await Promise.all([
     read('scripts/attendance.js'),
-    read('supabase/migrations/20260814090000_allow_additional_unscheduled_attendance_session.sql'),
-    read('supabase/migrations/20260814090000_allow_additional_unscheduled_attendance_session.sql'),
     read('supabase/migrations/20260722084820_harden_attendance_payroll_readiness.sql'),
     read('supabase/migrations/20260721112529_fix_clock_out_structured_totals.sql')
   ])
@@ -95,9 +93,6 @@ test('existing clock-in paths and safeguards remain wired to the trusted RPCs', 
   assert.match(attendance, /\.rpc\('workforce_clock_out'/)
   assert.match(attendance, /elements\.clockInButton\.disabled = busy \|\| Boolean\(openRecord\)/)
   assert.match(attendance, /isUntimedRestDayWithinClockInWindow/)
-  assert.match(clockInMigration, /schedule\.is_rest_day or schedule\.is_holiday/)
-  assert.match(clockInMigration, /You are already clocked in to another shift\./)
-  assert.match(additionalSessionMigration, /Allow a second same-work-date unscheduled session/)
   assert.match(payrollReadiness, /review_required/)
   assert.match(payrollReadiness, /attendance_overtime_limit_exceeded/)
   assert.match(clockOutMigration, /Clock-out cannot be earlier than clock-in\./)

@@ -23,7 +23,7 @@ test('paid leave is limited to configured paid leave types', () => {
 
 test('approved leave preserves normal schedules and adds a separate leave schedule', () => {
   assert.match(migration, /Keep any normal schedule and its attendance intact/)
-  assert.match(migration, /and schedule\.is_leave\n\s+and schedule\.leave_request_id = new\.id/)
+  assert.match(migration, /and schedule\.is_leave\r?\n\s+and schedule\.leave_request_id = new\.id/)
   assert.doesNotMatch(migration, /conflicting_attendance_count/)
   assert.match(migration, /workforce_apply_approved_leave_to_new_schedule\(\)[\s\S]*?return new;/)
 })
