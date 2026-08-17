@@ -39,19 +39,26 @@ test('regular agents receive only the live attendance card surface', async () =>
   assert.match(script, /access\?\.is_admin === true[\s\S]*?workforce_list_team_attendance_prepaid/)
   assert.match(script, /Promise\.resolve\(\{ data: \[\], error: null \}\)/)
   assert.match(script, /including early clock-ins assigned to today's schedule/)
+  assert.match(script, /persistOverDurationFlagsBeforeTeamListing\(\)/)
+  assert.match(script, /access\?\.is_admin === true[\s\S]*?workforce_flag_open_attendance_over_duration/)
+  assert.match(script, /workforce_flag_open_attendance_over_duration/)
+  assert.match(script, /workforce_flag_current_open_attendance_over_duration/)
+  assert.match(script, /await persistOverDurationFlagsBeforeTeamListing\(\)[\s\S]*?const attendanceRequest = supabase\.rpc\('workforce_list_team_attendance'/)
 })
 
-test('open and missing-clock-out states are mutually exclusive at the 20-hour boundary', async () => {
+test('open and over-duration states remain distinct at the 20-hour boundary', async () => {
   const script = await read('scripts/team-attendance.js')
   const durationSource = script.match(/function durationMinutes\(clockIn, clockOut\) \{[\s\S]*?\n\}/)?.[0]
+  const limitSource = script.match(/function hasExceededOpenSessionLimit\(clockIn, now = new Date\(\)\) \{[\s\S]*?\n\}/)?.[0]
   const classifySource = script.match(/function classifyOpenSession\(record, now = new Date\(\)\) \{[\s\S]*?\n\}/)?.[0]
 
   assert.ok(durationSource)
+  assert.ok(limitSource)
   assert.ok(classifySource)
   const classify = Function(
     'durationMinutes',
     'OPEN_SESSION_LIMIT_MINUTES',
-    `${durationSource}\n${classifySource}\nreturn classifyOpenSession`
+    `${durationSource}\n${limitSource}\n${classifySource}\nreturn classifyOpenSession`
   )(null, 20 * 60)
 
   const clockIn = new Date(Date.UTC(2026, 7, 12, 12, 0, 0))
@@ -60,15 +67,18 @@ test('open and missing-clock-out states are mutually exclusive at the 20-hour bo
 
   assert.deepEqual(classify(record, at(19 * 60 + 59)), {
     is_open: true,
-    is_missing_clock_out: false
+    is_missing_clock_out: false,
+    is_over_duration: false
   })
   assert.deepEqual(classify(record, at(20 * 60)), {
     is_open: true,
-    is_missing_clock_out: false
+    is_missing_clock_out: false,
+    is_over_duration: false
   })
   assert.deepEqual(classify(record, at(20 * 60 + 1)), {
-    is_open: false,
-    is_missing_clock_out: true
+    is_open: true,
+    is_missing_clock_out: false,
+    is_over_duration: true
   })
 })
 

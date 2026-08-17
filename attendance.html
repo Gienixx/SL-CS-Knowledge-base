@@ -130,9 +130,23 @@
           <div class="attendance-context">
             <div id="attendanceScheduleChooser" class="attendance-schedule-chooser" hidden>
               <label class="wf-field">
-                <span>Available shift or work date</span>
+                <span>Choose a work schedule before clock-in</span>
                 <select id="attendanceScheduleSelect" class="wf-control"></select>
               </label>
+              <div id="attendanceAdminAssistHistoricalClockIn" class="attendance-admin-assist-historical-clock-in" hidden>
+                <p class="attendance-help">Historical Admin Assist Clock In</p>
+                <div class="attendance-admin-assist-historical-clock-in-fields">
+                  <label class="wf-field">
+                    <span>Date</span>
+                    <input id="attendanceAdminAssistClockInDate" class="wf-control" type="date">
+                  </label>
+                  <label class="wf-field">
+                    <span>Time</span>
+                    <input id="attendanceAdminAssistClockInTime" class="wf-control" type="time" step="60">
+                  </label>
+                </div>
+                <p id="attendanceAdminAssistClockInHelp" class="attendance-help">Enter the target employee’s actual local Clock In time. This is required for ended schedules.</p>
+              </div>
               <p id="attendanceScheduleHelp" class="attendance-help"></p>
             </div>
 
@@ -268,6 +282,6 @@
     </main>
   </div>
 
-  <script type="module" src="./scripts/attendance.js?v=17"></script>
+  <script type="module" src="./scripts/attendance.js?v=23"></script>
 </body>
 </html>

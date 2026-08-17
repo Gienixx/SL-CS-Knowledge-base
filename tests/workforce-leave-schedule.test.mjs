@@ -73,7 +73,7 @@ test('Leave is first-class database state and cannot create attendance', async (
   assert.match(categoryMigration, /incentive_vl[\s\S]*birthday_vl[\s\S]*leave_without_pay/)
   assert.match(categoryMigration, /with_notification[\s\S]*without_notification/)
   assert.match(categoryMigration, /Attendance cannot be recorded for an absent schedule/)
-  assert.match(attendance, /visibleSchedules = \(scheduleResult\.data \|\| \[\]\)\.filter\(schedule => !schedule\.is_leave && !schedule\.is_absent\)/)
+  assert.match(attendance, /visibleSchedules = todaySchedules\.filter\(schedule => !schedule\.is_leave && !schedule\.is_absent\)/)
   assert.equal((teamAttendance.match(/\.eq\('is_leave', false\)/g) || []).length, 2)
   assert.equal((teamAttendance.match(/\.eq\('is_absent', false\)/g) || []).length, 2)
 })
