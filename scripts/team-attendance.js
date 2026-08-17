@@ -4,6 +4,7 @@ import {
   loadCurrentWorkforceAccess,
   redactAttendanceCorrectionForViewer
 } from './workforce-permissions.js?v=2'
+import { formatScheduleOptionLabel } from '../shared/schedule-labels.js?v=1'
 
 const ATTENDANCE_STATUS_LABELS = Object.freeze({
   present: 'Present',
@@ -22,6 +23,10 @@ const REVIEW_STATUS_LABELS = Object.freeze({
 const ATTENDANCE_PAGE_SIZE = 5
 const WORKFORCE_TIMEZONE = 'America/New_York'
 const OPEN_SESSION_LIMIT_MINUTES = 20 * 60
+
+function scheduleOptionLabel(schedule) {
+  return formatScheduleOptionLabel(schedule, WORKFORCE_TIMEZONE)
+}
 
 const elements = {
   workforceLink: document.getElementById('teamAttendanceWorkforceLink'),
@@ -70,6 +75,18 @@ function errorMessage(error) {
 function setMessage(element, text, type = '') {
   element.textContent = text
   element.className = type ? `wf-message ${type}` : 'wf-message'
+}
+
+async function persistOverDurationFlagsBeforeTeamListing() {
+  if (access?.is_admin === true) {
+    const { error } = await supabase.rpc('workforce_flag_open_attendance_over_duration')
+    if (error) console.error('Unable to persist open-session over-duration flags:', error)
+    return
+  }
+  if (access?.is_agent !== true) return
+
+  const { error } = await supabase.rpc('workforce_flag_current_open_attendance_over_duration')
+  if (error && error.code !== 'P0002') console.error('Unable to persist the over-duration attendance flag:', error)
 }
 
 function localDateKey(date = new Date(), timezone = WORKFORCE_TIMEZONE) {
@@ -261,16 +278,26 @@ function durationMinutes(clockIn, clockOut) {
   return Math.max(0, Math.round((new Date(clockOut).getTime() - new Date(clockIn).getTime()) / 60000))
 }
 
+function hasExceededOpenSessionLimit(clockIn, now = new Date()) {
+  return durationMinutes(clockIn, now.toISOString()) > OPEN_SESSION_LIMIT_MINUTES
+}
+
 function classifyOpenSession(record, now = new Date()) {
   const clockIn = record?.original_clock_in || record?.clock_in || null
   const clockOut = record?.original_clock_out || record?.clock_out || null
-  if (!clockIn || clockOut) return { is_open: false, is_missing_clock_out: false }
-
-  const elapsedMinutes = durationMinutes(clockIn, now.toISOString())
-  if (elapsedMinutes > OPEN_SESSION_LIMIT_MINUTES) {
-    return { is_open: false, is_missing_clock_out: true }
+  if (!clockIn || clockOut) {
+    return {
+      is_open: false,
+      is_missing_clock_out: false,
+      is_over_duration: record?.manager_review_reason === 'open_session_over_20_hours'
+    }
   }
-  return { is_open: true, is_missing_clock_out: false }
+
+  return {
+    is_open: true,
+    is_missing_clock_out: Boolean(record.is_missing_clock_out),
+    is_over_duration: record.manager_review_reason === 'open_session_over_20_hours' || hasExceededOpenSessionLimit(clockIn, now)
+  }
 }
 
 function attendanceHours(record) {
@@ -367,6 +394,7 @@ function createAttendanceStatusCell(row) {
 
   if (row.is_open) labels.push({ label: 'Open', modifier: 'warning' })
   if (row.is_missing_clock_out) labels.push({ label: 'Missing clock-out', modifier: 'danger' })
+  if (row.is_over_duration) labels.push({ label: 'Over 20h · Review', modifier: 'danger' })
   return createBadgeCell(labels)
 }
 
@@ -569,7 +597,7 @@ function filteredRows() {
     if (attendanceQuickFilter === 'open' && !row.is_open) return false
     if (attendanceQuickFilter === 'missing' && !row.is_missing_clock_out) return false
     if (attendanceQuickFilter === 'overtime' && Number(row.total_overtime_minutes) <= 0) return false
-    if (attendanceQuickFilter === 'review' && row.review_status !== 'pending' && !row.is_missing_clock_out) return false
+    if (attendanceQuickFilter === 'review' && row.review_status !== 'pending' && !row.is_missing_clock_out && !row.is_over_duration) return false
     if (employeeId && row.employee_user_id !== employeeId) return false
     if (teamId && row.team_id !== teamId) return false
     if (status && row.attendance_status !== status) return false
@@ -650,6 +678,7 @@ function addBadge(parent, label, modifier) {
 }
 
 function presentationStatus(record) {
+  if (record.is_over_duration) return { label: 'Over 20h · Review', modifier: 'needs-review' }
   if (record.is_open) return { label: 'In progress', modifier: 'in-progress' }
   if (record.is_missing_clock_out) return { label: 'Missing clock-out', modifier: 'needs-review' }
   if (record.review_status === 'pending') return { label: 'Needs review', modifier: 'needs-review' }
@@ -1082,6 +1111,8 @@ async function loadAttendance() {
     elements.endDate.value = range.end
   }
   setMessage(elements.filterMessage, 'Loading authorized attendance records...')
+
+  await persistOverDurationFlagsBeforeTeamListing()
 
   const attendanceRequest = supabase.rpc('workforce_list_team_attendance', {
     p_start_date: range.start,

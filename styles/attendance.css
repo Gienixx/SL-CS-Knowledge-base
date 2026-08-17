@@ -520,6 +520,20 @@
   display: none;
 }
 
+.attendance-admin-assist-historical-clock-in {
+  grid-column: 1 / -1;
+  display: grid;
+  gap: 6px;
+  padding-top: 4px;
+  border-top: 1px solid var(--att-border);
+}
+
+.attendance-admin-assist-historical-clock-in-fields {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px;
+}
+
 .attendance-app .wf-field {
   gap: 5px;
 }
