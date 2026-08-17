@@ -19,6 +19,7 @@ async function configureHomeWorkforceNavigation() {
   const payrollDashboardButton = document.getElementById(
     'homePayrollDashboardBtn'
   )
+  const activityLogButton = document.getElementById('homeActivityLogBtn')
 
   if (
     !myScheduleButton &&
@@ -27,7 +28,8 @@ async function configureHomeWorkforceNavigation() {
     !myPayslipsButton &&
     !teamAttendanceButton &&
     !workforceManagementButton &&
-    !payrollDashboardButton
+    !payrollDashboardButton &&
+    !activityLogButton
   ) {
     return
   }
@@ -48,7 +50,10 @@ async function configureHomeWorkforceNavigation() {
     const canApproveLeave =
       access.is_admin === true &&
       hasWorkforcePermission(access, 'approve_leave')
-    const canUseLeaveRequests = access.is_agent === true || canApproveLeave
+    const canManageSchedules =
+      access.is_admin === true &&
+      hasWorkforcePermission(access, 'manage_schedules')
+    const canUseLeaveRequests = access.is_agent === true || canApproveLeave || canManageSchedules
     const canViewTeamAttendance = access.is_admin === true
       ? hasWorkforcePermission(access, 'view_team_attendance')
       : access.is_agent === true
@@ -86,7 +91,7 @@ async function configureHomeWorkforceNavigation() {
             .eq('status', 'pending')
 
           if (error) {
-            console.error('Pending leave request count failed:', error)
+            console.error('Pending schedule request count failed:', error)
             return
           }
 
@@ -97,10 +102,10 @@ async function configureHomeWorkforceNavigation() {
           leaveRequestsPendingBadge.hidden = pendingCount === 0
           leaveRequestsPendingBadge.setAttribute(
             'aria-label',
-            `${pendingCount} pending leave request${pendingCount === 1 ? '' : 's'}`
+            `${pendingCount} pending schedule request${pendingCount === 1 ? '' : 's'}`
           )
           leaveRequestsButton.title = pendingCount
-            ? `${pendingCount} leave request${pendingCount === 1 ? '' : 's'} waiting for approval`
+            ? `${pendingCount} schedule request${pendingCount === 1 ? '' : 's'} waiting for approval`
             : ''
         }
 
@@ -124,6 +129,10 @@ async function configureHomeWorkforceNavigation() {
 
     if (payrollDashboardButton) {
       payrollDashboardButton.hidden = !canAccessPayrollDashboard
+    }
+
+    if (activityLogButton) {
+      activityLogButton.hidden = access.is_admin !== true
     }
   } catch (error) {
     console.error('Home workforce navigation failed:', error)

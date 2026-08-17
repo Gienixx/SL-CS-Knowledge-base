@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Leave Requests | SocialLoop CS Base</title>
+  <title>Schedule Requests | SocialLoop CS Base</title>
   <link rel="stylesheet" href="./styles/button-theme.css?v=1">
   <link rel="stylesheet" href="./styles/workforce-admin.css?v=15">
   <link rel="stylesheet" href="./styles/leave-requests.css?v=2">
@@ -14,10 +14,10 @@
   <main id="leaveRequestsPage" class="wf-page leave-requests-page" hidden>
     <header class="wf-topbar">
       <div class="wf-title">
-        <h1 id="leaveRequestsPageTitle">Leave Requests</h1>
-        <p id="leaveRequestsPageDescription">File a leave request and track its approval status.</p>
+        <h1 id="leaveRequestsPageTitle">Schedule Requests</h1>
+        <p id="leaveRequestsPageDescription">Request leave or a schedule change and track its approval status.</p>
       </div>
-      <nav class="wf-nav" aria-label="Leave requests navigation">
+      <nav class="wf-nav" aria-label="Schedule requests navigation">
         <a class="wf-link" href="./my-schedule.html">My Schedule</a>
         <a class="wf-link" href="./attendance.html">Attendance</a>
         <a id="leaveRequestsWorkforceLink" class="wf-link" href="./workforce.html" hidden>Workforce Management</a>
@@ -25,7 +25,7 @@
       </nav>
     </header>
 
-    <section class="wf-summary-grid" aria-label="Leave request summary">
+    <section class="wf-summary-grid" aria-label="Schedule request summary">
       <article class="wf-summary"><span>Requests shown</span><strong id="leaveRequestTotalCount">—</strong></article>
       <article class="wf-summary"><span>Pending</span><strong id="leaveRequestPendingCount">—</strong></article>
       <article class="wf-summary"><span>Approved</span><strong id="leaveRequestApprovedCount">—</strong></article>
@@ -35,33 +35,61 @@
     <section id="leaveRequestSubmissionSection" class="wf-card leave-request-form-card" aria-labelledby="leaveRequestFormTitle" hidden>
       <div class="wf-card-header">
         <div>
-          <h2 id="leaveRequestFormTitle">New Leave Request</h2>
-          <p class="wf-message">Choose the leave type and dates, then explain your request.</p>
+          <h2 id="leaveRequestFormTitle">New Schedule Request</h2>
+          <p class="wf-message">Choose leave or a schedule change, then provide the target date and request details.</p>
         </div>
       </div>
 
       <form id="leaveRequestForm" class="wf-form leave-request-form">
         <div class="wf-form-grid leave-request-form-grid">
           <label class="wf-field">
-            <span>Leave type</span>
-            <select id="leaveRequestType" class="wf-control" required>
-              <option value="">Select leave type</option>
-              <option value="incentive_vl">Incentive VL</option>
-              <option value="birthday_vl">Birthday VL</option>
-              <option value="leave_without_pay">Leave Without Pay</option>
+            <span>Request category</span>
+            <select id="leaveRequestCategory" class="wf-control" required>
+              <option value="leave">Leave</option>
+              <option value="schedule_change">Schedule Change</option>
             </select>
           </label>
           <label class="wf-field">
-            <span>Start date</span>
-            <input id="leaveRequestStartDate" class="wf-control" type="date" required>
+            <span>Request type</span>
+            <select id="leaveRequestType" class="wf-control" required>
+              <option value="">Select request type</option>
+              <option value="incentive_vl">Incentive Leave (Incentive VL)</option>
+              <option value="birthday_vl">Birthday Leave (Birthday VL)</option>
+              <option value="leave_without_pay">Leave Without Pay</option>
+            </select>
+          </label>
+          <label id="leaveRequestTargetScheduleField" class="wf-field full" hidden>
+            <span>Schedule to change</span>
+            <select id="leaveRequestTargetSchedule" class="wf-control">
+              <option value="">Select the schedule and date</option>
+            </select>
+            <small class="wf-subtext">Slide Shift requires an existing timed schedule. Open Schedule may use a date without a schedule.</small>
           </label>
           <label class="wf-field">
+            <span id="leaveRequestStartDateLabel">Start date</span>
+            <input id="leaveRequestStartDate" class="wf-control" type="date" required>
+          </label>
+          <label id="leaveRequestEndDateField" class="wf-field">
             <span>End date</span>
             <input id="leaveRequestEndDate" class="wf-control" type="date" required>
           </label>
+          <label id="leaveRequestPlannedMinutesField" class="wf-field" hidden>
+            <span>Open Schedule planned paid minutes</span>
+            <input id="leaveRequestPlannedMinutes" class="wf-control" type="number" min="15" max="1440" step="15" placeholder="480">
+          </label>
+          <div id="leaveRequestShiftTimes" class="wf-form-grid full" hidden>
+            <label class="wf-field">
+              <span>Requested shift start (America/New_York)</span>
+              <input id="leaveRequestShiftStart" class="wf-control" type="datetime-local">
+            </label>
+            <label class="wf-field">
+              <span>Requested shift end (America/New_York)</span>
+              <input id="leaveRequestShiftEnd" class="wf-control" type="datetime-local">
+            </label>
+          </div>
           <label class="wf-field full">
             <span>Reason</span>
-            <textarea id="leaveRequestReason" class="wf-control" rows="3" required placeholder="Explain why you are requesting leave"></textarea>
+            <textarea id="leaveRequestReason" class="wf-control" rows="3" required placeholder="Explain why you are requesting this change"></textarea>
           </label>
         </div>
 
@@ -76,8 +104,8 @@
     <section id="leaveApprovalQueueSection" class="wf-card leave-approval-card" aria-labelledby="leaveApprovalQueueTitle" hidden>
       <div class="wf-card-header">
         <div>
-          <h2 id="leaveApprovalQueueTitle">Leave approval queue</h2>
-          <p class="wf-message">Pending agent requests that require an approval decision.</p>
+          <h2 id="leaveApprovalQueueTitle">Schedule request approval queue</h2>
+          <p class="wf-message">Pending agent leave and schedule-change requests that require a decision.</p>
         </div>
         <span id="leaveApprovalQueueCount" class="leave-queue-count">0 pending</span>
       </div>
@@ -87,8 +115,8 @@
           <thead>
             <tr>
               <th>Employee</th>
-              <th>Leave type</th>
-              <th>Dates</th>
+              <th>Request</th>
+              <th>Target date</th>
               <th>Request reason</th>
               <th>Filed</th>
               <th>Action</th>
@@ -104,8 +132,8 @@
     <section class="wf-card" aria-labelledby="leaveRequestTableTitle">
       <div class="wf-card-header">
         <div>
-          <h2 id="leaveRequestTableTitle">My leave requests</h2>
-          <p id="leaveRequestTableDescription" class="wf-message">Track pending requests and read the administrator’s decision reason when a request is denied.</p>
+          <h2 id="leaveRequestTableTitle">My schedule requests</h2>
+          <p id="leaveRequestTableDescription" class="wf-message">Track leave and schedule-change requests and read the decision reason when denied.</p>
         </div>
         <div class="wf-actions">
           <button id="leaveRequestRefreshButton" class="wf-btn secondary" type="button">Refresh</button>
@@ -117,8 +145,8 @@
           <thead>
             <tr>
               <th>Employee</th>
-              <th>Leave type</th>
-              <th>Dates</th>
+              <th>Request</th>
+              <th>Target date</th>
               <th>Status</th>
               <th>Request reason</th>
               <th>Decision reason</th>
@@ -127,7 +155,7 @@
             </tr>
           </thead>
           <tbody id="leaveRequestTableBody">
-            <tr><td colspan="8" class="wf-empty">Loading leave requests...</td></tr>
+            <tr><td colspan="8" class="wf-empty">Loading schedule requests...</td></tr>
           </tbody>
         </table>
       </div>
@@ -136,12 +164,12 @@
   </main>
 
   <div class="wf-modal" id="leaveRequestReviewModal" role="dialog" aria-modal="true" aria-labelledby="leaveRequestReviewTitle" hidden>
-    <button class="wf-backdrop" type="button" data-close="leaveRequestReviewModal" aria-label="Close leave request review dialog"></button>
+    <button class="wf-backdrop" type="button" data-close="leaveRequestReviewModal" aria-label="Close schedule request review dialog"></button>
     <section class="wf-dialog compact leave-review-dialog">
       <div class="wf-dialog-header">
         <div>
-          <h2 id="leaveRequestReviewTitle">Review Leave Request</h2>
-          <p class="wf-message">Approval updates the agent’s schedule automatically.</p>
+          <h2 id="leaveRequestReviewTitle">Review Schedule Request</h2>
+          <p class="wf-message">Approval updates Schedule Management through its existing audited path.</p>
         </div>
         <button class="wf-close" type="button" data-close="leaveRequestReviewModal" aria-label="Close">×</button>
       </div>
@@ -153,12 +181,20 @@
             <input id="leaveRequestReviewEmployee" class="wf-control" type="text" readonly>
           </label>
           <label class="wf-field">
-            <span>Leave type</span>
+            <span>Request type</span>
             <input id="leaveRequestReviewType" class="wf-control" type="text" readonly>
+          </label>
+          <label class="wf-field">
+            <span>Category</span>
+            <input id="leaveRequestReviewCategory" class="wf-control" type="text" readonly>
           </label>
           <label class="wf-field full">
             <span>Dates</span>
             <input id="leaveRequestReviewDates" class="wf-control" type="text" readonly>
+          </label>
+          <label class="wf-field full">
+            <span>Current/requested schedule</span>
+            <textarea id="leaveRequestReviewSchedule" class="wf-control" rows="2" readonly></textarea>
           </label>
           <label class="wf-field full">
             <span>Agent’s reason</span>
