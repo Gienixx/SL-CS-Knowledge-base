@@ -73,6 +73,41 @@ function setMessage(element, text, type = '') {
   element.className = type ? `wf-message ${type}` : 'wf-message'
 }
 
+function correctionScheduleDates(workDate) {
+  if (!workDate) return []
+  const [year, month, day] = workDate.split('-').map(Number)
+  const previousDate = new Date(Date.UTC(year, month - 1, day - 1))
+    .toISOString()
+    .slice(0, 10)
+  return [workDate, previousDate]
+}
+
+function formatCorrectionScheduleLabel(schedule) {
+  const date = schedule?.shift_date
+    ? new Intl.DateTimeFormat('en-US', { month: 'short', day: 'numeric', year: 'numeric' }).format(
+        new Date(`${schedule.shift_date}T12:00:00Z`)
+      )
+    : 'Date unavailable'
+  const type = schedule?.is_leave
+    ? 'Leave'
+    : schedule?.is_absent
+      ? 'Absence'
+      : schedule?.is_rest_day
+        ? 'Rest Day'
+        : schedule?.is_holiday
+          ? 'Holiday'
+          : schedule?.shift_start && schedule?.shift_end
+            ? 'Work Schedule'
+            : 'Open Schedule'
+  const sequence = `Sequence ${schedule?.shift_sequence || 1}`
+  const timezone = schedule?.timezone || WORKFORCE_TIMEZONE
+  const timed = schedule?.shift_start && schedule?.shift_end
+  const time = timed
+    ? ` · ${new Intl.DateTimeFormat('en-US', { timeZone: timezone, hour: 'numeric', minute: '2-digit' }).format(new Date(schedule.shift_start))} – ${new Intl.DateTimeFormat('en-US', { timeZone: timezone, hour: 'numeric', minute: '2-digit' }).format(new Date(schedule.shift_end))}`
+    : ''
+  return `${date} · ${type} · ${sequence}${time}`
+}
+
 async function persistOverDurationFlagsBeforeTeamListing() {
   if (access?.is_admin === true) {
     const { error } = await supabase.rpc('workforce_flag_open_attendance_over_duration')
@@ -1316,7 +1351,7 @@ async function loadCorrectionSchedules(row) {
     .from('work_schedules')
     .select('id, shift_date, shift_sequence, shift_start, shift_end, timezone, status, is_rest_day, is_holiday, is_leave, is_absent, holiday_name, leave_type')
     .eq('user_id', row.employee_user_id)
-    .eq('shift_date', row.work_date)
+    .in('shift_date', correctionScheduleDates(row.work_date))
     .eq('is_leave', false)
     .eq('is_absent', false)
     .in('status', ['published', 'changed'])
@@ -1325,19 +1360,27 @@ async function loadCorrectionSchedules(row) {
   if (error) throw error
 
   select.replaceChildren(new Option(row.schedule_id ? 'Keep current assigned shift' : 'Unscheduled (RDOT)', ''))
-  for (const schedule of data || []) {
+  const eligibleSchedules = (data || []).filter(schedule => (
+    schedule.is_rest_day
+      || schedule.is_holiday
+      || (schedule.shift_start && schedule.shift_end)
+  ))
+  for (const schedule of eligibleSchedules) {
     const specialDay = schedule.is_rest_day
       ? 'Rest day'
       : schedule.is_holiday
         ? schedule.holiday_name || 'Holiday'
         : ''
-    const option = new Option(formatScheduleOptionLabel(schedule, WORKFORCE_TIMEZONE), schedule.id)
+    const option = new Option(formatCorrectionScheduleLabel(schedule), schedule.id)
     option.dataset.status = [specialDay, schedule.status].filter(Boolean).join(' · ')
     select.appendChild(option)
   }
 
   if (row.schedule_id && ![...select.options].some(option => option.value === row.schedule_id)) {
-    select.appendChild(new Option(`Current · ${formatScheduleOptionLabel({ ...row, shift_date: row.work_date, shift_sequence: row.schedule_sequence, shift_start: row.schedule_start, shift_end: row.schedule_end, timezone: row.timezone }, WORKFORCE_TIMEZONE)}`, row.schedule_id))
+    const currentOption = new Option(`Current (outside eligible window) · ${formatCorrectionScheduleLabel({ ...row, shift_date: row.work_date, shift_sequence: row.schedule_sequence, shift_start: row.schedule_start, shift_end: row.schedule_end, timezone: row.timezone })}`, row.schedule_id)
+    currentOption.disabled = true
+    currentOption.dataset.status = 'Current schedule is outside the eligible reassignment window'
+    select.appendChild(currentOption)
   }
   select.value = row.schedule_id || ''
   const updateStatus = () => {
@@ -1446,7 +1489,8 @@ async function handleCorrectionSubmit(messageElement) {
 
   setMessage(messageElement, 'Submitting correction…')
 
-  const rpcName = !currentScheduleId && scheduleId
+  const scheduleOnlyChange = scheduleChanged && !billedTimeChanged
+  const rpcName = scheduleOnlyChange
     ? 'workforce_assign_attendance_schedule'
     : 'workforce_correct_attendance'
   const rpcParams = rpcName === 'workforce_assign_attendance_schedule'
