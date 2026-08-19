@@ -37,6 +37,7 @@ const elements = {
   liveClock: document.getElementById('attendanceLiveClock'),
   liveClockValue: document.getElementById('attendanceLiveClockValue'),
   liveClockPeriod: document.getElementById('attendanceLiveClockPeriod'),
+  liveClockDate: document.getElementById('attendanceLiveClockDate'),
   timeZone: document.getElementById('attendanceTimeZone'),
   todayTitle: document.getElementById('attendanceTodayTitle'),
   todayBadge: document.getElementById('attendanceTodayBadge'),
@@ -542,6 +543,16 @@ function formatPrepaidTime(value, timezone = access?.timezone || 'America/New_Yo
     hour: 'numeric',
     minute: '2-digit'
   }).format(new Date(value))
+}
+
+function formatLiveClockDate(date, timezone = 'America/New_York') {
+  return new Intl.DateTimeFormat('en-US', {
+    timeZone: timezone,
+    weekday: 'short',
+    month: 'short',
+    day: 'numeric',
+    year: 'numeric'
+  }).format(date)
 }
 
 function renderPrepaidBalances() {
@@ -1113,6 +1124,10 @@ function updateLiveClock() {
     `${clockPart('hour')}:${clockPart('minute')}:${clockPart('second')}`
 
   elements.liveClockPeriod.textContent = clockPart('dayPeriod')
+  elements.liveClockDate.textContent = formatLiveClockDate(
+    now,
+    access?.timezone || 'America/New_York'
+  )
   elements.liveClock.dateTime = now.toISOString()
 
   const record = openAttendanceRecord()

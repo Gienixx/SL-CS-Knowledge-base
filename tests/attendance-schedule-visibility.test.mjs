@@ -104,7 +104,7 @@ test('retroactive yesterday schedule created today is inside the unchanged loadi
   assert.match(page, /id="attendanceAdminAssistClockInDate"[^>]*type="date"/)
   assert.match(page, /id="attendanceAdminAssistClockInTime"[^>]*type="time"/)
   assert.match(script, /if \(historicalClockIn\.timestamp\) payload\.p_clock_in = historicalClockIn\.timestamp/)
-  assert.match(page, /scripts\/attendance\.js\?v=24/)
+  assert.match(page, /scripts\/attendance\.js\?v=25/)
 })
 
 test('historical Agent Assist converts Aug 16 8:05 AM New York to the correct UTC timestamp', async () => {
