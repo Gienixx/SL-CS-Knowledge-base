@@ -472,12 +472,31 @@ begin
     'public.payroll_import_attendance(uuid,uuid)'
   ] loop
     v_definition := pg_get_functiondef(v_signature::regprocedure);
-    v_updated := replace(
-      v_definition,
-      'and attendance_row.schedule_id = schedule.id',
-      'and attendance_row.schedule_id = schedule.id
-        and attendance_row.voided_at is null'
-    );
+    v_updated := v_definition;
+    if v_signature = 'public.payroll_get_period_employee_readiness(uuid)' then
+      v_updated := replace(
+        v_updated,
+        'where attendance_row.user_id = snapshot.employee_id',
+        'where attendance_row.user_id = snapshot.employee_id
+          and attendance_row.voided_at is null'
+      );
+    elsif v_signature = 'public.payroll_get_period_employee_readiness_base(uuid)' then
+      v_updated := replace(
+        v_updated,
+        'where attendance_row.user_id = profile.user_id
+              and attendance_row.schedule_id = schedule.id',
+        'where attendance_row.user_id = profile.user_id
+              and attendance_row.schedule_id = schedule.id
+              and attendance_row.voided_at is null'
+      );
+    else
+      v_updated := replace(
+        v_updated,
+        'and attendance_row.schedule_id = schedule.id',
+        'and attendance_row.schedule_id = schedule.id
+          and attendance_row.voided_at is null'
+      );
+    end if;
     if v_updated = v_definition then
       raise exception '% live definition did not contain an attendance/schedule predicate', v_signature;
     end if;
