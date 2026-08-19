@@ -26,8 +26,8 @@ test('voided attendance is excluded from agent operational reads and eligibility
 test('active uniqueness and open-session safeguards ignore voided rows only', async () => {
   const migration = await read(migrationPath)
 
-  assert.match(migration, /create unique index public\.attendance_user_schedule_unique[\s\S]*where schedule_id is not null and voided_at is null/)
-  assert.match(migration, /create unique index public\.attendance_one_open_session_per_user_idx[\s\S]*where clock_in is not null and clock_out is null and voided_at is null/)
+  assert.match(migration, /create unique index attendance_user_schedule_unique[\s\S]*where schedule_id is not null and voided_at is null/)
+  assert.match(migration, /create unique index attendance_one_open_session_per_user_idx[\s\S]*where clock_in is not null and clock_out is null and voided_at is null/)
   assert.match(migration, /workforce_clock_out\(text,uuid,uuid\)[\s\S]*attendance_row\.voided_at is null/)
   assert.match(migration, /workforce_admin_assist_clock_out\(uuid,text\)[\s\S]*voided_at is null/)
   assert.match(migration, /workforce_assign_attendance_schedule\(uuid,uuid,text,text\)[\s\S]*v_old\.voided_at is not null/)
