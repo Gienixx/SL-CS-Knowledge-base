@@ -58,7 +58,7 @@ test('ended yesterday schedules are hidden for agents but available to Admin Ass
   assert.match(chooser, /option\.disabled = adminAssistMode \? hasAttendance : availability\.state === 'ended'/)
   assert.match(script, /function hasAttendanceForSchedule\(schedule\)/)
   assert.match(script, /const availabilityLabel = availability\.state === 'ended' \? ' · Ended' : ''/)
-  assert.match(script, /const scheduleClockInOpen = schedule[\s\S]*adminAssistMode[\s\S]*'ended'/)
+  assert.match(script, /const scheduleClockInOpen = adminAssistMode[\s\S]*'ended'/)
 
   const availability = loadScheduleAvailability(script)
   const now = new Date('2026-08-17T13:00:00.000Z')
@@ -104,7 +104,7 @@ test('retroactive yesterday schedule created today is inside the unchanged loadi
   assert.match(page, /id="attendanceAdminAssistClockInDate"[^>]*type="date"/)
   assert.match(page, /id="attendanceAdminAssistClockInTime"[^>]*type="time"/)
   assert.match(script, /if \(historicalClockIn\.timestamp\) payload\.p_clock_in = historicalClockIn\.timestamp/)
-  assert.match(page, /scripts\/attendance\.js\?v=25/)
+   assert.match(page, /scripts\/attendance\.js\?v=26/)
 })
 
 test('historical Agent Assist converts Aug 16 8:05 AM New York to the correct UTC timestamp', async () => {

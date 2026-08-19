@@ -37,7 +37,12 @@ test('correction submit handles a valid overnight billed correction', async () =
   }), '')
   assert.equal(toIso('2026-08-16T15:00'), '2026-08-16T19:00:00.000Z')
   assert.equal(toIso('2026-08-17T06:00'), '2026-08-17T10:00:00.000Z')
+  assert.equal(toIso('2026-08-17T19:00'), '2026-08-17T23:00:00.000Z')
   assert.match(page, /id="teamAttendanceCorrectionForm" class="wf-form" novalidate/)
+  assert.match(page, /New · America\/New_York/)
+  assert.match(page, /Work date \(America\/New_York\)/)
+  assert.match(page, /teamAttendanceCorrectionScheduleWarning/)
+  assert.match(page, /teamAttendanceCorrectionZeroOverlapConfirm/)
   assert.doesNotMatch(page, /id="teamAttendanceCorrectionSubmit"[^>]*disabled/)
   assert.match(script, /void handleCorrectionSubmit\(correctionMessage\)/)
   assert.match(script, /supabase\.rpc\(rpcName, rpcParams\)/)
@@ -73,4 +78,52 @@ test('correction validation reports invalid or reversed billed timestamps', asyn
     newClockIn: 'not-a-date',
     newClockOut: '2026-08-17T06:00'
   }), 'Enter a valid date and time.')
+})
+
+test('correction warns on a one-day workforce-date mismatch and previews the expected overnight classification', async () => {
+  const script = await read('scripts/team-attendance.js')
+  const sources = [
+    functionSource(script, 'timezoneOffsetMilliseconds', 'timestamp'),
+    functionSource(script, 'toDateTimeLocal', 'value'),
+    functionSource(script, 'dateTimeLocalToIso', 'value'),
+    functionSource(script, 'parseDateKey', 'value'),
+    functionSource(script, 'shiftIsoByWorkforceDays', 'timestamp, days'),
+    functionSource(script, 'intervalOverlapMinutes', 'clockInIso, clockOutIso, schedule'),
+    functionSource(script, 'correctionScheduleAnalysis', '[\\s\\S]*?'),
+    functionSource(script, 'correctionClassificationPreview', '[\\s\\S]*?')
+  ].join('\n')
+  const helpers = Function(`const WORKFORCE_TIMEZONE = 'America/New_York'\n${sources}\nreturn { correctionScheduleAnalysis, correctionClassificationPreview }`)()
+  const schedule = {
+    shift_start: '2026-08-18T01:00:00.000Z',
+    shift_end: '2026-08-18T09:00:00.000Z'
+  }
+
+  const mismatch = helpers.correctionScheduleAnalysis({
+    clockInIso: '2026-08-16T23:00:00.000Z',
+    clockOutIso: '2026-08-17T14:00:00.000Z',
+    schedule
+  })
+  assert.equal(mismatch.overlapMinutes, 0)
+  assert.equal(mismatch.likelyMismatch, true)
+  assert.equal(mismatch.likelyMismatchDays, 1)
+  assert.equal(mismatch.likelyMismatchOverlapMinutes, 480)
+  assert.equal(mismatch.requiresConfirmation, true)
+
+  const expected = helpers.correctionScheduleAnalysis({
+    clockInIso: '2026-08-17T23:00:00.000Z',
+    clockOutIso: '2026-08-18T14:00:00.000Z',
+    schedule
+  })
+  assert.equal(expected.overlapMinutes, 480)
+  assert.equal(expected.requiresConfirmation, false)
+  assert.deepEqual(helpers.correctionClassificationPreview({
+    clockInIso: '2026-08-17T23:00:00.000Z',
+    clockOutIso: '2026-08-18T14:00:00.000Z',
+    schedule
+  }), {
+    regularMinutes: 480,
+    preShiftMinutes: 120,
+    postShiftMinutes: 300,
+    totalMinutes: 900
+  })
 })

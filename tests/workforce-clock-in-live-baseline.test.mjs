@@ -3,7 +3,7 @@ import fs from 'node:fs/promises'
 import test from 'node:test'
 
 const migration = await fs.readFile(
-  new URL('../supabase/migrations/20260814153838_reconcile_live_workforce_clock_in.sql', import.meta.url),
+  new URL('../supabase/migrations/20260819101616_allow_open_schedule_clock_in_production_forward.sql', import.meta.url),
   'utf8',
 )
 const attendance = await fs.readFile(new URL('../scripts/attendance.js', import.meta.url), 'utf8')
@@ -12,7 +12,7 @@ test('live clock-in baseline preserves timed and special schedule validation', (
   assert.match(migration, /status in \('published', 'changed'\)/)
   assert.match(migration, /not \(v_schedule\.is_rest_day or v_schedule\.is_holiday\)/)
   assert.match(migration, /shift_start is null or v_schedule\.shift_end is null/)
-  assert.match(migration, /schedule\.shift_date between v_local_date - 1 and v_local_date \+ 1/)
+  assert.match(migration, /v_schedule\.shift_date < v_local_date - 1[\s\S]*v_schedule\.shift_date > v_local_date \+ 1/)
   assert.match(migration, /v_work_date := v_schedule\.shift_date/)
 })
 

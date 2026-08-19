@@ -273,6 +273,79 @@ function dateTimeLocalToIso(value) {
   return new Date(timestamp).toISOString()
 }
 
+function shiftIsoByWorkforceDays(timestamp, days) {
+  const localValue = toDateTimeLocal(timestamp)
+  if (!localValue) return null
+  const [dateValue, timeValue] = localValue.split('T')
+  const shiftedDate = parseDateKey(dateValue)
+  shiftedDate.setUTCDate(shiftedDate.getUTCDate() + days)
+  return dateTimeLocalToIso(`${shiftedDate.toISOString().slice(0, 10)}T${timeValue}`)
+}
+
+function intervalOverlapMinutes(clockInIso, clockOutIso, schedule) {
+  if (!clockInIso || !clockOutIso || !schedule?.shift_start || !schedule?.shift_end) return 0
+  const clockIn = new Date(clockInIso).getTime()
+  const clockOut = new Date(clockOutIso).getTime()
+  const scheduleStart = new Date(schedule.shift_start).getTime()
+  const scheduleEnd = new Date(schedule.shift_end).getTime()
+  const overlapStart = Math.max(clockIn, scheduleStart)
+  const overlapEnd = Math.min(clockOut, scheduleEnd)
+  return Math.max(0, Math.floor((overlapEnd - overlapStart) / 60000))
+}
+
+function correctionScheduleAnalysis({ clockInIso, clockOutIso, schedule }) {
+  if (!clockInIso || !clockOutIso || !schedule?.shift_start || !schedule?.shift_end) {
+    return { applicable: false, overlapMinutes: null, requiresConfirmation: false }
+  }
+
+  const overlapMinutes = intervalOverlapMinutes(clockInIso, clockOutIso, schedule)
+  if (overlapMinutes > 0) {
+    return { applicable: true, overlapMinutes, requiresConfirmation: false }
+  }
+
+  const shiftedCandidates = [-1, 1].map(days => {
+    const shiftedClockIn = shiftIsoByWorkforceDays(clockInIso, days)
+    const shiftedClockOut = shiftIsoByWorkforceDays(clockOutIso, days)
+    return {
+      days,
+      overlapMinutes: intervalOverlapMinutes(shiftedClockIn, shiftedClockOut, schedule)
+    }
+  })
+  const likelyMismatch = shiftedCandidates
+    .filter(candidate => candidate.overlapMinutes >= 60)
+    .sort((left, right) => right.overlapMinutes - left.overlapMinutes)[0] || null
+
+  return {
+    applicable: true,
+    overlapMinutes: 0,
+    requiresConfirmation: true,
+    likelyMismatch: Boolean(likelyMismatch),
+    likelyMismatchDays: likelyMismatch?.days || null,
+    likelyMismatchOverlapMinutes: likelyMismatch?.overlapMinutes || 0
+  }
+}
+
+function correctionClassificationPreview({ clockInIso, clockOutIso, schedule }) {
+  if (!clockInIso || !clockOutIso || !schedule?.shift_start || !schedule?.shift_end) return null
+  const clockIn = new Date(clockInIso).getTime()
+  const clockOut = new Date(clockOutIso).getTime()
+  const scheduleStart = new Date(schedule.shift_start).getTime()
+  const scheduleEnd = new Date(schedule.shift_end).getTime()
+  const totalMinutes = Math.max(0, Math.floor((clockOut - clockIn) / 60000))
+  const preShiftMinutes = clockIn < scheduleStart
+    ? Math.max(0, Math.floor((Math.min(clockOut, scheduleStart) - clockIn) / 60000))
+    : 0
+  const postShiftMinutes = clockOut > scheduleEnd
+    ? Math.max(0, Math.floor((clockOut - Math.max(clockIn, scheduleEnd)) / 60000))
+    : 0
+  return {
+    regularMinutes: Math.max(0, totalMinutes - preShiftMinutes - postShiftMinutes),
+    preShiftMinutes,
+    postShiftMinutes,
+    totalMinutes
+  }
+}
+
 function formatMinutes(value) {
   if (value === null || value === undefined) return 'Pending'
   const safeMinutes = Math.max(0, Number(value) || 0)
@@ -1329,6 +1402,9 @@ function bindEvents() {
       void handleCorrectionSubmit(correctionMessage)
     })
   }
+  ;['teamAttendanceNewClockIn', 'teamAttendanceNewClockOut'].forEach(id => {
+    document.getElementById(id)?.addEventListener('input', updateCorrectionPreview)
+  })
   deleteForm?.addEventListener('submit', event => {
     event.preventDefault()
     deleteAttendance()
@@ -1343,6 +1419,7 @@ function bindEvents() {
 }
 
 async function loadCorrectionSchedules(row) {
+  const modal = document.getElementById('teamAttendanceCorrectionModal')
   const select = document.getElementById('teamAttendanceCorrectionSchedule')
   const status = document.getElementById('teamAttendanceCorrectionScheduleStatus')
   if (!select) return
@@ -1362,6 +1439,8 @@ async function loadCorrectionSchedules(row) {
 
   if (error) throw error
 
+  modal._correctionSchedules = [...(data || [])]
+
   select.replaceChildren(new Option(row.schedule_id ? 'Keep current assigned shift' : 'Unscheduled (RDOT)', ''))
   const eligibleSchedules = (data || []).filter(schedule => (
     schedule.is_rest_day
@@ -1380,7 +1459,9 @@ async function loadCorrectionSchedules(row) {
   }
 
   if (row.schedule_id && ![...select.options].some(option => option.value === row.schedule_id)) {
-    const currentOption = new Option(`Current (outside eligible window) · ${formatCorrectionScheduleLabel({ ...row, shift_date: row.work_date, shift_sequence: row.schedule_sequence, shift_start: row.schedule_start, shift_end: row.schedule_end, timezone: row.timezone })}`, row.schedule_id)
+    const currentSchedule = { ...row, shift_date: row.work_date, shift_sequence: row.schedule_sequence, shift_start: row.schedule_start, shift_end: row.schedule_end, timezone: row.timezone }
+    modal._correctionSchedules.push(currentSchedule)
+    const currentOption = new Option(`Current (outside eligible window) · ${formatCorrectionScheduleLabel(currentSchedule)}`, row.schedule_id)
     currentOption.disabled = true
     currentOption.dataset.status = 'Current schedule is outside the eligible reassignment window'
     select.appendChild(currentOption)
@@ -1389,10 +1470,57 @@ async function loadCorrectionSchedules(row) {
   const updateStatus = () => {
     const option = select.selectedOptions[0]
     status.textContent = option?.dataset.status || (select.value ? 'Published' : 'Unscheduled')
+    updateCorrectionPreview()
   }
   select.onchange = updateStatus
   updateStatus()
   select.disabled = false
+}
+
+function selectedCorrectionSchedule() {
+  const modal = document.getElementById('teamAttendanceCorrectionModal')
+  const scheduleId = document.getElementById('teamAttendanceCorrectionSchedule')?.value
+  return modal?._correctionSchedules?.find(schedule => schedule.id === scheduleId) || null
+}
+
+function updateCorrectionPreview() {
+  const modal = document.getElementById('teamAttendanceCorrectionModal')
+  const preview = document.getElementById('teamAttendanceCorrectionPreview')
+  const warning = document.getElementById('teamAttendanceCorrectionScheduleWarning')
+  const confirmation = document.getElementById('teamAttendanceCorrectionZeroOverlapConfirmation')
+  const confirmationInput = document.getElementById('teamAttendanceCorrectionZeroOverlapConfirm')
+  if (!modal || !preview || !warning || !confirmation || !confirmationInput) return
+
+  let clockInIso = null
+  let clockOutIso = null
+  try {
+    clockInIso = dateTimeLocalToIso(document.getElementById('teamAttendanceNewClockIn')?.value)
+    clockOutIso = dateTimeLocalToIso(document.getElementById('teamAttendanceNewClockOut')?.value)
+  } catch {
+    preview.hidden = true
+    warning.hidden = true
+    confirmation.hidden = true
+    confirmationInput.checked = false
+    return
+  }
+
+  const schedule = selectedCorrectionSchedule()
+  const analysis = correctionScheduleAnalysis({ clockInIso, clockOutIso, schedule })
+  const classification = correctionClassificationPreview({ clockInIso, clockOutIso, schedule })
+  preview.hidden = !classification
+  if (classification) {
+    preview.textContent = `Preview (${WORKFORCE_TIMEZONE}): Regular ${formatMinutes(classification.regularMinutes)} · Pre-shift OT ${formatMinutes(classification.preShiftMinutes)} · Post-shift OT ${formatMinutes(classification.postShiftMinutes)}`
+  }
+
+  warning.hidden = !analysis.applicable || analysis.overlapMinutes > 0
+  confirmation.hidden = warning.hidden
+  confirmationInput.checked = false
+  if (!warning.hidden) {
+    const scheduleLabel = formatCorrectionScheduleLabel(schedule)
+    warning.textContent = analysis.likelyMismatch
+      ? `Possible work-date mismatch: these corrected times do not overlap the assigned ${scheduleLabel} shift, but shifting them ${analysis.likelyMismatchDays > 0 ? 'one day later' : 'one day earlier'} would overlap it by ${formatMinutes(analysis.likelyMismatchOverlapMinutes)}.`
+      : `These corrected times do not overlap the assigned ${scheduleLabel} shift.`
+  }
 }
 
 async function openCorrectionModal(row) {
@@ -1429,8 +1557,10 @@ async function openCorrectionModal(row) {
   adminNotesInput.value = row.admin_notes || ''
   setMessage(document.getElementById('teamAttendanceCorrectionMessage'), '')
 
+  modal._correctionSchedules = []
   modal.hidden = false
   document.body.classList.add('modal-open')
+  updateCorrectionPreview()
   try {
     await loadCorrectionSchedules(row)
   } catch (error) {
@@ -1516,6 +1646,16 @@ async function handleCorrectionSubmit(messageElement) {
   })
   if (validationMessage) {
     setMessage(messageElement, validationMessage, 'error')
+    return
+  }
+
+  const correctionAnalysis = correctionScheduleAnalysis({
+    clockInIso: dateTimeLocalToIso(newClockIn),
+    clockOutIso: dateTimeLocalToIso(newClockOut),
+    schedule: selectedCorrectionSchedule()
+  })
+  if (correctionAnalysis.requiresConfirmation && !document.getElementById('teamAttendanceCorrectionZeroOverlapConfirm').checked) {
+    setMessage(messageElement, 'Confirm that the corrected timestamps are intentionally outside the assigned shift before submitting.', 'error')
     return
   }
 

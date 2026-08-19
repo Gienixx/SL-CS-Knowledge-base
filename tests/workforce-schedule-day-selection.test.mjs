@@ -8,10 +8,10 @@ const client = await readFile(new URL('../scripts/workforce-schedules.js', impor
 test('create schedule opens one consolidated event-style form', () => {
   assert.doesNotMatch(html, /id="scheduleTypeModal"/)
   assert.match(client, /createButton\.addEventListener\('click', \(\) => openSchedule\(\)\)/)
-  assert.match(html, /<span>Start Date<\/span>[\s\S]*id="scheduleDate" type="date"/)
-  assert.match(html, /<span>Start Time<\/span>[\s\S]*id="scheduleStart" type="time"/)
-  assert.match(html, /id="scheduleEndDateLabel">End Date<\/span>[\s\S]*id="scheduleToDate" type="date"/)
-  assert.match(html, /<span>End Time<\/span>[\s\S]*id="scheduleEnd" type="time"/)
+  assert.match(html, /<span>Work Date \(America\/New_York\)<\/span>[\s\S]*id="scheduleDate" type="date"/)
+  assert.match(html, /<span>Start Time \(schedule timezone\)<\/span>[\s\S]*id="scheduleStart" type="time"/)
+  assert.match(html, /id="scheduleEndDateLabel">End Date \(schedule timezone\)<\/span>[\s\S]*id="scheduleToDate" type="date"/)
+  assert.match(html, /<span>End Time \(schedule timezone\)<\/span>[\s\S]*id="scheduleEnd" type="time"/)
 })
 
 test('schedule frequency supports all shell creation modes', () => {

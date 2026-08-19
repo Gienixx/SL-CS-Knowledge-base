@@ -43,7 +43,9 @@ test('open-session duration boundary is strict and never closes the session', as
     is_missing_clock_out: false,
     is_over_duration: true
   })
-  assert.match(attendanceScript, /if \(!window\.confirm\(`Clock out now\? Current worked duration:/)
+  assert.match(attendanceScript, /confirmClockOutIfNeeded\(/)
+  assert.match(attendanceScript, /showClockOutConfirmation\(elapsedText\)/)
+  assert.match(attendanceScript, /p_action_source: 'explicit_clock_out'/)
   assert.match(attendanceScript, /maybePersistOverDurationFlag\(record, now\)/)
   assert.match(attendanceScript, /workforce_flag_current_open_attendance_over_duration/)
   assert.match(attendanceScript, /\.rpc\('workforce_clock_out'/)

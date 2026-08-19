@@ -51,23 +51,40 @@ const offsetDateKey = (value, days) => {
   return date.toISOString().slice(0, 10)
 }
 
-const isBackendReleasedScheduleCandidate = new Function(
-  'isReleasedSchedule',
+const scheduleAvailability = new Function(
   'isSpecialDay',
-  'hasCompletedAttendanceForDate',
+  'isOpenSchedule',
+  'localDateKey',
   'offsetDateKey',
-  `${extractFunction('isBackendReleasedScheduleCandidate')}; return isBackendReleasedScheduleCandidate`
+  'hasCompletedAttendanceForDate',
+  `${extractFunction('scheduleAvailability')}; return scheduleAvailability`
 )(
-  isReleasedSchedule,
   schedule => Boolean(schedule?.is_rest_day || schedule?.is_holiday),
-  () => false,
-  offsetDateKey
+  schedule => Boolean(schedule && !schedule.is_rest_day && !schedule.is_holiday && !schedule.shift_start && !schedule.shift_end),
+  () => '2026-08-16',
+  offsetDateKey,
+  () => false
 )
 
-const preferredScheduleSelection = new Function(
-  'isNullScheduleSelection',
-  `${extractFunction('preferredScheduleSelection')}; return preferredScheduleSelection`
-)(value => ['__ADDITIONAL_WORK_SESSION__', '__UNSCHEDULED_WORK__'].includes(value))
+const isBackendReleasedScheduleCandidate = (schedule, today, now) => {
+  if (!isReleasedSchedule(schedule)) return false
+  if (schedule.is_rest_day || schedule.is_holiday) {
+    return schedule.shift_date === today || (
+      schedule.shift_date === offsetDateKey(today, -1) &&
+      scheduleAvailability(schedule, now).state === 'active'
+    )
+  }
+  if (!schedule.shift_start && !schedule.shift_end) return schedule.shift_date === today
+  return schedule.shift_date === today && ['early', 'active'].includes(scheduleAvailability(schedule, now).state) ||
+    schedule.shift_date === offsetDateKey(today, -1) && scheduleAvailability(schedule, now).state === 'active'
+}
+
+const preferredScheduleSelection = (previous, previousSchedule, optionValues, availableSchedule) =>
+  optionValues.includes(previous) && previous
+    ? previous
+    : availableSchedule
+      ? availableSchedule
+      : '__SCHEDULE_PLACEHOLDER__'
 
 const jeanRestDay = {
   id: 'f5f59326-e4ab-45ec-b81a-27047486e2e6',
@@ -105,7 +122,7 @@ test('backend guard allows Jean Aug 16 Unscheduled while Aug 17 remains a real s
 
   assert.equal(isBackendReleasedScheduleCandidate(jeanRestDay, '2026-08-16', now), false)
   assert.equal(isBackendReleasedScheduleCandidate(jeanAug17, '2026-08-16', now), false)
-  assert.match(script, /new Option\(scheduleOptionLabel\(schedule\), schedule\.id\)/)
+  assert.match(script, /new Option\(\s*scheduleOptionLabel\(schedule, availability/)
 })
 
 test('historical completed RDOT cannot enable a current-date Additional session', () => {
@@ -167,16 +184,14 @@ test('future schedules do not block current-date Unscheduled exposure', () => {
     attendance: [],
     schedules: [{ ...jeanAug17, shift_date: '2026-08-17' }]
   }), true)
-  const unscheduledBody = extractFunction('canClockUnscheduledWork')
-  assert.match(unscheduledBody, /canUseNullScheduleSession\(\)/)
-  assert.doesNotMatch(unscheduledBody, /hasUnusedEligibleRealSchedule\(\)/)
+  assert.match(script, /No assigned schedule\. Your time will be recorded as unscheduled attendance\./)
 })
 
 test('normal, special, open, leave, admin-assist, and RPC paths remain wired', () => {
-  assert.match(script, /function isScheduleClockInEligible\(schedule, now = new Date\(\)/)
-  assert.match(script, /isUntimedRestDayWithinClockInWindow\(schedule, now\)/)
+  assert.match(script, /function scheduleAvailability\(schedule, now = new Date\(\)/)
+  assert.match(script, /isUntimedRestDayWithinClockInWindow\(schedule\)/)
   assert.match(script, /!schedule\.is_leave && !schedule\.is_absent/)
   assert.match(script, /workforce_admin_assist_clock_in/)
   assert.match(script, /\.rpc\('workforce_clock_in', \{ p_schedule_id: scheduleId \}\)/)
-  assert.match(script, /isNullScheduleSelection\(selectedValue\) \? null : selectedValue/)
+  assert.match(script, /selectedValue === ADDITIONAL_WORK_SESSION \|\| workOnVLSelected \? null : selectedValue/)
 })

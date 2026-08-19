@@ -131,7 +131,7 @@
           <div class="attendance-context">
             <div id="attendanceScheduleChooser" class="attendance-schedule-chooser" hidden>
               <label class="wf-field">
-                <span>Available shift or work date</span>
+                <span>Available shift or work date (America/New_York)</span>
                 <select id="attendanceScheduleSelect" class="wf-control"></select>
               </label>
               <div id="attendanceAdminAssistHistoricalClockIn" class="attendance-admin-assist-historical-clock-in" hidden>
@@ -149,6 +149,7 @@
                 <p id="attendanceAdminAssistClockInHelp" class="attendance-help">Enter the target employee’s actual local Clock In time. This is required for ended schedules.</p>
               </div>
               <p id="attendanceScheduleHelp" class="attendance-help"></p>
+              <p class="attendance-help">Work dates and Today/Tomorrow/Yesterday labels use the workforce timezone, America/New_York. Your device date may be different.</p>
             </div>
 
             <div id="attendanceScheduleNotice" class="attendance-notice" hidden></div>
@@ -283,6 +284,6 @@
     </main>
   </div>
 
-  <script type="module" src="./scripts/attendance.js?v=25"></script>
+  <script type="module" src="./scripts/attendance.js?v=26"></script>
 </body>
 </html>

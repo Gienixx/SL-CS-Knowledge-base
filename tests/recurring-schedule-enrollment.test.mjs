@@ -18,7 +18,7 @@ test('schedule form offers simple per-entry weekly automation', () => {
   assert.match(client, /p_repeat_weekly:\s*repeatWeekly/)
   assert.doesNotMatch(client, /Save the selected days first/)
   assert.match(html, /workforce-schedules-entry\.js\?v=15/)
-  assert.match(entry, /workforce-schedules\.js\?v=15/)
+  assert.match(entry, /workforce-schedules\.js\?v=16/)
 })
 
 test('each checked schedule is atomically added to the recurring template', () => {

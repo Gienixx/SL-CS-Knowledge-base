@@ -4,6 +4,7 @@ import {
   loadCurrentWorkforceAccess,
   redactAttendanceCorrectionForViewer
 } from './workforce-permissions.js?v=2'
+import { confirmClockOutIfNeeded } from '../shared/attendance-clock-out-confirmation.js'
 import { formatScheduleOptionLabel } from '../shared/schedule-labels.js?v=1'
 
 const RELEASED_SCHEDULE_STATUSES = Object.freeze(['published', 'changed'])
@@ -102,6 +103,8 @@ let adminAssistOriginalProfileIds = []
 let adminAssistHistoricalClockInScheduleId = ''
 let overDurationFlaggedRecordId = ''
 let overDurationFlagRetryAt = 0
+let clockOutConfirmationOpen = false
+const pageSessionId = crypto.randomUUID()
 
 function errorMessage(error) {
   if (/abort|timeout/i.test(`${error?.name || ''} ${error?.message || ''}`)) {
@@ -122,6 +125,65 @@ function setActionMessage(text, type = '') {
 function setHistoryMessage(text, type = '') {
   elements.historyMessage.textContent = text
   elements.historyMessage.className = type ? `wf-message ${type}` : 'wf-message'
+}
+
+function showClockOutConfirmation(elapsedText) {
+  return new Promise(resolve => {
+    const overlay = document.createElement('div')
+    overlay.className = 'attendance-clock-out-confirmation'
+    overlay.setAttribute('role', 'presentation')
+
+    const dialog = document.createElement('div')
+    dialog.className = 'attendance-clock-out-confirmation-dialog'
+    dialog.setAttribute('role', 'dialog')
+    dialog.setAttribute('aria-modal', 'true')
+    dialog.setAttribute('aria-labelledby', 'attendanceClockOutConfirmationTitle')
+
+    const title = document.createElement('h2')
+    title.id = 'attendanceClockOutConfirmationTitle'
+    title.textContent = 'Clock out already?'
+
+    const message = document.createElement('p')
+    message.textContent = `You've been clocked in for ${elapsedText}. Are you sure you want to clock out?`
+
+    const actions = document.createElement('div')
+    actions.className = 'attendance-clock-out-confirmation-actions'
+
+    const cancel = document.createElement('button')
+    cancel.type = 'button'
+    cancel.className = 'wf-row-btn'
+    cancel.textContent = 'Cancel'
+
+    const confirm = document.createElement('button')
+    confirm.type = 'button'
+    confirm.className = 'wf-btn attendance-action-primary'
+    confirm.textContent = 'Clock Out Anyway'
+
+    let settled = false
+    const onKeyDown = event => {
+      if (event.key === 'Escape') finish(false)
+    }
+    const finish = value => {
+      if (settled) return
+      settled = true
+      document.removeEventListener('keydown', onKeyDown)
+      overlay.remove()
+      resolve(value)
+    }
+
+    cancel.addEventListener('click', () => finish(false))
+    confirm.addEventListener('click', () => finish(true))
+    overlay.addEventListener('click', event => {
+      if (event.target === overlay) finish(false)
+    })
+    document.addEventListener('keydown', onKeyDown)
+
+    actions.append(cancel, confirm)
+    dialog.append(title, message, actions)
+    overlay.append(dialog)
+    document.body.append(overlay)
+    confirm.focus()
+  })
 }
 
 function parseDateKey(value) {
@@ -1521,7 +1583,7 @@ async function clockIn() {
 }
 
 async function clockOut() {
-  if (busy || elements.clockOutButton.disabled) return
+  if (busy || clockOutConfirmationOpen || elements.clockOutButton.disabled) return
   const openRecord = openAttendanceRecord()
   if (adminAssistMode) {
     const reason = assistReason('Clock Out')
@@ -1545,14 +1607,31 @@ async function clockOut() {
     }
     return
   }
+  if (!openRecord) return
   const workedDuration = formatMinutes(workedMinutes(openRecord, new Date()))
-  if (!window.confirm(`Clock out now? Current worked duration: ${workedDuration}.`)) return
+  clockOutConfirmationOpen = true
+  let confirmed = false
+  try {
+    confirmed = await confirmClockOutIfNeeded({
+      clockIn: openRecord.clock_in,
+      requestConfirmation: elapsedText => showClockOutConfirmation(elapsedText)
+    })
+  } finally {
+    clockOutConfirmationOpen = false
+  }
+  if (!confirmed) return
+
+  const clientRequestId = crypto.randomUUID()
   setBusy(true, 'clock-out')
   setActionMessage('Recording your clock-out...')
 
   try {
     const { error } = await supabase
-      .rpc('workforce_clock_out')
+      .rpc('workforce_clock_out', {
+        p_action_source: 'explicit_clock_out',
+        p_client_request_id: clientRequestId,
+        p_page_session_id: pageSessionId
+      })
       .abortSignal(requestSignal())
     if (error) throw error
     await Promise.all([loadToday(), loadHistory(), loadPrepaidBalances()])

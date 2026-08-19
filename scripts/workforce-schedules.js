@@ -214,13 +214,40 @@ if (section) {
     if (schedule.is_rest_day) return 'Rest day'
     if (!schedule.shift_start && !schedule.shift_end) return 'Open schedule'
 
+    const timezone = schedule.timezone || 'America/New_York'
     const formatter = new Intl.DateTimeFormat('en-US', {
-      timeZone: schedule.timezone || 'America/New_York',
+      timeZone: timezone,
       hour: 'numeric',
       minute: '2-digit'
     })
+    const start = new Date(schedule.shift_start)
+    const end = new Date(schedule.shift_end)
+    const startDate = new Intl.DateTimeFormat('en-CA', {
+      timeZone: timezone,
+      year: 'numeric',
+      month: '2-digit',
+      day: '2-digit'
+    }).format(start)
+    const endDate = new Intl.DateTimeFormat('en-CA', {
+      timeZone: timezone,
+      year: 'numeric',
+      month: '2-digit',
+      day: '2-digit'
+    }).format(end)
 
-    return `${formatter.format(new Date(schedule.shift_start))} – ${formatter.format(new Date(schedule.shift_end))}`
+    if (startDate !== endDate) {
+      const dateTimeFormatter = new Intl.DateTimeFormat('en-US', {
+        timeZone: timezone,
+        month: 'short',
+        day: 'numeric',
+        year: 'numeric',
+        hour: 'numeric',
+        minute: '2-digit'
+      })
+      return `${dateTimeFormatter.format(start)} → ${dateTimeFormatter.format(end)}`
+    }
+
+    return `${formatter.format(start)} – ${formatter.format(end)}`
   }
 
   function formatPlannedHours(minutes) {
@@ -542,7 +569,7 @@ if (section) {
 
     if (isOneDay) scheduleToDate.value = scheduleEndDate(startDate, startTime, endTime)
     scheduleToDate.disabled = isOneDay || scheduleFrequency.disabled
-    scheduleEndDateLabel.textContent = 'End Date'
+    scheduleEndDateLabel.textContent = 'End Date (schedule timezone)'
     scheduleDayPicker.hidden = !showDays
 
     scheduleDayInputs.forEach(input => {

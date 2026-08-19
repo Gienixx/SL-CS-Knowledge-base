@@ -14,8 +14,8 @@ test('Attendance renders the live date below the clock and above the timezone', 
 
 test('live date uses the live clock timestamp and configured timezone', () => {
   assert.match(script, /liveClockDate: document\.getElementById\('attendanceLiveClockDate'\)/)
-  assert.match(script, /elements\.liveClockDate\.textContent = new Intl\.DateTimeFormat\('en-US'/)
-  assert.match(script, /timeZone: access\?\.timezone \|\| 'America\/New_York'/)
+  assert.match(script, /function formatLiveClockDate\(date, timezone = 'America\/New_York'\)/)
+  assert.match(script, /timeZone: timezone/)
   assert.match(script, /weekday: 'short'[\s\S]*month: 'short'[\s\S]*day: 'numeric'[\s\S]*year: 'numeric'/)
-  assert.match(script, /elements\.liveClockDate\.textContent[\s\S]*elements\.liveClock\.dateTime = now\.toISOString\(\)/)
+  assert.match(script, /elements\.liveClockDate\.textContent = formatLiveClockDate\([\s\S]*elements\.liveClock\.dateTime = now\.toISOString\(\)/)
 })

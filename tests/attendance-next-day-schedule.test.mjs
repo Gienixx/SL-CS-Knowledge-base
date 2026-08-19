@@ -10,7 +10,7 @@ test('Attendance enables tomorrow special-day schedules after today is completed
   const page = await read('attendance.html')
   const script = await read('scripts/attendance.js')
 
-  assert.match(page, /scripts\/attendance\.js\?v=25/)
+   assert.match(page, /scripts\/attendance\.js\?v=26/)
   assert.match(script, /function hasCompletedAttendanceForDate\(workDate\)/)
   assert.match(script, /schedule\.shift_date === tomorrow[\s\S]*hasCompletedAttendanceForDate\(today\)/)
   assert.match(script, /state: 'next-day-special'/)
@@ -36,7 +36,7 @@ test('agent clock-in uses explicit work schedule labels and excludes leave sched
     read('scripts/attendance.js')
   ])
 
-  assert.match(page, /Choose a work schedule before clock-in/)
+  assert.match(page, /Available shift or work date \(America\/New_York\)/)
   assert.match(script, /visibleSchedules = todaySchedules\.filter\(schedule => !schedule\.is_leave && !schedule\.is_absent\)/)
   assert.match(script, /formatScheduleOptionLabel\(schedule, access\?\.timezone\)/)
   assert.match(script, /displayedSchedules\.length === 1/)

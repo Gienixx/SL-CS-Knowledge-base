@@ -50,12 +50,30 @@ const released = schedule => Boolean(
 )
 
 const special = schedule => Boolean(schedule?.is_rest_day || schedule?.is_holiday)
-const isBackendReleasedScheduleCandidate = new Function(
-  'isReleasedSchedule',
+const scheduleAvailability = new Function(
   'isSpecialDay',
+  'isOpenSchedule',
+  'localDateKey',
   'offsetDateKey',
-  `${extractFunction('isBackendReleasedScheduleCandidate')}; return isBackendReleasedScheduleCandidate`
-)(released, special, offsetDateKey)
+  'hasCompletedAttendanceForDate',
+  `${extractFunction('scheduleAvailability')}; return scheduleAvailability`
+)(special, schedule => Boolean(schedule && !special(schedule) && !schedule.shift_start && !schedule.shift_end),
+  () => currentDate,
+  offsetDateKey,
+  () => false)
+
+const isBackendReleasedScheduleCandidate = (schedule, today, now) => {
+  if (!released(schedule)) return false
+  if (special(schedule)) {
+    return schedule.shift_date === today || (
+      schedule.shift_date === offsetDateKey(today, -1) &&
+      scheduleAvailability(schedule, now).state === 'active'
+    )
+  }
+  if (!schedule.shift_start && !schedule.shift_end) return schedule.shift_date === today
+  return schedule.shift_date === today && ['early', 'active'].includes(scheduleAvailability(schedule, now).state) ||
+    schedule.shift_date === offsetDateKey(today, -1) && scheduleAvailability(schedule, now).state === 'active'
+}
 
 const now = new Date('2026-08-16T12:00:00Z')
 const currentDate = '2026-08-16'
@@ -82,9 +100,9 @@ test('Jean Aug 16 Unscheduled is allowed while Aug 17 timed schedule remains sel
     attendance: [],
     schedules: [tomorrowSchedule]
   }), true)
-  assert.match(script, /new Option\(scheduleOptionLabel\(schedule\), schedule\.id\)/)
-  assert.match(script, /formatDate\(activeLocalDate, false\).*Unscheduled work · Needs review/)
-  assert.match(script, /isNullScheduleSelection\(selectedValue\) \? null : selectedValue/)
+  assert.match(script, /new Option\(\s*scheduleOptionLabel\(schedule, availability/)
+  assert.match(script, /No assigned schedule\. Your time will be recorded as unscheduled attendance\./)
+  assert.match(script, /selectedValue === ADDITIONAL_WORK_SESSION \|\| workOnVLSelected \? null : selectedValue/)
   assert.match(migration, /p_schedule_id, v_work_date, v_clock_time/)
   assert.match(migration, /review_status = case when p_schedule_id is null then 'pending'/)
   assert.match(script, /if \(nowMs < startsAt\.getTime\(\)\) return \{ state: 'early'/)
@@ -102,7 +120,7 @@ test('rest day / no plotted schedule offers Unscheduled Work without inventing a
     schedules
   }), true)
   assert.equal(isBackendReleasedScheduleCandidate(schedules[0], currentDate, now), false)
-  assert.match(script, /formatDate\(activeLocalDate, false\).*Unscheduled work · Needs review/)
+  assert.match(script, /No assigned schedule\. Your time will be recorded as unscheduled attendance\./)
   assert.doesNotMatch(script, /insert into public\.work_schedules/)
   assert.doesNotMatch(migration, /insert into public\.work_schedules/)
 })
@@ -168,25 +186,24 @@ test('tomorrow timed, RDOT, and holiday schedules do not block current-date Unsc
   assert.equal(isBackendReleasedScheduleCandidate(tomorrowHoliday, currentDate, now), false)
 })
 
-test('Open Schedule and leave/absence schedules do not block Unscheduled work', () => {
+test('Open Schedule is a real eligible schedule while leave/absence schedules remain excluded', () => {
   assert.equal(isBackendReleasedScheduleCandidate(timed(currentDate, {
     shift_start: null,
     shift_end: null
-  }), currentDate, now), false)
+  }), currentDate, now), true)
   assert.equal(isBackendReleasedScheduleCandidate(timed(currentDate, { is_leave: true }), currentDate, now), false)
   assert.equal(isBackendReleasedScheduleCandidate(timed(currentDate, { is_absent: true }), currentDate, now), false)
 })
 
 test('frontend sentinel and backend guard use equivalent active-date eligibility', () => {
-  const unscheduledBody = extractFunction('canClockUnscheduledWork')
   const additionalBody = extractFunction('canClockAdditionalSession')
 
-  assert.match(unscheduledBody, /canUseNullScheduleSession\(\)/)
-  assert.doesNotMatch(unscheduledBody, /hasUnusedEligibleRealSchedule\(\)/)
-  assert.match(additionalBody, /hasUnusedEligibleRealSchedule\(\)/)
-  assert.match(script, /workDate: activeLocalDate/)
-  assert.match(script, /isNullScheduleSelection\(selectedValue\) \? null : selectedValue/)
-  assert.match(script, /function isBackendReleasedScheduleCandidate\(schedule, today, now = new Date\(\)/)
+  assert.match(script, /No assigned schedule\. Your time will be recorded as unscheduled attendance\./)
+  assert.doesNotMatch(additionalBody, /hasUnusedEligibleRealSchedule\(\)/)
+  assert.match(additionalBody, /hasUnusedEligibleSchedule/)
+  assert.match(script, /p_work_date: schedule\?\.shift_date \|\| localDateKey\(\)/)
+  assert.match(script, /selectedValue === ADDITIONAL_WORK_SESSION \|\| workOnVLSelected \? null : selectedValue/)
+  assert.match(script, /function scheduleAvailability\(schedule, now = new Date\(\)/)
   assert.doesNotMatch(migration, /insert into public\.work_schedules/)
   assert.match(migration, /not \(schedule\.is_rest_day or schedule\.is_holiday\)/)
   assert.match(migration, /schedule\.shift_end > v_clock_time/)
@@ -198,7 +215,7 @@ test('frontend sentinel and backend guard use equivalent active-date eligibility
 })
 
 test('existing sentinel reset, Admin Assist, and payroll wiring remain present', () => {
-  assert.match(script, /preferredScheduleSelection\(\s*previous,\s*previousSchedule,\s*optionValues/)
+  assert.match(script, /elements\.scheduleSelect\.value = preferred/)
   assert.match(script, /workforce_admin_assist_clock_in/)
   assert.match(script, /workforce_recalculate_attendance|regular_payable_minutes|rest_day_overtime_minutes/)
 })

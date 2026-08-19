@@ -186,6 +186,12 @@ html[data-site-theme="light"] .team-attendance-stat:nth-child(2) span{
 #teamAttendanceCorrectionModal .wf-control:focus{border-color:var(--site-green);box-shadow:none}
 #teamAttendanceCorrectionModal .team-attendance-correction-reason{margin-top:25px}
 #teamAttendanceCorrectionModal .team-attendance-correction-reason>div{display:grid;grid-template-columns:1fr 1fr;gap:18px;padding-top:22px}
+#teamAttendanceCorrectionModal .team-attendance-correction-preview{display:grid;gap:7px;margin-top:18px}
+#teamAttendanceCorrectionModal .team-attendance-correction-preview .wf-message{min-height:0;margin:0;font-size:12px;font-weight:600;line-height:1.45}
+#teamAttendanceCorrectionModal .team-attendance-correction-preview .wf-message.warning{padding:9px 11px;border:1px solid color-mix(in srgb,var(--ta-amber) 35%,var(--site-border));border-radius:8px;background:color-mix(in srgb,var(--ta-amber) 9%,var(--site-surface-solid));color:var(--ta-amber)}
+#teamAttendanceCorrectionModal .team-attendance-correction-preview .wf-field{margin:0;padding:8px 10px;border:1px solid var(--site-border);border-radius:8px;background:var(--site-surface-soft)}
+#teamAttendanceCorrectionModal .team-attendance-correction-preview .wf-field span{display:flex;align-items:center;gap:7px;color:var(--site-text);font-size:11px;text-transform:none;letter-spacing:0}
+#teamAttendanceCorrectionModal .team-attendance-correction-preview input[type="checkbox"]{width:16px;height:16px;accent-color:var(--site-blue-strong)}
 #teamAttendanceCorrectionModal .wf-field{gap:7px}
 #teamAttendanceCorrectionModal .wf-field>span{color:var(--site-muted);font-size:10.5px;font-weight:700;line-height:1.3;letter-spacing:.025em;text-transform:uppercase}
 #teamAttendanceCorrectionModal textarea.wf-control{min-height:70px;padding:10px 12px;resize:vertical}

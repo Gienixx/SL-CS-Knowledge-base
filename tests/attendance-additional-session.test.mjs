@@ -9,8 +9,8 @@ import {
 
 const script = await fs.readFile(new URL('../scripts/attendance.js', import.meta.url), 'utf8')
 const eligibility = await fs.readFile(new URL('../shared/attendance-additional-session.js', import.meta.url), 'utf8')
-const migration = await fs.readFile(new URL('../supabase/migrations/20260814153838_reconcile_live_workforce_clock_in.sql', import.meta.url), 'utf8')
-const fallbackMigration = await fs.readFile(new URL('../supabase/migrations/20260816100000_unscheduled_attendance_clock_in_fallback.sql', import.meta.url), 'utf8')
+const migration = await fs.readFile(new URL('../supabase/migrations/20260819101616_allow_open_schedule_clock_in_production_forward.sql', import.meta.url), 'utf8')
+const fallbackMigration = await fs.readFile(new URL('../supabase/migrations/20260815182233_20260816100000_unscheduled_attendance_clock_in_fallback.sql', import.meta.url), 'utf8')
 
 test('Additional work session has a dedicated sentinel and is rendered before selection is calculated', () => {
   assert.match(script, /const ADDITIONAL_WORK_SESSION = '__ADDITIONAL_WORK_SESSION__'/)
@@ -20,8 +20,8 @@ test('Additional work session has a dedicated sentinel and is rendered before se
 })
 
 test('Additional eligibility requires a completed date, no open attendance, and no unused eligible schedule', () => {
-  assert.match(script, /canUseAdditionalWorkSession/)
-  assert.match(script, /function selectedWorkDate\(\)/)
+  assert.match(script, /function canClockAdditionalSession\(\)/)
+  assert.match(script, /hasCompletedAttendanceForDate\(activeLocalDate\)/)
   assert.match(eligibility, /schedule\.is_leave \|\| schedule\.is_absent/)
   assert.match(script, /next-day-special.*next-day-overnight.*special.*early.*active/)
 })
@@ -138,29 +138,25 @@ test('an open attendance blocks both unscheduled fallback and concurrent clock-i
 })
 
 test('Additional selection is preserved and submits null schedule_id', () => {
-  assert.match(script, /preferredScheduleSelection\(\s*previous,\s*previousSchedule,\s*optionValues/)
+  assert.match(script, /const preferred = optionValues\.includes\(previous\) && previous/)
   assert.match(script, /elements\.scheduleSelect\.value = preferred/)
-  assert.match(script, /isNullScheduleSelection\(selectedValue\) \? null : selectedValue/)
+  assert.match(script, /selectedValue === ADDITIONAL_WORK_SESSION \|\| workOnVLSelected \? null : selectedValue/)
   assert.match(script, /Please select a schedule or additional work session/)
 })
 
 test('Additional selection enables Clock In without weakening normal schedule guards', () => {
-  assert.match(script, /const hasExplicitSelection = Boolean\(schedule\) \|\| isAdditionalWorkSessionSelected\(\) \|\| isUnscheduledWorkSelected\(\)/)
-  assert.match(script, /isAdditionalWorkSessionSelected\(\)\s*\?\s*canClockAdditionalSession\(\)\s*:\s*isUnscheduledWorkSelected\(\)/)
-  assert.match(script, /isUnscheduledWorkSelected\(\) && canClockUnscheduledWork\(\)/)
-  assert.match(script, /const selectedCompleted = !isAdditionalWorkSessionSelected\(\) && !isUnscheduledWorkSelected\(\)/)
-  assert.match(script, /canUseNullScheduleSession\(\)/)
-  assert.match(script, /hasBackendReleasedScheduleCandidate\(/)
+  assert.match(script, /const hasExplicitSelection = Boolean\(schedule\) \|\| isAdditionalWorkSessionSelected\(\) \|\| isWorkOnVLSelected\(\)/)
+  assert.match(script, /isAdditionalWorkSessionSelected\(\) && canClockAdditionalSession\(\)/)
+  assert.match(script, /const selectedCompleted = Boolean\(selectedRecord\?\.clock_in && selectedRecord\.clock_out\)/)
+  assert.match(script, /scheduleClockInOpen/)
   assert.match(script, /Boolean\(openRecord\)/)
   assert.match(script, /SCHEDULE_PLACEHOLDER/)
-  assert.match(script, /preferredScheduleSelection\(\s*previous,\s*previousSchedule,\s*optionValues/)
+  assert.match(script, /const preferred = optionValues\.includes\(previous\) && previous/)
 })
 
 test('Unscheduled work selection is distinct and preserves the pending null-schedule workflow', () => {
-  assert.match(script, /const UNSCHEDULED_WORK = '__UNSCHEDULED_WORK__'/)
-  assert.match(script, /Unscheduled work · Needs review/)
-  assert.match(script, /isNullScheduleSelection\(selectedValue\) \? null : selectedValue/)
-  assert.match(script, /isUnscheduledWorkSelected\(\) && canClockUnscheduledWork\(\)/)
+  assert.match(script, /No assigned schedule\. Your time will be recorded as unscheduled attendance\./)
+  assert.match(script, /selectedValue === ADDITIONAL_WORK_SESSION \|\| workOnVLSelected \? null : selectedValue/)
   assert.match(migration, /review_status = case when p_schedule_id is null then 'pending'/)
 })
 

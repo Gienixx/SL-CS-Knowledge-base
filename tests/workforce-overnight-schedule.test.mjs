@@ -48,3 +48,12 @@ test('weekly-template overnight schedules normalize and use the next-day offset'
   assert.match(schedulesClient, /zonedDateTimeToIso\(`\$\{targetEndDate\}T\$\{endTime\}`, timezone\)/)
   assert.match(schedulesClient, /p_shift_end: targetEnd/)
 })
+
+test('schedule management labels the workforce work date and complete overnight interval', async () => {
+  const page = await readFile(new URL('../workforce.html', import.meta.url), 'utf8')
+  assert.match(page, /Work Date \(America\/New_York\)/)
+  assert.match(page, /shift intervals below use the workforce timezone: <strong>America\/New_York<\/strong>/)
+  assert.match(schedulesClient, /if \(startDate !== endDate\)/)
+  assert.match(schedulesClient, /dateTimeFormatter\.format\(start\)/)
+  assert.match(schedulesClient, /dateTimeFormatter\.format\(end\)/)
+})

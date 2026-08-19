@@ -3,7 +3,8 @@ import { readFile } from 'node:fs/promises'
 import test from 'node:test'
 
 const read = path => readFile(new URL(`../${path}`, import.meta.url), 'utf8')
-const migrationPath = 'supabase/migrations/20260815162836_fix_attendance_correction_structured_totals.sql'
+const migrationPath = 'supabase/migrations/20260819162317_restore_constraint_safe_attendance_corrections.sql'
+const triggerMigrationPath = 'supabase/migrations/20260815165525_fix_attendance_correction_structured_totals.sql'
 
 const jean = {
   id: 'cedcdedd-d4d1-4948-ba49-ed0a82d59408',
@@ -34,6 +35,7 @@ test('correction RPC enters a constraint-safe state before recalculation', async
   assert.match(sql, /total_worked_minutes = 0/)
   assert.match(sql, /v_new := public\.workforce_recalculate_attendance\(v_new\.id\)/)
   assert.match(sql, /v_new\.total_worked_minutes < v_new\.regular_minutes \+ v_new\.total_overtime_minutes/)
+  assert.match(sql, /exception when others then[\s\S]*set_config\('workforce\.correction_recalculation', 'false', true\)/)
 })
 
 test('correction preserves capture timestamps and existing history/audit contracts', async () => {
@@ -51,13 +53,17 @@ test('correction preserves capture timestamps and existing history/audit contrac
 })
 
 test('transaction-local trigger bypass preserves ordinary attendance storage behavior', async () => {
-  const sql = await read(migrationPath)
+  const [sql, triggerSql] = await Promise.all([
+    read(migrationPath),
+    read(triggerMigrationPath)
+  ])
 
-  assert.match(sql, /current_setting\('workforce\.correction_recalculation', true\)/)
-  assert.match(sql, /if not v_correction_recalculation then/)
+  assert.match(triggerSql, /current_setting\('workforce\.correction_recalculation', true\)/)
+  assert.match(triggerSql, /if not v_correction_recalculation then/)
+  assert.match(sql, /set_config\('workforce\.correction_recalculation', 'true', true\)/)
   assert.match(sql, /set_config\('workforce\.correction_recalculation', 'false', true\)/)
-  assert.match(sql, /new\.total_worked_minutes := floor/)
-  assert.match(sql, /new\.total_worked_minutes := 0/)
+  assert.match(triggerSql, /new\.total_worked_minutes := floor/)
+  assert.match(triggerSql, /new\.total_worked_minutes := 0/)
 })
 
 test('correction remains atomic when validation or recalculation raises', async () => {
@@ -78,4 +84,28 @@ test('all correction categories use the same constraint-safe RPC path', async ()
   assert.match(sql, /p_schedule_id uuid default null/)
   assert.match(sql, /review_status = 'corrected'/)
   assert.match(sql, /schedule_id = coalesce\(p_schedule_id, schedule_id\)/)
+})
+
+test('Alen schedule reassignment and midnight correction retain the expected classification contract', async () => {
+  const sql = await read(migrationPath)
+  const scheduleStart = new Date('2026-08-17T00:00:00.000Z')
+  const scheduleEnd = new Date('2026-08-17T08:00:00.000Z')
+  const billedClockIn = new Date('2026-08-17T03:50:00.000Z')
+  const billedClockOut = new Date('2026-08-17T05:50:00.000Z')
+  const regularMinutes = Math.floor((billedClockOut - billedClockIn) / 60000)
+  const lateMinutes = Math.floor((billedClockIn - scheduleStart) / 60000)
+  const undertimeMinutes = Math.floor((scheduleEnd - billedClockOut) / 60000)
+
+  assert.equal(regularMinutes, 120)
+  assert.equal(lateMinutes, 230)
+  assert.equal(undertimeMinutes, 130)
+  assert.match(sql, /schedule_id = coalesce\(p_schedule_id, schedule_id\)/)
+  assert.match(sql, /previous_schedule_id, new_schedule_id/)
+  assert.match(sql, /v_old\.schedule_id, v_new\.schedule_id/)
+  assert.match(sql, /pre_shift_overtime_minutes = null/)
+  assert.match(sql, /regular_minutes = null/)
+  assert.match(sql, /post_shift_overtime_minutes = null/)
+  assert.match(sql, /v_new := public\.workforce_recalculate_attendance\(v_new\.id\)/)
+  assert.match(sql, /minutes_late = 0/)
+  assert.match(sql, /undertime_minutes = 0/)
 })
