@@ -65,7 +65,11 @@ let attendanceQuickFilter = 'all'
 let pendingDelete = null
 
 function errorMessage(error) {
-  return error?.message || 'An unexpected error occurred.'
+  const message = error?.message || ''
+  if (/attendance_structured_totals_check/i.test(message)) {
+    return 'The correction could not be applied because the recalculated attendance totals were inconsistent. Review the billed timestamps and assigned shift, then try again.'
+  }
+  return message || 'An unexpected error occurred.'
 }
 
 function setMessage(element, text, type = '') {

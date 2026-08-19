@@ -25,6 +25,7 @@ test('correction submit handles a valid overnight billed correction', async () =
   const toIso = Function(
     `const WORKFORCE_TIMEZONE = 'America/New_York'\n${timezoneSource}\n${dateTimeSource}\nreturn dateTimeLocalToIso`
   )()
+  const errorMessage = Function(`${errorMessageSource}\nreturn errorMessage`)()
 
   assert.equal(validate({
     attendanceId: 'attendance-1',
@@ -38,6 +39,8 @@ test('correction submit handles a valid overnight billed correction', async () =
   assert.equal(toIso('2026-08-16T15:00'), '2026-08-16T19:00:00.000Z')
   assert.equal(toIso('2026-08-17T06:00'), '2026-08-17T10:00:00.000Z')
   assert.equal(toIso('2026-08-17T19:00'), '2026-08-17T23:00:00.000Z')
+  assert.equal(toIso('2026-08-17T01:50'), '2026-08-17T05:50:00.000Z')
+  assert.equal(toIso('2026-08-17T13:50'), '2026-08-17T17:50:00.000Z')
   assert.match(page, /id="teamAttendanceCorrectionForm" class="wf-form" novalidate/)
   assert.match(page, /New · America\/New_York/)
   assert.match(page, /Work date \(America\/New_York\)/)
@@ -46,9 +49,26 @@ test('correction submit handles a valid overnight billed correction', async () =
   assert.doesNotMatch(page, /id="teamAttendanceCorrectionSubmit"[^>]*disabled/)
   assert.match(script, /void handleCorrectionSubmit\(correctionMessage\)/)
   assert.match(script, /supabase\.rpc\(rpcName, rpcParams\)/)
+  assert.match(script, /p_new_clock_in: dateTimeLocalToIso\(newClockIn\)/)
+  assert.match(script, /p_new_clock_out: dateTimeLocalToIso\(newClockOut\)/)
+  assert.match(script, /workforce_assign_attendance_schedule/)
+  assert.match(script, /workforce_correct_attendance/)
+  assert.match(errorMessageSource, /attendance_structured_totals_check/)
+  assert.equal(errorMessage({ message: 'new row for relation "attendance" violates check constraint "attendance_structured_totals_check"' }), 'The correction could not be applied because the recalculated attendance totals were inconsistent. Review the billed timestamps and assigned shift, then try again.')
   const correctionHandler = script.match(/async function handleCorrectionSubmit\([\s\S]*?\r?\n\}\r?\n\r?\nasync function initialize/)?.[0]
   assert.ok(correctionHandler, 'correction submit handler should remain independently inspectable')
   assert.doesNotMatch(correctionHandler, /deleteForm/)
+})
+
+test('correction reports a clear error for a constraint failure instead of exposing database text', async () => {
+  const script = await read('scripts/team-attendance.js')
+  const errorMessageSource = functionSource(script, 'errorMessage', 'error')
+  const errorMessage = Function(`${errorMessageSource}\nreturn errorMessage`)()
+
+  assert.equal(
+    errorMessage({ message: 'new row for relation "attendance" violates check constraint "attendance_structured_totals_check"' }),
+    'The correction could not be applied because the recalculated attendance totals were inconsistent. Review the billed timestamps and assigned shift, then try again.'
+  )
 })
 
 test('correction validation reports invalid or reversed billed timestamps', async () => {

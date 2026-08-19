@@ -252,7 +252,7 @@ test('Team Attendance uses the compact card design and paginates five records at
   assert.match(styles, /\.team-attendance-record-mid \.team-attendance-meta:nth-child\(n\+2\) strong\{font-family:'IBM Plex Mono','Courier New',monospace/)
   assert.match(styles, /#teamAttendanceCorrectionModal \.team-attendance-correction-dialog\{[^}]*width:min\(100%,620px\)/)
   assert.match(styles, /#teamAttendanceCorrectionModal \.wf-dialog-header h2\{[^}]*font-family:'Poppins'/)
-  assert.match(page, /styles\/team-attendance\.css\?v=14/)
+  assert.match(page, /styles\/team-attendance\.css\?v=15/)
   assert.match(styles, /#teamAttendanceCorrectionModal \.team-attendance-correction-dialog\{[^}]*background:var\(--site-surface-solid\)/)
   assert.match(styles, /#teamAttendanceCorrectionModal \.wf-control\{[^}]*background:var\(--site-surface-solid\)[^}]*color:var\(--site-text\)/)
   assert.match(styles, /#teamAttendanceCorrectionModal \.wf-dialog-actions #teamAttendanceCorrectionSubmit\{[^}]*background:var\(--site-blue-strong\)/)
@@ -265,7 +265,7 @@ test('Team Attendance shows a compact filtered total billed hours summary', asyn
 
   assert.match(page, /Total billed hours/)
   assert.match(page, /id="teamAttendanceBilledHours"/)
-  assert.match(page, /styles\/team-attendance\.css\?v=14/)
+  assert.match(page, /styles\/team-attendance\.css\?v=15/)
   assert.match(script, /billedHours: document\.getElementById\('teamAttendanceBilledHours'\)/)
   assert.match(script, /attendanceHours\(row\)\.billedMinutes/)
   assert.match(script, /elements\.billedHours\.textContent = formatMinutes/)
@@ -331,7 +331,7 @@ test('Team Attendance does not flag fully classified long overtime records', asy
   const page = await read('team-attendance.html')
   const script = await read('scripts/team-attendance.js')
 
-   assert.match(page, /scripts\/team-attendance\.js\?v=24/)
+  assert.match(page, /scripts\/team-attendance\.js\?v=25/)
   assert.match(script, /const hasUnclassifiedWorkedMinutes = workedMinutes > regularMinutes \+ overtimeMinutes/)
   assert.match(script, /record\.schedule_id && hasUnclassifiedWorkedMinutes/)
   assert.match(script, /if \(overtimeMinutes > 0\) return \{ label: 'Overtime'/)
@@ -389,10 +389,15 @@ test('Step 10 data service enforces permission and supervisor scope', async () =
 })
 
 test('Team Attendance displays correction modal and submits through correction RPC', async () => {
-  const page = await read('team-attendance.html')
-  const script = await read('scripts/team-attendance.js')
+  const [page, script, styles] = await Promise.all([
+    read('team-attendance.html'),
+    read('scripts/team-attendance.js'),
+    read('styles/team-attendance.css')
+  ])
 
   assert.match(page, /id="teamAttendanceCorrectionModal"/)
+  assert.match(page, /team-attendance\.css\?v=15/)
+  assert.match(page, /team-attendance\.js\?v=25/)
   assert.match(page, /class="wf-backdrop" type="button" data-close="teamAttendanceCorrectionModal" aria-label="Close attendance correction dialog"/)
   assert.match(script, /event\.target\.closest\('\.team-attendance-record-actions'\)/)
   assert.match(script, /menu\.open = false/)
@@ -412,6 +417,9 @@ test('Team Attendance displays correction modal and submits through correction R
   assert.match(script, /function handleCorrectionSubmit\(/)
   assert.match(script, /p_new_clock_in: dateTimeLocalToIso\(newClockIn\)/)
   assert.match(script, /p_schedule_id: scheduleId \|\| null/)
+  assert.match(styles, /team-attendance-correction-summary\{display:grid;grid-template-columns:minmax\(0,1fr\) minmax\(0,1fr\) minmax\(0,1\.4fr\)/)
+  assert.match(styles, /teamAttendanceCorrectionSchedule\{width:100%;min-width:0;max-width:100%/)
+  assert.match(styles, /overflow-wrap:anywhere/)
 })
 
 test('Step 10 uses structured calculations and identifies open attendance exceptions', async () => {
