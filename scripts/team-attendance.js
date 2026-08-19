@@ -1326,10 +1326,13 @@ function bindEvents() {
   if (correctionForm) {
     correctionForm.addEventListener('submit', event => {
       event.preventDefault()
-      handleCorrectionSubmit(correctionMessage)
+      void handleCorrectionSubmit(correctionMessage)
     })
   }
-
+  deleteForm?.addEventListener('submit', event => {
+    event.preventDefault()
+    deleteAttendance()
+  })
   document.querySelectorAll('[data-close]').forEach(button => {
     button.addEventListener('click', () => {
       if (button.dataset.close === 'teamAttendanceAddModal') closeAddModal()
@@ -1443,6 +1446,46 @@ function closeCorrectionModal() {
   document.body.classList.remove('modal-open')
 }
 
+function correctionValidationMessage({
+  attendanceId,
+  newClockIn,
+  newClockOut,
+  reasonCode,
+  reasonNotes,
+  billedTimeChanged,
+  scheduleChanged
+}) {
+  if (!attendanceId) return 'Attendance record is missing.'
+  if (!reasonCode) return 'Select a correction reason.'
+
+  if (billedTimeChanged && (!newClockIn || !newClockOut)) {
+    return 'Enter both billed clock-in and billed clock-out.'
+  }
+
+  let clockInIso = null
+  let clockOutIso = null
+  try {
+    clockInIso = dateTimeLocalToIso(newClockIn)
+    clockOutIso = dateTimeLocalToIso(newClockOut)
+  } catch (error) {
+    return errorMessage(error)
+  }
+
+  if (clockInIso && clockOutIso && clockOutIso < clockInIso) {
+    return 'Billed clock-out cannot be earlier than billed clock-in.'
+  }
+
+  if ((billedTimeChanged || scheduleChanged) && !reasonNotes.trim()) {
+    return 'Remarks are required when billed time or schedule changes.'
+  }
+
+  if (reasonCode === 'other' && !reasonNotes.trim()) {
+    return 'Notes are required when the reason is Other.'
+  }
+
+  return ''
+}
+
 async function handleCorrectionSubmit(messageElement) {
   const modal = document.getElementById('teamAttendanceCorrectionModal')
   if (!modal) return
@@ -1457,33 +1500,22 @@ async function handleCorrectionSubmit(messageElement) {
   const reasonNotes = document.getElementById('teamAttendanceReasonNotes').value
   const adminNotes = document.getElementById('teamAttendanceAdminNotes').value
 
-  if (!attendanceId) {
-    setMessage(messageElement, 'Attendance record is missing.', 'error')
-    return
-  }
-
   const currentBilledClockIn = toDateTimeLocal(modal.dataset.billedClockIn)
   const currentBilledClockOut = toDateTimeLocal(modal.dataset.billedClockOut)
   const billedTimeChanged = newClockIn !== currentBilledClockIn || newClockOut !== currentBilledClockOut
   const scheduleChanged = currentScheduleId !== scheduleId && Boolean(scheduleId)
 
-  if ((billedTimeChanged || scheduleChanged) && !reasonCode) {
-    setMessage(messageElement, 'Select a correction reason.', 'error')
-    return
-  }
-
-  deleteForm?.addEventListener('submit', event => {
-    event.preventDefault()
-    deleteAttendance()
+  const validationMessage = correctionValidationMessage({
+    attendanceId,
+    newClockIn,
+    newClockOut,
+    reasonCode,
+    reasonNotes,
+    billedTimeChanged,
+    scheduleChanged
   })
-
-  if ((billedTimeChanged || scheduleChanged) && !reasonNotes.trim()) {
-    setMessage(messageElement, 'Remarks are required when billed time or schedule changes.', 'error')
-    return
-  }
-
-  if (reasonCode === 'other' && !reasonNotes.trim()) {
-    setMessage(messageElement, 'Notes are required when the reason is Other.', 'error')
+  if (validationMessage) {
+    setMessage(messageElement, validationMessage, 'error')
     return
   }
 
@@ -1493,19 +1525,26 @@ async function handleCorrectionSubmit(messageElement) {
   const rpcName = scheduleOnlyChange
     ? 'workforce_assign_attendance_schedule'
     : 'workforce_correct_attendance'
-  const rpcParams = rpcName === 'workforce_assign_attendance_schedule'
-    ? { p_attendance_id: attendanceId, p_schedule_id: scheduleId, p_reason_code: reasonCode, p_reason_notes: reasonNotes || null }
-    : {
-        p_attendance_id: attendanceId,
-        p_new_clock_in: dateTimeLocalToIso(newClockIn),
-        p_new_clock_out: dateTimeLocalToIso(newClockOut),
-        p_new_status: newStatus,
-        p_schedule_id: scheduleId || null,
-        p_admin_notes: adminNotes || null,
-        p_reason_code: reasonCode,
-        p_reason_notes: reasonNotes || null
-      }
-  const { data, error } = await supabase.rpc(rpcName, rpcParams)
+  let rpcParams
+  try {
+    rpcParams = rpcName === 'workforce_assign_attendance_schedule'
+      ? { p_attendance_id: attendanceId, p_schedule_id: scheduleId, p_reason_code: reasonCode, p_reason_notes: reasonNotes || null }
+      : {
+          p_attendance_id: attendanceId,
+          p_new_clock_in: dateTimeLocalToIso(newClockIn),
+          p_new_clock_out: dateTimeLocalToIso(newClockOut),
+          p_new_status: newStatus,
+          p_schedule_id: scheduleId || null,
+          p_admin_notes: adminNotes || null,
+          p_reason_code: reasonCode,
+          p_reason_notes: reasonNotes || null
+        }
+  } catch (error) {
+    setMessage(messageElement, errorMessage(error), 'error')
+    return
+  }
+
+  const { error } = await supabase.rpc(rpcName, rpcParams)
 
   if (error) {
     setMessage(messageElement, errorMessage(error), 'error')
