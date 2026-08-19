@@ -5,12 +5,12 @@
 begin;
 
 drop index if exists public.attendance_user_schedule_unique;
-create unique index public.attendance_user_schedule_unique
+create unique index attendance_user_schedule_unique
   on public.attendance (user_id, schedule_id)
   where schedule_id is not null and voided_at is null;
 
 drop index if exists public.attendance_one_open_session_per_user_idx;
-create unique index public.attendance_one_open_session_per_user_idx
+create unique index attendance_one_open_session_per_user_idx
   on public.attendance (user_id)
   where clock_in is not null and clock_out is null and voided_at is null;
 
