@@ -101,6 +101,19 @@ body:has(.team-attendance-page){background:#eef1f5}
   color:#fff;
 }
 
+html[data-site-theme="light"] .team-attendance-stat:nth-child(1) strong{
+  color:var(--ta-ink);
+}
+
+html[data-site-theme="light"] .team-attendance-stat:nth-child(1) span{
+  color:var(--ta-muted);
+}
+
+html[data-site-theme="light"] .team-attendance-stat:nth-child(2) strong,
+html[data-site-theme="light"] .team-attendance-stat:nth-child(2) span{
+  color:var(--ta-amber);
+}
+
 .team-attendance-stat:nth-child(3) strong,.team-attendance-stat:nth-child(3) span{
   color:var(--ta-red);
 }
