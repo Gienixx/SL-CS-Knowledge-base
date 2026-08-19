@@ -148,4 +148,5 @@ end;
 $$;
 
 revoke all on function public.workforce_admin_save_schedule(uuid, uuid, date, integer, timestamptz, timestamptz, text, text, boolean, boolean, text, text) from public;
+
 grant execute on function public.workforce_admin_save_schedule(uuid, uuid, date, integer, timestamptz, timestamptz, text, text, boolean, boolean, text, text) to authenticated, service_role;

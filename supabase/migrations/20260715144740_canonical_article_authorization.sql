@@ -25,12 +25,14 @@ as $$
 $$;
 
 revoke all on function public.current_user_can_edit_articles() from public, anon;
+
 grant execute on function public.current_user_can_edit_articles() to authenticated, service_role;
 
 comment on function public.current_user_can_edit_articles() is
   'Canonical article authorization: active linked workforce profile with an explicit edit_articles grant.';
 
 drop policy if exists "Editors can insert articles" on public.articles;
+
 create policy "Editors can insert articles"
   on public.articles for insert to authenticated
   with check (public.current_user_can_edit_articles());

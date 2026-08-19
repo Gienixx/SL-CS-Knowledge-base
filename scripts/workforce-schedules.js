@@ -3,6 +3,7 @@ import {
   hasWorkforcePermission,
   loadCurrentWorkforceAccess
 } from './workforce-permissions.js?v=1'
+import { scheduleEndDate } from './workforce-schedule-times.js?v=1'
 
 const section = document.getElementById('scheduleManagementSection')
 
@@ -536,10 +537,12 @@ if (section) {
     const mode = scheduleFrequency.value
     const isOneDay = mode === 'one'
     const showDays = mode === 'weekdays' || mode === 'custom'
+    const startTime = document.getElementById('scheduleStart').value
+    const endTime = document.getElementById('scheduleEnd').value
 
-    if (isOneDay) scheduleToDate.value = startDate
+    if (isOneDay) scheduleToDate.value = scheduleEndDate(startDate, startTime, endTime)
     scheduleToDate.disabled = isOneDay || scheduleFrequency.disabled
-    scheduleEndDateLabel.textContent = isOneDay ? 'End Date (same as start)' : 'End Date'
+    scheduleEndDateLabel.textContent = 'End Date'
     scheduleDayPicker.hidden = !showDays
 
     scheduleDayInputs.forEach(input => {
@@ -670,7 +673,10 @@ if (section) {
     const scheduleId = document.getElementById('scheduleId').value || null
     const userId = document.getElementById('scheduleEmployee').value
     const shiftDate = document.getElementById('scheduleDate').value
-    const toDate = scheduleToDate.value
+    const startTime = document.getElementById('scheduleStart').value
+    const endTime = document.getElementById('scheduleEnd').value
+    const expectedOneDayEndDate = scheduleEndDate(shiftDate, startTime, endTime)
+    const toDate = scheduleFrequency.value === 'one' ? expectedOneDayEndDate : scheduleToDate.value
     const sequence = Number(document.getElementById('scheduleSequence').value)
     const timezone = normalizeText(document.getElementById('scheduleTimezone').value) || 'America/New_York'
     const status = document.getElementById('scheduleStatus').value
@@ -699,8 +705,8 @@ if (section) {
       return
     }
 
-    if (scheduleFrequency.value === 'one' && toDate !== shiftDate) {
-      setMessage(formMessage, 'One-day schedules must use the same Start Date and End Date.', 'error')
+    if (scheduleFrequency.value === 'one' && toDate !== expectedOneDayEndDate) {
+      setMessage(formMessage, 'One-day schedules must use the calculated same-day or overnight End Date.', 'error')
       return
     }
 
@@ -733,8 +739,6 @@ if (section) {
       return
     }
 
-    const startTime = document.getElementById('scheduleStart').value
-    const endTime = document.getElementById('scheduleEnd').value
     if (!isRestDay && !isLeave && !isAbsent && !isOpenSchedule && (!startTime || !endTime)) {
       setMessage(formMessage, 'Shift start and end times are required.', 'error')
       return
@@ -749,7 +753,7 @@ if (section) {
         const targetStart = isRestDay || isLeave || isAbsent || isOpenSchedule
           ? null
           : zonedDateTimeToIso(`${targetDate}T${startTime}`, timezone)
-        const targetEndDate = endTime <= startTime ? addDays(targetDate, 1) : targetDate
+        const targetEndDate = scheduleEndDate(targetDate, startTime, endTime)
         const targetEnd = isRestDay || isLeave || isAbsent || isOpenSchedule
           ? null
           : zonedDateTimeToIso(`${targetEndDate}T${endTime}`, timezone)
@@ -882,6 +886,11 @@ if (section) {
     createButton.addEventListener('click', () => openSchedule())
     scheduleFrequency.addEventListener('change', updateScheduleFrequency)
     document.getElementById('scheduleDate').addEventListener('change', updateScheduleFrequency)
+    ;['scheduleStart', 'scheduleEnd'].forEach(id => {
+      const input = document.getElementById(id)
+      input.addEventListener('change', updateScheduleFrequency)
+      input.addEventListener('input', updateScheduleFrequency)
+    })
     scheduleDayInputs.forEach(input => input.addEventListener('change', updateScheduleFrequency))
     viewSelect.addEventListener('change', loadScheduleData)
     teamFilter.addEventListener('change', () => {

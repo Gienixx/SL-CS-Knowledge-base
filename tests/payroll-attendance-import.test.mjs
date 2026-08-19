@@ -5,11 +5,18 @@ import test from 'node:test'
 
 const read = path => readFile(new URL(`../${path}`, import.meta.url), 'utf8')
 
-const migrationPath =
-  'supabase/migrations/20260724112455_payroll_attendance_import.sql'
+const migrationPaths = [
+  'supabase/migrations/20260724112455_payroll_attendance_import.sql',
+  'supabase/migrations/20260808090150_payroll_import_billed_timestamps.sql',
+  'supabase/migrations/20260808090459_payroll_import_billed_snapshot_fields.sql',
+  'supabase/migrations/20260808090955_employee_scoped_payroll_attendance_reimport.sql',
+  'supabase/migrations/20260808093641_latest_snapshot_recalculation_transition.sql'
+]
+
+const readImportMigrations = () => Promise.all(migrationPaths.map(read)).then(parts => parts.join('\n'))
 
 test('attendance receives a monotonic payroll source version', async () => {
-  const migration = await read(migrationPath)
+  const migration = await readImportMigrations()
 
   assert.match(
     migration,
@@ -30,7 +37,7 @@ test('attendance receives a monotonic payroll source version', async () => {
 })
 
 test('payroll attendance snapshots are append-only and versioned', async () => {
-  const migration = await read(migrationPath)
+  const migration = await readImportMigrations()
 
   assert.match(
     migration,
@@ -47,7 +54,7 @@ test('payroll attendance snapshots are append-only and versioned', async () => {
 })
 
 test('attendance import accepts only payroll-ready records through an authorized RPC', async () => {
-  const migration = await read(migrationPath)
+  const migration = await readImportMigrations()
 
   assert.match(
     migration,
@@ -79,7 +86,7 @@ test('attendance import accepts only payroll-ready records through an authorized
 })
 
 test('employee attendance reimport reuses the import body with a Draft-only record scope', async () => {
-  const migration = await read(migrationPath)
+  const migration = await readImportMigrations()
 
   assert.match(migration, /payroll_import_employee_attendance\(\s*p_payroll_record_id uuid\s*\)/)
   assert.match(migration, /payroll_import_attendance\(v_period_id, p_payroll_record_id\)/)
@@ -91,9 +98,9 @@ test('employee attendance reimport reuses the import body with a Draft-only reco
 })
 
 test('employee reimport clears only the stale recalculation flag after latest snapshots match', async () => {
-  const migration = await read(migrationPath)
+  const migration = await readImportMigrations()
 
-  assert.match(migration, /set requires_recalculation = false/)
+  assert.match(migration, /set\s+requires_recalculation\s*=\s*false/)
   assert.match(migration, /readiness\.is_payroll_ready/)
   assert.match(
     migration,
@@ -105,12 +112,12 @@ test('employee reimport clears only the stale recalculation flag after latest sn
 
 test('attendance import snapshots approved billed timestamps only', async () => {
   const [importMigration, readinessMigration] = await Promise.all([
-    read(migrationPath),
+    readImportMigrations(),
     read('supabase/migrations/20260722084820_harden_attendance_payroll_readiness.sql')
   ])
 
-  assert.match(readinessMigration, /billed_clock_in is null then 'missing_clock_in'/)
-  assert.match(readinessMigration, /billed_clock_out is null then 'missing_clock_out'/)
+  assert.match(readinessMigration, /clock_in is null then 'missing_clock_in'/)
+  assert.match(readinessMigration, /clock_out is null then 'missing_clock_out'/)
   assert.match(readinessMigration, /review_status not in \('approved', 'locked'\)/)
   assert.match(importMigration, /attendance_row\.billed_clock_in as billed_clock_in/)
   assert.match(importMigration, /attendance_row\.billed_clock_out as billed_clock_out/)
@@ -120,7 +127,7 @@ test('attendance import snapshots approved billed timestamps only', async () => 
 })
 
 test('changed attendance flags only non-finalized payroll for recalculation', async () => {
-  const migration = await read(migrationPath)
+  const migration = await readImportMigrations()
 
   assert.match(
     migration,

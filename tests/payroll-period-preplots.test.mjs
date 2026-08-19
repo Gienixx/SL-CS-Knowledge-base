@@ -4,7 +4,7 @@ import test from 'node:test'
 
 const read = path => readFile(new URL(`../${path}`, import.meta.url), 'utf8')
 const migrationPath =
-  'supabase/migrations/20260727122715_complete_payroll_period_preplot_approval.sql'
+  'supabase/migrations/20260727123931_complete_payroll_period_preplot_approval.sql'
 
 test('Step 5 supports controlled early payment with a documented override', async () => {
   const [migration, page, script] = await Promise.all([

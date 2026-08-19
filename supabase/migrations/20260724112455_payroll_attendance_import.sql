@@ -26,6 +26,7 @@ end;
 $$;
 
 drop trigger if exists attendance_increment_version on public.attendance;
+
 create trigger attendance_increment_version
 before update on public.attendance
 for each row
@@ -33,6 +34,7 @@ execute function public.workforce_increment_attendance_version();
 
 revoke all on function public.workforce_increment_attendance_version()
   from public, anon, authenticated;
+
 grant execute on function public.workforce_increment_attendance_version()
   to service_role;
 
@@ -61,6 +63,7 @@ $$;
 
 drop trigger if exists payroll_attendance_snapshots_immutable
   on public.payroll_attendance_snapshots;
+
 create trigger payroll_attendance_snapshots_immutable
 before update or delete on public.payroll_attendance_snapshots
 for each row
@@ -68,6 +71,7 @@ execute function public.payroll_prevent_snapshot_mutation();
 
 revoke all on function public.payroll_prevent_snapshot_mutation()
   from public, anon, authenticated;
+
 grant execute on function public.payroll_prevent_snapshot_mutation()
   to service_role;
 
@@ -168,6 +172,7 @@ $$;
 
 drop trigger if exists attendance_flag_payroll_recalculation
   on public.attendance;
+
 create trigger attendance_flag_payroll_recalculation
 after update on public.attendance
 for each row
@@ -175,14 +180,12 @@ execute function public.payroll_flag_changed_attendance();
 
 revoke all on function public.payroll_flag_changed_attendance()
   from public, anon, authenticated;
+
 grant execute on function public.payroll_flag_changed_attendance()
   to service_role;
 
-drop function if exists public.payroll_import_attendance(uuid);
-
-create function public.payroll_import_attendance(
-  p_payroll_period_id uuid,
-  p_payroll_record_id uuid default null
+create or replace function public.payroll_import_attendance(
+  p_payroll_period_id uuid
 )
 returns jsonb
 language plpgsql
@@ -240,21 +243,10 @@ begin
         message = 'Attendance can only be imported into draft or reopened payroll periods.';
   end if;
 
-  if p_payroll_record_id is not null and not exists (
-    select 1
-    from public.payroll_records as selected_record
-    where selected_record.id = p_payroll_record_id
-      and selected_record.payroll_period_id = v_period.id
-      and selected_record.status not in ('finalized', 'void')
-  ) then
-    raise exception using errcode = 'P0002', message = 'Payroll record was not found in this period.';
-  end if;
-
   select count(*)
   into v_employee_record_count
   from public.payroll_records as record
   where record.payroll_period_id = v_period.id
-    and (p_payroll_record_id is null or record.id = p_payroll_record_id)
     and record.status not in ('finalized', 'void');
 
   select
@@ -268,7 +260,6 @@ begin
     on readiness.user_id = record.employee_id
    and readiness.work_date between v_period.period_start and v_period.period_end
   where record.payroll_period_id = v_period.id
-    and (p_payroll_record_id is null or record.id = p_payroll_record_id)
     and record.status not in ('finalized', 'void');
 
   select count(*)
@@ -281,7 +272,6 @@ begin
    and schedule.is_rest_day is false
    and schedule.is_holiday is false
   where record.payroll_period_id = v_period.id
-    and (p_payroll_record_id is null or record.id = p_payroll_record_id)
     and record.status not in ('finalized', 'void')
     and not exists (
       select 1
@@ -297,8 +287,8 @@ begin
       attendance_row.user_id as employee_id,
       attendance_row.schedule_id,
       attendance_row.work_date,
-      attendance_row.billed_clock_in as billed_clock_in,
-      attendance_row.billed_clock_out as billed_clock_out,
+      attendance_row.clock_in,
+      attendance_row.clock_out,
       attendance_row.regular_minutes,
       attendance_row.pre_shift_overtime_minutes,
       attendance_row.post_shift_overtime_minutes,
@@ -316,7 +306,6 @@ begin
       on readiness.id = attendance_row.id
      and readiness.is_payroll_ready
     where record.payroll_period_id = v_period.id
-      and (p_payroll_record_id is null or record.id = p_payroll_record_id)
       and record.status not in ('finalized', 'void')
     for share of attendance_row
   ),
@@ -329,8 +318,6 @@ begin
       work_date,
       clock_in,
       clock_out,
-      billed_clock_in,
-      billed_clock_out,
       regular_minutes,
       pre_shift_overtime_minutes,
       post_shift_overtime_minutes,
@@ -347,10 +334,8 @@ begin
       source.employee_id,
       source.schedule_id,
       source.work_date,
-      source.billed_clock_in,
-      source.billed_clock_out,
-      source.billed_clock_in,
-      source.billed_clock_out,
+      source.clock_in,
+      source.clock_out,
       source.regular_minutes,
       source.pre_shift_overtime_minutes,
       source.post_shift_overtime_minutes,
@@ -384,32 +369,7 @@ begin
    and attendance_row.attendance_version = snapshot.attendance_version
   join public.payroll_records as record
     on record.id = snapshot.payroll_record_id
-  where record.payroll_period_id = v_period.id
-    and (p_payroll_record_id is null or record.id = p_payroll_record_id);
-
-  update public.payroll_records as record
-  set requires_recalculation = false,
-      recalculation_reason = null,
-      updated_at = now()
-  where record.payroll_period_id = v_period.id
-    and (p_payroll_record_id is null or record.id = p_payroll_record_id)
-    and record.status not in ('finalized', 'void')
-    and not exists (
-      select 1
-      from public.attendance as attendance_row
-      join public.workforce_attendance_payroll_readiness as readiness
-        on readiness.id = attendance_row.id
-       and readiness.is_payroll_ready
-      where attendance_row.user_id = record.employee_id
-        and attendance_row.work_date between v_period.period_start and v_period.period_end
-        and not exists (
-          select 1
-          from public.payroll_attendance_snapshots as snapshot
-          where snapshot.payroll_record_id = record.id
-            and snapshot.attendance_id = attendance_row.id
-            and snapshot.attendance_version = attendance_row.attendance_version
-        )
-    );
+  where record.payroll_period_id = v_period.id;
 
   insert into public.payroll_audit_logs (
     actor_user_id,
@@ -455,41 +415,6 @@ begin
     'missing_attendance_count', v_missing_attendance_count,
     'imported_at', now()
   );
-end;
-$$;
-
-create function public.payroll_import_attendance(
-  p_payroll_period_id uuid
-)
-returns jsonb
-language sql
-security definer
-set search_path = ''
-as $$
-  select public.payroll_import_attendance(p_payroll_period_id, null::uuid);
-$$;
-
-create function public.payroll_import_employee_attendance(
-  p_payroll_record_id uuid
-)
-returns jsonb
-language plpgsql
-security definer
-set search_path = ''
-as $$
-declare
-  v_period_id uuid;
-begin
-  select record.payroll_period_id
-    into v_period_id
-  from public.payroll_records as record
-  where record.id = p_payroll_record_id;
-
-  if v_period_id is null then
-    raise exception 'Payroll record not found.';
-  end if;
-
-  return public.payroll_import_attendance(v_period_id, p_payroll_record_id);
 end;
 $$;
 
@@ -568,24 +493,19 @@ $$;
 
 revoke all on function public.payroll_import_attendance(uuid)
   from public, anon;
-revoke all on function public.payroll_import_attendance(uuid, uuid)
-  from public, anon;
-revoke all on function public.payroll_import_employee_attendance(uuid)
-  from public, anon;
+
 revoke all on function public.payroll_get_period_attendance_import_status(uuid)
   from public, anon;
 
 grant execute on function public.payroll_import_attendance(uuid)
   to authenticated, service_role;
-grant execute on function public.payroll_import_attendance(uuid, uuid)
-  to authenticated, service_role;
-grant execute on function public.payroll_import_employee_attendance(uuid)
-  to authenticated, service_role;
+
 grant execute on function public.payroll_get_period_attendance_import_status(uuid)
   to authenticated, service_role;
 
 comment on function public.payroll_import_attendance(uuid) is
   'Imports only payroll-ready attendance into append-only versioned snapshots for a draft or reopened payroll period.';
+
 comment on function public.payroll_get_period_attendance_import_status(uuid) is
   'Returns attendance snapshot coverage and recalculation flags without exposing rate or pay amounts.';
 

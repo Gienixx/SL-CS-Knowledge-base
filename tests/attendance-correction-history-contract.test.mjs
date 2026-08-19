@@ -27,8 +27,8 @@ test('attendance correction history exposes explicit schedule transitions', asyn
 test('correction RPCs require reasons, Other notes, and write structured plus summary audit history', async () => {
   const [correction, billed, assignment] = await Promise.all([
     read('supabase/migrations/20260714092037_fix_attendance_correction_totals.sql'),
-    read('supabase/migrations/20260808141000_fix_billed_attendance_correction.sql'),
-    read('supabase/migrations/20260810100000_unscheduled_attendance_schedule_assignment.sql')
+    read('supabase/migrations/20260808105046_fix_billed_attendance_correction.sql'),
+    read('supabase/migrations/20260810040023_unscheduled_attendance_schedule_assignment.sql')
   ])
 
   for (const sql of [correction, billed, assignment]) {

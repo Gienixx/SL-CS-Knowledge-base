@@ -293,6 +293,7 @@ $$;
 revoke all on function public.workforce_admin_save_employee(
   uuid, text, text, text, text, uuid, uuid, text, jsonb, text
 ) from public, anon;
+
 grant execute on function public.workforce_admin_save_employee(
   uuid, text, text, text, text, uuid, uuid, text, jsonb, text
 ) to authenticated;
@@ -304,6 +305,7 @@ alter function public.workforce_service_create_invitation(
 revoke all on function public.workforce_service_create_invitation_legacy_payroll_bridge(
   uuid, uuid, text, text, text, jsonb, uuid, uuid
 ) from public, anon, authenticated;
+
 grant execute on function public.workforce_service_create_invitation_legacy_payroll_bridge(
   uuid, uuid, text, text, text, jsonb, uuid, uuid
 ) to service_role;
@@ -386,6 +388,7 @@ $$;
 revoke all on function public.workforce_service_create_invitation(
   uuid, uuid, text, text, text, jsonb, uuid, uuid
 ) from public, anon, authenticated;
+
 grant execute on function public.workforce_service_create_invitation(
   uuid, uuid, text, text, text, jsonb, uuid, uuid
 ) to service_role;

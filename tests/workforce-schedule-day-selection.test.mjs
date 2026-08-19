@@ -10,7 +10,7 @@ test('create schedule opens one consolidated event-style form', () => {
   assert.match(client, /createButton\.addEventListener\('click', \(\) => openSchedule\(\)\)/)
   assert.match(html, /<span>Start Date<\/span>[\s\S]*id="scheduleDate" type="date"/)
   assert.match(html, /<span>Start Time<\/span>[\s\S]*id="scheduleStart" type="time"/)
-  assert.match(html, /id="scheduleEndDateLabel">End Date \(same as start\)<\/span>[\s\S]*id="scheduleToDate" type="date"/)
+  assert.match(html, /id="scheduleEndDateLabel">End Date<\/span>[\s\S]*id="scheduleToDate" type="date"/)
   assert.match(html, /<span>End Time<\/span>[\s\S]*id="scheduleEnd" type="time"/)
 })
 
@@ -20,7 +20,7 @@ test('schedule frequency supports all shell creation modes', () => {
   assert.match(html, /value="weekdays">Weekdays \(Mon–Fri\)/)
   assert.match(html, /value="custom">Custom days/)
   assert.match(client, /scheduleFrequency\.addEventListener\('change', updateScheduleFrequency\)/)
-  assert.match(client, /if \(isOneDay\) scheduleToDate\.value = startDate/)
+  assert.match(client, /if \(isOneDay\) scheduleToDate\.value = scheduleEndDate\(startDate, startTime, endTime\)/)
 })
 
 test('range modes provide start and end dates with custom weekday controls', () => {
@@ -45,7 +45,7 @@ test('shift start and end use time-only inputs and support overnight shifts', ()
   assert.match(html, /id="scheduleStart" type="time"/)
   assert.match(html, /id="scheduleEnd" type="time"/)
   assert.doesNotMatch(html, /id="schedule(?:Start|End)" type="datetime-local"/)
-  assert.match(client, /const targetEndDate = endTime <= startTime \? addDays\(targetDate, 1\) : targetDate/)
+  assert.match(client, /const targetEndDate = scheduleEndDate\(targetDate, startTime, endTime\)/)
   assert.match(client, /zonedDateTimeToIso\(`\$\{targetDate\}T\$\{startTime\}`/)
 })
 

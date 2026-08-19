@@ -162,8 +162,11 @@ comment on function public.workforce_create_manual_attendance(uuid, date, timest
   'Creates and recalculates an audited manual attendance record for an employee; restricted to active schedule administrators.';
 
 revoke all on function public.workforce_create_manual_attendance(uuid, date, timestamptz, timestamptz, uuid, text, text, text) from public;
+
 revoke all on function public.workforce_create_manual_attendance(uuid, date, timestamptz, timestamptz, uuid, text, text, text) from anon;
+
 revoke all on function public.workforce_create_manual_attendance(uuid, date, timestamptz, timestamptz, uuid, text, text, text) from authenticated;
+
 grant execute on function public.workforce_create_manual_attendance(uuid, date, timestamptz, timestamptz, uuid, text, text, text) to authenticated;
 
 commit;

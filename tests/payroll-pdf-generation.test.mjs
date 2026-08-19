@@ -8,7 +8,7 @@ import {
 } from '../functions/_shared/payslip-pdf.js'
 
 const migrationPath =
-  'supabase/migrations/20260729213543_generate_private_payslip_pdfs.sql'
+  'supabase/migrations/20260729134445_generate_private_payslip_pdfs.sql'
 
 function samplePreview(itemCount = 2) {
   return {

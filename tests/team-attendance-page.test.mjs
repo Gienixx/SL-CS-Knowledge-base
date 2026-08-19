@@ -7,8 +7,8 @@ const migrationPath = 'supabase/migrations-legacy/2026070902_team_attendance_pag
 const manualEntryMigrationPath = 'supabase/migrations/20260714070649_manual_attendance_entry.sql'
 const approvalLockingMigrationPath = 'supabase/migrations/20260717172240_attendance_approval_locking.sql'
 const writeBoundaryMigrationPath = 'supabase/migrations/20260721153218_harden_attendance_write_boundaries.sql'
-const timestampHistoryMigrationPath = 'supabase/migrations/20260806120000_team_attendance_original_timestamps.sql'
-const billedRpcMigrationPath = 'supabase/migrations/20260808113000_expose_billed_attendance_in_team_rpc.sql'
+const timestampHistoryMigrationPath = 'supabase/migrations/20260806111249_team_attendance_original_timestamps.sql'
+const billedRpcMigrationPath = 'supabase/migrations/20260808090046_expose_billed_attendance_in_team_rpc.sql'
 
 test('Team Attendance listing RPC returns billed timestamps without changing its scope contract', async () => {
   const migration = await read(billedRpcMigrationPath)
@@ -182,14 +182,14 @@ test('Team Attendance lets schedule administrators delete an attendance record w
   const page = await read('team-attendance.html')
   const script = await read('scripts/team-attendance.js')
   const migration = await read(writeBoundaryMigrationPath)
+  const visibilityMigration = await read('supabase/migrations/20260813220325_exclude_voided_team_attendance.sql')
 
   assert.match(page, /permanently delete invalid test and timing records/)
   assert.match(script, /access\?\.is_admin === true && hasWorkforcePermission\(access, 'manage_schedules'\)/)
   assert.match(page, /teamAttendanceDeleteModal/)
-  assert.match(script, /openDeleteModal/)
+  assert.match(script, /teamAttendanceDeleteForm/)
+  assert.match(script, /deleteForm\?\.addEventListener\('submit'/)
   assert.match(script, /supabase\.rpc\('workforce_delete_attendance'/)
-  assert.match(script, /supabase\.rpc\('workforce_verify_attendance_void'/)
-  assert.match(script, /voided_at/)
   assert.doesNotMatch(script, /\.from\('attendance'\)\s*\.delete\(/)
   assert.match(script, /Attendance record deleted\./)
   assert.match(migration, /create or replace function public\.workforce_delete_attendance\(/)
@@ -197,6 +197,8 @@ test('Team Attendance lets schedule administrators delete an attendance record w
   assert.match(migration, /workforce_can_manage_user\(v_attendance\.user_id, 'manage_schedules'\)/)
   assert.match(migration, /'attendance_deleted'/)
   assert.match(migration, /revoke all on function public\.workforce_delete_attendance\(uuid, text\)[\s\S]*from public, anon, authenticated/)
+  assert.match(visibilityMigration, /attendance_row\.voided_at is null/)
+  assert.match(script, /review_status === 'voided'/)
 })
 
 test('Team Attendance lets schedule administrators add an audited manual record', async () => {
@@ -279,13 +281,13 @@ test('Team Attendance exposes unscheduled filtering and audited schedule assignm
   const [page, script, migration] = await Promise.all([
     read('team-attendance.html'),
     read('scripts/team-attendance.js'),
-    read('supabase/migrations/20260810100000_unscheduled_attendance_schedule_assignment.sql')
+    read('supabase/migrations/20260810040023_unscheduled_attendance_schedule_assignment.sql')
   ])
   assert.match(page, /id="teamAttendanceUnscheduledFilter"/)
   assert.match(page, />Unscheduled</)
   assert.match(script, /correctButton\.textContent = row\.schedule_id \? 'Edit' : 'Assign Schedule'/)
   assert.match(script, /\.rpc\(rpcName, rpcParams\)/)
-  assert.match(script, /gte\('shift_date'/)
+  assert.match(script, /\.in\('shift_date', correctionScheduleDates\(row\.work_date\)\)/)
   assert.match(migration, /workforce_assign_attendance_schedule/)
   assert.match(migration, /previous_schedule_id/)
   assert.match(migration, /Only published or changed schedules may be assigned/)
@@ -326,7 +328,7 @@ test('Team Attendance does not flag fully classified long overtime records', asy
   const page = await read('team-attendance.html')
   const script = await read('scripts/team-attendance.js')
 
-  assert.match(page, /scripts\/team-attendance\.js\?v=20/)
+  assert.match(page, /scripts\/team-attendance\.js\?v=22/)
   assert.match(script, /const hasUnclassifiedWorkedMinutes = workedMinutes > regularMinutes \+ overtimeMinutes/)
   assert.match(script, /record\.schedule_id && hasUnclassifiedWorkedMinutes/)
   assert.match(script, /if \(overtimeMinutes > 0\) return \{ label: 'Overtime'/)
@@ -402,7 +404,7 @@ test('Team Attendance displays correction modal and submits through correction R
   assert.match(script, /workforce_correct_attendance/)
   assert.match(script, /function openCorrectionModal\(/)
   assert.match(script, /function loadCorrectionSchedules\(/)
-  assert.match(script, /\.gte\('shift_date'/)
+  assert.match(script, /\.in\('shift_date', correctionScheduleDates\(row\.work_date\)\)/)
   assert.match(script, /modal\.dataset\.attendanceId = row\.attendance_id \|\| ''/)
   assert.match(script, /function handleCorrectionSubmit\(/)
   assert.match(script, /p_new_clock_in: dateTimeLocalToIso\(newClockIn\)/)

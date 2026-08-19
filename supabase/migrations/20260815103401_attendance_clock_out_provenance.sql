@@ -67,8 +67,6 @@ begin
 end;
 $$;
 
--- Keep one PostgREST-visible function signature. Having both a zero-argument
--- function and a defaulted overload makes legacy REST calls ambiguous.
 drop function if exists public.workforce_clock_out();
 
 create or replace function public.workforce_clock_out(
@@ -146,12 +144,9 @@ begin
 end;
 $$;
 
--- The defaulted parameters preserve legacy zero-argument SQL/REST callers;
--- they are recorded as unknown source.
 revoke all on function public.workforce_clock_out(text, uuid, uuid) from public, anon, authenticated;
 grant execute on function public.workforce_clock_out(text, uuid, uuid) to authenticated, service_role;
 
--- Admin Assist remains server-labelled and uses the same audit trigger metadata.
 create or replace function public.workforce_admin_assist_clock_out(
   p_target_user_id uuid,
   p_reason text

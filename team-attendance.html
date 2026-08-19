@@ -217,7 +217,7 @@
         <button class="wf-close" type="button" data-close="teamAttendanceCorrectionModal" aria-label="Close">×</button>
       </div>
 
-      <form id="teamAttendanceCorrectionForm" class="wf-form">
+      <form id="teamAttendanceCorrectionForm" class="wf-form" novalidate>
         <div class="team-attendance-correction-body">
           <section class="team-attendance-correction-summary" aria-label="Attendance record summary">
             <div>
@@ -284,7 +284,7 @@
               </label>
               <label class="wf-field">
                 <span>Remarks</span>
-                <textarea id="teamAttendanceReasonNotes" class="wf-control" rows="3" placeholder="Required when billed time changes"></textarea>
+                <textarea id="teamAttendanceReasonNotes" class="wf-control" rows="3" placeholder="Required when billed time or assigned shift changes"></textarea>
               </label>
             </div>
           </section>
@@ -324,6 +324,6 @@
       </form>
     </section>
   </div>
-  <script type="module" src="./scripts/team-attendance.js?v=20"></script>
+  <script type="module" src="./scripts/team-attendance.js?v=22"></script>
 </body>
 </html>

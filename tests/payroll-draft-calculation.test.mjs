@@ -5,9 +5,9 @@ import test from 'node:test'
 
 const read = path => readFile(new URL(`../${path}`, import.meta.url), 'utf8')
 const migrationPath =
-  'supabase/migrations/20260729151931_calculate_draft_payroll.sql'
+  'supabase/migrations/20260729073554_calculate_draft_payroll.sql'
 const calculationReadCorrectionPath =
-  'supabase/migrations/20260729153924_hide_uncalculated_payroll_results.sql'
+  'supabase/migrations/20260729074006_hide_uncalculated_payroll_results.sql'
 
 test('Step 7 calculates draft payroll from exact snapshots and work-date rates', async () => {
   const migration = await read(migrationPath)

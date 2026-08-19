@@ -165,7 +165,9 @@ comment on function public.workforce_recalculate_attendance(uuid) is
   'Recalculates trusted attendance totals; closed historical rows may be recalculated while a separate current session is open.';
 
 revoke all on function public.workforce_recalculate_attendance(uuid) from public;
+
 revoke all on function public.workforce_recalculate_attendance(uuid) from anon;
+
 revoke all on function public.workforce_recalculate_attendance(uuid) from authenticated;
 
 insert into public.workforce_audit_logs (

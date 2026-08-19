@@ -63,6 +63,7 @@ revoke all on function public.payroll_enforce_payslip_permission_scope()
 
 drop trigger if exists user_permissions_enforce_payslip_scope
 on public.user_permissions;
+
 create trigger user_permissions_enforce_payslip_scope
 before insert or update of permission_key, is_granted
 on public.user_permissions
@@ -110,6 +111,7 @@ revoke all on function public.payroll_sync_agent_own_payslip_permission()
 
 drop trigger if exists profiles_sync_agent_own_payslip_permission
 on public.profiles;
+
 create trigger profiles_sync_agent_own_payslip_permission
 after insert or update of is_agent
 on public.profiles

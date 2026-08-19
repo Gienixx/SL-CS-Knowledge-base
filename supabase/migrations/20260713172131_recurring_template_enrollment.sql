@@ -182,10 +182,12 @@ $$;
 
 revoke all on function public.workforce_admin_enroll_weekly_template(uuid, date)
   from public, anon, authenticated;
+
 revoke all on function public.workforce_admin_save_schedule_and_repeat(
   uuid, uuid, date, integer, timestamptz, timestamptz, text, text,
   boolean, boolean, text, text, boolean
 ) from public, anon;
+
 grant execute on function public.workforce_admin_save_schedule_and_repeat(
   uuid, uuid, date, integer, timestamptz, timestamptz, text, text,
   boolean, boolean, text, text, boolean

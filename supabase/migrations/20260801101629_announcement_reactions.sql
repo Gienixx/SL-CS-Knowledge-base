@@ -93,6 +93,7 @@ using (
 grant select, insert, update, delete
 on public.announcement_reactions
 to authenticated;
+
 revoke all on public.announcement_reactions from anon;
 
 create or replace function private.sync_announcement_reaction_counts()
@@ -160,8 +161,10 @@ execute function private.sync_announcement_reaction_counts();
 
 comment on table public.announcement_reactions is
   'One like or dislike reaction per authenticated user and announcement.';
+
 comment on column public.team_announcements.like_count is
   'Trigger-maintained count of like reactions.';
+
 comment on column public.team_announcements.dislike_count is
   'Trigger-maintained count of dislike reactions.';
 

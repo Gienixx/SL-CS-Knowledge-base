@@ -235,8 +235,11 @@ comment on function public.workforce_correct_attendance(uuid, timestamptz, times
   'Corrects attendance, delegates all structured totals to the canonical recalculator, and records an audit history.';
 
 revoke all on function public.workforce_correct_attendance(uuid, timestamptz, timestamptz, text, uuid, text, text, text) from public;
+
 revoke all on function public.workforce_correct_attendance(uuid, timestamptz, timestamptz, text, uuid, text, text, text) from anon;
+
 revoke all on function public.workforce_correct_attendance(uuid, timestamptz, timestamptz, text, uuid, text, text, text) from authenticated;
+
 grant execute on function public.workforce_correct_attendance(uuid, timestamptz, timestamptz, text, uuid, text, text, text) to authenticated;
 
 insert into public.workforce_audit_logs (

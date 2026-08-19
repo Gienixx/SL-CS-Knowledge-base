@@ -13,7 +13,7 @@ const [html, client, migration, attendanceMigration, classificationMigration, th
   read('styles/site-theme.css')
 ])
 
-const billedFixMigration = await read('supabase/migrations/20260811093241_fix_open_schedule_billed_attendance_calculation.sql')
+const billedFixMigration = await read('supabase/migrations/20260811094428_fix_open_schedule_billed_attendance_calculation.sql')
 
 test('create schedule offers an open schedule option', () => {
   assert.match(html, /id="scheduleIsOpen" type="checkbox"/)

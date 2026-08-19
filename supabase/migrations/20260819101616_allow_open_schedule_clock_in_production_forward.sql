@@ -1,11 +1,14 @@
--- Reconcile the repository with the verified live workforce_clock_in behavior.
--- This is intentionally a forward replacement; it does not rewrite migration history.
-create or replace function public.workforce_clock_in(p_schedule_id uuid default null::uuid)
-returns public.attendance
-language plpgsql
-security definer
-set search_path = public, pg_temp
-as $$
+-- Production-forward Open Schedule eligibility change.
+-- Baseline: pg_get_functiondef('public.workforce_clock_in(uuid)') from the
+-- linked production database on 2026-08-19. The only added policy is that a
+-- published, non-special schedule with both shift timestamps null is eligible
+-- on its assigned local work date. Partially timed schedules remain invalid.
+CREATE OR REPLACE FUNCTION public.workforce_clock_in(p_schedule_id uuid DEFAULT NULL::uuid)
+ RETURNS attendance
+ LANGUAGE plpgsql
+ SECURITY DEFINER
+ SET search_path TO 'public', 'pg_temp'
+AS $function$
 declare
   v_auth_user_id uuid := auth.uid();
   v_profile_user_id uuid;
@@ -39,7 +42,8 @@ begin
   v_work_date := v_local_date;
 
   if exists (
-    select 1 from public.attendance a
+    select 1
+    from public.attendance a
     where a.user_id = v_profile_user_id
       and a.clock_in is not null
       and a.clock_out is null
@@ -49,36 +53,57 @@ begin
 
   if p_schedule_id is null then
     select exists (
-      select 1 from public.work_schedules schedule
-      where schedule.user_id = v_profile_user_id
-        and schedule.status in ('published', 'changed')
-        and not schedule.is_leave
-        and not schedule.is_absent
-        and (
-          (
-            schedule.shift_start is not null
-            and schedule.shift_end is not null
-            and schedule.shift_date between v_local_date - 1 and v_local_date + 1
-            and schedule.shift_end > v_clock_time
-          )
-          or (schedule.is_rest_day or schedule.is_holiday)
-             and schedule.shift_date = v_local_date
-        )
-    ) into v_has_released_schedule;
-
-    select exists (
-      select 1 from public.attendance a
+      select 1
+      from public.attendance a
       where a.user_id = v_profile_user_id
         and a.work_date = v_work_date
         and a.clock_in is not null
         and a.clock_out is not null
     ) into v_has_completed_session;
 
+    select exists (
+      select 1
+      from public.work_schedules schedule
+      where schedule.user_id = v_profile_user_id
+        and schedule.status in ('published', 'changed')
+        and not schedule.is_leave
+        and not schedule.is_absent
+        and (
+          (
+            not (schedule.is_rest_day or schedule.is_holiday)
+            and schedule.shift_start is not null
+            and schedule.shift_end is not null
+            and schedule.shift_date = v_local_date
+            and schedule.shift_end > v_clock_time
+          )
+          or (
+            (schedule.is_rest_day or schedule.is_holiday)
+            and schedule.shift_date = v_local_date
+          )
+          or (
+            schedule.shift_date = v_local_date - 1
+            and schedule.shift_end is not null
+            and schedule.shift_end > v_clock_time
+            and (
+              (schedule.is_rest_day or schedule.is_holiday)
+              or (schedule.shift_start is not null and schedule.shift_end is not null)
+            )
+          )
+          or (
+            not (schedule.is_rest_day or schedule.is_holiday)
+            and schedule.shift_start is null
+            and schedule.shift_end is null
+            and schedule.shift_date = v_local_date
+          )
+        )
+    ) into v_has_released_schedule;
+
     if v_has_released_schedule and not v_has_completed_session then
       raise exception 'A released shift or special work date is available. Select it before clocking in.';
     end if;
   else
-    select * into v_schedule
+    select *
+      into v_schedule
     from public.work_schedules schedule
     where schedule.id = p_schedule_id
       and schedule.user_id = v_profile_user_id;
@@ -93,6 +118,12 @@ begin
       raise exception 'Leave and absence schedules cannot be used for timed attendance.';
     end if;
     if not (v_schedule.is_rest_day or v_schedule.is_holiday)
+       and v_schedule.shift_start is null
+       and v_schedule.shift_end is null then
+      if v_schedule.shift_date <> v_local_date then
+        raise exception 'Open Schedule clock-in is available only on the scheduled work date.';
+      end if;
+    elsif not (v_schedule.is_rest_day or v_schedule.is_holiday)
        and (v_schedule.shift_start is null or v_schedule.shift_end is null) then
       raise exception 'The selected schedule does not have valid shift times.';
     end if;
@@ -106,10 +137,9 @@ begin
     v_work_date := v_schedule.shift_date;
   end if;
 
-  -- Only reuse an empty placeholder. A completed unscheduled session remains
-  -- a separate row so later Sequence 2 assignment is unambiguous.
   if p_schedule_id is null then
-    select * into v_existing
+    select *
+      into v_existing
     from public.attendance a
     where a.user_id = v_profile_user_id
       and a.schedule_id is null
@@ -119,7 +149,8 @@ begin
     limit 1
     for update;
   else
-    select * into v_existing
+    select *
+      into v_existing
     from public.attendance a
     where a.user_id = v_profile_user_id
       and a.schedule_id = p_schedule_id
@@ -153,11 +184,7 @@ begin
 
   return public.workforce_recalculate_attendance(v_result.id);
 end;
-$$;
+$function$;
 
 revoke all on function public.workforce_clock_in(uuid) from public, anon, authenticated;
 grant execute on function public.workforce_clock_in(uuid) to authenticated;
-grant execute on function public.workforce_clock_in(uuid) to service_role;
-
-comment on function public.workforce_clock_in(uuid) is
-  'Clock in to a released schedule, including special null-time dates and eligible pending unscheduled sessions.';

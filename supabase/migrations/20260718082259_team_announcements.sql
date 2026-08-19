@@ -21,57 +21,21 @@ create table public.team_announcements (
     (status = 'published' and published_at is not null and published_by is not null and btrim(published_by_name) <> '')
   )
 );
-
-create index team_announcements_status_published_at_idx
-  on public.team_announcements (status, published_at desc);
-
-create index team_announcements_created_at_idx
-  on public.team_announcements (created_at desc);
-
+create index team_announcements_status_published_at_idx on public.team_announcements (status, published_at desc);
+create index team_announcements_created_at_idx on public.team_announcements (created_at desc);
 alter table public.team_announcements enable row level security;
-
-create policy "Workforce users can view published announcements"
-on public.team_announcements
-for select
-to authenticated
-using (
-  public.workforce_current_user_is_active()
-  and (
-    status = 'published'
-    or public.workforce_is_admin()
-  )
+create policy "Workforce users can view published announcements" on public.team_announcements for select to authenticated using (
+  public.workforce_current_user_is_active() and (status = 'published' or public.workforce_is_admin())
 );
-
-create policy "Workforce admins can create announcements"
-on public.team_announcements
-for insert
-to authenticated
-with check (
-  public.workforce_current_user_is_active()
-  and public.workforce_is_admin()
-  and public.workforce_is_current_identity(created_by)
+create policy "Workforce admins can create announcements" on public.team_announcements for insert to authenticated with check (
+  public.workforce_current_user_is_active() and public.workforce_is_admin() and created_by = (select auth.uid())
 );
-
-create policy "Workforce admins can update announcements"
-on public.team_announcements
-for update
-to authenticated
-using (
-  public.workforce_current_user_is_active()
-  and public.workforce_is_admin()
-)
-with check (
-  public.workforce_current_user_is_active()
-  and public.workforce_is_admin()
+create policy "Workforce admins can update announcements" on public.team_announcements for update to authenticated using (
+  public.workforce_current_user_is_active() and public.workforce_is_admin()
+) with check (
+  public.workforce_current_user_is_active() and public.workforce_is_admin()
 );
-
-create policy "Workforce admins can delete announcements"
-on public.team_announcements
-for delete
-to authenticated
-using (
-  public.workforce_current_user_is_active()
-  and public.workforce_is_admin()
+create policy "Workforce admins can delete announcements" on public.team_announcements for delete to authenticated using (
+  public.workforce_current_user_is_active() and public.workforce_is_admin()
 );
-
 grant select, insert, update, delete on public.team_announcements to authenticated;

@@ -5,7 +5,7 @@ import test from 'node:test'
 
 const read = path => readFile(new URL(`../${path}`, import.meta.url), 'utf8')
 const migrationPath =
-  'supabase/migrations/20260729165328_manage_payroll_adjustments.sql'
+  'supabase/migrations/20260729090200_manage_payroll_adjustments.sql'
 
 test('Step 9 supports only controlled manual earnings and deductions', async () => {
   const migration = await read(migrationPath)

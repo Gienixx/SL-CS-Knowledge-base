@@ -24,10 +24,6 @@ const ATTENDANCE_PAGE_SIZE = 5
 const WORKFORCE_TIMEZONE = 'America/New_York'
 const OPEN_SESSION_LIMIT_MINUTES = 20 * 60
 
-function scheduleOptionLabel(schedule) {
-  return formatScheduleOptionLabel(schedule, WORKFORCE_TIMEZONE)
-}
-
 const elements = {
   workforceLink: document.getElementById('teamAttendanceWorkforceLink'),
   recordCount: document.getElementById('teamAttendanceRecordCount'),
@@ -77,16 +73,55 @@ function setMessage(element, text, type = '') {
   element.className = type ? `wf-message ${type}` : 'wf-message'
 }
 
+function correctionScheduleDates(workDate) {
+  if (!workDate) return []
+  const [year, month, day] = workDate.split('-').map(Number)
+  const previousDate = new Date(Date.UTC(year, month - 1, day - 1))
+    .toISOString()
+    .slice(0, 10)
+  return [workDate, previousDate]
+}
+
+function formatCorrectionScheduleLabel(schedule) {
+  const date = schedule?.shift_date
+    ? new Intl.DateTimeFormat('en-US', { month: 'short', day: 'numeric', year: 'numeric' }).format(
+        new Date(`${schedule.shift_date}T12:00:00Z`)
+      )
+    : 'Date unavailable'
+  const type = schedule?.is_leave
+    ? 'Leave'
+    : schedule?.is_absent
+      ? 'Absence'
+      : schedule?.is_rest_day
+        ? 'Rest Day'
+        : schedule?.is_holiday
+          ? 'Holiday'
+          : schedule?.shift_start && schedule?.shift_end
+            ? 'Work Schedule'
+            : 'Open Schedule'
+  const sequence = `Sequence ${schedule?.shift_sequence || 1}`
+  const timezone = schedule?.timezone || WORKFORCE_TIMEZONE
+  const timed = schedule?.shift_start && schedule?.shift_end
+  const time = timed
+    ? ` · ${new Intl.DateTimeFormat('en-US', { timeZone: timezone, hour: 'numeric', minute: '2-digit' }).format(new Date(schedule.shift_start))} – ${new Intl.DateTimeFormat('en-US', { timeZone: timezone, hour: 'numeric', minute: '2-digit' }).format(new Date(schedule.shift_end))}`
+    : ''
+  return `${date} · ${type} · ${sequence}${time}`
+}
+
 async function persistOverDurationFlagsBeforeTeamListing() {
   if (access?.is_admin === true) {
     const { error } = await supabase.rpc('workforce_flag_open_attendance_over_duration')
-    if (error) console.error('Unable to persist open-session over-duration flags:', error)
+    if (error) {
+      console.error('Unable to persist open-session over-duration flags:', error)
+    }
     return
   }
   if (access?.is_agent !== true) return
 
   const { error } = await supabase.rpc('workforce_flag_current_open_attendance_over_duration')
-  if (error && error.code !== 'P0002') console.error('Unable to persist the over-duration attendance flag:', error)
+  if (error && error.code !== 'P0002') {
+    console.error('Unable to persist the over-duration attendance flag:', error)
+  }
 }
 
 function localDateKey(date = new Date(), timezone = WORKFORCE_TIMEZONE) {
@@ -294,9 +329,13 @@ function classifyOpenSession(record, now = new Date()) {
   }
 
   return {
+    // The soft maximum never changes the actual open-session state. The
+    // server-backed reason is authoritative after the list RPC; the elapsed
+    // fallback keeps the live card responsive between refreshes.
     is_open: true,
     is_missing_clock_out: Boolean(record.is_missing_clock_out),
-    is_over_duration: record.manager_review_reason === 'open_session_over_20_hours' || hasExceededOpenSessionLimit(clockIn, now)
+    is_over_duration: record.manager_review_reason === 'open_session_over_20_hours' ||
+      hasExceededOpenSessionLimit(clockIn, now)
   }
 }
 
@@ -554,6 +593,7 @@ async function deleteAttendance() {
       p_attendance_id: pending.row.attendance_id,
       p_reason: reason
     })
+
     if (error) throw error
     if (!data) throw new Error('Attendance record was not deleted. Check your permissions and try again.')
 
@@ -1005,7 +1045,7 @@ async function loadAddSchedules() {
 
   const { data, error } = await supabase
     .from('work_schedules')
-    .select('id, shift_date, shift_start, shift_end, timezone, status, is_rest_day, is_holiday, is_leave, is_absent, holiday_name')
+    .select('id, shift_date, shift_sequence, shift_start, shift_end, timezone, status, is_rest_day, is_holiday, is_leave, is_absent, holiday_name, leave_type')
     .eq('user_id', employeeId)
     .eq('shift_date', workDate)
     .eq('is_leave', false)
@@ -1021,10 +1061,7 @@ async function loadAddSchedules() {
       : schedule.is_holiday
         ? schedule.holiday_name || 'Holiday'
         : ''
-    const times = schedule.shift_start && schedule.shift_end
-      ? `${formatDateTime(schedule.shift_start, schedule.timezone)} – ${formatDateTime(schedule.shift_end, schedule.timezone)}`
-      : schedule.is_rest_day || schedule.is_holiday ? 'No shift times' : 'Open schedule'
-    select.appendChild(new Option([times, specialDay, schedule.status].filter(Boolean).join(' · '), schedule.id))
+    select.appendChild(new Option([formatScheduleOptionLabel(schedule, WORKFORCE_TIMEZONE), specialDay, schedule.status].filter(Boolean).join(' · '), schedule.id))
   }
 
   if (select.options.length === 2) select.selectedIndex = 1
@@ -1273,14 +1310,11 @@ function bindEvents() {
   const addForm = document.getElementById('teamAttendanceAddForm')
   const addMessage = document.getElementById('teamAttendanceAddMessage')
   const deleteForm = document.getElementById('teamAttendanceDeleteForm')
+  const deleteMessage = document.getElementById('teamAttendanceDeleteMessage')
 
   addForm?.addEventListener('submit', event => {
     event.preventDefault()
     handleAddSubmit(addMessage)
-  })
-  deleteForm?.addEventListener('submit', event => {
-    event.preventDefault()
-    deleteAttendance()
   })
   document.getElementById('teamAttendanceAddEmployee')?.addEventListener('change', () => {
     loadAddSchedules().catch(error => setMessage(addMessage, errorMessage(error), 'error'))
@@ -1292,10 +1326,13 @@ function bindEvents() {
   if (correctionForm) {
     correctionForm.addEventListener('submit', event => {
       event.preventDefault()
-      handleCorrectionSubmit(correctionMessage)
+      void handleCorrectionSubmit(correctionMessage)
     })
   }
-
+  deleteForm?.addEventListener('submit', event => {
+    event.preventDefault()
+    deleteAttendance()
+  })
   document.querySelectorAll('[data-close]').forEach(button => {
     button.addEventListener('click', () => {
       if (button.dataset.close === 'teamAttendanceAddModal') closeAddModal()
@@ -1315,10 +1352,9 @@ async function loadCorrectionSchedules(row) {
 
   const { data, error } = await supabase
     .from('work_schedules')
-    .select('id, shift_start, shift_end, timezone, status, is_rest_day, is_holiday, is_leave, is_absent, holiday_name')
+    .select('id, shift_date, shift_sequence, shift_start, shift_end, timezone, status, is_rest_day, is_holiday, is_leave, is_absent, holiday_name, leave_type')
     .eq('user_id', row.employee_user_id)
-    .gte('shift_date', localDateKey(new Date(parseDateKey(row.work_date).getTime() - 86400000)))
-    .lte('shift_date', localDateKey(new Date(parseDateKey(row.work_date).getTime() + 86400000)))
+    .in('shift_date', correctionScheduleDates(row.work_date))
     .eq('is_leave', false)
     .eq('is_absent', false)
     .in('status', ['published', 'changed'])
@@ -1327,23 +1363,27 @@ async function loadCorrectionSchedules(row) {
   if (error) throw error
 
   select.replaceChildren(new Option(row.schedule_id ? 'Keep current assigned shift' : 'Unscheduled (RDOT)', ''))
-  for (const schedule of data || []) {
+  const eligibleSchedules = (data || []).filter(schedule => (
+    schedule.is_rest_day
+      || schedule.is_holiday
+      || (schedule.shift_start && schedule.shift_end)
+  ))
+  for (const schedule of eligibleSchedules) {
     const specialDay = schedule.is_rest_day
       ? 'Rest day'
       : schedule.is_holiday
         ? schedule.holiday_name || 'Holiday'
         : ''
-    const times = schedule.shift_start && schedule.shift_end
-      ? `${formatDateTime(schedule.shift_start, schedule.timezone)} – ${formatDateTime(schedule.shift_end, schedule.timezone)}`
-      : schedule.is_rest_day || schedule.is_holiday ? 'No shift times' : 'Open schedule'
-    const dateLabel = `${formatDate(schedule.shift_date)} · `
-    const option = new Option(`${dateLabel}${times}`, schedule.id)
+    const option = new Option(formatCorrectionScheduleLabel(schedule), schedule.id)
     option.dataset.status = [specialDay, schedule.status].filter(Boolean).join(' · ')
     select.appendChild(option)
   }
 
   if (row.schedule_id && ![...select.options].some(option => option.value === row.schedule_id)) {
-    select.appendChild(new Option(`Current shift · ${formatShift(row)}`, row.schedule_id))
+    const currentOption = new Option(`Current (outside eligible window) · ${formatCorrectionScheduleLabel({ ...row, shift_date: row.work_date, shift_sequence: row.schedule_sequence, shift_start: row.schedule_start, shift_end: row.schedule_end, timezone: row.timezone })}`, row.schedule_id)
+    currentOption.disabled = true
+    currentOption.dataset.status = 'Current schedule is outside the eligible reassignment window'
+    select.appendChild(currentOption)
   }
   select.value = row.schedule_id || ''
   const updateStatus = () => {
@@ -1406,6 +1446,46 @@ function closeCorrectionModal() {
   document.body.classList.remove('modal-open')
 }
 
+function correctionValidationMessage({
+  attendanceId,
+  newClockIn,
+  newClockOut,
+  reasonCode,
+  reasonNotes,
+  billedTimeChanged,
+  scheduleChanged
+}) {
+  if (!attendanceId) return 'Attendance record is missing.'
+  if (!reasonCode) return 'Select a correction reason.'
+
+  if (billedTimeChanged && (!newClockIn || !newClockOut)) {
+    return 'Enter both billed clock-in and billed clock-out.'
+  }
+
+  let clockInIso = null
+  let clockOutIso = null
+  try {
+    clockInIso = dateTimeLocalToIso(newClockIn)
+    clockOutIso = dateTimeLocalToIso(newClockOut)
+  } catch (error) {
+    return errorMessage(error)
+  }
+
+  if (clockInIso && clockOutIso && clockOutIso < clockInIso) {
+    return 'Billed clock-out cannot be earlier than billed clock-in.'
+  }
+
+  if ((billedTimeChanged || scheduleChanged) && !reasonNotes.trim()) {
+    return 'Remarks are required when billed time or schedule changes.'
+  }
+
+  if (reasonCode === 'other' && !reasonNotes.trim()) {
+    return 'Notes are required when the reason is Other.'
+  }
+
+  return ''
+}
+
 async function handleCorrectionSubmit(messageElement) {
   const modal = document.getElementById('teamAttendanceCorrectionModal')
   if (!modal) return
@@ -1420,49 +1500,51 @@ async function handleCorrectionSubmit(messageElement) {
   const reasonNotes = document.getElementById('teamAttendanceReasonNotes').value
   const adminNotes = document.getElementById('teamAttendanceAdminNotes').value
 
-  if (!attendanceId) {
-    setMessage(messageElement, 'Attendance record is missing.', 'error')
-    return
-  }
-
   const currentBilledClockIn = toDateTimeLocal(modal.dataset.billedClockIn)
   const currentBilledClockOut = toDateTimeLocal(modal.dataset.billedClockOut)
   const billedTimeChanged = newClockIn !== currentBilledClockIn || newClockOut !== currentBilledClockOut
   const scheduleChanged = currentScheduleId !== scheduleId && Boolean(scheduleId)
 
-  if ((billedTimeChanged || scheduleChanged) && !reasonCode) {
-    setMessage(messageElement, 'Select a correction reason.', 'error')
-    return
-  }
-
-  if ((billedTimeChanged || scheduleChanged) && !reasonNotes.trim()) {
-    setMessage(messageElement, 'Remarks are required when billed time or schedule changes.', 'error')
-    return
-  }
-
-  if (reasonCode === 'other' && !reasonNotes.trim()) {
-    setMessage(messageElement, 'Notes are required when the reason is Other.', 'error')
+  const validationMessage = correctionValidationMessage({
+    attendanceId,
+    newClockIn,
+    newClockOut,
+    reasonCode,
+    reasonNotes,
+    billedTimeChanged,
+    scheduleChanged
+  })
+  if (validationMessage) {
+    setMessage(messageElement, validationMessage, 'error')
     return
   }
 
   setMessage(messageElement, 'Submitting correction…')
 
-  const rpcName = !currentScheduleId && scheduleId
+  const scheduleOnlyChange = scheduleChanged && !billedTimeChanged
+  const rpcName = scheduleOnlyChange
     ? 'workforce_assign_attendance_schedule'
     : 'workforce_correct_attendance'
-  const rpcParams = rpcName === 'workforce_assign_attendance_schedule'
-    ? { p_attendance_id: attendanceId, p_schedule_id: scheduleId, p_reason_code: reasonCode, p_reason_notes: reasonNotes || null }
-    : {
-        p_attendance_id: attendanceId,
-        p_new_clock_in: dateTimeLocalToIso(newClockIn),
-        p_new_clock_out: dateTimeLocalToIso(newClockOut),
-        p_new_status: newStatus,
-        p_schedule_id: scheduleId || null,
-        p_admin_notes: adminNotes || null,
-        p_reason_code: reasonCode,
-        p_reason_notes: reasonNotes || null
-      }
-  const { data, error } = await supabase.rpc(rpcName, rpcParams)
+  let rpcParams
+  try {
+    rpcParams = rpcName === 'workforce_assign_attendance_schedule'
+      ? { p_attendance_id: attendanceId, p_schedule_id: scheduleId, p_reason_code: reasonCode, p_reason_notes: reasonNotes || null }
+      : {
+          p_attendance_id: attendanceId,
+          p_new_clock_in: dateTimeLocalToIso(newClockIn),
+          p_new_clock_out: dateTimeLocalToIso(newClockOut),
+          p_new_status: newStatus,
+          p_schedule_id: scheduleId || null,
+          p_admin_notes: adminNotes || null,
+          p_reason_code: reasonCode,
+          p_reason_notes: reasonNotes || null
+        }
+  } catch (error) {
+    setMessage(messageElement, errorMessage(error), 'error')
+    return
+  }
+
+  const { error } = await supabase.rpc(rpcName, rpcParams)
 
   if (error) {
     setMessage(messageElement, errorMessage(error), 'error')

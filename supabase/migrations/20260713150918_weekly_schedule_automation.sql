@@ -95,11 +95,15 @@ create index if not exists work_schedules_template_date_idx
   where generated_by_automation;
 
 alter table public.work_schedule_templates enable row level security;
+
 alter table public.work_schedule_template_days enable row level security;
+
 alter table public.work_schedule_template_assignments enable row level security;
 
 revoke all on public.work_schedule_templates from public, anon, authenticated;
+
 revoke all on public.work_schedule_template_days from public, anon, authenticated;
+
 revoke all on public.work_schedule_template_assignments from public, anon, authenticated;
 
 create or replace function public.workforce_mark_generated_schedule_override()
@@ -131,6 +135,7 @@ end;
 $$;
 
 drop trigger if exists work_schedules_mark_generated_override on public.work_schedules;
+
 create trigger work_schedules_mark_generated_override
 before update on public.work_schedules
 for each row execute function public.workforce_mark_generated_schedule_override();
@@ -307,6 +312,7 @@ end;
 $$;
 
 drop trigger if exists leave_requests_sync_generated_schedules on public.leave_requests;
+
 create trigger leave_requests_sync_generated_schedules
 after insert or update of status, start_date, end_date on public.leave_requests
 for each row execute function public.workforce_sync_approved_leave_schedules();
@@ -330,8 +336,11 @@ end;
 $$;
 
 revoke all on function public.workforce_generate_weekly_schedules(date) from public, anon, authenticated;
+
 revoke all on function public.workforce_run_weekly_schedule_cron() from public, anon, authenticated;
+
 revoke all on function public.workforce_sync_approved_leave_schedules() from public, anon, authenticated;
+
 revoke all on function public.workforce_mark_generated_schedule_override() from public, anon, authenticated;
 
 do $$

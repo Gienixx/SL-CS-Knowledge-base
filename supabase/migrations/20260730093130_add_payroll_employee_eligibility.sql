@@ -1,4 +1,4 @@
--- Keep payroll eligibility separate from workforce account eligibility so
+-- Keep payroll eligibility separate from workforce/account eligibility so
 -- testing-only agents can continue using attendance without entering payroll.
 
 begin;

@@ -449,28 +449,37 @@ $$;
 
 revoke all on function public.payroll_check_period_overlap(date, date)
   from public, anon;
+
 revoke all on function public.payroll_create_period(date, date, date)
   from public, anon;
+
 revoke all on function public.payroll_get_period_dashboard()
   from public, anon;
+
 revoke all on function public.payroll_get_period_employee_readiness(uuid)
   from public, anon;
 
 grant execute on function public.payroll_check_period_overlap(date, date)
   to authenticated, service_role;
+
 grant execute on function public.payroll_create_period(date, date, date)
   to authenticated, service_role;
+
 grant execute on function public.payroll_get_period_dashboard()
   to authenticated, service_role;
+
 grant execute on function public.payroll_get_period_employee_readiness(uuid)
   to authenticated, service_role;
 
 comment on function public.payroll_check_period_overlap(date, date) is
   'Returns active payroll periods that overlap a proposed date range after create_payroll authorization.';
+
 comment on function public.payroll_create_period(date, date, date) is
   'Atomically creates one non-overlapping draft USD payroll period, loads eligible agents, and writes an audit log.';
+
 comment on function public.payroll_get_period_dashboard() is
   'Returns payroll-period lifecycle and record counts to explicitly authorized payroll processors.';
+
 comment on function public.payroll_get_period_employee_readiness(uuid) is
   'Returns rate and attendance readiness diagnostics without exposing rate amounts.';
 

@@ -4,7 +4,7 @@ import test from 'node:test'
 
 const read = path => readFile(new URL(`../${path}`, import.meta.url), 'utf8')
 const migrationPath =
-  'supabase/migrations/20260812115418_agent_prepaid_balance_read.sql'
+  'supabase/migrations/20260812121013_agent_prepaid_balance_read.sql'
 
 test('agent prepaid balance RPC is authenticated and identity scoped', async () => {
   const migration = await read(migrationPath)

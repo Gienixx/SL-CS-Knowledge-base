@@ -3,7 +3,7 @@ import { readFile } from 'node:fs/promises'
 import test from 'node:test'
 
 const read = path => readFile(new URL(`../${path}`, import.meta.url), 'utf8')
-const migrationPath = 'supabase/migrations/20260810113000_friday_monday_week_schedule_automation.sql'
+const migrationPath = 'supabase/migrations/20260810063228_friday_monday_week_schedule_automation.sql'
 
 test('Friday automation targets the upcoming Monday-Sunday week', async () => {
   const migration = await read(migrationPath)

@@ -176,6 +176,7 @@ comment on function public.workforce_admin_save_open_schedule(uuid, uuid, date, 
 
 revoke all on function public.workforce_admin_save_open_schedule(uuid, uuid, date, integer, text, text, text)
   from public, anon, authenticated;
+
 grant execute on function public.workforce_admin_save_open_schedule(uuid, uuid, date, integer, text, text, text)
   to authenticated;
 

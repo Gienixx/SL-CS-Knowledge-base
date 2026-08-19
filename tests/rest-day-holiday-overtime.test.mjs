@@ -26,7 +26,7 @@ test('dates without a released shift allow clock-in and are presented as RDOT', 
   const migration = await read(unscheduledRdotMigrationPath)
 
   assert.match(page, /no-shift work is also recorded as RDOT/)
-  assert.match(script, /No released shift is currently available[\s\S]*count as RDOT/)
+  assert.match(script, /No assigned schedule\. Your time will be recorded as unscheduled attendance\./)
   assert.match(script, /Recording your RDOT clock-in/)
   assert.match(script, /RDOT clock-in recorded successfully/)
   assert.match(migration, /case when v_attendance\.schedule_id is null then true else v_schedule\.is_rest_day end/)

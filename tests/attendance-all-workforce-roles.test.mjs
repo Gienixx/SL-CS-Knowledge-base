@@ -16,31 +16,17 @@ test('all active workforce roles can open personal attendance', async () => {
   assert.match(homeNavigation, /attendanceButton\.hidden = !canUseAttendance/)
 })
 
-test('administrators keep admin access and become attendance participants', async () => {
-  const migration = await read(
-    'supabase/migrations/20260803152839_enable_attendance_for_all_workforce_roles.sql'
+test('production role access preserves explicit Admin, Agent, and Admin-and-Agent choices', async () => {
+  const live = await read(
+    'supabase/reconciliation-archive/pre-canonical-migrations-20260819/live-production-definitions-20260819.sql'
   )
 
-  assert.match(
-    migration,
-    /where \(base_role = 'admin' or is_system_admin is true\)[\s\S]*is_agent is not true/
-  )
-  assert.match(
-    migration,
-    /when p_access_type = 'admin' then 'admin_agent'/
-  )
-  assert.match(
-    migration,
-    /workforce_admin_save_employee_attendance_role_bridge/
-  )
-  assert.match(
-    migration,
-    /workforce_service_create_invitation_attendance_role_bridge/
-  )
-  assert.match(
-    migration,
-    /own_attendance_scope_preserved', true/
-  )
+  assert.match(live, /p_access_type not in \('admin', 'regular_agent', 'admin_agent'\)/)
+  assert.match(live, /Invalid access type\. Use Admin, Regular Agent, or Admin and Agent\./)
+  assert.match(live, /workforce_admin_save_employee_legacy_access_bridge/)
+  assert.match(live, /workforce_service_create_invitation_legacy_payroll_bridge/)
+  assert.match(live, /signature: workforce_admin_save_employee\(/)
+  assert.match(live, /signature: workforce_service_create_invitation\(/)
 })
 
 test('clock functions still require the active attendance-participant identity check', async () => {

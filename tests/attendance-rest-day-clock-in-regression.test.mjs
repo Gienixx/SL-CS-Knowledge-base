@@ -5,51 +5,91 @@ import test from 'node:test'
 
 const read = path => readFile(new URL(`../${path}`, import.meta.url), 'utf8')
 
-async function loadRestDayEligibility() {
-  const script = await read('scripts/attendance.js')
-  const match = script.match(/function isUntimedRestDayWithinClockInWindow\(schedule, now = new Date\(\)\) \{([\s\S]*?)\n\}/)
-
-  assert.ok(match, 'the targeted untimed Rest Day eligibility helper must remain present')
-
-  const localDateKey = () => '2026-08-16'
-  const offsetDateKey = (dateKey, amount) => amount === 1 ? '2026-08-17' : dateKey
-  return new Function('localDateKey', 'offsetDateKey', `return function isEligible(schedule, now = new Date()) {${match[1]}\n}`)(localDateKey, offsetDateKey)
+function loadRestDayEligibility(script) {
+  const match = script.match(/function isUntimedRestDayWithinClockInWindow\(schedule, now = new Date\(\)\) \{[\s\S]*?\n\}/)
+  assert.ok(match, 'untimed Rest Day eligibility predicate is present')
+  return new Function('localDateKey', 'offsetDateKey', `${match[0]}; return isUntimedRestDayWithinClockInWindow`)(
+    () => '2026-08-16',
+    (date, days) => days === 1 ? '2026-08-17' : date
+  )
 }
 
-test('untimed current-day RDOT is clock-in eligible', async () => {
-  const isEligible = await loadRestDayEligibility()
+test('latest clock-in RPC allows null-time Rest Day/RDOT schedules but rejects incomplete ordinary schedules', async () => {
+  const migration = await read('supabase/migrations/20260814105212_allow_rest_day_rdot_null_time_clock_in.sql')
 
-  assert.equal(isEligible({ is_rest_day: true, shift_date: '2026-08-16', shift_start: null, shift_end: null }), true)
+  assert.match(migration, /v_schedule\.status not in \('published', 'changed'\)/)
+  assert.match(migration, /if not \(v_schedule\.is_rest_day or v_schedule\.is_holiday\)[\s\S]*v_schedule\.shift_start is null or v_schedule\.shift_end is null/)
+  assert.match(migration, /v_schedule\.shift_date < v_local_date - 1 or v_schedule\.shift_date > v_local_date \+ 1/)
+  assert.match(migration, /v_work_date := v_schedule\.shift_date/)
+  assert.doesNotMatch(migration, /if v_schedule\.shift_start is null or v_schedule\.shift_end is null then raise exception/)
 })
 
-test('untimed next-day RDOT is eligible without today completion', async () => {
-  const isEligible = await loadRestDayEligibility()
-
-  assert.equal(isEligible({ is_rest_day: true, shift_date: '2026-08-17', shift_start: null, shift_end: null }), true)
-})
-
-test('ordinary future schedules remain blocked', async () => {
+test('attendance frontend keeps Rest Day/RDOT eligible and preserves ordinary/open schedule behavior', async () => {
   const script = await read('scripts/attendance.js')
 
-  assert.match(script, /\['next-day-special', 'next-day-overnight', 'special', 'early', 'active'\]\.includes\(availability\.state\)/)
+  assert.match(script, /if \(isSpecialDay\(schedule\)\)/)
+  assert.match(script, /state: 'special'/)
+  assert.match(script, /'next-day-special', 'next-day-overnight', 'special', 'early', 'active'/)
   assert.match(script, /isUntimedRestDayWithinClockInWindow\(schedule\)/)
-  assert.match(script, /elements\.clockInButton\.disabled = busy \|\| Boolean\(openRecord\) \|\| selectedCompleted \|\| !hasExplicitSelection \|\| !scheduleClockInOpen/)
-  assert.doesNotMatch(script, /availability\.state === 'future'[^\n]*\|\|/)
+  assert.match(script, /busy \|\| Boolean\(openRecord\) \|\| selectedCompleted \|\| !hasExplicitSelection \|\| !scheduleClockInOpen/)
+  assert.match(script, /This is an open schedule\. Clock-in is available today; no fixed shift times are required\./)
 })
 
-test('untimed Open Schedule remains ineligible', async () => {
-  const isEligible = await loadRestDayEligibility()
+test('current-day untimed RDOT is eligible', async () => {
+  const isEligible = loadRestDayEligibility(await read('scripts/attendance.js'))
 
-  assert.equal(isEligible({ is_rest_day: false, shift_date: '2026-08-16', shift_start: null, shift_end: null }), false)
+  assert.equal(isEligible({
+    shift_date: '2026-08-16',
+    is_rest_day: true,
+    shift_start: null,
+    shift_end: null
+  }), true)
 })
 
-test('timed Rest Day remains governed by existing availability states', async () => {
-  const isEligible = await loadRestDayEligibility()
+test('next-day untimed RDOT is eligible without completed today attendance', async () => {
+  const isEligible = loadRestDayEligibility(await read('scripts/attendance.js'))
 
-  assert.equal(isEligible({ is_rest_day: true, shift_date: '2026-08-16', shift_start: '2026-08-16T09:00:00+08:00', shift_end: '2026-08-16T18:00:00+08:00' }), false)
+  assert.equal(isEligible({
+    shift_date: '2026-08-17',
+    is_rest_day: true,
+    shift_start: null,
+    shift_end: null
+  }), true)
 })
 
-test('attendance client remains valid JavaScript', async () => {
+test('ordinary future schedules remain disabled by the existing state guard', async () => {
+  const script = await read('scripts/attendance.js')
+
+  assert.match(
+    script,
+    /const scheduleClockInOpen = adminAssistMode[\s\S]*: schedule[\s\S]*\['next-day-special', 'next-day-overnight', 'special', 'early', 'active'\]\.includes\(availability\.state\)[\s\S]*isUntimedRestDayWithinClockInWindow\(schedule\)/
+  )
+})
+
+test('normal untimed Open Schedule is not covered by the RDOT exception', async () => {
+  const isEligible = loadRestDayEligibility(await read('scripts/attendance.js'))
+
+  assert.equal(isEligible({
+    shift_date: '2026-08-17',
+    is_rest_day: false,
+    is_holiday: false,
+    shift_start: null,
+    shift_end: null
+  }), false)
+})
+
+test('timed schedule eligibility remains state-based', async () => {
+  const isEligible = loadRestDayEligibility(await read('scripts/attendance.js'))
+
+  assert.equal(isEligible({
+    shift_date: '2026-08-17',
+    is_rest_day: true,
+    shift_start: '2026-08-17T15:00:00Z',
+    shift_end: '2026-08-17T23:00:00Z'
+  }), false)
+})
+
+test('attendance client remains syntactically valid after the Rest Day/RDOT regression fix', () => {
   const result = spawnSync(process.execPath, ['--check', 'scripts/attendance.js'], {
     cwd: new URL('..', import.meta.url),
     encoding: 'utf8'

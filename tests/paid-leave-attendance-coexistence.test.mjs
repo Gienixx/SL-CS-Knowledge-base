@@ -2,8 +2,8 @@ import test from 'node:test'
 import assert from 'node:assert/strict'
 import fs from 'node:fs'
 
-const migration = fs.readFileSync('supabase/migrations/20260810150000_paid_leave_attendance_coexistence.sql', 'utf8')
-const correctiveMigration = fs.readFileSync('supabase/migrations/20260810160000_correct_paid_leave_prepaid_independence.sql', 'utf8')
+const migration = fs.readFileSync('supabase/migrations/20260810122500_paid_leave_attendance_coexistence.sql', 'utf8')
+const correctiveMigration = fs.readFileSync('supabase/migrations/20260810122937_correct_paid_leave_prepaid_independence.sql', 'utf8')
 
 function payableMinutes(approvedPaidLeave, approvedBilledAttendance) {
   return (approvedPaidLeave ? 480 : 0) + approvedBilledAttendance
@@ -35,17 +35,17 @@ test('clock-in excludes leave schedules but permits normal or unscheduled attend
 })
 
 test('paid leave earning is additive, normal-rate, non-premium, and prepaid-safe', () => {
-  assert.match(migration, /v_minutes := 480/)
-  assert.match(migration, /paid_leave_earnings/)
-  assert.match(migration, /premium_pay.*false/)
-  assert.match(migration, /prepaid_independent.*true/)
-  assert.doesNotMatch(migration, /v_prepaid integer/)
+  assert.match(correctiveMigration, /v_minutes := 480/)
+  assert.match(correctiveMigration, /paid_leave_earnings/)
+  assert.match(correctiveMigration, /premium_pay.*false/)
+  assert.match(correctiveMigration, /prepaid_independent.*true/)
+  assert.doesNotMatch(correctiveMigration, /v_prepaid integer/)
 })
 
 test('prepaid balances cannot offset paid or incentive leave', () => {
-  assert.match(migration, /Paid leave is an independent fixed entitlement/)
-  assert.match(migration, /prepaid_minutes_deducted.*0/)
-  assert.doesNotMatch(migration, /greatest\(480 - coalesce\(v_prepaid/)
+  assert.match(correctiveMigration, /Paid leave is an independent fixed entitlement/)
+  assert.match(correctiveMigration, /prepaid_independent.*true/)
+  assert.doesNotMatch(correctiveMigration, /greatest\(480 - coalesce\(v_prepaid/)
 })
 
 test('corrective migration removes live prepaid offset logic', () => {

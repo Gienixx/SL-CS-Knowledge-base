@@ -90,6 +90,7 @@ comment on function public.workforce_admin_save_team(
 revoke all on function public.workforce_admin_save_team(
   uuid, text, text, uuid, boolean, text
 ) from public, anon;
+
 grant execute on function public.workforce_admin_save_team(
   uuid, text, text, uuid, boolean, text
 ) to authenticated, service_role;

@@ -52,6 +52,6 @@ test('correction visibility exception is applied to both attendance views', asyn
 
   assert.match(agentScript, /redactAttendanceCorrectionForViewer\(access, record\)/)
   assert.match(teamScript, /redactAttendanceCorrectionForViewer\(access,/)
-assert.match(agentPage, /scripts\/attendance\.js\?v=23/)
-  assert.match(teamPage, /scripts\/team-attendance\.js\?v=20/)
+  assert.match(agentPage, /scripts\/attendance\.js\?v=24/)
+  assert.match(teamPage, /scripts\/team-attendance\.js\?v=22/)
 })

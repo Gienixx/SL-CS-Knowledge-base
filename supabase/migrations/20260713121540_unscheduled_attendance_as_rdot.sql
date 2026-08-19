@@ -165,7 +165,9 @@ comment on function public.workforce_recalculate_attendance(uuid) is
   'Recalculates trusted attendance totals; attendance without an assigned shift is classified as RDOT.';
 
 revoke all on function public.workforce_recalculate_attendance(uuid) from public;
+
 revoke all on function public.workforce_recalculate_attendance(uuid) from anon;
+
 revoke all on function public.workforce_recalculate_attendance(uuid) from authenticated;
 
 insert into public.workforce_audit_logs (
