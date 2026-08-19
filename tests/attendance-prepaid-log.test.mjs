@@ -38,7 +38,7 @@ test('Attendance Log distinguishes scheduled prepaid, fulfilled prepaid, and reg
 
   assert.match(html, /<th>Pay type<\/th>/)
    assert.match(html, /scripts\/attendance\.js\?v=26/)
-  assert.match(html, /styles\/attendance-theme-fix\.css\?v=6/)
+  assert.match(html, /styles\/attendance-theme-fix\.css\?v=7/)
   assert.match(script, /workforce_list_my_attendance_log/)
   assert.match(script, /Prepaid scheduled/)
   assert.match(script, /Prepaid \$\{formatMinutes\(fulfilledMinutes\)\}/)
@@ -50,6 +50,20 @@ test('Attendance Log distinguishes scheduled prepaid, fulfilled prepaid, and reg
   assert.match(script, /pendingApproval/)
   assert.match(styles, /\.attendance-prepaid-schedule-row/)
   assert.match(styles, /\.attendance-pay-type/)
+})
+
+test('Attendance Log badges use readable light-theme semantic tags without changing dark mode', async () => {
+  const [script, lightStyles] = await Promise.all([
+    read('scripts/attendance.js'),
+    read('styles/attendance-theme-fix.css')
+  ])
+
+  assert.match(lightStyles, /html\[data-site-theme="light"\] \.attendance-history-card :is\([\s\S]*\.attendance-pay-type \.wf-badge[\s\S]*border-radius: 999px/)
+  assert.match(lightStyles, /\.attendance-history-card :is\([\s\S]*\.wf-badge\.muted[\s\S]*color: var\(--site-heading\)[\s\S]*background: var\(--site-neutral-soft\)/)
+  assert.match(lightStyles, /\.attendance-history-card :is\([\s\S]*\.wf-badge\.warning[\s\S]*background: var\(--site-amber-soft\)/)
+  assert.match(lightStyles, /\.attendance-history-card \.attendance-adjustments \.wf-badge\.attendance-rdot[\s\S]*background: var\(--site-blue-soft\)/)
+  assert.match(script, /if \(label === 'RDOT'\) item\.classList\.add\('attendance-rdot'\)/)
+  assert.doesNotMatch(lightStyles, /html\[data-site-theme="dark"\] \.attendance-history-card/)
 })
 
 test('Attendance Log keeps the outstanding balance card separate', async () => {

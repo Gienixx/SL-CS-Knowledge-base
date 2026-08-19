@@ -1311,6 +1311,7 @@ function createAdjustmentsCell(record) {
   adjustments.forEach(([label, minutes]) => {
     const item = document.createElement('span')
     item.className = 'wf-badge warning'
+    if (label === 'RDOT') item.classList.add('attendance-rdot')
     item.textContent = `${label} ${formatMinutes(minutes)}`
     wrap.appendChild(item)
   })

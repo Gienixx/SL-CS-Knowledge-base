@@ -246,6 +246,73 @@ html[data-site-theme="light"] #attendanceTodayBadge {
   background: var(--site-neutral-soft);
 }
 
+/* Attendance Log tags use the light site palette rather than the page's
+   dark operational palette. Keep the scope to the table so other badges and
+   the dark theme remain unchanged. */
+html[data-site-theme="light"] .attendance-history-card :is(
+  .attendance-status-line .wf-badge,
+  .attendance-pay-type .wf-badge,
+  .attendance-adjustments .wf-badge
+) {
+  min-height: 24px;
+  margin: 0;
+  padding: 4px 8px;
+  border: 1px solid var(--site-border);
+  border-radius: 999px;
+  color: var(--site-blue-strong);
+  background: var(--site-blue-soft);
+  font-size: .63rem;
+  font-weight: 650;
+  line-height: 1.2;
+  white-space: nowrap;
+}
+
+html[data-site-theme="light"] .attendance-history-card :is(
+  .attendance-status-line .wf-badge.success,
+  .attendance-pay-type .wf-badge.success,
+  .attendance-adjustments .wf-badge.success
+) {
+  border-color: color-mix(in srgb, var(--site-green) 30%, var(--site-border));
+  color: var(--site-green);
+  background: var(--site-green-soft);
+}
+
+html[data-site-theme="light"] .attendance-history-card :is(
+  .attendance-status-line .wf-badge.warning,
+  .attendance-pay-type .wf-badge.warning,
+  .attendance-adjustments .wf-badge.warning
+) {
+  border-color: color-mix(in srgb, var(--site-gold) 34%, var(--site-border));
+  color: color-mix(in srgb, var(--site-heading) 68%, var(--site-gold));
+  background: var(--site-amber-soft);
+}
+
+html[data-site-theme="light"] .attendance-history-card :is(
+  .attendance-status-line .wf-badge.danger,
+  .attendance-pay-type .wf-badge.danger,
+  .attendance-adjustments .wf-badge.danger
+) {
+  border-color: color-mix(in srgb, var(--site-red) 30%, var(--site-border));
+  color: var(--site-red);
+  background: var(--site-red-soft);
+}
+
+html[data-site-theme="light"] .attendance-history-card :is(
+  .attendance-status-line .wf-badge.muted,
+  .attendance-pay-type .wf-badge.muted,
+  .attendance-adjustments .wf-badge.muted
+) {
+  border-color: var(--site-border);
+  color: var(--site-heading);
+  background: var(--site-neutral-soft);
+}
+
+html[data-site-theme="light"] .attendance-history-card .attendance-adjustments .wf-badge.attendance-rdot {
+  border-color: color-mix(in srgb, var(--site-blue) 30%, var(--site-border));
+  color: var(--site-blue-strong);
+  background: var(--site-blue-soft);
+}
+
 /* =========================================================
    Final light-theme corrections
    ========================================================= */
