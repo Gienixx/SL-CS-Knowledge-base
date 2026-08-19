@@ -43,6 +43,7 @@ const elements = {
   openFilter: document.getElementById('teamAttendanceOpenFilter'),
   missingFilter: document.getElementById('teamAttendanceMissingFilter'),
   overtimeFilter: document.getElementById('teamAttendanceOvertimeFilter'),
+  voidedHistory: document.getElementById('teamAttendanceVoidedHistory'),
   resetButton: document.getElementById('teamAttendanceResetButton'),
   refreshButton: document.getElementById('teamAttendanceRefreshButton'),
   addButton: document.getElementById('teamAttendanceAddButton'),
@@ -63,6 +64,9 @@ let busy = false
 let attendancePage = 1
 let attendanceQuickFilter = 'all'
 let pendingDelete = null
+let voidedRows = []
+let showVoidedHistory = false
+let pendingRestore = null
 
 function errorMessage(error) {
   const message = error?.message || ''
@@ -696,6 +700,68 @@ async function deleteAttendance() {
   }
 }
 
+function openRestoreModal(row, button) {
+  if (!row?.attendance_id || busy) return
+  pendingRestore = { row, button }
+  const modal = document.getElementById('teamAttendanceRestoreModal')
+  document.getElementById('teamAttendanceRestoreSummary').textContent = `${row.employee_name || 'This employee'} · ${formatDate(row.work_date)} · ${row.void_reason || 'No void reason recorded'}`
+  document.getElementById('teamAttendanceRestoreReason').value = ''
+  setMessage(document.getElementById('teamAttendanceRestoreMessage'), '')
+  modal.hidden = false
+  document.body.classList.add('modal-open')
+  document.getElementById('teamAttendanceRestoreReason').focus()
+}
+
+function closeRestoreModal() {
+  const modal = document.getElementById('teamAttendanceRestoreModal')
+  if (!modal) return
+  modal.hidden = true
+  pendingRestore = null
+  document.body.classList.remove('modal-open')
+}
+
+async function restoreAttendance() {
+  const pending = pendingRestore
+  const reasonElement = document.getElementById('teamAttendanceRestoreReason')
+  const messageElement = document.getElementById('teamAttendanceRestoreMessage')
+  if (!pending || !reasonElement || busy) return
+  const reason = reasonElement.value.trim()
+  if (reason.length < 3) {
+    setMessage(messageElement, 'Enter a restore reason of at least 3 characters.', 'error')
+    reasonElement.focus()
+    return
+  }
+
+  busy = true
+  const submit = document.getElementById('teamAttendanceRestoreSubmit')
+  submit.disabled = true
+  submit.textContent = 'Restoring...'
+  if (pending.button) pending.button.disabled = true
+  setMessage(elements.tableMessage, 'Restoring attendance record...')
+  setMessage(messageElement, 'Restoring attendance record...')
+
+  try {
+    const { data, error } = await supabase.rpc('workforce_restore_attendance', {
+      p_attendance_id: pending.row.attendance_id,
+      p_reason: reason
+    })
+    if (error) throw error
+    if (!data) throw new Error('Attendance record was not restored. Check your permissions and try again.')
+
+    closeRestoreModal()
+    await loadAttendance()
+    setMessage(elements.tableMessage, 'Attendance record restored.', 'success')
+  } catch (error) {
+    setMessage(elements.tableMessage, errorMessage(error), 'error')
+    setMessage(messageElement, errorMessage(error), 'error')
+    if (pending.button) pending.button.disabled = false
+  } finally {
+    busy = false
+    submit.disabled = false
+    submit.textContent = 'Restore attendance'
+  }
+}
+
 function filteredRows() {
   const search = elements.search.value.trim().toLowerCase()
   const employeeId = elements.employeeFilter.value
@@ -706,6 +772,16 @@ function filteredRows() {
   const openOnly = elements.openFilter.checked
   const missingOnly = elements.missingFilter.checked
   const overtimeOnly = elements.overtimeFilter.checked
+
+  if (showVoidedHistory) {
+    return voidedRows.filter(row => {
+      if (search && ![row.employee_name, row.employee_id, row.employee_email]
+        .some(value => String(value || '').toLowerCase().includes(search))) return false
+      if (employeeId && row.employee_user_id !== employeeId) return false
+      if (status && row.attendance_status !== status) return false
+      return true
+    })
+  }
 
   return attendanceRows.filter(row => {
     if (row.review_status === 'voided') return false
@@ -982,6 +1058,61 @@ function createAttendanceCard(record) {
   return card
 }
 
+function createVoidedAttendanceCard(record) {
+  const card = document.createElement('article')
+  card.className = 'team-attendance-record status-needs-review team-attendance-voided-record'
+
+  const top = document.createElement('div')
+  top.className = 'team-attendance-record-top'
+  const person = document.createElement('div')
+  person.className = 'team-attendance-person'
+  const avatar = document.createElement('span')
+  avatar.className = 'team-attendance-avatar'
+  avatar.textContent = initials(record.employee_name)
+  const identity = document.createElement('div')
+  const name = document.createElement('div')
+  name.className = 'team-attendance-person-name'
+  name.textContent = record.employee_name || 'Unknown employee'
+  const sub = document.createElement('div')
+  sub.className = 'team-attendance-person-sub'
+  sub.textContent = 'Voided history'
+  identity.append(name, sub)
+  person.append(avatar, identity)
+
+  const badges = document.createElement('div')
+  badges.className = 'team-attendance-badges'
+  addBadge(badges, 'Voided', 'danger')
+  const actions = document.createElement('div')
+  actions.className = 'wf-row-actions'
+  const restoreButton = document.createElement('button')
+  restoreButton.type = 'button'
+  restoreButton.className = 'wf-btn secondary compact'
+  restoreButton.textContent = 'Restore attendance'
+  restoreButton.disabled = access?.is_admin !== true || !(
+    access?.can_correct_attendance || hasWorkforcePermission(access, 'manage_schedules')
+  )
+  restoreButton.addEventListener('click', () => openRestoreModal(record, restoreButton))
+  actions.appendChild(restoreButton)
+  badges.appendChild(actions)
+  top.append(person, badges)
+
+  const middle = document.createElement('div')
+  middle.className = 'team-attendance-record-mid'
+  addMeta(middle, formatDate(record.work_date), formatShift(record))
+  addMeta(middle, formatDateTime(record.original_clock_in || record.clock_in, record.employee_timezone), 'Original Clock-in')
+  addMeta(middle, formatDateTime(record.original_clock_out || record.clock_out, record.employee_timezone), 'Original Clock-out')
+  addMeta(middle, formatDateTime(record.voided_at, record.employee_timezone, true), 'Voided')
+
+  const footer = document.createElement('div')
+  footer.className = 'team-attendance-record-footer'
+  const reason = document.createElement('div')
+  reason.className = 'team-attendance-correction'
+  reason.textContent = `Void reason: ${record.void_reason || 'Not recorded'}${record.voided_by_name ? ` · By ${record.voided_by_name}` : ''}`
+  footer.appendChild(reason)
+  card.append(top, middle, footer)
+  return card
+}
+
 function renderTable() {
   const rows = filteredRows()
   elements.tableBody.replaceChildren()
@@ -996,7 +1127,9 @@ function renderTable() {
     empty.textContent = 'No attendance records match the selected filters.'
     elements.tableBody.appendChild(empty)
   } else {
-    pageRows.forEach(record => elements.tableBody.appendChild(createAttendanceCard(record)))
+    pageRows.forEach(record => elements.tableBody.appendChild(
+      showVoidedHistory ? createVoidedAttendanceCard(record) : createAttendanceCard(record)
+    ))
   }
 
   renderSummary(rows)
@@ -1004,11 +1137,13 @@ function renderTable() {
   elements.pageInfo.textContent = `Page ${attendancePage} of ${pageCount}`
   elements.previousPage.disabled = attendancePage === 1
   elements.nextPage.disabled = attendancePage === pageCount
+  const loadedCount = showVoidedHistory ? voidedRows.length : attendanceRows.length
+  const viewLabel = showVoidedHistory ? 'voided ' : ''
   setMessage(
     elements.tableMessage,
     rows.length
-      ? `Showing ${pageStart + 1}–${pageStart + pageRows.length} of ${rows.length} filtered attendance records · ${attendanceRows.length} total loaded.`
-      : `0 of ${attendanceRows.length} attendance records shown.`
+      ? `Showing ${pageStart + 1}–${pageStart + pageRows.length} of ${rows.length} filtered ${viewLabel}attendance records · ${loadedCount} total loaded.`
+      : `0 of ${loadedCount} ${viewLabel}attendance records shown.`
   )
 }
 
@@ -1238,14 +1373,28 @@ async function loadAttendance() {
       p_end_date: range.end
     })
     : Promise.resolve({ data: [], error: null })
+  const voidedRequest = access?.is_admin === true && showVoidedHistory
+    ? supabase.rpc('workforce_list_voided_team_attendance', {
+      p_start_date: range.start,
+      p_end_date: range.end
+    })
+    : Promise.resolve({ data: [], error: null })
 
-  const [attendanceResult, prepaidResult] = await Promise.all([
+  const [attendanceResult, prepaidResult, voidedResult] = await Promise.all([
     attendanceRequest,
-    prepaidRequest
+    prepaidRequest,
+    voidedRequest
   ])
 
   if (attendanceResult.error) throw attendanceResult.error
   if (prepaidResult.error) throw prepaidResult.error
+  if (voidedResult.error) throw voidedResult.error
+
+  voidedRows = (voidedResult.data || []).map(row => ({
+    ...row,
+    is_voided: true,
+    employee_timezone: row.employee_timezone || WORKFORCE_TIMEZONE
+  }))
 
   const prepaidByAttendance = new Map(
     (prepaidResult.data || []).map(row => [row.attendance_id, row])
@@ -1314,6 +1463,8 @@ async function resetFilters() {
   elements.openFilter.checked = false
   elements.missingFilter.checked = false
   elements.overtimeFilter.checked = false
+  elements.voidedHistory.checked = false
+  showVoidedHistory = false
   elements.search.value = ''
   attendanceQuickFilter = 'all'
   document.querySelectorAll('[data-attendance-quick-filter]').forEach(button => {
@@ -1388,6 +1539,7 @@ function bindEvents() {
   const addMessage = document.getElementById('teamAttendanceAddMessage')
   const deleteForm = document.getElementById('teamAttendanceDeleteForm')
   const deleteMessage = document.getElementById('teamAttendanceDeleteMessage')
+  const restoreForm = document.getElementById('teamAttendanceRestoreForm')
 
   addForm?.addEventListener('submit', event => {
     event.preventDefault()
@@ -1406,6 +1558,15 @@ function bindEvents() {
       void handleCorrectionSubmit(correctionMessage)
     })
   }
+
+  elements.voidedHistory?.addEventListener('change', () => {
+    showVoidedHistory = elements.voidedHistory.checked
+    attendancePage = 1
+    refreshAttendance().catch(error => {
+      setMessage(elements.filterMessage, errorMessage(error), 'error')
+      setMessage(elements.tableMessage, errorMessage(error), 'error')
+    })
+  })
   ;['teamAttendanceNewClockIn', 'teamAttendanceNewClockOut'].forEach(id => {
     document.getElementById(id)?.addEventListener('input', updateCorrectionPreview)
   })
@@ -1413,10 +1574,15 @@ function bindEvents() {
     event.preventDefault()
     deleteAttendance()
   })
+  restoreForm?.addEventListener('submit', event => {
+    event.preventDefault()
+    restoreAttendance()
+  })
   document.querySelectorAll('[data-close]').forEach(button => {
     button.addEventListener('click', () => {
       if (button.dataset.close === 'teamAttendanceAddModal') closeAddModal()
       else if (button.dataset.close === 'teamAttendanceDeleteModal') closeDeleteModal()
+      else if (button.dataset.close === 'teamAttendanceRestoreModal') closeRestoreModal()
       else closeCorrectionModal()
     })
   })
@@ -1744,6 +1910,7 @@ async function initialize() {
     const quickFilters = document.querySelector('.team-attendance-chips')
     if (advancedFilters) advancedFilters.hidden = true
     if (quickFilters) quickFilters.hidden = true
+    if (elements.voidedHistory) elements.voidedHistory.closest('label')?.setAttribute('hidden', '')
   }
   bindEvents()
 

@@ -1415,6 +1415,7 @@ async function loadToday() {
     .in('user_id', profileIds)
     .gte('work_date', rangeStart)
     .lte('work_date', rangeEnd)
+    .is('voided_at', null)
     .order('created_at')
     .abortSignal(requestSignal())
 

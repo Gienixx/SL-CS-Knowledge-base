@@ -331,7 +331,7 @@ test('Team Attendance does not flag fully classified long overtime records', asy
   const page = await read('team-attendance.html')
   const script = await read('scripts/team-attendance.js')
 
-  assert.match(page, /scripts\/team-attendance\.js\?v=25/)
+  assert.match(page, /scripts\/team-attendance\.js\?v=26/)
   assert.match(script, /const hasUnclassifiedWorkedMinutes = workedMinutes > regularMinutes \+ overtimeMinutes/)
   assert.match(script, /record\.schedule_id && hasUnclassifiedWorkedMinutes/)
   assert.match(script, /if \(overtimeMinutes > 0\) return \{ label: 'Overtime'/)
@@ -397,7 +397,7 @@ test('Team Attendance displays correction modal and submits through correction R
 
   assert.match(page, /id="teamAttendanceCorrectionModal"/)
   assert.match(page, /team-attendance\.css\?v=15/)
-  assert.match(page, /team-attendance\.js\?v=25/)
+  assert.match(page, /team-attendance\.js\?v=26/)
   assert.match(page, /class="wf-backdrop" type="button" data-close="teamAttendanceCorrectionModal" aria-label="Close attendance correction dialog"/)
   assert.match(script, /event\.target\.closest\('\.team-attendance-record-actions'\)/)
   assert.match(script, /menu\.open = false/)

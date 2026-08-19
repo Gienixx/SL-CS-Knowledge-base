@@ -113,6 +113,10 @@
       </fieldset>
 
       <div class="team-attendance-filter-actions">
+        <label class="wf-check wf-check-card">
+          <input id="teamAttendanceVoidedHistory" type="checkbox">
+          <span>Voided history</span>
+        </label>
         <button id="teamAttendanceResetButton" class="wf-btn secondary" type="button">Reset</button>
         <button id="teamAttendanceRefreshButton" class="wf-btn" type="button">Refresh</button>
       </div>
@@ -332,6 +336,30 @@
       </form>
     </section>
   </div>
-  <script type="module" src="./scripts/team-attendance.js?v=25"></script>
+  <div class="wf-modal" id="teamAttendanceRestoreModal" role="dialog" aria-modal="true" aria-labelledby="teamAttendanceRestoreModalTitle" hidden>
+    <button class="wf-backdrop" type="button" data-close="teamAttendanceRestoreModal" aria-label="Close restore dialog"></button>
+    <section class="wf-dialog compact" role="document">
+      <div class="wf-dialog-header">
+        <div>
+          <h2 id="teamAttendanceRestoreModalTitle">Restore attendance record?</h2>
+          <p class="wf-message">This returns the original attendance and reclaims its schedule after conflict and payroll checks.</p>
+        </div>
+        <button class="wf-close" type="button" data-close="teamAttendanceRestoreModal" aria-label="Close">×</button>
+      </div>
+      <form id="teamAttendanceRestoreForm" class="wf-form">
+        <p id="teamAttendanceRestoreSummary" class="wf-message"></p>
+        <label class="wf-field">
+          <span>Restore reason</span>
+          <textarea id="teamAttendanceRestoreReason" class="wf-control" rows="3" minlength="3" required></textarea>
+        </label>
+        <p id="teamAttendanceRestoreMessage" class="wf-message" aria-live="polite"></p>
+        <div class="wf-dialog-actions">
+          <button class="wf-btn secondary" type="button" data-close="teamAttendanceRestoreModal">Cancel</button>
+          <button id="teamAttendanceRestoreSubmit" class="wf-btn" type="submit">Restore attendance</button>
+        </div>
+      </form>
+    </section>
+  </div>
+  <script type="module" src="./scripts/team-attendance.js?v=26"></script>
 </body>
 </html>
