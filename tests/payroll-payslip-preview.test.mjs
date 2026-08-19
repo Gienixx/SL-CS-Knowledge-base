@@ -3,7 +3,7 @@ import { readFile } from 'node:fs/promises'
 import test from 'node:test'
 
 const migrationPath =
-  'supabase/migrations/20260729185050_finalized_payslip_preview.sql'
+  'supabase/migrations/20260729105240_finalized_payslip_preview.sql'
 
 test('finalized payslip preview is permission scoped and excludes private notes', async () => {
   const migration = await readFile(migrationPath, 'utf8')

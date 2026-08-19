@@ -25,6 +25,7 @@ $$;
 
 drop trigger if exists attendance_corrections_sync_schedule_history
   on public.attendance_corrections;
+
 create trigger attendance_corrections_sync_schedule_history
 before insert or update on public.attendance_corrections
 for each row execute function public.workforce_sync_correction_schedule_history();
@@ -34,8 +35,10 @@ create index if not exists attendance_corrections_schedule_transition_idx
 
 comment on column public.attendance_corrections.schedule_id is
   'New/current schedule link retained for compatibility with existing correction RPCs.';
+
 comment on column public.attendance_corrections.previous_schedule_id is
   'Schedule linked before this correction.';
+
 comment on column public.attendance_corrections.new_schedule_id is
   'Schedule linked after this correction; synchronized from schedule_id for existing RPCs.';
 

@@ -145,6 +145,21 @@ function localDateKey(date = new Date()) {
   return `${values.year}-${values.month}-${values.day}`
 }
 
+function relativeScheduleDateLabel(workDate, now = new Date()) {
+  if (!workDate) return ''
+  const today = localDateKey(now)
+  if (workDate === today) return 'Today'
+  if (workDate === offsetDateKey(today, -1)) return 'Yesterday'
+  if (workDate === offsetDateKey(today, 1)) return 'Tomorrow'
+  return ''
+}
+
+function formatScheduleDateLabel(workDate, now = new Date()) {
+  return [relativeScheduleDateLabel(workDate, now), formatDate(workDate, false)]
+    .filter(Boolean)
+    .join(' · ')
+}
+
 function monthRange(value) {
   const match = /^\d{4}-\d{2}$/.test(value) ? value : localDateKey().slice(0, 7)
   const start = `${match}-01`
@@ -203,6 +218,15 @@ function formatCorrectionReason(value) {
 
 function isSpecialDay(schedule) {
   return Boolean(schedule?.is_rest_day || schedule?.is_holiday)
+}
+
+function isOpenSchedule(schedule) {
+  return Boolean(
+    schedule &&
+    !isSpecialDay(schedule) &&
+    !schedule.shift_start &&
+    !schedule.shift_end
+  )
 }
 
 function specialDayType(schedule) {
@@ -282,13 +306,13 @@ function paidLeaveWorkOptionEligible(now = new Date()) {
   return true
 }
 
-function leaveScheduleOptionLabel(schedule) {
+function leaveScheduleOptionLabel(schedule, now = new Date()) {
   const leaveLabel = schedule.leave_type === 'incentive_vl'
     ? 'Incentive VL'
     : schedule.leave_type === 'birthday_vl'
       ? 'Birthday VL'
       : 'Unpaid leave'
-  return `${formatDate(schedule.shift_date, false)} · Sequence ${schedule.shift_sequence || 1} · ${leaveLabel} · Leave`
+  return `${formatScheduleDateLabel(schedule.shift_date, now)} · Sequence ${schedule.shift_sequence || 1} · ${leaveLabel} · Leave`
 }
 
 function scheduleForAttendance(record) {
@@ -337,6 +361,18 @@ function scheduleAvailability(schedule, now = new Date()) {
     }
 
     return { state: schedule.shift_date < today ? 'ended' : 'future', startsAt: null, endsAt }
+  }
+
+  if (isOpenSchedule(schedule)) {
+    const today = localDateKey(now)
+    if (schedule.shift_date === today) {
+      return { state: 'open', startsAt: null, endsAt: null }
+    }
+    return {
+      state: schedule.shift_date < today ? 'ended' : 'future',
+      startsAt: null,
+      endsAt: null
+    }
   }
 
   if (!schedule.shift_start || !schedule.shift_end) {
@@ -748,9 +784,10 @@ function readHistoricalAdminAssistClockIn(schedule) {
 function scheduleOptionLabel(
   schedule,
   availability = scheduleAvailability(schedule),
-  { managerAssist = false, hasAttendance = false } = {}
+  { managerAssist = false, hasAttendance = false, now = new Date() } = {}
 ) {
   const baseLabel = formatScheduleOptionLabel(schedule, access?.timezone)
+  const relativeDateLabel = relativeScheduleDateLabel(schedule.shift_date, now)
   const statusLabel = schedule.status === 'changed' ? ' · Changed' : ''
   const overtimeLabel = schedule.is_rest_day
     ? ' · RDOT'
@@ -760,6 +797,7 @@ function scheduleOptionLabel(
   const availabilityLabel = availability.state === 'ended' ? ' · Ended' : ''
   const attendanceLabel = managerAssist && hasAttendance ? ' · Attendance recorded' : ''
   return [
+    relativeDateLabel,
     baseLabel,
     overtimeLabel.replace(/^ · /, ''),
     statusLabel.replace(/^ · /, ''),
@@ -796,7 +834,11 @@ function renderScheduleChooser() {
       const availability = scheduleAvailability(schedule, now)
       const hasAttendance = hasAttendanceForSchedule(schedule)
       const option = new Option(
-        scheduleOptionLabel(schedule, availability, { managerAssist: adminAssistMode, hasAttendance }),
+        scheduleOptionLabel(schedule, availability, {
+          managerAssist: adminAssistMode,
+          hasAttendance,
+          now
+        }),
         schedule.id
       )
       option.disabled = adminAssistMode ? hasAttendance : availability.state === 'ended'
@@ -807,7 +849,7 @@ function renderScheduleChooser() {
     if (canClockAdditionalSession()) {
       const additionalGroup = document.createElement('optgroup')
       additionalGroup.label = 'Additional session'
-      additionalGroup.appendChild(new Option(`${formatDate(activeLocalDate, false)} · Additional work session · Needs review`, ADDITIONAL_WORK_SESSION))
+      additionalGroup.appendChild(new Option(`${formatScheduleDateLabel(activeLocalDate, now)} · Additional work session · Needs review`, ADDITIONAL_WORK_SESSION))
       elements.scheduleSelect.appendChild(additionalGroup)
     }
 
@@ -847,7 +889,7 @@ function renderScheduleChooser() {
     const leaveGroup = document.createElement('optgroup')
     leaveGroup.label = 'Leave schedules'
     leaveSchedules.forEach(schedule => {
-      const option = new Option(leaveScheduleOptionLabel(schedule), schedule.id)
+      const option = new Option(leaveScheduleOptionLabel(schedule, now), schedule.id)
       option.disabled = true
       leaveGroup.appendChild(option)
     })
@@ -857,7 +899,7 @@ function renderScheduleChooser() {
   if (paidLeaveWorkOptionEligible(now)) {
     const vlGroup = document.createElement('optgroup')
     vlGroup.label = 'Paid leave work'
-    vlGroup.appendChild(new Option(`${formatDate(localDateKey(now), false)} · Work on VL · Needs review`, WORK_ON_VL))
+    vlGroup.appendChild(new Option(`${formatScheduleDateLabel(localDateKey(now), now)} · Work on VL · Needs review`, WORK_ON_VL))
     elements.scheduleSelect.appendChild(vlGroup)
     elements.scheduleChooser.hidden = false
   }
@@ -865,7 +907,7 @@ function renderScheduleChooser() {
   if (canClockAdditionalSession() && ![...elements.scheduleSelect.options].some(option => option.value === ADDITIONAL_WORK_SESSION)) {
     const additionalGroup = document.createElement('optgroup')
     additionalGroup.label = 'Additional session'
-    additionalGroup.appendChild(new Option(`${formatDate(activeLocalDate, false)} · Additional work session · Needs review`, ADDITIONAL_WORK_SESSION))
+    additionalGroup.appendChild(new Option(`${formatScheduleDateLabel(activeLocalDate, now)} · Additional work session · Needs review`, ADDITIONAL_WORK_SESSION))
     elements.scheduleSelect.appendChild(additionalGroup)
     elements.scheduleChooser.hidden = false
   }
@@ -956,11 +998,19 @@ function updateScheduleHelp() {
       ? 'This special-day schedule is still active. Credited work remains overtime.'
       : 'This shift is currently active. You can clock in now.'
   } else if (availability.state === 'ended') {
-    elements.scheduleHelp.textContent = 'This shift or work date has ended and is no longer available for clock-in.'
+    elements.scheduleHelp.textContent = isOpenSchedule(schedule)
+      ? 'This Open Schedule work date has ended and is no longer available for clock-in.'
+      : 'This shift or work date has ended and is no longer available for clock-in.'
   } else if (availability.state === 'future') {
-    elements.scheduleHelp.textContent = 'Rest-day and holiday clock-in opens on the scheduled work date.'
+    elements.scheduleHelp.textContent = isOpenSchedule(schedule)
+      ? 'Open Schedule clock-in opens on the scheduled work date.'
+      : 'Rest-day and holiday clock-in opens on the scheduled work date.'
+  } else if (availability.state === 'open') {
+    elements.scheduleHelp.textContent = 'This is an open schedule. Clock-in is available today; no fixed shift times are required.'
+  } else if (availability.state === 'unavailable') {
+    elements.scheduleHelp.textContent = 'This schedule is missing required shift times and cannot be used for self-service clock-in.'
   } else {
-    elements.scheduleHelp.textContent = 'This is an open schedule. Fixed shift times must be added before self-service clock-in is available.'
+    elements.scheduleHelp.textContent = 'This schedule is not available for self-service clock-in.'
   }
 }
 
@@ -978,6 +1028,7 @@ function updateActionState() {
         isUntimedRestDayWithinClockInWindow(schedule))
     : schedule
       ? ['next-day-special', 'next-day-overnight', 'special', 'early', 'active'].includes(availability.state) ||
+        availability.state === 'open' ||
         isUntimedRestDayWithinClockInWindow(schedule)
       : (isAdditionalWorkSessionSelected() && canClockAdditionalSession()) ||
         (isWorkOnVLSelected() && paidLeaveWorkOptionEligible())

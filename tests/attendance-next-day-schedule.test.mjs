@@ -10,7 +10,7 @@ test('Attendance enables tomorrow special-day schedules after today is completed
   const page = await read('attendance.html')
   const script = await read('scripts/attendance.js')
 
-  assert.match(page, /scripts\/attendance\.js\?v=23/)
+  assert.match(page, /scripts\/attendance\.js\?v=24/)
   assert.match(script, /function hasCompletedAttendanceForDate\(workDate\)/)
   assert.match(script, /schedule\.shift_date === tomorrow[\s\S]*hasCompletedAttendanceForDate\(today\)/)
   assert.match(script, /state: 'next-day-special'/)
@@ -66,7 +66,7 @@ test('clock-in RPC enforces completed today attendance for tomorrow special days
 })
 
 test('same-day additional unscheduled sessions stay separate and pending', async () => {
-  const migration = await read('supabase/migrations/20260814090000_allow_additional_unscheduled_attendance_session.sql')
+  const migration = await read('supabase/migrations/20260813173636_allow_additional_unscheduled_attendance_session.sql')
   const script = await read('scripts/attendance.js')
   assert.match(script, /Additional work session · Needs review/)
   assert.match(script, /No assigned second shift found\. Clock in as an additional work session for admin review\./)

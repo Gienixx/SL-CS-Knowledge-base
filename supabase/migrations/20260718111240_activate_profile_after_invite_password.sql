@@ -5,6 +5,7 @@
 begin;
 
 create schema if not exists private;
+
 revoke all on schema private from public, anon, authenticated;
 
 create or replace function private.workforce_activate_profile_after_password_created()
@@ -53,6 +54,7 @@ revoke all on function private.workforce_activate_profile_after_password_created
   from public, anon, authenticated;
 
 drop trigger if exists auth_user_activate_invited_profile on auth.users;
+
 create trigger auth_user_activate_invited_profile
 after update of encrypted_password on auth.users
 for each row

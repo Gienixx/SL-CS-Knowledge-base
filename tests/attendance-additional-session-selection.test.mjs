@@ -19,7 +19,7 @@ test('chooser preserves assigned and Additional work session selections across r
   assert.ok(chooser)
   assert.match(chooser, /const previous = elements\.scheduleSelect\.value/)
   assert.match(chooser, /optionValues\.includes\(previous\) && previous/)
-  assert.match(chooser, /new Option\(`\$\{formatDate\(activeLocalDate, false\)\} · Additional work session · Needs review`, ADDITIONAL_WORK_SESSION\)/)
+  assert.match(chooser, /new Option\(`\$\{formatScheduleDateLabel\(activeLocalDate, now\)\} · Additional work session · Needs review`, ADDITIONAL_WORK_SESSION\)/)
   assert.match(chooser, /elements\.scheduleSelect\.value = preferred/)
 })
 

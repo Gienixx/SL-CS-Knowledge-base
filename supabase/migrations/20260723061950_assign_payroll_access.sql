@@ -89,15 +89,22 @@ set is_granted = true,
     updated_at = now();
 
 grant select on table public.agent_rates to authenticated;
+
 grant select on table public.payroll_periods to authenticated;
+
 grant select on table public.payroll_records to authenticated;
+
 grant select on table public.payroll_items to authenticated;
+
 grant select on table public.payroll_attendance_snapshots to authenticated;
+
 grant select on table public.payslips to authenticated;
+
 grant select on table public.payroll_audit_logs to authenticated;
 
 drop policy if exists "Payroll rate managers can view rates"
 on public.agent_rates;
+
 create policy "Payroll rate managers can view rates"
 on public.agent_rates
 for select
@@ -108,6 +115,7 @@ using (
 
 drop policy if exists "Authorized users can view payroll periods"
 on public.payroll_periods;
+
 create policy "Authorized users can view payroll periods"
 on public.payroll_periods
 for select
@@ -124,6 +132,7 @@ using (
 
 drop policy if exists "Authorized users can view payroll records"
 on public.payroll_records;
+
 create policy "Authorized users can view payroll records"
 on public.payroll_records
 for select
@@ -143,6 +152,7 @@ using (
 
 drop policy if exists "Authorized users can view payroll items"
 on public.payroll_items;
+
 create policy "Authorized users can view payroll items"
 on public.payroll_items
 for select
@@ -167,6 +177,7 @@ using (
 
 drop policy if exists "Payroll processors can view attendance snapshots"
 on public.payroll_attendance_snapshots;
+
 create policy "Payroll processors can view attendance snapshots"
 on public.payroll_attendance_snapshots
 for select
@@ -180,6 +191,7 @@ using (
 
 drop policy if exists "Authorized users can view payslips"
 on public.payslips;
+
 create policy "Authorized users can view payslips"
 on public.payslips
 for select
@@ -198,6 +210,7 @@ using (
 
 drop policy if exists "Payroll processors can view payroll audit logs"
 on public.payroll_audit_logs;
+
 create policy "Payroll processors can view payroll audit logs"
 on public.payroll_audit_logs
 for select

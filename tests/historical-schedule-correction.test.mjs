@@ -23,7 +23,7 @@ test('historical schedule workflow preserves linked attendance and immutable clo
 })
 
 test('open schedule corrections retain their reason in the existing audit event', async () => {
-  const sql = await read('supabase/migrations/20260811094841_preserve_open_schedule_correction_reason.sql')
+  const sql = await read('supabase/migrations/20260811094915_preserve_open_schedule_correction_reason.sql')
   assert.match(sql, /rename to workforce_admin_save_open_schedule_without_audit_reason/)
   assert.match(sql, /A reason is required for open schedule corrections/)
   assert.match(sql, /l\.action = 'update'/)

@@ -568,6 +568,7 @@ $$;
 
 revoke all on function public.payroll_get_period_exceptions(uuid)
   from public, anon;
+
 grant execute on function public.payroll_get_period_exceptions(uuid)
   to authenticated, service_role;
 

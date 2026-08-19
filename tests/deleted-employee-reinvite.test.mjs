@@ -6,7 +6,7 @@ const read = path => readFile(new URL(`../${path}`, import.meta.url), 'utf8')
 
 test('deleted employee reinvitation stays pending until invite acceptance', async () => {
   const [migration, endpoint, middleware] = await Promise.all([
-    read('supabase/migrations/20260730181438_reinvite_deleted_employee_after_acceptance.sql'),
+    read('supabase/migrations/20260730182344_reinvite_deleted_employee_after_acceptance.sql'),
     read('functions/reinvite-deleted-employee.js'),
     read('functions/_middleware.js')
   ])
@@ -30,7 +30,7 @@ test('deleted employee reinvitation stays pending until invite acceptance', asyn
 
 test('accepted reinvite reuses the original employee profile and identity history', async () => {
   const migration = await read(
-    'supabase/migrations/20260730181438_reinvite_deleted_employee_after_acceptance.sql'
+    'supabase/migrations/20260730182344_reinvite_deleted_employee_after_acceptance.sql'
   )
 
   assert.match(migration, /profile_user_id = v_reinvite\.profile_user_id/)
@@ -49,7 +49,7 @@ test('accepted reinvite reuses the original employee profile and identity histor
 
 test('future deletions retain a hash for controlled reinvitation and no live email', async () => {
   const migration = await read(
-    'supabase/migrations/20260730181438_reinvite_deleted_employee_after_acceptance.sql'
+    'supabase/migrations/20260730182344_reinvite_deleted_employee_after_acceptance.sql'
   )
 
   assert.match(migration, /extensions\.digest\(lower\(trim\(v_profile\.email\)\), 'sha256'\)/)
@@ -96,7 +96,7 @@ test('linked Auth IDs remain editable and deletable after restoration', async ()
 
 test('compatibility login sync reuses a reinvited employee stable profile ID', async () => {
   const migration = await read(
-    'supabase/migrations/20260731090000_resolve_linked_profile_during_login_sync.sql'
+    'supabase/migrations/20260730194459_resolve_linked_profile_during_login_sync.sql'
   )
 
   assert.match(migration, /create or replace function public\.workforce_sync_login_record\(\)/i)
@@ -110,7 +110,7 @@ test('compatibility login sync reuses a reinvited employee stable profile ID', a
 
 test('deleted employee reinvite delivery time remains visible after refresh', async () => {
   const migration = await read(
-    'supabase/migrations/20260731101500_persist_deleted_employee_reinvite_timestamp.sql'
+    'supabase/migrations/20260730195252_persist_deleted_employee_reinvite_timestamp.sql'
   )
 
   assert.match(migration, /after insert or update of last_sent_at/i)
@@ -125,7 +125,7 @@ test('deleted employee reinvite delivery time remains visible after refresh', as
 
 test('pending deleted employee reinvites resend without re-entering stored email', async () => {
   const [migration, endpoint, client, html] = await Promise.all([
-    read('supabase/migrations/20260731103000_make_pending_reinvite_resend_reliable.sql'),
+    read('supabase/migrations/20260731042600_make_pending_reinvite_resend_reliable.sql'),
     read('functions/reinvite-deleted-employee.js'),
     read('scripts/workforce.js'),
     read('workforce.html')

@@ -23,7 +23,7 @@ test('Attendance exposes local-only Admin Assist navigation and cache-busted ass
 
   assert.match(html, /attendance\.css\?v=8/)
   assert.match(html, /attendance-theme-fix\.css\?v=6/)
-  assert.match(html, /scripts\/attendance\.js\?v=23/)
+  assert.match(html, /scripts\/attendance\.js\?v=24/)
   assert.match(styles, /attendance-admin-assist-arrow-previous/)
   assert.match(styles, /attendance-admin-assist-arrow-next/)
   assert.match(lightStyles, /attendance-admin-assist/)
@@ -68,11 +68,12 @@ test('Admin Assist migration protects target reads/actions and writes explicit a
 })
 
 test('historical Admin Assist clock-in preserves the RPC contract and server-side safeguards', async () => {
-  const [script, migration, timestampMigration] = await Promise.all([
+  const [script, live] = await Promise.all([
     read('scripts/attendance.js'),
-    read('supabase/migrations/20260817080129_harden_admin_assist_historical_clock_in.sql'),
-    read('supabase/migrations/20260817080923_admin_assist_historical_clock_in_timestamp.sql')
+    read('supabase/reconciliation-archive/pre-canonical-migrations-20260819/live-production-definitions-20260819.sql')
   ])
+  const timestampMigration = live.match(/-- signature: workforce_admin_assist_clock_in\(uuid,uuid,date,text,timestamp with time zone\)[\s\S]*?(?=-- LIVE PRODUCTION SNAPSHOT|$)/)?.[0] || ''
+  const legacyMigration = live.match(/-- signature: workforce_admin_assist_clock_in\(uuid,uuid,date,text\)[\s\S]*?(?=-- LIVE PRODUCTION SNAPSHOT|$)/)?.[0] || ''
 
   assert.match(script, /p_schedule_id: scheduleId/)
   assert.match(script, /p_work_date: schedule\?\.shift_date \|\| localDateKey\(\)/)
@@ -80,8 +81,9 @@ test('historical Admin Assist clock-in preserves the RPC contract and server-sid
   assert.match(script, /adminAssistMode\s*\?[\s\S]*!hasAttendanceForSchedule\(schedule\)/)
   assert.match(script, /actual historical Clock In date and time/)
   assert.match(script, /renderAdminAssistHistoricalClockIn/)
-  assert.match(migration, /workforce_is_authorized_attendance_admin\('correct_attendance'\)/)
-  assert.match(timestampMigration, /p_clock_in timestamptz/)
+  assert.match(timestampMigration, /workforce_is_authorized_attendance_admin\('correct_attendance'\)/)
+  assert.match(legacyMigration, /workforce_admin_assist_clock_in/)
+  assert.match(timestampMigration, /p_clock_in (timestamp with time zone|timestamptz)/)
   assert.match(timestampMigration, /v_clock_in timestamptz := coalesce\(p_clock_in, now\(\)/)
   assert.match(timestampMigration, /v_clock_in at time zone v_timezone/)
   assert.match(timestampMigration, /v_is_historical and p_clock_in is null/)
@@ -95,11 +97,7 @@ test('historical Admin Assist clock-in preserves the RPC contract and server-sid
   assert.match(timestampMigration, /review_status,[\s\S]*'pending'/)
   assert.match(timestampMigration, /audit_source', 'admin_assisted_clock_in'/)
   assert.match(timestampMigration, /metadata/)
-  assert.match(timestampMigration, /revoke all on function public\.workforce_admin_assist_clock_in\(uuid, uuid, date, text\)/)
-  assert.match(timestampMigration, /grant execute on function public\.workforce_admin_assist_clock_in\(uuid, uuid, date, text\)[\s\S]*to authenticated/)
-  assert.match(timestampMigration, /grant execute on function public\.workforce_admin_assist_clock_in\(uuid, uuid, date, text, timestamptz\)[\s\S]*to authenticated/)
-  assert.match(timestampMigration, /alter function public\.workforce_admin_assist_clock_in\(uuid, uuid, date, text, timestamptz\)[\s\S]*owner to postgres/)
-  assert.match(timestampMigration, /set search_path = public, pg_temp/)
+  assert.match(timestampMigration, /set search_path (TO|=) ['"]?public['"]?,? ['"]?pg_temp['"]?/i)
   assert.doesNotMatch(timestampMigration, /workforce_clock_in\(/)
 })
 

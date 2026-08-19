@@ -4,7 +4,7 @@ import test from 'node:test'
 
 const read = path => readFile(new URL(`../${path}`, import.meta.url), 'utf8')
 const migrationPath =
-  'supabase/migrations/20260812151853_gate_attendance_log_regular_minutes_on_approval.sql'
+  'supabase/migrations/20260812152037_gate_attendance_log_regular_minutes_on_approval.sql'
 
 test('Attendance Log RPC is employee scoped and includes schedules plus actual ledger fulfillment', async () => {
   const migration = await read(migrationPath)
@@ -37,7 +37,7 @@ test('Attendance Log distinguishes scheduled prepaid, fulfilled prepaid, and reg
   ])
 
   assert.match(html, /<th>Pay type<\/th>/)
-  assert.match(html, /scripts\/attendance\.js\?v=23/)
+  assert.match(html, /scripts\/attendance\.js\?v=24/)
   assert.match(html, /styles\/attendance-theme-fix\.css\?v=6/)
   assert.match(script, /workforce_list_my_attendance_log/)
   assert.match(script, /Prepaid scheduled/)

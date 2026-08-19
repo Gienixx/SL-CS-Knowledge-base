@@ -15,7 +15,7 @@ function loadRestDayEligibility(script) {
 }
 
 test('latest clock-in RPC allows null-time Rest Day/RDOT schedules but rejects incomplete ordinary schedules', async () => {
-  const migration = await read('supabase/migrations/20260814090000_allow_additional_unscheduled_attendance_session.sql')
+  const migration = await read('supabase/migrations/20260814105212_allow_rest_day_rdot_null_time_clock_in.sql')
 
   assert.match(migration, /v_schedule\.status not in \('published', 'changed'\)/)
   assert.match(migration, /if not \(v_schedule\.is_rest_day or v_schedule\.is_holiday\)[\s\S]*v_schedule\.shift_start is null or v_schedule\.shift_end is null/)
@@ -32,7 +32,7 @@ test('attendance frontend keeps Rest Day/RDOT eligible and preserves ordinary/op
   assert.match(script, /'next-day-special', 'next-day-overnight', 'special', 'early', 'active'/)
   assert.match(script, /isUntimedRestDayWithinClockInWindow\(schedule\)/)
   assert.match(script, /busy \|\| Boolean\(openRecord\) \|\| selectedCompleted \|\| !hasExplicitSelection \|\| !scheduleClockInOpen/)
-  assert.match(script, /This is an open schedule\. Fixed shift times must be added before self-service clock-in is available\./)
+  assert.match(script, /This is an open schedule\. Clock-in is available today; no fixed shift times are required\./)
 })
 
 test('current-day untimed RDOT is eligible', async () => {

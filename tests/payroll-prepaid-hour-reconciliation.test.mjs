@@ -89,7 +89,7 @@ test('approved attendance settles prepaid minutes FIFO and carries shortfalls', 
 test('billed duration is consumed before new regular payroll hours and cannot be paid twice', async () => {
   const [reconciliation, calculation] = await Promise.all([
     read(migrationPath),
-    read('supabase/migrations/20260729151931_calculate_draft_payroll.sql')
+    read('supabase/migrations/20260729073554_calculate_draft_payroll.sql')
   ])
 
   assert.match(reconciliation, /new\.clock_out - new\.clock_in/)

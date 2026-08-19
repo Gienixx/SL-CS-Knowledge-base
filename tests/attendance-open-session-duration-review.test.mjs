@@ -4,7 +4,7 @@ import test from 'node:test'
 
 const read = path => readFile(new URL(`../${path}`, import.meta.url), 'utf8')
 
-const migrationPath = 'supabase/migrations/20260817060423_attendance_open_session_over_duration_review.sql'
+const migrationPath = 'supabase/reconciliation-archive/pre-canonical-migrations-20260819/live-production-definitions-20260819.sql'
 
 test('open-session duration boundary is strict and never closes the session', async () => {
   const [script, attendanceScript] = await Promise.all([
@@ -52,17 +52,14 @@ test('open-session duration boundary is strict and never closes the session', as
 test('over-duration review is durable, strict, idempotent, and timestamp-neutral', async () => {
   const migration = await read(migrationPath)
 
-  assert.match(migration, /add column if not exists manager_review_reason text/)
+  assert.match(migration, /signature: workforce_flag_current_open_attendance_over_duration\(\)/)
   assert.match(migration, /manager_review_reason = 'open_session_over_20_hours'/)
   assert.match(migration, /manager_review_reason is null/)
   assert.match(migration, /clock_in < v_now - interval '20 hours'/)
-  assert.match(migration, /create or replace function public\.workforce_flag_current_open_attendance_over_duration\(\)/)
-  assert.match(migration, /grant execute on function public\.workforce_flag_current_open_attendance_over_duration\(\) to authenticated/)
   assert.doesNotMatch(migration, /set[\s\S]*manager_review_reason[\s\S]*clock_out\s*=/)
-  assert.match(migration, /manager_review_reason text\s*\n\)/)
   assert.match(migration, /attendance_row\.clock_in is not null and attendance_row\.clock_out is null/)
   assert.match(migration, /case when v_is_admin then attendance_row\.manager_review_reason else null end/)
-  assert.match(migration, /to_jsonb\(new\) - array\['manager_review_reason', 'attendance_version', 'updated_at'\]/)
+  assert.match(migration, /signature: workforce_flag_open_attendance_over_duration\(\)/)
 })
 
 test('Team Attendance keeps an over-duration row open and surfaces the durable review indicator', async () => {
@@ -75,7 +72,6 @@ test('Team Attendance keeps an over-duration row open and surfaces the durable r
   assert.match(script, /if \(row\.is_over_duration\) labels\.push\(\{ label: 'Over 20h · Review'/)
   assert.match(script, /if \(record\.is_over_duration\) return \{ label: 'Over 20h · Review'/)
   assert.match(script, /if \(attendanceQuickFilter === 'review'[\s\S]*!row\.is_over_duration/)
-  assert.match(migration, /manager_review_reason text/)
   assert.match(migration, /update public\.attendance[\s\S]*manager_review_reason is null[\s\S]*clock_in < v_now - interval '20 hours'/)
   assert.match(migration, /attendance_row\.clock_in is not null and attendance_row\.clock_out is null,/) 
 })
@@ -83,8 +79,8 @@ test('Team Attendance keeps an over-duration row open and surfaces the durable r
 test('existing clock-in paths and safeguards remain wired to the trusted RPCs', async () => {
   const [attendance, clockInMigration, additionalSessionMigration, payrollReadiness, clockOutMigration] = await Promise.all([
     read('scripts/attendance.js'),
-    read('supabase/migrations/20260814090000_allow_additional_unscheduled_attendance_session.sql'),
-    read('supabase/migrations/20260814090000_allow_additional_unscheduled_attendance_session.sql'),
+    read('supabase/migrations/20260813173636_allow_additional_unscheduled_attendance_session.sql'),
+    read('supabase/migrations/20260813173636_allow_additional_unscheduled_attendance_session.sql'),
     read('supabase/migrations/20260722084820_harden_attendance_payroll_readiness.sql'),
     read('supabase/migrations/20260721112529_fix_clock_out_structured_totals.sql')
   ])

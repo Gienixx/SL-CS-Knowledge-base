@@ -1,6 +1,5 @@
 drop policy if exists "Workforce admins can create announcements"
 on public.team_announcements;
-
 create policy "Workforce admins can create announcements"
 on public.team_announcements
 for insert

@@ -101,6 +101,7 @@ $$;
 
 drop trigger if exists work_schedules_clear_leave_on_schedule_change
   on public.work_schedules;
+
 create trigger work_schedules_clear_leave_on_schedule_change
 before update of
   shift_start, shift_end, is_rest_day, is_holiday, is_leave,
@@ -133,6 +134,7 @@ $$;
 
 drop trigger if exists work_schedules_normalize_planned_paid_minutes
   on public.work_schedules;
+
 create trigger work_schedules_normalize_planned_paid_minutes
 before insert or update of
   shift_start, shift_end, is_rest_day, is_holiday, is_leave,
@@ -299,6 +301,7 @@ $$;
 revoke all on function public.workforce_admin_save_leave_schedule(
   uuid, uuid, date, integer, text, text, text
 ) from public, anon;
+
 grant execute on function public.workforce_admin_save_leave_schedule(
   uuid, uuid, date, integer, text, text, text
 ) to authenticated, service_role;
@@ -329,6 +332,7 @@ $$;
 
 drop trigger if exists work_schedules_reject_attended_leave
 on public.work_schedules;
+
 create trigger work_schedules_reject_attended_leave
 before insert or update of is_leave on public.work_schedules
 for each row execute function public.workforce_reject_attended_leave_schedule();
@@ -357,6 +361,7 @@ end;
 $$;
 
 drop trigger if exists attendance_reject_leave_schedule on public.attendance;
+
 create trigger attendance_reject_leave_schedule
 before insert or update of schedule_id on public.attendance
 for each row execute function public.workforce_reject_leave_attendance();

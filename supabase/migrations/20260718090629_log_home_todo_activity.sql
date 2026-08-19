@@ -19,12 +19,6 @@ create index home_todo_activity_logs_occurred_at_idx
 create index home_todo_activity_logs_profile_date_idx
   on public.home_todo_activity_logs (profile_user_id, completion_date desc);
 
-create index home_todo_activity_logs_todo_item_idx
-  on public.home_todo_activity_logs (todo_item_id);
-
-create index home_todo_activity_logs_auth_user_idx
-  on public.home_todo_activity_logs (auth_user_id);
-
 alter table public.home_todo_activity_logs enable row level security;
 
 create policy "Workforce admins can view home task activity"
@@ -37,14 +31,7 @@ grant select on public.home_todo_activity_logs to authenticated;
 revoke insert, update, delete on public.home_todo_activity_logs from anon, authenticated;
 
 insert into public.home_todo_activity_logs (
-  todo_item_id,
-  task_title,
-  auth_user_id,
-  profile_user_id,
-  agent_name,
-  action,
-  completion_date,
-  occurred_at
+  todo_item_id, task_title, auth_user_id, profile_user_id, agent_name, action, completion_date, occurred_at
 )
 select
   completion.todo_item_id,
@@ -85,8 +72,7 @@ begin
     v_completion_date := old.completion_date;
   end if;
 
-  select item.title
-  into v_task_title
+  select item.title into v_task_title
   from public.home_todo_items item
   where item.id = v_todo_item_id;
 
@@ -100,14 +86,7 @@ begin
   where profile.user_id = v_profile_user_id;
 
   insert into public.home_todo_activity_logs (
-    todo_item_id,
-    task_title,
-    auth_user_id,
-    profile_user_id,
-    agent_name,
-    action,
-    completion_date,
-    occurred_at
+    todo_item_id, task_title, auth_user_id, profile_user_id, agent_name, action, completion_date, occurred_at
   ) values (
     v_todo_item_id,
     coalesce(nullif(btrim(v_task_title), ''), 'Unknown task'),

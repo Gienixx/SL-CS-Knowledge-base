@@ -106,6 +106,7 @@ end;
 $$;
 
 revoke all on function public.workforce_list_team_attendance(date, date) from public, anon, authenticated;
+
 grant execute on function public.workforce_list_team_attendance(date, date) to authenticated, service_role;
 
 comment on function public.workforce_list_team_attendance(date, date) is

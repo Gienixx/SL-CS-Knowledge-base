@@ -20,16 +20,24 @@ function extractFunction(script, name) {
 }
 
 function loadScheduleAvailability(script) {
-  const match = script.match(/function scheduleAvailability\(schedule, now = new Date\(\)\) \{[\s\S]*?\n\}/)
-  assert.ok(match, 'schedule availability function is present')
+  const openSchedule = extractFunction(script, 'isOpenSchedule')
+  const availability = extractFunction(script, 'scheduleAvailability')
+  const isSpecialDay = schedule => Boolean(schedule?.is_rest_day || schedule?.is_holiday)
+  const isOpenSchedule = new Function(
+    'isSpecialDay',
+    `${openSchedule}; return isOpenSchedule`
+  )(isSpecialDay)
+
   return new Function(
     'isSpecialDay',
+    'isOpenSchedule',
     'localDateKey',
     'offsetDateKey',
     'hasCompletedAttendanceForDate',
-    `${match[0]}; return scheduleAvailability`
+    `${openSchedule}\n${availability}; return scheduleAvailability`
   )(
-    schedule => Boolean(schedule?.is_rest_day || schedule?.is_holiday),
+    isSpecialDay,
+    isOpenSchedule,
     () => '2026-08-17',
     (date, days) => {
       const value = new Date(`${date}T00:00:00Z`)
@@ -96,7 +104,7 @@ test('retroactive yesterday schedule created today is inside the unchanged loadi
   assert.match(page, /id="attendanceAdminAssistClockInDate"[^>]*type="date"/)
   assert.match(page, /id="attendanceAdminAssistClockInTime"[^>]*type="time"/)
   assert.match(script, /if \(historicalClockIn\.timestamp\) payload\.p_clock_in = historicalClockIn\.timestamp/)
-  assert.match(page, /scripts\/attendance\.js\?v=23/)
+  assert.match(page, /scripts\/attendance\.js\?v=24/)
 })
 
 test('historical Agent Assist converts Aug 16 8:05 AM New York to the correct UTC timestamp', async () => {

@@ -12,7 +12,7 @@ test('Team Attendance labels correction action Edit and leaves approved records 
 })
 
 test('approved attendance reopens through the audited billed correction workflow', async () => {
-  const sql = await read('supabase/migrations/20260810130000_allow_system_admin_approved_attendance_edit.sql')
+  const sql = await read('supabase/reconciliation-archive/pre-canonical-migrations-20260819/live-production-definitions-20260819.sql')
   assert.match(sql, /profile\.is_system_admin is true/)
   assert.match(sql, /if v_old\.review_status = 'locked'/)
   assert.match(sql, /review_status = 'corrected'/)

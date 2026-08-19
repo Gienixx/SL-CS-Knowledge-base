@@ -120,8 +120,6 @@ grant execute on function public.workforce_admin_change_employee_lifecycle(
   uuid, text, text
 ) to authenticated;
 
--- Repair accounts deleted before this change. Their workforce history and
--- stable user IDs remain, while the real email becomes reusable.
 delete from public.login login_row
 using public.profiles profile
 where profile.account_deleted_at is not null

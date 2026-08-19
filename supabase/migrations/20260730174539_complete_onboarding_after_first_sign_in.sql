@@ -1,4 +1,4 @@
--- Complete workforce onboarding only after the invited employee has authenticated and
+-- Complete onboarding only after the invited employee has authenticated and
 -- replaced any pre-existing/system password with the password they chose.
 
 begin;

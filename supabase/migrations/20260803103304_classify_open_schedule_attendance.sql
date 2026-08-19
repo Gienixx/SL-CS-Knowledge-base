@@ -62,6 +62,7 @@ $$;
 
 drop trigger if exists work_schedules_normalize_planned_paid_minutes
   on public.work_schedules;
+
 create trigger work_schedules_normalize_planned_paid_minutes
 before insert or update of
   shift_start, shift_end, is_rest_day, is_holiday, planned_paid_minutes
@@ -254,6 +255,7 @@ comment on function public.workforce_admin_save_open_schedule(
 revoke all on function public.workforce_admin_save_open_schedule(
   uuid, uuid, date, integer, text, text, text, integer
 ) from public, anon, authenticated;
+
 grant execute on function public.workforce_admin_save_open_schedule(
   uuid, uuid, date, integer, text, text, text, integer
 ) to authenticated;
@@ -627,6 +629,7 @@ comment on view public.workforce_attendance_payroll_readiness is
   'Payroll-readiness projection including flexible open-schedule planned-time validation and complete worked-minute classification.';
 
 revoke all on public.workforce_attendance_payroll_readiness from public, anon;
+
 grant select on public.workforce_attendance_payroll_readiness
   to authenticated, service_role;
 

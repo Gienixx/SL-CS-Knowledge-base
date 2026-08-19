@@ -7,8 +7,8 @@ const migrationPath = 'supabase/migrations-legacy/2026070902_team_attendance_pag
 const manualEntryMigrationPath = 'supabase/migrations/20260714070649_manual_attendance_entry.sql'
 const approvalLockingMigrationPath = 'supabase/migrations/20260717172240_attendance_approval_locking.sql'
 const writeBoundaryMigrationPath = 'supabase/migrations/20260721153218_harden_attendance_write_boundaries.sql'
-const timestampHistoryMigrationPath = 'supabase/migrations/20260806120000_team_attendance_original_timestamps.sql'
-const billedRpcMigrationPath = 'supabase/migrations/20260808113000_expose_billed_attendance_in_team_rpc.sql'
+const timestampHistoryMigrationPath = 'supabase/migrations/20260806111249_team_attendance_original_timestamps.sql'
+const billedRpcMigrationPath = 'supabase/migrations/20260808090046_expose_billed_attendance_in_team_rpc.sql'
 
 test('Team Attendance listing RPC returns billed timestamps without changing its scope contract', async () => {
   const migration = await read(billedRpcMigrationPath)
@@ -182,7 +182,7 @@ test('Team Attendance lets schedule administrators delete an attendance record w
   const page = await read('team-attendance.html')
   const script = await read('scripts/team-attendance.js')
   const migration = await read(writeBoundaryMigrationPath)
-  const visibilityMigration = await read('supabase/migrations/20260814130000_exclude_voided_team_attendance.sql')
+  const visibilityMigration = await read('supabase/migrations/20260813220325_exclude_voided_team_attendance.sql')
 
   assert.match(page, /permanently delete invalid test and timing records/)
   assert.match(script, /access\?\.is_admin === true && hasWorkforcePermission\(access, 'manage_schedules'\)/)
@@ -281,7 +281,7 @@ test('Team Attendance exposes unscheduled filtering and audited schedule assignm
   const [page, script, migration] = await Promise.all([
     read('team-attendance.html'),
     read('scripts/team-attendance.js'),
-    read('supabase/migrations/20260810100000_unscheduled_attendance_schedule_assignment.sql')
+    read('supabase/migrations/20260810040023_unscheduled_attendance_schedule_assignment.sql')
   ])
   assert.match(page, /id="teamAttendanceUnscheduledFilter"/)
   assert.match(page, />Unscheduled</)

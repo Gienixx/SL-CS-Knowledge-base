@@ -5,9 +5,9 @@ import test from 'node:test'
 const read = path => readFile(new URL(`../${path}`, import.meta.url), 'utf8')
 
 const migrationPath =
-  'supabase/migrations/20260727105739_extend_payroll_reconciliation_tables.sql'
+  'supabase/migrations/20260727110318_extend_payroll_reconciliation_tables.sql'
 const indexMigrationPath =
-  'supabase/migrations/20260727110511_index_payroll_foreign_keys.sql'
+  'supabase/migrations/20260727110552_index_payroll_foreign_keys.sql'
 
 test('adds a monotonic schedule version for exact payroll snapshots', async () => {
   const migration = await read(migrationPath)

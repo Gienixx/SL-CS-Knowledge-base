@@ -6,9 +6,9 @@ import test from 'node:test'
 const read = path => readFile(new URL(`../${path}`, import.meta.url), 'utf8')
 
 const migrationPath =
-  'supabase/migrations/20260729103000_complete_payroll_exception_review.sql'
+  'supabase/migrations/20260729070252_complete_payroll_exception_review.sql'
 const versionCorrectionPath =
-  'supabase/migrations/20260729111500_use_schedule_version_for_preplot_change.sql'
+  'supabase/migrations/20260729070425_use_schedule_version_for_preplot_change.sql'
 
 test('Step 8 adds every prepaid balance and allocation exception', async () => {
   const migration = await read(migrationPath)

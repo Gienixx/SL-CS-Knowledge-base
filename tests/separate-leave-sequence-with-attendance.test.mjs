@@ -2,7 +2,7 @@ import test from 'node:test'
 import assert from 'node:assert/strict'
 import fs from 'node:fs'
 
-const migration = fs.readFileSync('supabase/migrations/20260810170000_allow_separate_leave_sequence_with_attendance.sql', 'utf8')
+const migration = fs.readFileSync('supabase/migrations/20260810124917_allow_separate_leave_sequence_with_attendance.sql', 'utf8')
 
 test('attended schedules remain protected from direct conversion', () => {
   assert.match(migration, /if v_schedule_type <> 'leave' then/)

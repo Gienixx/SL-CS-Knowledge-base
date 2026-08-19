@@ -34,7 +34,7 @@ test('Home and agent UI expose the unified Schedule Request workflow', async () 
 })
 
 test('production-forward request migration reuses the leave ledger and canonical schedules', async () => {
-  const migration = await read('supabase/migrations/20260817100000_unified_schedule_requests.sql')
+  const migration = await read('supabase/migrations/20260817125628_unified_schedule_requests.sql')
 
   assert.match(migration, /add column if not exists request_category/)
   assert.match(migration, /add column if not exists request_type/)
@@ -55,7 +55,7 @@ test('production-forward request migration reuses the leave ledger and canonical
 })
 
 test('schedule request approval is atomic, scoped, auditable, and payroll-safe', async () => {
-  const migration = await read('supabase/migrations/20260817100000_unified_schedule_requests.sql')
+  const migration = await read('supabase/migrations/20260817125628_unified_schedule_requests.sql')
 
   assert.match(migration, /security definer/)
   assert.match(migration, /workforce_current_profile_id\(\)/)
@@ -75,7 +75,7 @@ test('schedule request approval is atomic, scoped, auditable, and payroll-safe',
 })
 
 test('request feature leaves Attendance and payroll data paths untouched', async () => {
-  const migration = await read('supabase/migrations/20260817100000_unified_schedule_requests.sql')
+  const migration = await read('supabase/migrations/20260817125628_unified_schedule_requests.sql')
 
   assert.doesNotMatch(migration, /insert into public\.attendance/)
   assert.doesNotMatch(migration, /update public\.attendance/)

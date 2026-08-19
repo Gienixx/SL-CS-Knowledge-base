@@ -109,8 +109,8 @@ test('unpaid leave, absence, normal work schedules, open attendance, and complet
 test('Work on VL uses the existing pending unscheduled attendance and payroll semantics', async () => {
   const [script, clockInMigration, paidLeaveMigration] = await Promise.all([
     read('scripts/attendance.js'),
-    read('supabase/migrations/20260814090000_allow_additional_unscheduled_attendance_session.sql'),
-    read('supabase/migrations/20260810160000_correct_paid_leave_prepaid_independence.sql')
+    read('supabase/migrations/20260813173636_allow_additional_unscheduled_attendance_session.sql'),
+    read('supabase/migrations/20260810122937_correct_paid_leave_prepaid_independence.sql')
   ])
 
   assert.match(script, /workforce_clock_in', \{ p_schedule_id: scheduleId \}/)

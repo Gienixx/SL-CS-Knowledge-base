@@ -3,9 +3,9 @@ import { readFile } from 'node:fs/promises'
 import test from 'node:test'
 
 const migrationPath =
-  'supabase/migrations/20260729180837_approve_finalize_payroll.sql'
+  'supabase/migrations/20260729101321_approve_finalize_payroll.sql'
 const hardeningPath =
-  'supabase/migrations/20260729182410_harden_payroll_finalization_guards.sql'
+  'supabase/migrations/20260729101933_harden_payroll_finalization_guards.sql'
 
 test('Step 10 verifies and records review and final approval', async () => {
   const migration = await readFile(migrationPath, 'utf8')

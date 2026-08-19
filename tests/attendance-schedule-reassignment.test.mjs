@@ -3,7 +3,7 @@ import { readFile } from 'node:fs/promises'
 import test from 'node:test'
 
 const read = path => readFile(new URL(`../${path}`, import.meta.url), 'utf8')
-const migrationPath = 'supabase/migrations/20260818200947_allow_previous_day_attendance_schedule_reassignment.sql'
+const migrationPath = 'supabase/migrations/20260818203928_allow_previous_day_attendance_schedule_reassignment.sql'
 
 test('correction schedule choices include only the work date and previous calendar date', async () => {
   const script = await read('scripts/team-attendance.js')

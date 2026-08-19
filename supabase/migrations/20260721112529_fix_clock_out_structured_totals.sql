@@ -43,12 +43,6 @@ begin
     raise exception 'Clock-out cannot be earlier than clock-in.';
   end if;
 
-  -- Open sessions can contain a provisional pre-shift overtime estimate. If
-  -- clock_out is written while those values remain, the row can temporarily
-  -- violate attendance_structured_totals_check before recalculation runs.
-  -- Move the row to the constraint's explicit pending-calculation state in
-  -- the same update, then calculate the final totals below. Any failure rolls
-  -- the entire function call back, including the clock-out timestamp.
   update public.attendance
   set clock_out = v_clock_time,
       pre_shift_overtime_minutes = null,

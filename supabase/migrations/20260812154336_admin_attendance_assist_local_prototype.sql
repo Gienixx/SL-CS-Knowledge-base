@@ -1,5 +1,5 @@
--- Admin Assist backend for the Attendance prototype.
--- The frontend remains local until separately approved for deployment.
+-- Local-only Admin Assist prototype for Attendance.
+-- Do not apply this migration to production until the prototype is approved.
 
 begin;
 
@@ -263,17 +263,27 @@ end;
 $$;
 
 revoke all on function public.workforce_admin_assist_list_employees() from public, anon, authenticated;
+
 revoke all on function public.workforce_admin_assist_snapshot(uuid, date, date) from public, anon, authenticated;
+
 revoke all on function public.workforce_admin_assist_clock_in(uuid, uuid, date, text) from public, anon, authenticated;
+
 revoke all on function public.workforce_admin_assist_clock_out(uuid, text) from public, anon, authenticated;
+
 grant execute on function public.workforce_admin_assist_list_employees() to authenticated;
+
 grant execute on function public.workforce_admin_assist_snapshot(uuid, date, date) to authenticated;
+
 grant execute on function public.workforce_admin_assist_clock_in(uuid, uuid, date, text) to authenticated;
+
 grant execute on function public.workforce_admin_assist_clock_out(uuid, text) to authenticated;
 
 comment on function public.workforce_admin_assist_list_employees() is 'Local Admin Assist prototype: lists active employees only for authorized attendance administrators.';
+
 comment on function public.workforce_admin_assist_snapshot(uuid, date, date) is 'Local Admin Assist prototype: employee-scoped Attendance snapshot for authorized administrators.';
+
 comment on function public.workforce_admin_assist_clock_in(uuid, uuid, date, text) is 'Local Admin Assist prototype: audited target clock-in; does not impersonate the employee.';
+
 comment on function public.workforce_admin_assist_clock_out(uuid, text) is 'Local Admin Assist prototype: audited target clock-out; does not change correction behavior.';
 
 commit;

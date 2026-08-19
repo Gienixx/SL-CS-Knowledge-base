@@ -1,53 +1,32 @@
--- PRODUCTION BASELINE: DO NOT paste or execute this file in the SQL Editor of
--- the existing linked project. It records the schema that already exists and is
--- intended only for creating a clean database from scratch. Future production
--- changes must use a new CLI-generated incremental migration.
-
-
-
 SET statement_timeout = 0;
-SET lock_timeout = 0;
-SET idle_in_transaction_session_timeout = 0;
-SET client_encoding = 'UTF8';
-SET standard_conforming_strings = on;
-SELECT pg_catalog.set_config('search_path', '', false);
-SET check_function_bodies = false;
-SET xmloption = content;
-SET client_min_messages = warning;
-SET row_security = off;
 
+SET lock_timeout = 0;
+
+SET idle_in_transaction_session_timeout = 0;
+
+SET client_encoding = 'UTF8';
+
+SET standard_conforming_strings = on;
+
+SELECT pg_catalog.set_config('search_path', '', false);
+
+SET check_function_bodies = false;
+
+SET xmloption = content;
+
+SET client_min_messages = warning;
+
+SET row_security = off;
 
 COMMENT ON SCHEMA "public" IS 'standard public schema';
 
-
-
 CREATE EXTENSION IF NOT EXISTS "pg_stat_statements" WITH SCHEMA "extensions";
-
-
-
-
-
 
 CREATE EXTENSION IF NOT EXISTS "pgcrypto" WITH SCHEMA "extensions";
 
-
-
-
-
-
 CREATE EXTENSION IF NOT EXISTS "supabase_vault" WITH SCHEMA "vault";
 
-
-
-
-
-
 CREATE EXTENSION IF NOT EXISTS "uuid-ossp" WITH SCHEMA "extensions";
-
-
-
-
-
 
 CREATE OR REPLACE FUNCTION "public"."acquire_zendesk_sync_lock"("p_stream_key" "text", "p_lock_token" "uuid", "p_lease_seconds" integer DEFAULT 900) RETURNS TABLE("current_cursor" "text", "current_start_time" bigint)
     LANGUAGE "plpgsql" SECURITY DEFINER
@@ -92,9 +71,7 @@ begin
 end;
 $$;
 
-
 ALTER FUNCTION "public"."acquire_zendesk_sync_lock"("p_stream_key" "text", "p_lock_token" "uuid", "p_lease_seconds" integer) OWNER TO "postgres";
-
 
 CREATE OR REPLACE FUNCTION "public"."advance_zendesk_sync_state"("p_stream_key" "text", "p_lock_token" "uuid", "p_cursor" "text", "p_start_time" bigint, "p_last_event_timestamp" timestamp with time zone) RETURNS boolean
     LANGUAGE "plpgsql" SECURITY DEFINER
@@ -125,9 +102,7 @@ begin
 end;
 $$;
 
-
 ALTER FUNCTION "public"."advance_zendesk_sync_state"("p_stream_key" "text", "p_lock_token" "uuid", "p_cursor" "text", "p_start_time" bigint, "p_last_event_timestamp" timestamp with time zone) OWNER TO "postgres";
-
 
 CREATE OR REPLACE FUNCTION "public"."capture_agent_identity_from_productivity"() RETURNS "trigger"
     LANGUAGE "plpgsql"
@@ -151,13 +126,9 @@ begin
 end;
 $$;
 
-
 ALTER FUNCTION "public"."capture_agent_identity_from_productivity"() OWNER TO "postgres";
 
-
 COMMENT ON FUNCTION "public"."capture_agent_identity_from_productivity"() IS 'Keeps the agent identity map aligned with synchronized productivity agents.';
-
-
 
 CREATE OR REPLACE FUNCTION "public"."current_user_can_edit_articles"() RETURNS boolean
     LANGUAGE "sql" STABLE SECURITY DEFINER
@@ -176,9 +147,7 @@ CREATE OR REPLACE FUNCTION "public"."current_user_can_edit_articles"() RETURNS b
   );
 $$;
 
-
 ALTER FUNCTION "public"."current_user_can_edit_articles"() OWNER TO "postgres";
-
 
 CREATE OR REPLACE FUNCTION "public"."enforce_admin_article_access"() RETURNS "trigger"
     LANGUAGE "plpgsql"
@@ -193,9 +162,7 @@ begin
 end;
 $$;
 
-
 ALTER FUNCTION "public"."enforce_admin_article_access"() OWNER TO "postgres";
-
 
 CREATE OR REPLACE FUNCTION "public"."get_agent_analytics_dashboard"("p_start_date" "date", "p_end_date" "date", "p_agent_key" "text" DEFAULT NULL::"text", "p_time_zone" "text" DEFAULT 'America/New_York'::"text") RETURNS "jsonb"
     LANGUAGE "plpgsql" SECURITY DEFINER
@@ -488,13 +455,9 @@ begin
 end;
 $$;
 
-
 ALTER FUNCTION "public"."get_agent_analytics_dashboard"("p_start_date" "date", "p_end_date" "date", "p_agent_key" "text", "p_time_zone" "text") OWNER TO "postgres";
 
-
 COMMENT ON FUNCTION "public"."get_agent_analytics_dashboard"("p_start_date" "date", "p_end_date" "date", "p_agent_key" "text", "p_time_zone" "text") IS 'Returns only the agent solved, open, AHT, and team one-touch metrics available in the synchronized Ticket Productivity and Daily Volume tabs.';
-
-
 
 CREATE OR REPLACE FUNCTION "public"."get_dashboard_filtered_data"("p_start_date" "date", "p_end_date" "date", "p_app_key" "text" DEFAULT NULL::"text", "p_platform_key" "text" DEFAULT NULL::"text", "p_country_key" "text" DEFAULT NULL::"text", "p_driver_key" "text" DEFAULT NULL::"text", "p_agent_key" "text" DEFAULT NULL::"text", "p_priority" "text" DEFAULT NULL::"text", "p_channel" "text" DEFAULT NULL::"text", "p_time_zone" "text" DEFAULT 'America/New_York'::"text") RETURNS "jsonb"
     LANGUAGE "plpgsql" SECURITY DEFINER
@@ -738,13 +701,9 @@ begin
 end;
 $$;
 
-
 ALTER FUNCTION "public"."get_dashboard_filtered_data"("p_start_date" "date", "p_end_date" "date", "p_app_key" "text", "p_platform_key" "text", "p_country_key" "text", "p_driver_key" "text", "p_agent_key" "text", "p_priority" "text", "p_channel" "text", "p_time_zone" "text") OWNER TO "postgres";
 
-
 COMMENT ON FUNCTION "public"."get_dashboard_filtered_data"("p_start_date" "date", "p_end_date" "date", "p_app_key" "text", "p_platform_key" "text", "p_country_key" "text", "p_driver_key" "text", "p_agent_key" "text", "p_priority" "text", "p_channel" "text", "p_time_zone" "text") IS 'Returns date-bounded dashboard data from Google Sheet reporting tables only. Dimension intersections are unavailable in the current workbook.';
-
-
 
 CREATE OR REPLACE FUNCTION "public"."get_dashboard_period_comparison"("p_start_date" "date", "p_end_date" "date", "p_app_key" "text" DEFAULT NULL::"text", "p_platform_key" "text" DEFAULT NULL::"text", "p_country_key" "text" DEFAULT NULL::"text", "p_driver_key" "text" DEFAULT NULL::"text", "p_agent_key" "text" DEFAULT NULL::"text", "p_priority" "text" DEFAULT NULL::"text", "p_channel" "text" DEFAULT NULL::"text", "p_time_zone" "text" DEFAULT 'America/New_York'::"text", "p_period_kind" "text" DEFAULT 'auto'::"text") RETURNS "jsonb"
     LANGUAGE "plpgsql" SECURITY DEFINER
@@ -955,13 +914,9 @@ begin
 end;
 $$;
 
-
 ALTER FUNCTION "public"."get_dashboard_period_comparison"("p_start_date" "date", "p_end_date" "date", "p_app_key" "text", "p_platform_key" "text", "p_country_key" "text", "p_driver_key" "text", "p_agent_key" "text", "p_priority" "text", "p_channel" "text", "p_time_zone" "text", "p_period_kind" "text") OWNER TO "postgres";
 
-
 COMMENT ON FUNCTION "public"."get_dashboard_period_comparison"("p_start_date" "date", "p_end_date" "date", "p_app_key" "text", "p_platform_key" "text", "p_country_key" "text", "p_driver_key" "text", "p_agent_key" "text", "p_priority" "text", "p_channel" "text", "p_time_zone" "text", "p_period_kind" "text") IS 'Returns current-versus-previous period comparisons for dashboard summary KPIs using the Step 4 server-filtered data contract.';
-
-
 
 CREATE OR REPLACE FUNCTION "public"."get_dashboard_reporting_status"() RETURNS "jsonb"
     LANGUAGE "sql" SECURITY DEFINER
@@ -1018,13 +973,9 @@ CREATE OR REPLACE FUNCTION "public"."get_dashboard_reporting_status"() RETURNS "
   );
 $$;
 
-
 ALTER FUNCTION "public"."get_dashboard_reporting_status"() OWNER TO "postgres";
 
-
 COMMENT ON FUNCTION "public"."get_dashboard_reporting_status"() IS 'Returns the latest Google Sheet synchronization and data-quality status.';
-
-
 
 CREATE OR REPLACE FUNCTION "public"."get_sla_response_dashboard"("p_start_date" "date", "p_end_date" "date", "p_app_key" "text" DEFAULT NULL::"text", "p_platform_key" "text" DEFAULT NULL::"text", "p_country_key" "text" DEFAULT NULL::"text", "p_driver_key" "text" DEFAULT NULL::"text", "p_agent_key" "text" DEFAULT NULL::"text", "p_priority" "text" DEFAULT NULL::"text", "p_channel" "text" DEFAULT NULL::"text", "p_time_zone" "text" DEFAULT 'America/New_York'::"text") RETURNS "jsonb"
     LANGUAGE "plpgsql" SECURITY DEFINER
@@ -1538,13 +1489,9 @@ begin
 end;
 $_$;
 
-
 ALTER FUNCTION "public"."get_sla_response_dashboard"("p_start_date" "date", "p_end_date" "date", "p_app_key" "text", "p_platform_key" "text", "p_country_key" "text", "p_driver_key" "text", "p_agent_key" "text", "p_priority" "text", "p_channel" "text", "p_time_zone" "text") OWNER TO "postgres";
 
-
 COMMENT ON FUNCTION "public"."get_sla_response_dashboard"("p_start_date" "date", "p_end_date" "date", "p_app_key" "text", "p_platform_key" "text", "p_country_key" "text", "p_driver_key" "text", "p_agent_key" "text", "p_priority" "text", "p_channel" "text", "p_time_zone" "text") IS 'Returns filtered Zendesk first-response, resolution-time, and trusted SLA-breach reporting.';
-
-
 
 CREATE OR REPLACE FUNCTION "public"."get_unresolved_zendesk_agent_ids"("p_limit" integer DEFAULT 100) RETURNS TABLE("zendesk_user_id" bigint)
     LANGUAGE "sql" SECURITY DEFINER
@@ -1565,13 +1512,9 @@ CREATE OR REPLACE FUNCTION "public"."get_unresolved_zendesk_agent_ids"("p_limit"
   limit greatest(1, least(coalesce(p_limit, 100), 100));
 $_$;
 
-
 ALTER FUNCTION "public"."get_unresolved_zendesk_agent_ids"("p_limit" integer) OWNER TO "postgres";
 
-
 COMMENT ON FUNCTION "public"."get_unresolved_zendesk_agent_ids"("p_limit" integer) IS 'Returns missing or stale Zendesk user IDs for server-side directory refresh.';
-
-
 
 CREATE OR REPLACE FUNCTION "public"."normalize_agent_productivity_aht_unit"() RETURNS "trigger"
     LANGUAGE "plpgsql"
@@ -1583,9 +1526,7 @@ begin
 end;
 $$;
 
-
 ALTER FUNCTION "public"."normalize_agent_productivity_aht_unit"() OWNER TO "postgres";
-
 
 CREATE OR REPLACE FUNCTION "public"."record_dashboard_export"("p_dataset" "text", "p_row_count" integer, "p_start_date" "date" DEFAULT NULL::"date", "p_end_date" "date" DEFAULT NULL::"date") RETURNS bigint
     LANGUAGE "plpgsql" SECURITY DEFINER
@@ -1659,13 +1600,9 @@ begin
 end;
 $$;
 
-
 ALTER FUNCTION "public"."record_dashboard_export"("p_dataset" "text", "p_row_count" integer, "p_start_date" "date", "p_end_date" "date") OWNER TO "postgres";
 
-
 COMMENT ON FUNCTION "public"."record_dashboard_export"("p_dataset" "text", "p_row_count" integer, "p_start_date" "date", "p_end_date" "date") IS 'Records a Reporting Operations CSV export after verifying administrator scope and view_workforce_reports.';
-
-
 
 CREATE OR REPLACE FUNCTION "public"."record_dashboard_quality_operations"() RETURNS "trigger"
     LANGUAGE "plpgsql" SECURITY DEFINER
@@ -1759,9 +1696,7 @@ begin
 end;
 $$;
 
-
 ALTER FUNCTION "public"."record_dashboard_quality_operations"() OWNER TO "postgres";
-
 
 CREATE OR REPLACE FUNCTION "public"."record_dashboard_sync_operations"() RETURNS "trigger"
     LANGUAGE "plpgsql" SECURITY DEFINER
@@ -1852,9 +1787,7 @@ begin
 end;
 $$;
 
-
 ALTER FUNCTION "public"."record_dashboard_sync_operations"() OWNER TO "postgres";
-
 
 CREATE OR REPLACE FUNCTION "public"."record_sheet_sync_quality_results"() RETURNS "trigger"
     LANGUAGE "plpgsql" SECURITY DEFINER
@@ -2006,9 +1939,7 @@ begin
 end;
 $$;
 
-
 ALTER FUNCTION "public"."record_sheet_sync_quality_results"() OWNER TO "postgres";
-
 
 CREATE OR REPLACE FUNCTION "public"."refresh_daily_operations_metrics"("p_start_date" "date" DEFAULT NULL::"date", "p_end_date" "date" DEFAULT NULL::"date", "p_time_zone" "text" DEFAULT 'America/New_York'::"text") RETURNS TABLE("refresh_start_date" "date", "refresh_end_date" "date", "rows_upserted" bigint)
     LANGUAGE "plpgsql" SECURITY DEFINER
@@ -2311,13 +2242,9 @@ begin
 end;
 $_$;
 
-
 ALTER FUNCTION "public"."refresh_daily_operations_metrics"("p_start_date" "date", "p_end_date" "date", "p_time_zone" "text") OWNER TO "postgres";
 
-
 COMMENT ON FUNCTION "public"."refresh_daily_operations_metrics"("p_start_date" "date", "p_end_date" "date", "p_time_zone" "text") IS 'Refreshes daily operational metrics using materialized ticket-state intervals.';
-
-
 
 CREATE OR REPLACE FUNCTION "public"."release_zendesk_sync_lock"("p_stream_key" "text", "p_lock_token" "uuid") RETURNS boolean
     LANGUAGE "plpgsql" SECURITY DEFINER
@@ -2336,9 +2263,7 @@ begin
 end;
 $$;
 
-
 ALTER FUNCTION "public"."release_zendesk_sync_lock"("p_stream_key" "text", "p_lock_token" "uuid") OWNER TO "postgres";
-
 
 CREATE OR REPLACE FUNCTION "public"."set_article_update_metadata"() RETURNS "trigger"
     LANGUAGE "plpgsql" SECURITY DEFINER
@@ -2367,9 +2292,7 @@ begin
 end;
 $$;
 
-
 ALTER FUNCTION "public"."set_article_update_metadata"() OWNER TO "postgres";
-
 
 CREATE OR REPLACE FUNCTION "public"."update_updated_at_column"() RETURNS "trigger"
     LANGUAGE "plpgsql"
@@ -2380,9 +2303,7 @@ BEGIN
 END;
 $$;
 
-
 ALTER FUNCTION "public"."update_updated_at_column"() OWNER TO "postgres";
-
 
 CREATE OR REPLACE FUNCTION "public"."upsert_ticket_dimension_profiles"("p_profiles" "jsonb") RETURNS integer
     LANGUAGE "plpgsql" SECURITY DEFINER
@@ -2494,13 +2415,9 @@ begin
 end;
 $$;
 
-
 ALTER FUNCTION "public"."upsert_ticket_dimension_profiles"("p_profiles" "jsonb") OWNER TO "postgres";
 
-
 COMMENT ON FUNCTION "public"."upsert_ticket_dimension_profiles"("p_profiles" "jsonb") IS 'Upserts current ticket-dimension profiles using concern_key without rewriting immutable ticket lifecycle events.';
-
-
 
 CREATE OR REPLACE FUNCTION "public"."workforce_admin_save_employee"("p_user_id" "uuid", "p_full_name" "text", "p_employee_id" "text", "p_employment_status" "text", "p_access_type" "text", "p_team_id" "uuid" DEFAULT NULL::"uuid", "p_supervisor_id" "uuid" DEFAULT NULL::"uuid", "p_timezone" "text" DEFAULT 'Asia/Manila'::"text", "p_permissions" "jsonb" DEFAULT '{}'::"jsonb", "p_reason" "text" DEFAULT NULL::"text") RETURNS "jsonb"
     LANGUAGE "plpgsql" SECURITY DEFINER
@@ -2688,17 +2605,13 @@ begin
 end;
 $$;
 
-
 ALTER FUNCTION "public"."workforce_admin_save_employee"("p_user_id" "uuid", "p_full_name" "text", "p_employee_id" "text", "p_employment_status" "text", "p_access_type" "text", "p_team_id" "uuid", "p_supervisor_id" "uuid", "p_timezone" "text", "p_permissions" "jsonb", "p_reason" "text") OWNER TO "postgres";
 
-
 COMMENT ON FUNCTION "public"."workforce_admin_save_employee"("p_user_id" "uuid", "p_full_name" "text", "p_employee_id" "text", "p_employment_status" "text", "p_access_type" "text", "p_team_id" "uuid", "p_supervisor_id" "uuid", "p_timezone" "text", "p_permissions" "jsonb", "p_reason" "text") IS 'Atomically updates an employee profile, explicit attendance permissions, other workforce permissions, and legacy compatibility fields.';
-
 
 SET default_tablespace = '';
 
 SET default_table_access_method = "heap";
-
 
 CREATE TABLE IF NOT EXISTS "public"."work_schedules" (
     "id" "uuid" DEFAULT "gen_random_uuid"() NOT NULL,
@@ -2723,9 +2636,7 @@ CREATE TABLE IF NOT EXISTS "public"."work_schedules" (
     CONSTRAINT "work_schedules_time_check" CHECK (((("is_rest_day" IS TRUE) AND ("shift_start" IS NULL) AND ("shift_end" IS NULL)) OR (("is_rest_day" IS FALSE) AND ("shift_start" IS NOT NULL) AND ("shift_end" IS NOT NULL) AND ("shift_end" > "shift_start"))))
 );
 
-
 ALTER TABLE "public"."work_schedules" OWNER TO "postgres";
-
 
 CREATE OR REPLACE FUNCTION "public"."workforce_admin_save_schedule"("p_schedule_id" "uuid", "p_user_id" "uuid", "p_shift_date" "date", "p_shift_sequence" integer, "p_shift_start" timestamp with time zone, "p_shift_end" timestamp with time zone, "p_timezone" "text", "p_status" "text", "p_is_rest_day" boolean, "p_is_holiday" boolean, "p_holiday_name" "text", "p_notes" "text") RETURNS "public"."work_schedules"
     LANGUAGE "plpgsql" SECURITY DEFINER
@@ -2895,9 +2806,7 @@ begin
 end;
 $$;
 
-
 ALTER FUNCTION "public"."workforce_admin_save_schedule"("p_schedule_id" "uuid", "p_user_id" "uuid", "p_shift_date" "date", "p_shift_sequence" integer, "p_shift_start" timestamp with time zone, "p_shift_end" timestamp with time zone, "p_timezone" "text", "p_status" "text", "p_is_rest_day" boolean, "p_is_holiday" boolean, "p_holiday_name" "text", "p_notes" "text") OWNER TO "postgres";
-
 
 CREATE OR REPLACE FUNCTION "public"."workforce_audit_row_change"() RETURNS "trigger"
     LANGUAGE "plpgsql" SECURITY DEFINER
@@ -2963,9 +2872,7 @@ begin
 end;
 $$;
 
-
 ALTER FUNCTION "public"."workforce_audit_row_change"() OWNER TO "postgres";
-
 
 CREATE OR REPLACE FUNCTION "public"."workforce_calculate_attendance"("p_scheduled_start" timestamp with time zone, "p_scheduled_end" timestamp with time zone, "p_clock_in" timestamp with time zone, "p_clock_out" timestamp with time zone, "p_scheduled_work_date" "date", "p_timezone" "text", "p_available_overtime_minutes" integer DEFAULT 1200) RETURNS TABLE("pre_shift_overtime_minutes" integer, "regular_minutes" integer, "post_shift_overtime_minutes" integer, "total_overtime_minutes" integer, "total_worked_minutes" integer, "minutes_late" integer, "undertime_minutes" integer)
     LANGUAGE "sql" STABLE
@@ -2992,13 +2899,9 @@ CREATE OR REPLACE FUNCTION "public"."workforce_calculate_attendance"("p_schedule
   ) calculation;
 $$;
 
-
 ALTER FUNCTION "public"."workforce_calculate_attendance"("p_scheduled_start" timestamp with time zone, "p_scheduled_end" timestamp with time zone, "p_clock_in" timestamp with time zone, "p_clock_out" timestamp with time zone, "p_scheduled_work_date" "date", "p_timezone" "text", "p_available_overtime_minutes" integer) OWNER TO "postgres";
 
-
 COMMENT ON FUNCTION "public"."workforce_calculate_attendance"("p_scheduled_start" timestamp with time zone, "p_scheduled_end" timestamp with time zone, "p_clock_in" timestamp with time zone, "p_clock_out" timestamp with time zone, "p_scheduled_work_date" "date", "p_timezone" "text", "p_available_overtime_minutes" integer) IS 'Classifies effective attendance timestamps into credited pre-shift overtime, regular time, credited post-shift overtime, total worked time, lateness, and undertime.';
-
-
 
 CREATE OR REPLACE FUNCTION "public"."workforce_calculate_attendance"("p_scheduled_start" timestamp with time zone, "p_scheduled_end" timestamp with time zone, "p_clock_in" timestamp with time zone, "p_clock_out" timestamp with time zone, "p_scheduled_work_date" "date", "p_timezone" "text", "p_available_overtime_minutes" integer, "p_is_rest_day" boolean, "p_is_holiday" boolean) RETURNS TABLE("pre_shift_overtime_minutes" integer, "regular_minutes" integer, "post_shift_overtime_minutes" integer, "rest_day_overtime_minutes" integer, "holiday_overtime_minutes" integer, "total_overtime_minutes" integer, "total_worked_minutes" integer, "minutes_late" integer, "undertime_minutes" integer)
     LANGUAGE "plpgsql" STABLE
@@ -3175,13 +3078,9 @@ begin
 end;
 $$;
 
-
 ALTER FUNCTION "public"."workforce_calculate_attendance"("p_scheduled_start" timestamp with time zone, "p_scheduled_end" timestamp with time zone, "p_clock_in" timestamp with time zone, "p_clock_out" timestamp with time zone, "p_scheduled_work_date" "date", "p_timezone" "text", "p_available_overtime_minutes" integer, "p_is_rest_day" boolean, "p_is_holiday" boolean) OWNER TO "postgres";
 
-
 COMMENT ON FUNCTION "public"."workforce_calculate_attendance"("p_scheduled_start" timestamp with time zone, "p_scheduled_end" timestamp with time zone, "p_clock_in" timestamp with time zone, "p_clock_out" timestamp with time zone, "p_scheduled_work_date" "date", "p_timezone" "text", "p_available_overtime_minutes" integer, "p_is_rest_day" boolean, "p_is_holiday" boolean) IS 'Classifies normal shifts, rest-day work, and holiday work while enforcing the available overtime allowance.';
-
-
 
 CREATE OR REPLACE FUNCTION "public"."workforce_can_approve_attendance"("p_target_user_id" "uuid") RETURNS boolean
     LANGUAGE "sql" STABLE SECURITY DEFINER
@@ -3196,13 +3095,9 @@ CREATE OR REPLACE FUNCTION "public"."workforce_can_approve_attendance"("p_target
     and public.workforce_is_authorized_attendance_admin('approve_attendance');
 $$;
 
-
 ALTER FUNCTION "public"."workforce_can_approve_attendance"("p_target_user_id" "uuid") OWNER TO "postgres";
 
-
 COMMENT ON FUNCTION "public"."workforce_can_approve_attendance"("p_target_user_id" "uuid") IS 'Authorizes attendance approval only for explicitly permitted administrators; payroll access does not imply approval.';
-
-
 
 CREATE OR REPLACE FUNCTION "public"."workforce_can_correct_attendance"("p_target_user_id" "uuid") RETURNS boolean
     LANGUAGE "sql" STABLE SECURITY DEFINER
@@ -3217,13 +3112,9 @@ CREATE OR REPLACE FUNCTION "public"."workforce_can_correct_attendance"("p_target
     and public.workforce_is_authorized_attendance_admin('correct_attendance');
 $$;
 
-
 ALTER FUNCTION "public"."workforce_can_correct_attendance"("p_target_user_id" "uuid") OWNER TO "postgres";
 
-
 COMMENT ON FUNCTION "public"."workforce_can_correct_attendance"("p_target_user_id" "uuid") IS 'Authorizes attendance correction only for explicitly permitted administrators; supervisor scope alone is insufficient.';
-
-
 
 CREATE OR REPLACE FUNCTION "public"."workforce_can_manage_user"("p_target_user_id" "uuid", "p_permission_key" "text") RETURNS boolean
     LANGUAGE "sql" STABLE SECURITY DEFINER
@@ -3236,9 +3127,7 @@ CREATE OR REPLACE FUNCTION "public"."workforce_can_manage_user"("p_target_user_i
     );
 $$;
 
-
 ALTER FUNCTION "public"."workforce_can_manage_user"("p_target_user_id" "uuid", "p_permission_key" "text") OWNER TO "postgres";
-
 
 CREATE OR REPLACE FUNCTION "public"."workforce_can_view_user"("p_target_user_id" "uuid", "p_permission_key" "text") RETURNS boolean
     LANGUAGE "sql" STABLE SECURITY DEFINER
@@ -3248,9 +3137,7 @@ CREATE OR REPLACE FUNCTION "public"."workforce_can_view_user"("p_target_user_id"
     or public.workforce_can_manage_user(p_target_user_id, p_permission_key);
 $$;
 
-
 ALTER FUNCTION "public"."workforce_can_view_user"("p_target_user_id" "uuid", "p_permission_key" "text") OWNER TO "postgres";
-
 
 CREATE TABLE IF NOT EXISTS "public"."leave_requests" (
     "id" "uuid" DEFAULT "gen_random_uuid"() NOT NULL,
@@ -3272,9 +3159,7 @@ CREATE TABLE IF NOT EXISTS "public"."leave_requests" (
     CONSTRAINT "leave_requests_type_check" CHECK (("leave_type" = ANY (ARRAY['vacation'::"text", 'sick'::"text", 'emergency'::"text", 'unpaid'::"text", 'other'::"text"])))
 );
 
-
 ALTER TABLE "public"."leave_requests" OWNER TO "postgres";
-
 
 CREATE OR REPLACE FUNCTION "public"."workforce_cancel_leave_request"("p_request_id" "uuid") RETURNS "public"."leave_requests"
     LANGUAGE "plpgsql" SECURITY DEFINER
@@ -3303,9 +3188,7 @@ begin
 end;
 $$;
 
-
 ALTER FUNCTION "public"."workforce_cancel_leave_request"("p_request_id" "uuid") OWNER TO "postgres";
-
 
 CREATE TABLE IF NOT EXISTS "public"."attendance" (
     "id" "uuid" DEFAULT "gen_random_uuid"() NOT NULL,
@@ -3351,61 +3234,33 @@ CREATE TABLE IF NOT EXISTS "public"."attendance" (
     CONSTRAINT "attendance_total_overtime_legacy_match" CHECK (("total_overtime_minutes" = "overtime_minutes"))
 );
 
-
 ALTER TABLE "public"."attendance" OWNER TO "postgres";
-
 
 COMMENT ON COLUMN "public"."attendance"."original_clock_in" IS 'First recorded clock-in. Immutable after capture; effective clock_in may be corrected later.';
 
-
-
 COMMENT ON COLUMN "public"."attendance"."original_clock_out" IS 'First recorded clock-out. Immutable after capture; effective clock_out may be corrected later.';
-
-
 
 COMMENT ON COLUMN "public"."attendance"."pre_shift_overtime_minutes" IS 'Credited worked minutes before the assigned shift start. Null means structured recalculation is still pending.';
 
-
-
 COMMENT ON COLUMN "public"."attendance"."regular_minutes" IS 'Worked minutes overlapping the assigned scheduled shift. Null means structured recalculation is still pending.';
-
-
 
 COMMENT ON COLUMN "public"."attendance"."post_shift_overtime_minutes" IS 'Credited worked minutes after the assigned shift end. Null means structured recalculation is still pending.';
 
-
-
 COMMENT ON COLUMN "public"."attendance"."total_overtime_minutes" IS 'Credited pre-shift plus post-shift overtime. Kept compatible with legacy overtime_minutes.';
-
-
 
 COMMENT ON COLUMN "public"."attendance"."total_worked_minutes" IS 'Elapsed effective clock-in to effective clock-out in whole minutes; zero while the session is open.';
 
-
-
 COMMENT ON COLUMN "public"."attendance"."is_corrected" IS 'True when effective timestamps differ from captured originals or correction metadata exists.';
-
-
 
 COMMENT ON COLUMN "public"."attendance"."review_status" IS 'Attendance review state: pending, approved, corrected, rejected, or locked.';
 
-
-
 COMMENT ON COLUMN "public"."attendance"."reviewed_by" IS 'Workforce user that performed the latest attendance review.';
-
-
 
 COMMENT ON COLUMN "public"."attendance"."reviewed_at" IS 'Timestamp of the latest attendance review.';
 
-
-
 COMMENT ON COLUMN "public"."attendance"."rest_day_overtime_minutes" IS 'Credited worked minutes on a released rest-day schedule. Included in total_overtime_minutes and displayed as RDOT.';
 
-
-
 COMMENT ON COLUMN "public"."attendance"."holiday_overtime_minutes" IS 'Credited worked minutes on a released holiday schedule that is not also a rest day. Included in total_overtime_minutes as normal overtime.';
-
-
 
 CREATE OR REPLACE FUNCTION "public"."workforce_clock_in"("p_schedule_id" "uuid" DEFAULT NULL::"uuid") RETURNS "public"."attendance"
     LANGUAGE "plpgsql" SECURITY DEFINER
@@ -3597,9 +3452,7 @@ begin
 end;
 $$;
 
-
 ALTER FUNCTION "public"."workforce_clock_in"("p_schedule_id" "uuid") OWNER TO "postgres";
-
 
 CREATE OR REPLACE FUNCTION "public"."workforce_clock_out"() RETURNS "public"."attendance"
     LANGUAGE "plpgsql" SECURITY DEFINER
@@ -3652,9 +3505,7 @@ begin
 end;
 $$;
 
-
 ALTER FUNCTION "public"."workforce_clock_out"() OWNER TO "postgres";
-
 
 CREATE OR REPLACE FUNCTION "public"."workforce_correct_attendance"("p_attendance_id" "uuid", "p_new_clock_in" timestamp with time zone, "p_new_clock_out" timestamp with time zone, "p_new_status" "text", "p_schedule_id" "uuid" DEFAULT NULL::"uuid", "p_admin_notes" "text" DEFAULT NULL::"text", "p_reason_code" "text" DEFAULT NULL::"text", "p_reason_notes" "text" DEFAULT NULL::"text") RETURNS "public"."attendance"
     LANGUAGE "plpgsql" SECURITY DEFINER
@@ -3911,13 +3762,9 @@ begin
 end;
 $$;
 
-
 ALTER FUNCTION "public"."workforce_correct_attendance"("p_attendance_id" "uuid", "p_new_clock_in" timestamp with time zone, "p_new_clock_out" timestamp with time zone, "p_new_status" "text", "p_schedule_id" "uuid", "p_admin_notes" "text", "p_reason_code" "text", "p_reason_notes" "text") OWNER TO "postgres";
 
-
 COMMENT ON FUNCTION "public"."workforce_correct_attendance"("p_attendance_id" "uuid", "p_new_clock_in" timestamp with time zone, "p_new_clock_out" timestamp with time zone, "p_new_status" "text", "p_schedule_id" "uuid", "p_admin_notes" "text", "p_reason_code" "text", "p_reason_notes" "text") IS 'Corrects effective attendance timestamps and status, preserves prior values, recalculates totals, and records structured correction history.';
-
-
 
 CREATE OR REPLACE FUNCTION "public"."workforce_current_profile_id"() RETURNS "uuid"
     LANGUAGE "sql" STABLE SECURITY DEFINER
@@ -3933,9 +3780,7 @@ CREATE OR REPLACE FUNCTION "public"."workforce_current_profile_id"() RETURNS "uu
   limit 1;
 $$;
 
-
 ALTER FUNCTION "public"."workforce_current_profile_id"() OWNER TO "postgres";
-
 
 CREATE OR REPLACE FUNCTION "public"."workforce_current_user_is_active"() RETURNS boolean
     LANGUAGE "sql" STABLE SECURITY DEFINER
@@ -3949,9 +3794,7 @@ CREATE OR REPLACE FUNCTION "public"."workforce_current_user_is_active"() RETURNS
   );
 $$;
 
-
 ALTER FUNCTION "public"."workforce_current_user_is_active"() OWNER TO "postgres";
-
 
 CREATE OR REPLACE FUNCTION "public"."workforce_current_user_is_agent"() RETURNS boolean
     LANGUAGE "sql" STABLE SECURITY DEFINER
@@ -3967,9 +3810,7 @@ CREATE OR REPLACE FUNCTION "public"."workforce_current_user_is_agent"() RETURNS 
     );
 $$;
 
-
 ALTER FUNCTION "public"."workforce_current_user_is_agent"() OWNER TO "postgres";
-
 
 CREATE OR REPLACE FUNCTION "public"."workforce_enforce_admin_payroll_profile"() RETURNS "trigger"
     LANGUAGE "plpgsql"
@@ -3984,9 +3825,7 @@ begin
 end;
 $$;
 
-
 ALTER FUNCTION "public"."workforce_enforce_admin_payroll_profile"() OWNER TO "postgres";
-
 
 CREATE OR REPLACE FUNCTION "public"."workforce_get_current_access"() RETURNS "jsonb"
     LANGUAGE "plpgsql" STABLE SECURITY DEFINER
@@ -4100,13 +3939,9 @@ begin
 end;
 $$;
 
-
 ALTER FUNCTION "public"."workforce_get_current_access"() OWNER TO "postgres";
 
-
 COMMENT ON FUNCTION "public"."workforce_get_current_access"() IS 'Returns the authenticated workforce profile and effective explicit permissions for shared browser and server authorization.';
-
-
 
 CREATE OR REPLACE FUNCTION "public"."workforce_has_permission"("p_permission_key" "text") RETURNS boolean
     LANGUAGE "sql" STABLE SECURITY DEFINER
@@ -4134,9 +3969,7 @@ CREATE OR REPLACE FUNCTION "public"."workforce_has_permission"("p_permission_key
     );
 $$;
 
-
 ALTER FUNCTION "public"."workforce_has_permission"("p_permission_key" "text") OWNER TO "postgres";
-
 
 CREATE OR REPLACE FUNCTION "public"."workforce_is_admin"() RETURNS boolean
     LANGUAGE "sql" STABLE SECURITY DEFINER
@@ -4162,9 +3995,7 @@ CREATE OR REPLACE FUNCTION "public"."workforce_is_admin"() RETURNS boolean
     );
 $$;
 
-
 ALTER FUNCTION "public"."workforce_is_admin"() OWNER TO "postgres";
-
 
 CREATE OR REPLACE FUNCTION "public"."workforce_is_assigned_supervisor"("p_target_user_id" "uuid") RETURNS boolean
     LANGUAGE "sql" STABLE SECURITY DEFINER
@@ -4182,9 +4013,7 @@ CREATE OR REPLACE FUNCTION "public"."workforce_is_assigned_supervisor"("p_target
   );
 $$;
 
-
 ALTER FUNCTION "public"."workforce_is_assigned_supervisor"("p_target_user_id" "uuid") OWNER TO "postgres";
-
 
 CREATE OR REPLACE FUNCTION "public"."workforce_is_authorized_attendance_admin"("p_permission_key" "text") RETURNS boolean
     LANGUAGE "sql" STABLE SECURITY DEFINER
@@ -4196,13 +4025,9 @@ CREATE OR REPLACE FUNCTION "public"."workforce_is_authorized_attendance_admin"("
     and public.workforce_has_permission(p_permission_key);
 $$;
 
-
 ALTER FUNCTION "public"."workforce_is_authorized_attendance_admin"("p_permission_key" "text") OWNER TO "postgres";
 
-
 COMMENT ON FUNCTION "public"."workforce_is_authorized_attendance_admin"("p_permission_key" "text") IS 'Returns true only for an active admin with the requested explicit attendance permission.';
-
-
 
 CREATE OR REPLACE FUNCTION "public"."workforce_is_current_identity"("p_target_user_id" "uuid") RETURNS boolean
     LANGUAGE "sql" STABLE SECURITY DEFINER
@@ -4222,9 +4047,7 @@ CREATE OR REPLACE FUNCTION "public"."workforce_is_current_identity"("p_target_us
     );
 $$;
 
-
 ALTER FUNCTION "public"."workforce_is_current_identity"("p_target_user_id" "uuid") OWNER TO "postgres";
-
 
 CREATE OR REPLACE FUNCTION "public"."workforce_list_team_attendance"("p_start_date" "date", "p_end_date" "date") RETURNS TABLE("attendance_id" "uuid", "employee_user_id" "uuid", "employee_name" "text", "employee_email" "text", "employee_id" "text", "employee_timezone" "text", "team_id" "uuid", "team_name" "text", "work_date" "date", "schedule_id" "uuid", "shift_sequence" smallint, "scheduled_start" timestamp with time zone, "scheduled_end" timestamp with time zone, "schedule_timezone" "text", "schedule_status" "text", "clock_in" timestamp with time zone, "clock_out" timestamp with time zone, "regular_minutes" integer, "pre_shift_overtime_minutes" integer, "post_shift_overtime_minutes" integer, "total_overtime_minutes" integer, "total_worked_minutes" integer, "minutes_late" integer, "undertime_minutes" integer, "attendance_status" "text", "is_corrected" boolean, "review_status" "text", "corrected_by" "uuid", "corrected_by_name" "text", "corrected_at" timestamp with time zone, "correction_reason" "text", "admin_notes" "text", "is_open" boolean, "is_missing_clock_out" boolean)
     LANGUAGE "plpgsql" STABLE SECURITY DEFINER
@@ -4320,13 +4143,9 @@ begin
 end;
 $$;
 
-
 ALTER FUNCTION "public"."workforce_list_team_attendance"("p_start_date" "date", "p_end_date" "date") OWNER TO "postgres";
 
-
 COMMENT ON FUNCTION "public"."workforce_list_team_attendance"("p_start_date" "date", "p_end_date" "date") IS 'Returns read-only, permission-scoped team attendance rows for the Step 10 Team Attendance page.';
-
-
 
 CREATE OR REPLACE FUNCTION "public"."workforce_normalize_timezone_default"() RETURNS "trigger"
     LANGUAGE "plpgsql"
@@ -4345,13 +4164,9 @@ begin
 end;
 $$;
 
-
 ALTER FUNCTION "public"."workforce_normalize_timezone_default"() OWNER TO "postgres";
 
-
 COMMENT ON FUNCTION "public"."workforce_normalize_timezone_default"() IS 'Maps legacy Manila or blank workforce timezone values to America/New_York and validates other IANA zones.';
-
-
 
 CREATE OR REPLACE FUNCTION "public"."workforce_prepare_attendance_storage"() RETURNS "trigger"
     LANGUAGE "plpgsql"
@@ -4443,9 +4258,7 @@ begin
 end;
 $$;
 
-
 ALTER FUNCTION "public"."workforce_prepare_attendance_storage"() OWNER TO "postgres";
-
 
 CREATE OR REPLACE FUNCTION "public"."workforce_recalculate_attendance"("p_attendance_id" "uuid") RETURNS "public"."attendance"
     LANGUAGE "plpgsql" SECURITY DEFINER
@@ -4600,13 +4413,9 @@ begin
 end;
 $$;
 
-
 ALTER FUNCTION "public"."workforce_recalculate_attendance"("p_attendance_id" "uuid") OWNER TO "postgres";
 
-
 COMMENT ON FUNCTION "public"."workforce_recalculate_attendance"("p_attendance_id" "uuid") IS 'Locks and recalculates one attendance record while enforcing the aggregate 1,200-minute overtime ceiling for the employee work date.';
-
-
 
 CREATE OR REPLACE FUNCTION "public"."workforce_recalculate_attendance_work_date"("p_user_id" "uuid", "p_work_date" "date") RETURNS "void"
     LANGUAGE "plpgsql" SECURITY DEFINER
@@ -4652,13 +4461,9 @@ begin
 end;
 $$;
 
-
 ALTER FUNCTION "public"."workforce_recalculate_attendance_work_date"("p_user_id" "uuid", "p_work_date" "date") OWNER TO "postgres";
 
-
 COMMENT ON FUNCTION "public"."workforce_recalculate_attendance_work_date"("p_user_id" "uuid", "p_work_date" "date") IS 'Recalculates scheduled attendance records for one employee work date in shift order so the aggregate overtime ceiling is allocated consistently.';
-
-
 
 CREATE OR REPLACE FUNCTION "public"."workforce_review_leave_request"("p_request_id" "uuid", "p_status" "text", "p_review_notes" "text" DEFAULT NULL::"text") RETURNS "public"."leave_requests"
     LANGUAGE "plpgsql" SECURITY DEFINER
@@ -4798,13 +4603,9 @@ begin
 end;
 $$;
 
-
 ALTER FUNCTION "public"."workforce_review_leave_request"("p_request_id" "uuid", "p_status" "text", "p_review_notes" "text") OWNER TO "postgres";
 
-
 COMMENT ON FUNCTION "public"."workforce_review_leave_request"("p_request_id" "uuid", "p_status" "text", "p_review_notes" "text") IS 'Reviews pending leave and transactionally marks released working shifts as approved on-leave attendance without overwriting clock activity.';
-
-
 
 CREATE OR REPLACE FUNCTION "public"."workforce_set_updated_at"() RETURNS "trigger"
     LANGUAGE "plpgsql"
@@ -4816,9 +4617,7 @@ begin
 end;
 $$;
 
-
 ALTER FUNCTION "public"."workforce_set_updated_at"() OWNER TO "postgres";
-
 
 CREATE OR REPLACE FUNCTION "public"."workforce_sync_admin_payroll_permission"() RETURNS "trigger"
     LANGUAGE "plpgsql" SECURITY DEFINER
@@ -4857,9 +4656,7 @@ begin
 end;
 $$;
 
-
 ALTER FUNCTION "public"."workforce_sync_admin_payroll_permission"() OWNER TO "postgres";
-
 
 CREATE OR REPLACE FUNCTION "public"."workforce_sync_identity_link_from_login"() RETURNS "trigger"
     LANGUAGE "plpgsql" SECURITY DEFINER
@@ -4910,9 +4707,7 @@ begin
 end;
 $$;
 
-
 ALTER FUNCTION "public"."workforce_sync_identity_link_from_login"() OWNER TO "postgres";
-
 
 CREATE OR REPLACE FUNCTION "public"."workforce_sync_identity_link_from_profile"() RETURNS "trigger"
     LANGUAGE "plpgsql" SECURITY DEFINER
@@ -4955,9 +4750,7 @@ begin
 end;
 $$;
 
-
 ALTER FUNCTION "public"."workforce_sync_identity_link_from_profile"() OWNER TO "postgres";
-
 
 CREATE OR REPLACE FUNCTION "public"."workforce_sync_login_record"() RETURNS "trigger"
     LANGUAGE "plpgsql" SECURITY DEFINER
@@ -5103,9 +4896,7 @@ begin
 end;
 $$;
 
-
 ALTER FUNCTION "public"."workforce_sync_login_record"() OWNER TO "postgres";
-
 
 CREATE OR REPLACE FUNCTION "public"."workforce_sync_profile_compatibility"() RETURNS "trigger"
     LANGUAGE "plpgsql" SECURITY DEFINER
@@ -5127,9 +4918,7 @@ begin
 end;
 $$;
 
-
 ALTER FUNCTION "public"."workforce_sync_profile_compatibility"() OWNER TO "postgres";
-
 
 CREATE TABLE IF NOT EXISTS "public"."agent_dimension_metrics" (
     "report_date" "date" NOT NULL,
@@ -5143,13 +4932,9 @@ CREATE TABLE IF NOT EXISTS "public"."agent_dimension_metrics" (
     CONSTRAINT "agent_dimension_metrics_values_check" CHECK ((("agent_key" ~ '^[a-z0-9]+([_-][a-z0-9]+)*$'::"text") AND ("dimension_type" = ANY (ARRAY['app'::"text", 'platform'::"text", 'country'::"text", 'concern'::"text", 'priority'::"text", 'channel'::"text"])) AND ("dimension_key" ~ '^[a-z0-9]+([_-][a-z0-9]+)*$'::"text") AND ("ticket_count" >= 0)))
 );
 
-
 ALTER TABLE "public"."agent_dimension_metrics" OWNER TO "postgres";
 
-
 COMMENT ON TABLE "public"."agent_dimension_metrics" IS 'Reserved sheet-backed agent dimension table. It remains empty until the existing workbook supplies agent-level dimensions.';
-
-
 
 CREATE TABLE IF NOT EXISTS "public"."agent_identity_map" (
     "agent_key" "text" NOT NULL,
@@ -5161,13 +4946,9 @@ CREATE TABLE IF NOT EXISTS "public"."agent_identity_map" (
     CONSTRAINT "agent_identity_map_agent_name_check" CHECK (("btrim"("agent_name") <> ''::"text"))
 );
 
-
 ALTER TABLE "public"."agent_identity_map" OWNER TO "postgres";
 
-
 COMMENT ON TABLE "public"."agent_identity_map" IS 'Maps Google Sheet productivity agent keys to Zendesk directory agent keys for combined analytics.';
-
-
 
 CREATE TABLE IF NOT EXISTS "public"."agent_productivity" (
     "id" "uuid" DEFAULT "gen_random_uuid"() NOT NULL,
@@ -5195,25 +4976,15 @@ CREATE TABLE IF NOT EXISTS "public"."agent_productivity" (
     CONSTRAINT "agent_productivity_values_check" CHECK ((("solved_tickets" >= 0) AND (("open_tickets" IS NULL) OR ("open_tickets" >= 0)) AND (("aht_value" IS NULL) OR ("aht_value" >= (0)::numeric))))
 );
 
-
 ALTER TABLE "public"."agent_productivity" OWNER TO "postgres";
-
 
 COMMENT ON COLUMN "public"."agent_productivity"."aht_value" IS 'Average handle time stored as decimal minutes and displayed as minutes:seconds.';
 
-
-
 COMMENT ON COLUMN "public"."agent_productivity"."aht_unit" IS 'Confirmed AHT unit. The canonical value is minutes.seconds.';
-
-
 
 COMMENT ON COLUMN "public"."agent_productivity"."handle_minutes_total" IS 'Total handle minutes from the normalized Ticket Productivity tab.';
 
-
-
 COMMENT ON COLUMN "public"."agent_productivity"."worked_hours" IS 'Hours worked by the agent for the reporting date.';
-
-
 
 CREATE TABLE IF NOT EXISTS "public"."articles" (
     "id" bigint NOT NULL,
@@ -5230,9 +5001,7 @@ CREATE TABLE IF NOT EXISTS "public"."articles" (
     CONSTRAINT "articles_tag_check" CHECK (("tag" = ANY (ARRAY['tickets'::"text", 'cashouts'::"text"])))
 );
 
-
 ALTER TABLE "public"."articles" OWNER TO "postgres";
-
 
 ALTER TABLE "public"."articles" ALTER COLUMN "id" ADD GENERATED BY DEFAULT AS IDENTITY (
     SEQUENCE NAME "public"."articles_id_seq"
@@ -5242,8 +5011,6 @@ ALTER TABLE "public"."articles" ALTER COLUMN "id" ADD GENERATED BY DEFAULT AS ID
     NO MAXVALUE
     CACHE 1
 );
-
-
 
 CREATE TABLE IF NOT EXISTS "public"."attendance_corrections" (
     "id" "uuid" DEFAULT "gen_random_uuid"() NOT NULL,
@@ -5268,9 +5035,7 @@ CREATE TABLE IF NOT EXISTS "public"."attendance_corrections" (
     CONSTRAINT "attendance_corrections_reason_notes_check" CHECK ((("reason_code" <> 'other'::"text") OR ("length"(TRIM(BOTH FROM COALESCE("reason_notes", ''::"text"))) > 0)))
 );
 
-
 ALTER TABLE "public"."attendance_corrections" OWNER TO "postgres";
-
 
 CREATE TABLE IF NOT EXISTS "public"."daily_distribution_metrics" (
     "id" "uuid" DEFAULT "gen_random_uuid"() NOT NULL,
@@ -5285,9 +5050,7 @@ CREATE TABLE IF NOT EXISTS "public"."daily_distribution_metrics" (
     CONSTRAINT "daily_distribution_metrics_values_check" CHECK (("ticket_count" >= 0))
 );
 
-
 ALTER TABLE "public"."daily_distribution_metrics" OWNER TO "postgres";
-
 
 CREATE TABLE IF NOT EXISTS "public"."daily_operations_metrics" (
     "report_date" "date" NOT NULL,
@@ -5316,29 +5079,17 @@ CREATE TABLE IF NOT EXISTS "public"."daily_operations_metrics" (
     CONSTRAINT "daily_operations_metrics_tickets_solved_check" CHECK (("tickets_solved" >= 0))
 );
 
-
 ALTER TABLE "public"."daily_operations_metrics" OWNER TO "postgres";
-
 
 COMMENT ON TABLE "public"."daily_operations_metrics" IS 'Daily operational metrics derived from normalized Zendesk ticket events.';
 
-
-
 COMMENT ON COLUMN "public"."daily_operations_metrics"."first_response_minutes" IS 'Average calendar first-response minutes for responses occurring on report_date.';
-
-
 
 COMMENT ON COLUMN "public"."daily_operations_metrics"."resolution_minutes" IS 'Average elapsed minutes from creation to the latest terminal lifecycle event for tickets finally resolved on report_date.';
 
-
-
 COMMENT ON COLUMN "public"."daily_operations_metrics"."sla_breaches" IS 'Reserved for a trusted Zendesk SLA metric source; null until imported.';
 
-
-
 COMMENT ON COLUMN "public"."daily_operations_metrics"."csat_score" IS 'Reserved for a trusted Zendesk CSAT source; null until imported.';
-
-
 
 CREATE TABLE IF NOT EXISTS "public"."daily_ticket_metrics" (
     "id" bigint NOT NULL,
@@ -5363,9 +5114,7 @@ CREATE TABLE IF NOT EXISTS "public"."daily_ticket_metrics" (
     CONSTRAINT "daily_ticket_metrics_values_check" CHECK ((("new_tickets" >= 0) AND ("unsolved_tickets" >= 0) AND ("solved_tickets" >= 0) AND (("one_touch_resolution" >= (0)::numeric) AND ("one_touch_resolution" <= (1)::numeric)) AND (("reopened_rate" >= (0)::numeric) AND ("reopened_rate" <= (1)::numeric))))
 );
 
-
 ALTER TABLE "public"."daily_ticket_metrics" OWNER TO "postgres";
-
 
 ALTER TABLE "public"."daily_ticket_metrics" ALTER COLUMN "id" ADD GENERATED ALWAYS AS IDENTITY (
     SEQUENCE NAME "public"."daily_ticket_metrics_id_seq"
@@ -5375,8 +5124,6 @@ ALTER TABLE "public"."daily_ticket_metrics" ALTER COLUMN "id" ADD GENERATED ALWA
     NO MAXVALUE
     CACHE 1
 );
-
-
 
 CREATE TABLE IF NOT EXISTS "public"."dashboard_alert_events" (
     "id" bigint NOT NULL,
@@ -5395,13 +5142,9 @@ CREATE TABLE IF NOT EXISTS "public"."dashboard_alert_events" (
     CONSTRAINT "dashboard_alert_events_type_check" CHECK (("alert_type" = ANY (ARRAY['sync_failure'::"text", 'quality_check'::"text"])))
 );
 
-
 ALTER TABLE "public"."dashboard_alert_events" OWNER TO "postgres";
 
-
 COMMENT ON TABLE "public"."dashboard_alert_events" IS 'Stored in-app reporting alerts generated from synchronization failures and data-quality warnings or failures.';
-
-
 
 CREATE TABLE IF NOT EXISTS "public"."sheet_sync_runs" (
     "id" "uuid" DEFAULT "gen_random_uuid"() NOT NULL,
@@ -5420,9 +5163,7 @@ CREATE TABLE IF NOT EXISTS "public"."sheet_sync_runs" (
     CONSTRAINT "valid_status" CHECK (("status" = ANY (ARRAY['running'::"text", 'success'::"text", 'failed'::"text"])))
 );
 
-
 ALTER TABLE "public"."sheet_sync_runs" OWNER TO "postgres";
-
 
 CREATE OR REPLACE VIEW "public"."dashboard_sync_runs" WITH ("security_invoker"='true') AS
  SELECT "id",
@@ -5437,13 +5178,9 @@ CREATE OR REPLACE VIEW "public"."dashboard_sync_runs" WITH ("security_invoker"='
     "quality_status"
    FROM "public"."sheet_sync_runs";
 
-
 ALTER VIEW "public"."dashboard_sync_runs" OWNER TO "postgres";
 
-
 COMMENT ON VIEW "public"."dashboard_sync_runs" IS 'Google Sheet dashboard synchronization history exposed as the Phase 3 reporting run contract.';
-
-
 
 CREATE OR REPLACE VIEW "public"."dashboard_active_alerts" WITH ("security_invoker"='true') AS
  WITH "latest_success" AS (
@@ -5521,13 +5258,9 @@ UNION ALL
     "missing_success"."created_at"
    FROM "missing_success";
 
-
 ALTER VIEW "public"."dashboard_active_alerts" OWNER TO "postgres";
 
-
 COMMENT ON VIEW "public"."dashboard_active_alerts" IS 'Open stored alerts plus a computed stale-sync alert when no successful synchronization completed within 30 hours.';
-
-
 
 CREATE SEQUENCE IF NOT EXISTS "public"."dashboard_alert_events_id_seq"
     START WITH 1
@@ -5536,13 +5269,9 @@ CREATE SEQUENCE IF NOT EXISTS "public"."dashboard_alert_events_id_seq"
     NO MAXVALUE
     CACHE 1;
 
-
 ALTER SEQUENCE "public"."dashboard_alert_events_id_seq" OWNER TO "postgres";
 
-
 ALTER SEQUENCE "public"."dashboard_alert_events_id_seq" OWNED BY "public"."dashboard_alert_events"."id";
-
-
 
 CREATE TABLE IF NOT EXISTS "public"."dashboard_audit_events" (
     "id" bigint NOT NULL,
@@ -5559,13 +5288,9 @@ CREATE TABLE IF NOT EXISTS "public"."dashboard_audit_events" (
     CONSTRAINT "dashboard_audit_events_type_check" CHECK (("event_type" = ANY (ARRAY['sync_success'::"text", 'sync_failure'::"text", 'quality_check'::"text", 'csv_export'::"text"])))
 );
 
-
 ALTER TABLE "public"."dashboard_audit_events" OWNER TO "postgres";
 
-
 COMMENT ON TABLE "public"."dashboard_audit_events" IS 'Append-only operational history for Google Sheet synchronization, quality checks, and CSV exports.';
-
-
 
 CREATE SEQUENCE IF NOT EXISTS "public"."dashboard_audit_events_id_seq"
     START WITH 1
@@ -5574,13 +5299,9 @@ CREATE SEQUENCE IF NOT EXISTS "public"."dashboard_audit_events_id_seq"
     NO MAXVALUE
     CACHE 1;
 
-
 ALTER SEQUENCE "public"."dashboard_audit_events_id_seq" OWNER TO "postgres";
 
-
 ALTER SEQUENCE "public"."dashboard_audit_events_id_seq" OWNED BY "public"."dashboard_audit_events"."id";
-
-
 
 CREATE TABLE IF NOT EXISTS "public"."dashboard_data_quality_results" (
     "id" bigint NOT NULL,
@@ -5593,13 +5314,9 @@ CREATE TABLE IF NOT EXISTS "public"."dashboard_data_quality_results" (
     CONSTRAINT "dashboard_data_quality_results_status_check" CHECK (("status" = ANY (ARRAY['pass'::"text", 'warning'::"text", 'fail'::"text"])))
 );
 
-
 ALTER TABLE "public"."dashboard_data_quality_results" OWNER TO "postgres";
 
-
 COMMENT ON TABLE "public"."dashboard_data_quality_results" IS 'Per-run validation results for the Google Sheet reporting synchronization.';
-
-
 
 CREATE SEQUENCE IF NOT EXISTS "public"."dashboard_data_quality_results_id_seq"
     START WITH 1
@@ -5608,13 +5325,9 @@ CREATE SEQUENCE IF NOT EXISTS "public"."dashboard_data_quality_results_id_seq"
     NO MAXVALUE
     CACHE 1;
 
-
 ALTER SEQUENCE "public"."dashboard_data_quality_results_id_seq" OWNER TO "postgres";
 
-
 ALTER SEQUENCE "public"."dashboard_data_quality_results_id_seq" OWNED BY "public"."dashboard_data_quality_results"."id";
-
-
 
 CREATE OR REPLACE VIEW "public"."dashboard_filter_capabilities" WITH ("security_invoker"='true') AS
  SELECT "dimension_type",
@@ -5626,13 +5339,9 @@ CREATE OR REPLACE VIEW "public"."dashboard_filter_capabilities" WITH ("security_
    FROM "public"."agent_dimension_metrics"
   GROUP BY "dimension_type";
 
-
 ALTER VIEW "public"."dashboard_filter_capabilities" OWNER TO "postgres";
 
-
 COMMENT ON VIEW "public"."dashboard_filter_capabilities" IS 'Availability summary for agent-level app, platform, country, concern, priority, and channel filters supplied by agent_dimension_metrics.';
-
-
 
 CREATE TABLE IF NOT EXISTS "public"."dashboard_targets" (
     "metric_key" "text" NOT NULL,
@@ -5647,13 +5356,9 @@ CREATE TABLE IF NOT EXISTS "public"."dashboard_targets" (
     CONSTRAINT "dashboard_targets_unit_check" CHECK (("unit" = ANY (ARRAY['count'::"text", 'ratio'::"text", 'percent'::"text", 'minutes'::"text", 'index'::"text"])))
 );
 
-
 ALTER TABLE "public"."dashboard_targets" OWNER TO "postgres";
 
-
 COMMENT ON TABLE "public"."dashboard_targets" IS 'Optional Step 11 performance targets used for synchronized Google Sheet dashboard comparisons.';
-
-
 
 CREATE TABLE IF NOT EXISTS "public"."google_calendar_connections" (
     "user_id" "uuid" NOT NULL,
@@ -5668,17 +5373,11 @@ CREATE TABLE IF NOT EXISTS "public"."google_calendar_connections" (
     "last_error" "text"
 );
 
-
 ALTER TABLE "public"."google_calendar_connections" OWNER TO "postgres";
-
 
 COMMENT ON TABLE "public"."google_calendar_connections" IS 'Server-only Google Calendar OAuth connections. Refresh tokens are AES-GCM encrypted before storage.';
 
-
-
 COMMENT ON COLUMN "public"."google_calendar_connections"."encrypted_refresh_token" IS 'Versioned AES-GCM ciphertext produced with the GOOGLE_TOKEN_ENCRYPTION_KEY Cloudflare secret.';
-
-
 
 CREATE TABLE IF NOT EXISTS "public"."google_calendar_oauth_states" (
     "state_hash" "text" NOT NULL,
@@ -5689,13 +5388,9 @@ CREATE TABLE IF NOT EXISTS "public"."google_calendar_oauth_states" (
     "created_at" timestamp with time zone DEFAULT "now"() NOT NULL
 );
 
-
 ALTER TABLE "public"."google_calendar_oauth_states" OWNER TO "postgres";
 
-
 COMMENT ON TABLE "public"."google_calendar_oauth_states" IS 'Single-use hashed OAuth state values used to bind Google authorization callbacks to authenticated users.';
-
-
 
 CREATE TABLE IF NOT EXISTS "public"."login" (
     "id" bigint NOT NULL,
@@ -5706,13 +5401,9 @@ CREATE TABLE IF NOT EXISTS "public"."login" (
     "name" "text" DEFAULT 'not_null'::"text"
 );
 
-
 ALTER TABLE "public"."login" OWNER TO "postgres";
 
-
 COMMENT ON TABLE "public"."login" IS 'list of users allowed to login';
-
-
 
 ALTER TABLE "public"."login" ALTER COLUMN "id" ADD GENERATED BY DEFAULT AS IDENTITY (
     SEQUENCE NAME "public"."login_id_seq"
@@ -5722,8 +5413,6 @@ ALTER TABLE "public"."login" ALTER COLUMN "id" ADD GENERATED BY DEFAULT AS IDENT
     NO MAXVALUE
     CACHE 1
 );
-
-
 
 CREATE TABLE IF NOT EXISTS "public"."profiles" (
     "user_id" "uuid" NOT NULL,
@@ -5749,21 +5438,13 @@ CREATE TABLE IF NOT EXISTS "public"."profiles" (
     CONSTRAINT "profiles_no_self_supervision" CHECK ((("supervisor_id" IS NULL) OR ("supervisor_id" <> "user_id")))
 );
 
-
 ALTER TABLE "public"."profiles" OWNER TO "postgres";
-
 
 COMMENT ON TABLE "public"."profiles" IS 'Workforce employee profiles. public.login remains the compatibility access source during Phase 1.';
 
-
-
 COMMENT ON COLUMN "public"."profiles"."is_agent" IS 'Whether the profile participates in agent workflows such as schedules, attendance, and leave. Admin-only users set this to false.';
 
-
-
 COMMENT ON COLUMN "public"."profiles"."is_system_admin" IS 'Hidden site-owner capability. Grants effective administrator scope without changing the visible base role or agent access type.';
-
-
 
 CREATE TABLE IF NOT EXISTS "public"."raw_sheet_imports" (
     "id" "uuid" DEFAULT "gen_random_uuid"() NOT NULL,
@@ -5774,9 +5455,7 @@ CREATE TABLE IF NOT EXISTS "public"."raw_sheet_imports" (
     "imported_at" timestamp with time zone DEFAULT "now"() NOT NULL
 );
 
-
 ALTER TABLE "public"."raw_sheet_imports" OWNER TO "postgres";
-
 
 CREATE TABLE IF NOT EXISTS "public"."reporting_data_dictionary" (
     "contract_version" integer NOT NULL,
@@ -5790,13 +5469,9 @@ CREATE TABLE IF NOT EXISTS "public"."reporting_data_dictionary" (
     CONSTRAINT "reporting_data_dictionary_values_check" CHECK ((("contract_version" > 0) AND ("length"(TRIM(BOTH FROM "tab_name")) > 0) AND ("length"(TRIM(BOTH FROM "column_name")) > 0) AND ("length"(TRIM(BOTH FROM "data_type")) > 0) AND ("length"(TRIM(BOTH FROM "definition")) > 0) AND ("length"(TRIM(BOTH FROM "validation_rule")) > 0)))
 );
 
-
 ALTER TABLE "public"."reporting_data_dictionary" OWNER TO "postgres";
 
-
 COMMENT ON TABLE "public"."reporting_data_dictionary" IS 'Versioned business definitions and validation rules for the Google Sheet reporting contract.';
-
-
 
 CREATE TABLE IF NOT EXISTS "public"."sheet_sync_metadata" (
     "sync_run_id" "text" NOT NULL,
@@ -5814,13 +5489,9 @@ CREATE TABLE IF NOT EXISTS "public"."sheet_sync_metadata" (
     CONSTRAINT "sheet_sync_metadata_values_check" CHECK ((("contract_version" = 3) AND ("source_time_zone" = 'America/New_York'::"text") AND ("test_window_end" >= "test_window_start") AND ("test_days_count" >= 1) AND ("rows_imported" >= 0)))
 );
 
-
 ALTER TABLE "public"."sheet_sync_metadata" OWNER TO "postgres";
 
-
 COMMENT ON TABLE "public"."sheet_sync_metadata" IS 'One record per Step 9 sync run, including the seven-day rollout readiness state.';
-
-
 
 CREATE TABLE IF NOT EXISTS "public"."teams" (
     "id" "uuid" DEFAULT "gen_random_uuid"() NOT NULL,
@@ -5835,9 +5506,7 @@ CREATE TABLE IF NOT EXISTS "public"."teams" (
     CONSTRAINT "teams_name_not_blank" CHECK (("length"(TRIM(BOTH FROM "name")) > 0))
 );
 
-
 ALTER TABLE "public"."teams" OWNER TO "postgres";
-
 
 CREATE TABLE IF NOT EXISTS "public"."ticket_dimension_profiles" (
     "ticket_id" bigint NOT NULL,
@@ -5858,21 +5527,13 @@ CREATE TABLE IF NOT EXISTS "public"."ticket_dimension_profiles" (
     CONSTRAINT "ticket_dimension_profiles_ticket_id_check" CHECK (("ticket_id" > 0))
 );
 
-
 ALTER TABLE "public"."ticket_dimension_profiles" OWNER TO "postgres";
-
 
 COMMENT ON TABLE "public"."ticket_dimension_profiles" IS 'Server-only current Zendesk ticket dimensions used for app, platform, country, and concern reporting.';
 
-
-
 COMMENT ON COLUMN "public"."ticket_dimension_profiles"."concern_key" IS 'Normalized Zendesk Concerns ticket-field value.';
 
-
-
 COMMENT ON COLUMN "public"."ticket_dimension_profiles"."driver_key" IS 'Generated compatibility alias for concern_key used by the existing Step 4 dashboard RPC.';
-
-
 
 CREATE TABLE IF NOT EXISTS "public"."ticket_driver_metrics" (
     "id" "uuid" DEFAULT "gen_random_uuid"() NOT NULL,
@@ -5888,9 +5549,7 @@ CREATE TABLE IF NOT EXISTS "public"."ticket_driver_metrics" (
     CONSTRAINT "ticket_driver_metrics_values_check" CHECK (("ticket_count" >= 0))
 );
 
-
 ALTER TABLE "public"."ticket_driver_metrics" OWNER TO "postgres";
-
 
 CREATE TABLE IF NOT EXISTS "public"."ticket_events" (
     "id" "uuid" DEFAULT "gen_random_uuid"() NOT NULL,
@@ -5916,17 +5575,11 @@ CREATE TABLE IF NOT EXISTS "public"."ticket_events" (
     CONSTRAINT "ticket_events_ticket_id_check" CHECK (("ticket_id" > 0))
 );
 
-
 ALTER TABLE "public"."ticket_events" OWNER TO "postgres";
-
 
 COMMENT ON TABLE "public"."ticket_events" IS 'Normalized, deduplicated Zendesk ticket lifecycle events.';
 
-
-
 COMMENT ON COLUMN "public"."ticket_events"."source_event_id" IS 'Immutable source identifier used to make imports idempotent.';
-
-
 
 CREATE TABLE IF NOT EXISTS "public"."user_permissions" (
     "id" "uuid" DEFAULT "gen_random_uuid"() NOT NULL,
@@ -5940,13 +5593,9 @@ CREATE TABLE IF NOT EXISTS "public"."user_permissions" (
     CONSTRAINT "user_permissions_permission_key_check" CHECK (("permission_key" = ANY (ARRAY['manage_employees'::"text", 'manage_schedules'::"text", 'view_team_attendance'::"text", 'correct_attendance'::"text", 'approve_attendance'::"text", 'approve_leave'::"text", 'view_workforce_reports'::"text", 'edit_articles'::"text", 'manage_payroll'::"text"])))
 );
 
-
 ALTER TABLE "public"."user_permissions" OWNER TO "postgres";
 
-
 COMMENT ON TABLE "public"."user_permissions" IS 'Effective workforce, article-editor, and future payroll permission grants.';
-
-
 
 CREATE TABLE IF NOT EXISTS "public"."workforce_audit_logs" (
     "id" "uuid" DEFAULT "gen_random_uuid"() NOT NULL,
@@ -5962,13 +5611,9 @@ CREATE TABLE IF NOT EXISTS "public"."workforce_audit_logs" (
     CONSTRAINT "workforce_audit_logs_entity_not_blank" CHECK (("length"(TRIM(BOTH FROM "entity_type")) > 0))
 );
 
-
 ALTER TABLE "public"."workforce_audit_logs" OWNER TO "postgres";
 
-
 COMMENT ON TABLE "public"."workforce_audit_logs" IS 'Append-only audit history populated by database triggers.';
-
-
 
 CREATE TABLE IF NOT EXISTS "public"."workforce_identity_links" (
     "auth_user_id" "uuid" NOT NULL,
@@ -5980,9 +5625,7 @@ CREATE TABLE IF NOT EXISTS "public"."workforce_identity_links" (
     CONSTRAINT "workforce_identity_links_match_method_check" CHECK (("match_method" = ANY (ARRAY['auth_user_id'::"text", 'exact_email'::"text", 'unique_name_alias'::"text", 'manual'::"text"])))
 );
 
-
 ALTER TABLE "public"."workforce_identity_links" OWNER TO "postgres";
-
 
 CREATE TABLE IF NOT EXISTS "public"."zendesk_agent_directory" (
     "agent_key" "text" NOT NULL,
@@ -5996,13 +5639,9 @@ CREATE TABLE IF NOT EXISTS "public"."zendesk_agent_directory" (
     CONSTRAINT "zendesk_agent_directory_zendesk_user_id_check" CHECK (("zendesk_user_id" > 0))
 );
 
-
 ALTER TABLE "public"."zendesk_agent_directory" OWNER TO "postgres";
 
-
 COMMENT ON TABLE "public"."zendesk_agent_directory" IS 'Cached Zendesk user names used to replace numeric agent IDs in dashboards.';
-
-
 
 CREATE TABLE IF NOT EXISTS "public"."zendesk_sync_runs" (
     "id" "uuid" DEFAULT "gen_random_uuid"() NOT NULL,
@@ -6028,13 +5667,9 @@ CREATE TABLE IF NOT EXISTS "public"."zendesk_sync_runs" (
     CONSTRAINT "zendesk_sync_runs_warnings_count_check" CHECK (("warnings_count" >= 0))
 );
 
-
 ALTER TABLE "public"."zendesk_sync_runs" OWNER TO "postgres";
 
-
 COMMENT ON TABLE "public"."zendesk_sync_runs" IS 'Server-only execution history for Zendesk event synchronization.';
-
-
 
 CREATE TABLE IF NOT EXISTS "public"."zendesk_sync_state" (
     "stream_key" "text" NOT NULL,
@@ -6048,1900 +5683,1154 @@ CREATE TABLE IF NOT EXISTS "public"."zendesk_sync_state" (
     CONSTRAINT "zendesk_sync_state_start_time_check" CHECK ((("start_time" IS NULL) OR ("start_time" > 0)))
 );
 
-
 ALTER TABLE "public"."zendesk_sync_state" OWNER TO "postgres";
-
 
 COMMENT ON TABLE "public"."zendesk_sync_state" IS 'Server-only cursor and lease state for incremental Zendesk exports.';
 
-
-
 ALTER TABLE ONLY "public"."dashboard_alert_events" ALTER COLUMN "id" SET DEFAULT "nextval"('"public"."dashboard_alert_events_id_seq"'::"regclass");
-
-
 
 ALTER TABLE ONLY "public"."dashboard_audit_events" ALTER COLUMN "id" SET DEFAULT "nextval"('"public"."dashboard_audit_events_id_seq"'::"regclass");
 
-
-
 ALTER TABLE ONLY "public"."dashboard_data_quality_results" ALTER COLUMN "id" SET DEFAULT "nextval"('"public"."dashboard_data_quality_results_id_seq"'::"regclass");
-
-
 
 ALTER TABLE ONLY "public"."agent_dimension_metrics"
     ADD CONSTRAINT "agent_dimension_metrics_pkey" PRIMARY KEY ("report_date", "agent_key", "dimension_type", "dimension_key");
 
-
-
 ALTER TABLE ONLY "public"."agent_identity_map"
     ADD CONSTRAINT "agent_identity_map_pkey" PRIMARY KEY ("agent_key");
-
-
 
 ALTER TABLE ONLY "public"."agent_identity_map"
     ADD CONSTRAINT "agent_identity_map_zendesk_agent_key_key" UNIQUE ("zendesk_agent_key");
 
-
-
 ALTER TABLE ONLY "public"."agent_productivity"
     ADD CONSTRAINT "agent_productivity_pkey" PRIMARY KEY ("id");
-
-
 
 ALTER TABLE ONLY "public"."articles"
     ADD CONSTRAINT "articles_pkey" PRIMARY KEY ("id");
 
-
-
 ALTER TABLE ONLY "public"."attendance_corrections"
     ADD CONSTRAINT "attendance_corrections_pkey" PRIMARY KEY ("id");
-
-
 
 ALTER TABLE ONLY "public"."attendance"
     ADD CONSTRAINT "attendance_pkey" PRIMARY KEY ("id");
 
-
-
 ALTER TABLE ONLY "public"."daily_distribution_metrics"
     ADD CONSTRAINT "daily_distribution_metrics_pkey" PRIMARY KEY ("id");
-
-
 
 ALTER TABLE ONLY "public"."daily_distribution_metrics"
     ADD CONSTRAINT "daily_distribution_metrics_report_date_dimension_type_dimen_key" UNIQUE ("report_date", "dimension_type", "dimension_key");
 
-
-
 ALTER TABLE ONLY "public"."daily_operations_metrics"
     ADD CONSTRAINT "daily_operations_metrics_pkey" PRIMARY KEY ("report_date");
-
-
 
 ALTER TABLE ONLY "public"."daily_ticket_metrics"
     ADD CONSTRAINT "daily_ticket_metrics_pkey" PRIMARY KEY ("id");
 
-
-
 ALTER TABLE ONLY "public"."daily_ticket_metrics"
     ADD CONSTRAINT "daily_ticket_metrics_report_date_key" UNIQUE ("report_date");
-
-
 
 ALTER TABLE ONLY "public"."dashboard_alert_events"
     ADD CONSTRAINT "dashboard_alert_events_alert_key_key" UNIQUE ("alert_key");
 
-
-
 ALTER TABLE ONLY "public"."dashboard_alert_events"
     ADD CONSTRAINT "dashboard_alert_events_pkey" PRIMARY KEY ("id");
-
-
 
 ALTER TABLE ONLY "public"."dashboard_audit_events"
     ADD CONSTRAINT "dashboard_audit_events_event_key_key" UNIQUE ("event_key");
 
-
-
 ALTER TABLE ONLY "public"."dashboard_audit_events"
     ADD CONSTRAINT "dashboard_audit_events_pkey" PRIMARY KEY ("id");
-
-
 
 ALTER TABLE ONLY "public"."dashboard_data_quality_results"
     ADD CONSTRAINT "dashboard_data_quality_results_pkey" PRIMARY KEY ("id");
 
-
-
 ALTER TABLE ONLY "public"."dashboard_data_quality_results"
     ADD CONSTRAINT "dashboard_data_quality_results_sync_run_id_check_key_key" UNIQUE ("sync_run_id", "check_key");
-
-
 
 ALTER TABLE ONLY "public"."dashboard_targets"
     ADD CONSTRAINT "dashboard_targets_pkey" PRIMARY KEY ("metric_key");
 
-
-
 ALTER TABLE ONLY "public"."google_calendar_connections"
     ADD CONSTRAINT "google_calendar_connections_pkey" PRIMARY KEY ("user_id");
-
-
 
 ALTER TABLE ONLY "public"."google_calendar_oauth_states"
     ADD CONSTRAINT "google_calendar_oauth_states_pkey" PRIMARY KEY ("state_hash");
 
-
-
 ALTER TABLE ONLY "public"."leave_requests"
     ADD CONSTRAINT "leave_requests_pkey" PRIMARY KEY ("id");
-
-
 
 ALTER TABLE ONLY "public"."login"
     ADD CONSTRAINT "login_pkey" PRIMARY KEY ("id");
 
-
-
 ALTER TABLE ONLY "public"."profiles"
     ADD CONSTRAINT "profiles_pkey" PRIMARY KEY ("user_id");
-
-
 
 ALTER TABLE ONLY "public"."raw_sheet_imports"
     ADD CONSTRAINT "raw_sheet_imports_pkey" PRIMARY KEY ("id");
 
-
-
 ALTER TABLE ONLY "public"."reporting_data_dictionary"
     ADD CONSTRAINT "reporting_data_dictionary_pkey" PRIMARY KEY ("contract_version", "tab_name", "column_name");
-
-
 
 ALTER TABLE ONLY "public"."sheet_sync_metadata"
     ADD CONSTRAINT "sheet_sync_metadata_pkey" PRIMARY KEY ("sync_run_id");
 
-
-
 ALTER TABLE ONLY "public"."sheet_sync_runs"
     ADD CONSTRAINT "sheet_sync_runs_pkey" PRIMARY KEY ("id");
-
-
 
 ALTER TABLE ONLY "public"."teams"
     ADD CONSTRAINT "teams_pkey" PRIMARY KEY ("id");
 
-
-
 ALTER TABLE ONLY "public"."ticket_dimension_profiles"
     ADD CONSTRAINT "ticket_dimension_profiles_pkey" PRIMARY KEY ("ticket_id");
-
-
 
 ALTER TABLE ONLY "public"."ticket_driver_metrics"
     ADD CONSTRAINT "ticket_driver_metrics_pkey" PRIMARY KEY ("id");
 
-
-
 ALTER TABLE ONLY "public"."ticket_driver_metrics"
     ADD CONSTRAINT "ticket_driver_metrics_report_date_driver_key_key" UNIQUE ("report_date", "driver_key");
-
-
 
 ALTER TABLE ONLY "public"."ticket_events"
     ADD CONSTRAINT "ticket_events_pkey" PRIMARY KEY ("id");
 
-
-
 ALTER TABLE ONLY "public"."ticket_events"
     ADD CONSTRAINT "ticket_events_source_event_id_key" UNIQUE ("source_event_id");
-
-
 
 ALTER TABLE ONLY "public"."agent_productivity"
     ADD CONSTRAINT "unique_agent_report" UNIQUE ("report_date", "agent_key");
 
-
-
 ALTER TABLE ONLY "public"."user_permissions"
     ADD CONSTRAINT "user_permissions_pkey" PRIMARY KEY ("id");
-
-
 
 ALTER TABLE ONLY "public"."user_permissions"
     ADD CONSTRAINT "user_permissions_user_key_unique" UNIQUE ("user_id", "permission_key");
 
-
-
 ALTER TABLE ONLY "public"."work_schedules"
     ADD CONSTRAINT "work_schedules_pkey" PRIMARY KEY ("id");
-
-
 
 ALTER TABLE ONLY "public"."work_schedules"
     ADD CONSTRAINT "work_schedules_user_date_sequence_unique" UNIQUE ("user_id", "shift_date", "shift_sequence");
 
-
-
 ALTER TABLE ONLY "public"."workforce_audit_logs"
     ADD CONSTRAINT "workforce_audit_logs_pkey" PRIMARY KEY ("id");
-
-
 
 ALTER TABLE ONLY "public"."workforce_identity_links"
     ADD CONSTRAINT "workforce_identity_links_pkey" PRIMARY KEY ("auth_user_id", "profile_user_id");
 
-
-
 ALTER TABLE ONLY "public"."zendesk_agent_directory"
     ADD CONSTRAINT "zendesk_agent_directory_pkey" PRIMARY KEY ("agent_key");
-
-
 
 ALTER TABLE ONLY "public"."zendesk_agent_directory"
     ADD CONSTRAINT "zendesk_agent_directory_zendesk_user_id_key" UNIQUE ("zendesk_user_id");
 
-
-
 ALTER TABLE ONLY "public"."zendesk_sync_runs"
     ADD CONSTRAINT "zendesk_sync_runs_pkey" PRIMARY KEY ("id");
-
-
 
 ALTER TABLE ONLY "public"."zendesk_sync_state"
     ADD CONSTRAINT "zendesk_sync_state_pkey" PRIMARY KEY ("stream_key");
 
-
-
 CREATE INDEX "agent_dimension_metrics_agent_idx" ON "public"."agent_dimension_metrics" USING "btree" ("agent_key", "report_date" DESC);
-
-
 
 CREATE INDEX "agent_dimension_metrics_date_idx" ON "public"."agent_dimension_metrics" USING "btree" ("report_date" DESC);
 
-
-
 CREATE INDEX "agent_dimension_metrics_type_idx" ON "public"."agent_dimension_metrics" USING "btree" ("dimension_type", "dimension_key", "report_date" DESC);
-
-
 
 CREATE INDEX "agent_identity_map_name_idx" ON "public"."agent_identity_map" USING "btree" ("lower"("agent_name"));
 
-
-
 CREATE UNIQUE INDEX "agent_productivity_key_uidx" ON "public"."agent_productivity" USING "btree" ("report_date", "agent_key");
-
-
 
 CREATE INDEX "attendance_corrected_date_idx" ON "public"."attendance" USING "btree" ("work_date" DESC, "is_corrected") WHERE ("is_corrected" IS TRUE);
 
-
-
 CREATE INDEX "attendance_corrections_attendance_idx" ON "public"."attendance_corrections" USING "btree" ("attendance_id", "corrected_at" DESC);
-
-
 
 CREATE INDEX "attendance_corrections_employee_idx" ON "public"."attendance_corrections" USING "btree" ("employee_user_id", "corrected_at" DESC);
 
-
-
 CREATE UNIQUE INDEX "attendance_one_open_session_per_user_idx" ON "public"."attendance" USING "btree" ("user_id") WHERE (("clock_in" IS NOT NULL) AND ("clock_out" IS NULL));
-
-
 
 CREATE INDEX "attendance_review_status_date_idx" ON "public"."attendance" USING "btree" ("review_status", "work_date" DESC);
 
-
-
 CREATE INDEX "attendance_reviewed_by_at_idx" ON "public"."attendance" USING "btree" ("reviewed_by", "reviewed_at" DESC) WHERE ("reviewed_by" IS NOT NULL);
-
-
 
 CREATE INDEX "attendance_schedule_id_idx" ON "public"."attendance" USING "btree" ("schedule_id");
 
-
-
 CREATE INDEX "attendance_status_date_idx" ON "public"."attendance" USING "btree" ("attendance_status", "work_date");
-
-
 
 CREATE INDEX "attendance_user_date_idx" ON "public"."attendance" USING "btree" ("user_id", "work_date");
 
-
-
 CREATE UNIQUE INDEX "attendance_user_schedule_unique" ON "public"."attendance" USING "btree" ("user_id", "schedule_id") WHERE ("schedule_id" IS NOT NULL);
-
-
 
 CREATE UNIQUE INDEX "attendance_user_unscheduled_date_unique" ON "public"."attendance" USING "btree" ("user_id", "work_date") WHERE ("schedule_id" IS NULL);
 
-
-
 CREATE UNIQUE INDEX "daily_distribution_metrics_key_uidx" ON "public"."daily_distribution_metrics" USING "btree" ("report_date", "dimension_type", "dimension_key");
-
-
 
 CREATE INDEX "daily_operations_metrics_calculated_idx" ON "public"."daily_operations_metrics" USING "btree" ("calculated_at" DESC);
 
-
-
 CREATE UNIQUE INDEX "daily_ticket_metrics_report_date_uidx" ON "public"."daily_ticket_metrics" USING "btree" ("report_date");
-
-
 
 CREATE INDEX "dashboard_alert_events_status_idx" ON "public"."dashboard_alert_events" USING "btree" ("status", "created_at" DESC);
 
-
-
 CREATE INDEX "dashboard_alert_events_sync_idx" ON "public"."dashboard_alert_events" USING "btree" ("sync_run_id", "created_at" DESC);
-
-
 
 CREATE INDEX "dashboard_audit_events_created_idx" ON "public"."dashboard_audit_events" USING "btree" ("created_at" DESC);
 
-
-
 CREATE INDEX "dashboard_audit_events_sync_idx" ON "public"."dashboard_audit_events" USING "btree" ("sync_run_id", "created_at" DESC);
-
-
 
 CREATE INDEX "dashboard_data_quality_results_run_idx" ON "public"."dashboard_data_quality_results" USING "btree" ("sync_run_id", "checked_at" DESC);
 
-
-
 CREATE INDEX "dashboard_data_quality_results_status_idx" ON "public"."dashboard_data_quality_results" USING "btree" ("status", "checked_at" DESC);
-
-
 
 CREATE INDEX "dashboard_targets_active_idx" ON "public"."dashboard_targets" USING "btree" ("active", "metric_key");
 
-
-
 CREATE INDEX "distribution_date_type_idx" ON "public"."daily_distribution_metrics" USING "btree" ("report_date" DESC, "dimension_type");
-
-
 
 CREATE INDEX "driver_date_group_idx" ON "public"."ticket_driver_metrics" USING "btree" ("report_date" DESC, "driver_group_key");
 
-
-
 CREATE INDEX "google_calendar_oauth_states_expires_at_idx" ON "public"."google_calendar_oauth_states" USING "btree" ("expires_at");
-
-
 
 CREATE INDEX "google_calendar_oauth_states_user_id_idx" ON "public"."google_calendar_oauth_states" USING "btree" ("user_id");
 
-
-
 CREATE INDEX "idx_agent_productivity_agent_key" ON "public"."agent_productivity" USING "btree" ("agent_key");
-
-
 
 CREATE INDEX "idx_agent_productivity_report_date" ON "public"."agent_productivity" USING "btree" ("report_date");
 
-
-
 CREATE INDEX "idx_daily_distribution_metrics_date" ON "public"."daily_distribution_metrics" USING "btree" ("report_date");
-
-
 
 CREATE INDEX "idx_daily_distribution_metrics_dimension" ON "public"."daily_distribution_metrics" USING "btree" ("dimension_type", "dimension_key");
 
-
-
 CREATE INDEX "idx_sheet_sync_runs_report_date" ON "public"."sheet_sync_runs" USING "btree" ("report_date");
-
-
 
 CREATE INDEX "idx_sheet_sync_runs_status" ON "public"."sheet_sync_runs" USING "btree" ("status");
 
-
-
 CREATE INDEX "idx_ticket_driver_metrics_driver_group_key" ON "public"."ticket_driver_metrics" USING "btree" ("driver_group_key");
-
-
 
 CREATE INDEX "idx_ticket_driver_metrics_driver_key" ON "public"."ticket_driver_metrics" USING "btree" ("driver_key");
 
-
-
 CREATE INDEX "idx_ticket_driver_metrics_report_date" ON "public"."ticket_driver_metrics" USING "btree" ("report_date");
-
-
 
 CREATE INDEX "leave_requests_status_idx" ON "public"."leave_requests" USING "btree" ("status", "created_at");
 
-
-
 CREATE INDEX "leave_requests_user_dates_idx" ON "public"."leave_requests" USING "btree" ("user_id", "start_date", "end_date");
-
-
 
 CREATE INDEX "productivity_date_agent_idx" ON "public"."agent_productivity" USING "btree" ("report_date" DESC, "agent_key");
 
-
-
 CREATE UNIQUE INDEX "profiles_email_lower_unique" ON "public"."profiles" USING "btree" ("lower"("email"));
-
-
 
 CREATE UNIQUE INDEX "profiles_employee_id_lower_unique" ON "public"."profiles" USING "btree" ("lower"("employee_id"));
 
-
-
 CREATE INDEX "profiles_employment_status_idx" ON "public"."profiles" USING "btree" ("employment_status");
-
-
 
 CREATE INDEX "profiles_supervisor_id_idx" ON "public"."profiles" USING "btree" ("supervisor_id");
 
-
-
 CREATE INDEX "profiles_team_id_idx" ON "public"."profiles" USING "btree" ("team_id");
-
-
 
 CREATE INDEX "raw_sheet_imports_report_date_idx" ON "public"."raw_sheet_imports" USING "btree" ("report_date");
 
-
-
 CREATE INDEX "raw_sheet_imports_sync_run_idx" ON "public"."raw_sheet_imports" USING "btree" ("sync_run_id");
-
-
 
 CREATE INDEX "sheet_sync_metadata_generated_idx" ON "public"."sheet_sync_metadata" USING "btree" ("generated_at" DESC);
 
-
-
 CREATE UNIQUE INDEX "teams_name_lower_unique" ON "public"."teams" USING "btree" ("lower"("name"));
-
-
 
 CREATE INDEX "ticket_dimension_profiles_app_idx" ON "public"."ticket_dimension_profiles" USING "btree" ("app_key") WHERE ("app_key" IS NOT NULL);
 
-
-
 CREATE INDEX "ticket_dimension_profiles_concern_idx" ON "public"."ticket_dimension_profiles" USING "btree" ("concern_key") WHERE ("concern_key" IS NOT NULL);
-
-
 
 CREATE INDEX "ticket_dimension_profiles_country_idx" ON "public"."ticket_dimension_profiles" USING "btree" ("country_key") WHERE ("country_key" IS NOT NULL);
 
-
-
 CREATE INDEX "ticket_dimension_profiles_driver_compat_idx" ON "public"."ticket_dimension_profiles" USING "btree" ("driver_key") WHERE ("driver_key" IS NOT NULL);
-
-
 
 CREATE INDEX "ticket_dimension_profiles_platform_idx" ON "public"."ticket_dimension_profiles" USING "btree" ("platform_key") WHERE ("platform_key" IS NOT NULL);
 
-
-
 CREATE INDEX "ticket_dimension_profiles_source_updated_idx" ON "public"."ticket_dimension_profiles" USING "btree" ("source_updated_at" DESC) WHERE ("source_updated_at" IS NOT NULL);
-
-
 
 CREATE UNIQUE INDEX "ticket_driver_metrics_key_uidx" ON "public"."ticket_driver_metrics" USING "btree" ("report_date", "driver_key");
 
-
-
 CREATE INDEX "ticket_events_agent_timestamp_idx" ON "public"."ticket_events" USING "btree" ("agent_key", "event_timestamp" DESC) WHERE ("agent_key" IS NOT NULL);
-
-
 
 CREATE INDEX "ticket_events_app_timestamp_idx" ON "public"."ticket_events" USING "btree" ("app_key", "event_timestamp" DESC) WHERE ("app_key" IS NOT NULL);
 
-
-
 CREATE INDEX "ticket_events_channel_timestamp_idx" ON "public"."ticket_events" USING "btree" ("channel", "event_timestamp" DESC) WHERE ("channel" IS NOT NULL);
-
-
 
 CREATE INDEX "ticket_events_country_timestamp_idx" ON "public"."ticket_events" USING "btree" ("country_key", "event_timestamp" DESC) WHERE ("country_key" IS NOT NULL);
 
-
-
 CREATE INDEX "ticket_events_driver_timestamp_idx" ON "public"."ticket_events" USING "btree" ("driver_key", "event_timestamp" DESC) WHERE ("driver_key" IS NOT NULL);
-
-
 
 CREATE INDEX "ticket_events_event_timestamp_idx" ON "public"."ticket_events" USING "btree" ("event_timestamp" DESC);
 
-
-
 CREATE INDEX "ticket_events_event_type_timestamp_idx" ON "public"."ticket_events" USING "btree" ("event_type", "event_timestamp" DESC);
-
-
 
 CREATE INDEX "ticket_events_platform_timestamp_idx" ON "public"."ticket_events" USING "btree" ("platform_key", "event_timestamp" DESC) WHERE ("platform_key" IS NOT NULL);
 
-
-
 CREATE INDEX "ticket_events_priority_timestamp_idx" ON "public"."ticket_events" USING "btree" ("priority", "event_timestamp" DESC) WHERE ("priority" IS NOT NULL);
-
-
 
 CREATE INDEX "ticket_events_ticket_timestamp_idx" ON "public"."ticket_events" USING "btree" ("ticket_id", "event_timestamp" DESC);
 
-
-
 CREATE INDEX "user_permissions_lookup_idx" ON "public"."user_permissions" USING "btree" ("user_id", "permission_key", "is_granted");
-
-
 
 CREATE INDEX "work_schedules_status_idx" ON "public"."work_schedules" USING "btree" ("status");
 
-
-
 CREATE INDEX "work_schedules_team_date_idx" ON "public"."work_schedules" USING "btree" ("team_id", "shift_date");
-
-
 
 CREATE INDEX "work_schedules_user_date_idx" ON "public"."work_schedules" USING "btree" ("user_id", "shift_date");
 
-
-
 CREATE INDEX "workforce_audit_logs_actor_idx" ON "public"."workforce_audit_logs" USING "btree" ("actor_user_id", "created_at" DESC);
-
-
 
 CREATE INDEX "workforce_audit_logs_created_at_idx" ON "public"."workforce_audit_logs" USING "btree" ("created_at" DESC);
 
-
-
 CREATE INDEX "workforce_audit_logs_entity_idx" ON "public"."workforce_audit_logs" USING "btree" ("entity_type", "entity_id", "created_at" DESC);
-
-
 
 CREATE INDEX "workforce_identity_links_profile_idx" ON "public"."workforce_identity_links" USING "btree" ("profile_user_id", "is_active");
 
-
-
 CREATE INDEX "zendesk_agent_directory_name_idx" ON "public"."zendesk_agent_directory" USING "btree" ("lower"("agent_name"));
-
-
 
 CREATE INDEX "zendesk_sync_runs_started_at_idx" ON "public"."zendesk_sync_runs" USING "btree" ("started_at" DESC);
 
-
-
 CREATE INDEX "zendesk_sync_runs_stream_started_idx" ON "public"."zendesk_sync_runs" USING "btree" ("stream_key", "started_at" DESC);
-
-
 
 CREATE OR REPLACE TRIGGER "attendance_prepare_storage" BEFORE INSERT OR UPDATE ON "public"."attendance" FOR EACH ROW EXECUTE FUNCTION "public"."workforce_prepare_attendance_storage"();
 
-
-
 CREATE OR REPLACE TRIGGER "attendance_set_updated_at" BEFORE UPDATE ON "public"."attendance" FOR EACH ROW EXECUTE FUNCTION "public"."workforce_set_updated_at"();
-
-
 
 CREATE OR REPLACE TRIGGER "attendance_workforce_audit" AFTER INSERT OR DELETE OR UPDATE ON "public"."attendance" FOR EACH ROW EXECUTE FUNCTION "public"."workforce_audit_row_change"('id');
 
-
-
 CREATE OR REPLACE TRIGGER "capture_agent_identity_from_productivity" AFTER INSERT OR UPDATE OF "agent_key", "agent_name" ON "public"."agent_productivity" FOR EACH ROW EXECUTE FUNCTION "public"."capture_agent_identity_from_productivity"();
-
-
 
 CREATE OR REPLACE TRIGGER "dashboard_quality_operations_trigger" AFTER INSERT ON "public"."dashboard_data_quality_results" FOR EACH ROW EXECUTE FUNCTION "public"."record_dashboard_quality_operations"();
 
-
-
 CREATE OR REPLACE TRIGGER "dashboard_sync_operations_trigger" AFTER UPDATE OF "status" ON "public"."sheet_sync_runs" FOR EACH ROW WHEN ((("new"."status" IS DISTINCT FROM "old"."status") AND (("new"."status" = 'success'::"text") OR ("new"."status" = 'failed'::"text")))) EXECUTE FUNCTION "public"."record_dashboard_sync_operations"();
-
-
 
 CREATE OR REPLACE TRIGGER "enforce_admin_article_access_trigger" BEFORE INSERT OR UPDATE ON "public"."login" FOR EACH ROW EXECUTE FUNCTION "public"."enforce_admin_article_access"();
 
-
-
 CREATE OR REPLACE TRIGGER "leave_requests_set_updated_at" BEFORE UPDATE ON "public"."leave_requests" FOR EACH ROW EXECUTE FUNCTION "public"."workforce_set_updated_at"();
-
-
 
 CREATE OR REPLACE TRIGGER "leave_requests_workforce_audit" AFTER INSERT OR DELETE OR UPDATE ON "public"."leave_requests" FOR EACH ROW EXECUTE FUNCTION "public"."workforce_audit_row_change"('id');
 
-
-
 CREATE OR REPLACE TRIGGER "login_workforce_sync" AFTER INSERT OR DELETE OR UPDATE ON "public"."login" FOR EACH ROW EXECUTE FUNCTION "public"."workforce_sync_login_record"();
-
-
 
 CREATE OR REPLACE TRIGGER "normalize_agent_productivity_aht_unit" BEFORE INSERT OR UPDATE ON "public"."agent_productivity" FOR EACH ROW EXECUTE FUNCTION "public"."normalize_agent_productivity_aht_unit"();
 
-
-
 CREATE OR REPLACE TRIGGER "profiles_enforce_admin_payroll" BEFORE INSERT OR UPDATE OF "base_role", "is_system_admin", "can_manage_payroll" ON "public"."profiles" FOR EACH ROW EXECUTE FUNCTION "public"."workforce_enforce_admin_payroll_profile"();
-
-
 
 CREATE OR REPLACE TRIGGER "profiles_login_compatibility_sync" AFTER INSERT OR UPDATE OF "base_role", "is_system_admin", "can_edit_articles", "email" ON "public"."profiles" FOR EACH ROW EXECUTE FUNCTION "public"."workforce_sync_profile_compatibility"();
 
-
-
 CREATE OR REPLACE TRIGGER "profiles_normalize_timezone_default" BEFORE INSERT OR UPDATE OF "timezone" ON "public"."profiles" FOR EACH ROW EXECUTE FUNCTION "public"."workforce_normalize_timezone_default"();
-
-
 
 CREATE OR REPLACE TRIGGER "profiles_set_updated_at" BEFORE UPDATE ON "public"."profiles" FOR EACH ROW EXECUTE FUNCTION "public"."workforce_set_updated_at"();
 
-
-
 CREATE OR REPLACE TRIGGER "profiles_sync_admin_payroll_permission" AFTER INSERT OR UPDATE OF "base_role", "is_system_admin", "can_manage_payroll" ON "public"."profiles" FOR EACH ROW EXECUTE FUNCTION "public"."workforce_sync_admin_payroll_permission"();
-
-
 
 CREATE OR REPLACE TRIGGER "profiles_workforce_audit" AFTER INSERT OR DELETE OR UPDATE ON "public"."profiles" FOR EACH ROW EXECUTE FUNCTION "public"."workforce_audit_row_change"('user_id');
 
-
-
 CREATE OR REPLACE TRIGGER "profiles_workforce_identity_link" AFTER INSERT OR UPDATE OF "email" ON "public"."profiles" FOR EACH ROW EXECUTE FUNCTION "public"."workforce_sync_identity_link_from_profile"();
-
-
 
 CREATE OR REPLACE TRIGGER "set_article_update_metadata_trigger" BEFORE INSERT OR UPDATE ON "public"."articles" FOR EACH ROW EXECUTE FUNCTION "public"."set_article_update_metadata"();
 
-
-
 CREATE OR REPLACE TRIGGER "set_updated_at" BEFORE UPDATE ON "public"."daily_ticket_metrics" FOR EACH ROW EXECUTE FUNCTION "public"."update_updated_at_column"();
-
-
 
 CREATE OR REPLACE TRIGGER "set_updated_at" BEFORE UPDATE ON "public"."ticket_driver_metrics" FOR EACH ROW EXECUTE FUNCTION "public"."update_updated_at_column"();
 
-
-
 CREATE OR REPLACE TRIGGER "sheet_sync_quality_results_trigger" AFTER UPDATE OF "status", "completed_at", "report_date", "rows_imported" ON "public"."sheet_sync_runs" FOR EACH ROW WHEN ((("new"."status" = 'success'::"text") OR ("new"."status" = 'failed'::"text"))) EXECUTE FUNCTION "public"."record_sheet_sync_quality_results"();
-
-
 
 CREATE OR REPLACE TRIGGER "teams_set_updated_at" BEFORE UPDATE ON "public"."teams" FOR EACH ROW EXECUTE FUNCTION "public"."workforce_set_updated_at"();
 
-
-
 CREATE OR REPLACE TRIGGER "teams_workforce_audit" AFTER INSERT OR DELETE OR UPDATE ON "public"."teams" FOR EACH ROW EXECUTE FUNCTION "public"."workforce_audit_row_change"('id');
-
-
 
 CREATE OR REPLACE TRIGGER "update_agent_productivity_updated_at" BEFORE UPDATE ON "public"."agent_productivity" FOR EACH ROW EXECUTE FUNCTION "public"."update_updated_at_column"();
 
-
-
 CREATE OR REPLACE TRIGGER "update_daily_distribution_metrics_updated_at" BEFORE UPDATE ON "public"."daily_distribution_metrics" FOR EACH ROW EXECUTE FUNCTION "public"."update_updated_at_column"();
-
-
 
 CREATE OR REPLACE TRIGGER "user_permissions_set_updated_at" BEFORE UPDATE ON "public"."user_permissions" FOR EACH ROW EXECUTE FUNCTION "public"."workforce_set_updated_at"();
 
-
-
 CREATE OR REPLACE TRIGGER "user_permissions_workforce_audit" AFTER INSERT OR DELETE OR UPDATE ON "public"."user_permissions" FOR EACH ROW EXECUTE FUNCTION "public"."workforce_audit_row_change"('id');
-
-
 
 CREATE OR REPLACE TRIGGER "work_schedules_normalize_timezone_default" BEFORE INSERT OR UPDATE OF "timezone" ON "public"."work_schedules" FOR EACH ROW EXECUTE FUNCTION "public"."workforce_normalize_timezone_default"();
 
-
-
 CREATE OR REPLACE TRIGGER "work_schedules_set_updated_at" BEFORE UPDATE ON "public"."work_schedules" FOR EACH ROW EXECUTE FUNCTION "public"."workforce_set_updated_at"();
-
-
 
 CREATE OR REPLACE TRIGGER "work_schedules_workforce_audit" AFTER INSERT OR DELETE OR UPDATE ON "public"."work_schedules" FOR EACH ROW EXECUTE FUNCTION "public"."workforce_audit_row_change"('id');
 
-
-
 CREATE OR REPLACE TRIGGER "zz_login_workforce_identity_link" AFTER INSERT OR UPDATE OF "email" ON "public"."login" FOR EACH ROW EXECUTE FUNCTION "public"."workforce_sync_identity_link_from_login"();
-
-
 
 ALTER TABLE ONLY "public"."agent_identity_map"
     ADD CONSTRAINT "agent_identity_map_zendesk_agent_key_fkey" FOREIGN KEY ("zendesk_agent_key") REFERENCES "public"."zendesk_agent_directory"("agent_key") ON UPDATE CASCADE ON DELETE SET NULL;
 
-
-
 ALTER TABLE ONLY "public"."attendance_corrections"
     ADD CONSTRAINT "attendance_corrections_attendance_id_fkey" FOREIGN KEY ("attendance_id") REFERENCES "public"."attendance"("id") ON DELETE CASCADE;
-
-
 
 ALTER TABLE ONLY "public"."attendance_corrections"
     ADD CONSTRAINT "attendance_corrections_corrected_by_fkey" FOREIGN KEY ("corrected_by") REFERENCES "public"."profiles"("user_id") ON DELETE RESTRICT;
 
-
-
 ALTER TABLE ONLY "public"."attendance_corrections"
     ADD CONSTRAINT "attendance_corrections_employee_user_id_fkey" FOREIGN KEY ("employee_user_id") REFERENCES "public"."profiles"("user_id") ON DELETE RESTRICT;
-
-
 
 ALTER TABLE ONLY "public"."attendance_corrections"
     ADD CONSTRAINT "attendance_corrections_schedule_id_fkey" FOREIGN KEY ("schedule_id") REFERENCES "public"."work_schedules"("id") ON DELETE SET NULL;
 
-
-
 ALTER TABLE ONLY "public"."attendance"
     ADD CONSTRAINT "attendance_schedule_id_fkey" FOREIGN KEY ("schedule_id") REFERENCES "public"."work_schedules"("id") ON DELETE SET NULL;
-
-
 
 ALTER TABLE ONLY "public"."attendance"
     ADD CONSTRAINT "attendance_user_id_fkey" FOREIGN KEY ("user_id") REFERENCES "public"."profiles"("user_id") ON DELETE RESTRICT;
 
-
-
 ALTER TABLE ONLY "public"."google_calendar_connections"
     ADD CONSTRAINT "google_calendar_connections_user_id_fkey" FOREIGN KEY ("user_id") REFERENCES "auth"."users"("id") ON DELETE CASCADE;
-
-
 
 ALTER TABLE ONLY "public"."google_calendar_oauth_states"
     ADD CONSTRAINT "google_calendar_oauth_states_user_id_fkey" FOREIGN KEY ("user_id") REFERENCES "auth"."users"("id") ON DELETE CASCADE;
 
-
-
 ALTER TABLE ONLY "public"."leave_requests"
     ADD CONSTRAINT "leave_requests_user_id_fkey" FOREIGN KEY ("user_id") REFERENCES "public"."profiles"("user_id") ON DELETE RESTRICT;
-
-
 
 ALTER TABLE ONLY "public"."profiles"
     ADD CONSTRAINT "profiles_supervisor_profile_fk" FOREIGN KEY ("supervisor_id") REFERENCES "public"."profiles"("user_id") ON DELETE SET NULL;
 
-
-
 ALTER TABLE ONLY "public"."profiles"
     ADD CONSTRAINT "profiles_team_id_fkey" FOREIGN KEY ("team_id") REFERENCES "public"."teams"("id") ON DELETE SET NULL;
-
-
 
 ALTER TABLE ONLY "public"."raw_sheet_imports"
     ADD CONSTRAINT "raw_sheet_imports_sync_run_id_fkey" FOREIGN KEY ("sync_run_id") REFERENCES "public"."sheet_sync_runs"("id") ON DELETE CASCADE;
 
-
-
 ALTER TABLE ONLY "public"."teams"
     ADD CONSTRAINT "teams_supervisor_profile_fk" FOREIGN KEY ("supervisor_id") REFERENCES "public"."profiles"("user_id") ON DELETE SET NULL;
-
-
 
 ALTER TABLE ONLY "public"."user_permissions"
     ADD CONSTRAINT "user_permissions_user_id_fkey" FOREIGN KEY ("user_id") REFERENCES "public"."profiles"("user_id") ON DELETE RESTRICT;
 
-
-
 ALTER TABLE ONLY "public"."work_schedules"
     ADD CONSTRAINT "work_schedules_team_id_fkey" FOREIGN KEY ("team_id") REFERENCES "public"."teams"("id") ON DELETE SET NULL;
-
-
 
 ALTER TABLE ONLY "public"."work_schedules"
     ADD CONSTRAINT "work_schedules_user_id_fkey" FOREIGN KEY ("user_id") REFERENCES "public"."profiles"("user_id") ON DELETE RESTRICT;
 
-
-
 ALTER TABLE ONLY "public"."workforce_identity_links"
     ADD CONSTRAINT "workforce_identity_links_profile_user_id_fkey" FOREIGN KEY ("profile_user_id") REFERENCES "public"."profiles"("user_id") ON DELETE CASCADE;
 
-
-
 CREATE POLICY "Admins can delete attendance correction history" ON "public"."attendance_corrections" FOR DELETE USING (("public"."workforce_current_user_is_active"() AND "public"."workforce_is_admin"()));
-
-
 
 CREATE POLICY "Admins can insert attendance correction history" ON "public"."attendance_corrections" FOR INSERT WITH CHECK (("public"."workforce_current_user_is_active"() AND "public"."workforce_is_admin"()));
 
-
-
 CREATE POLICY "Admins can update attendance correction history" ON "public"."attendance_corrections" FOR UPDATE USING (("public"."workforce_current_user_is_active"() AND "public"."workforce_is_admin"()));
-
-
 
 CREATE POLICY "Admins can view attendance" ON "public"."attendance" FOR SELECT TO "authenticated" USING ("public"."workforce_is_admin"());
 
-
-
 CREATE POLICY "Admins can view attendance correction history" ON "public"."attendance_corrections" FOR SELECT USING (("public"."workforce_current_user_is_active"() AND "public"."workforce_is_admin"()));
-
-
 
 CREATE POLICY "Admins can view leave requests" ON "public"."leave_requests" FOR SELECT TO "authenticated" USING ("public"."workforce_is_admin"());
 
-
-
 CREATE POLICY "Admins can view work schedules" ON "public"."work_schedules" FOR SELECT TO "authenticated" USING ("public"."workforce_is_admin"());
-
-
 
 CREATE POLICY "Admins can view workforce audit logs" ON "public"."workforce_audit_logs" FOR SELECT TO "authenticated" USING ("public"."workforce_is_admin"());
 
-
-
 CREATE POLICY "Admins can view workforce permissions" ON "public"."user_permissions" FOR SELECT TO "authenticated" USING ("public"."workforce_is_admin"());
-
-
 
 CREATE POLICY "Admins can view workforce profiles" ON "public"."profiles" FOR SELECT TO "authenticated" USING ("public"."workforce_is_admin"());
 
-
-
 CREATE POLICY "Admins can view workforce teams" ON "public"."teams" FOR SELECT TO "authenticated" USING ("public"."workforce_is_admin"());
-
-
 
 CREATE POLICY "Allow authenticated users to read login" ON "public"."login" FOR SELECT TO "authenticated" USING (true);
 
-
-
 CREATE POLICY "Article editors can delete articles" ON "public"."articles" FOR DELETE TO "authenticated" USING ("public"."current_user_can_edit_articles"());
-
-
 
 CREATE POLICY "Article editors can update articles" ON "public"."articles" FOR UPDATE TO "authenticated" USING ("public"."current_user_can_edit_articles"()) WITH CHECK ("public"."current_user_can_edit_articles"());
 
-
-
 CREATE POLICY "Authenticated users can read Zendesk agent names" ON "public"."zendesk_agent_directory" FOR SELECT TO "authenticated" USING (true);
-
-
 
 CREATE POLICY "Authenticated users can read active dashboard targets" ON "public"."dashboard_targets" FOR SELECT TO "authenticated" USING (("active" = true));
 
-
-
 CREATE POLICY "Authenticated users can read agent dimension metrics" ON "public"."agent_dimension_metrics" FOR SELECT TO "authenticated" USING (true);
-
-
 
 CREATE POLICY "Authenticated users can read agent identity mappings" ON "public"."agent_identity_map" FOR SELECT TO "authenticated" USING (true);
 
-
-
 CREATE POLICY "Authenticated users can read agent productivity" ON "public"."agent_productivity" FOR SELECT TO "authenticated" USING (true);
-
-
 
 CREATE POLICY "Authenticated users can read articles" ON "public"."articles" FOR SELECT TO "authenticated" USING ((("published" = true) OR "public"."current_user_can_edit_articles"()));
 
-
-
 CREATE POLICY "Authenticated users can read daily operations metrics" ON "public"."daily_operations_metrics" FOR SELECT TO "authenticated" USING (true);
-
-
 
 CREATE POLICY "Authenticated users can read daily ticket metrics" ON "public"."daily_ticket_metrics" FOR SELECT TO "authenticated" USING (true);
 
-
-
 CREATE POLICY "Authenticated users can read distribution metrics" ON "public"."daily_distribution_metrics" FOR SELECT TO "authenticated" USING (true);
-
-
 
 CREATE POLICY "Authenticated users can read reporting data dictionary" ON "public"."reporting_data_dictionary" FOR SELECT TO "authenticated" USING (true);
 
-
-
 CREATE POLICY "Authenticated users can read sheet sync metadata" ON "public"."sheet_sync_metadata" FOR SELECT TO "authenticated" USING (true);
-
-
 
 CREATE POLICY "Authenticated users can read ticket driver metrics" ON "public"."ticket_driver_metrics" FOR SELECT TO "authenticated" USING (true);
 
-
-
 CREATE POLICY "Authenticated users can read ticket events" ON "public"."ticket_events" FOR SELECT TO "authenticated" USING (true);
-
-
 
 CREATE POLICY "Authorized users can delete attendance" ON "public"."attendance" FOR DELETE TO "authenticated" USING (("public"."workforce_is_admin"() AND "public"."workforce_has_permission"('manage_schedules'::"text")));
 
-
-
 CREATE POLICY "Authorized users can delete work schedules" ON "public"."work_schedules" FOR DELETE TO "authenticated" USING ("public"."workforce_can_manage_user"("user_id", 'manage_schedules'::"text"));
-
-
 
 CREATE POLICY "Authorized users can insert attendance" ON "public"."attendance" FOR INSERT TO "authenticated" WITH CHECK ("public"."workforce_can_manage_user"("user_id", 'manage_schedules'::"text"));
 
-
-
 CREATE POLICY "Authorized users can insert work schedules" ON "public"."work_schedules" FOR INSERT TO "authenticated" WITH CHECK ("public"."workforce_can_manage_user"("user_id", 'manage_schedules'::"text"));
-
-
 
 CREATE POLICY "Authorized users can update attendance" ON "public"."attendance" FOR UPDATE TO "authenticated" USING ("public"."workforce_can_manage_user"("user_id", 'manage_schedules'::"text")) WITH CHECK ("public"."workforce_can_manage_user"("user_id", 'manage_schedules'::"text"));
 
-
-
 CREATE POLICY "Authorized users can update leave requests" ON "public"."leave_requests" FOR UPDATE TO "authenticated" USING ("public"."workforce_can_manage_user"("user_id", 'approve_leave'::"text")) WITH CHECK ("public"."workforce_can_manage_user"("user_id", 'approve_leave'::"text"));
-
-
 
 CREATE POLICY "Authorized users can update work schedules" ON "public"."work_schedules" FOR UPDATE TO "authenticated" USING ("public"."workforce_can_manage_user"("user_id", 'manage_schedules'::"text")) WITH CHECK ("public"."workforce_can_manage_user"("user_id", 'manage_schedules'::"text"));
 
-
-
 CREATE POLICY "Editors can insert articles" ON "public"."articles" FOR INSERT TO "authenticated" WITH CHECK (true);
-
-
 
 CREATE POLICY "Reporting administrators can read dashboard alert events" ON "public"."dashboard_alert_events" FOR SELECT TO "authenticated" USING (("public"."workforce_is_admin"() AND "public"."workforce_has_permission"('view_workforce_reports'::"text")));
 
-
-
 COMMENT ON POLICY "Reporting administrators can read dashboard alert events" ON "public"."dashboard_alert_events" IS 'Restricts Reporting Operations alerts to active administrators with view_workforce_reports.';
-
-
 
 CREATE POLICY "Reporting administrators can read dashboard audit events" ON "public"."dashboard_audit_events" FOR SELECT TO "authenticated" USING (("public"."workforce_is_admin"() AND "public"."workforce_has_permission"('view_workforce_reports'::"text")));
 
-
-
 COMMENT ON POLICY "Reporting administrators can read dashboard audit events" ON "public"."dashboard_audit_events" IS 'Restricts Reporting Operations audit history to active administrators with view_workforce_reports.';
-
-
 
 CREATE POLICY "Reporting administrators can read dashboard data quality result" ON "public"."dashboard_data_quality_results" FOR SELECT TO "authenticated" USING (("public"."workforce_is_admin"() AND "public"."workforce_has_permission"('view_workforce_reports'::"text")));
 
-
-
 COMMENT ON POLICY "Reporting administrators can read dashboard data quality result" ON "public"."dashboard_data_quality_results" IS 'Restricts Reporting Operations quality results to active administrators with view_workforce_reports.';
-
-
 
 CREATE POLICY "Reporting administrators can read sheet synchronization runs" ON "public"."sheet_sync_runs" FOR SELECT TO "authenticated" USING (("public"."workforce_is_admin"() AND "public"."workforce_has_permission"('view_workforce_reports'::"text")));
 
-
-
 COMMENT ON POLICY "Reporting administrators can read sheet synchronization runs" ON "public"."sheet_sync_runs" IS 'Restricts synchronization history to active administrators with view_workforce_reports.';
-
-
 
 CREATE POLICY "Users can submit their own leave requests" ON "public"."leave_requests" FOR INSERT TO "authenticated" WITH CHECK ((("user_id" = "auth"."uid"()) AND "public"."workforce_current_user_is_agent"() AND ("status" = 'pending'::"text") AND ("reviewed_by" IS NULL) AND ("reviewed_at" IS NULL)));
 
-
-
 CREATE POLICY "Users can view permitted attendance" ON "public"."attendance" FOR SELECT TO "authenticated" USING (("public"."workforce_is_current_identity"("user_id") OR "public"."workforce_can_manage_user"("user_id", 'view_team_attendance'::"text") OR "public"."workforce_can_manage_user"("user_id", 'manage_schedules'::"text")));
-
-
 
 CREATE POLICY "Users can view permitted work schedules" ON "public"."work_schedules" FOR SELECT TO "authenticated" USING ("public"."workforce_can_view_user"("user_id", 'manage_schedules'::"text"));
 
-
-
 CREATE POLICY "Users can view permitted workforce profiles" ON "public"."profiles" FOR SELECT TO "authenticated" USING (("public"."workforce_is_current_identity"("user_id") OR "public"."workforce_can_manage_user"("user_id", 'manage_employees'::"text") OR "public"."workforce_can_manage_user"("user_id", 'manage_schedules'::"text") OR "public"."workforce_can_manage_user"("user_id", 'view_team_attendance'::"text") OR "public"."workforce_can_manage_user"("user_id", 'approve_leave'::"text") OR "public"."workforce_can_manage_user"("user_id", 'view_workforce_reports'::"text")));
-
-
 
 CREATE POLICY "Users can view their own permissions" ON "public"."user_permissions" FOR SELECT TO "authenticated" USING (("public"."workforce_is_current_identity"("user_id") OR ("public"."workforce_is_admin"() AND "public"."workforce_has_permission"('manage_employees'::"text"))));
 
-
-
 CREATE POLICY "Workforce admins can delete leave requests" ON "public"."leave_requests" FOR DELETE TO "authenticated" USING (("public"."workforce_is_admin"() AND "public"."workforce_has_permission"('approve_leave'::"text")));
-
-
 
 CREATE POLICY "Workforce admins can delete permissions" ON "public"."user_permissions" FOR DELETE TO "authenticated" USING (("public"."workforce_is_admin"() AND "public"."workforce_has_permission"('manage_employees'::"text")));
 
-
-
 CREATE POLICY "Workforce admins can delete profiles" ON "public"."profiles" FOR DELETE TO "authenticated" USING (("public"."workforce_is_admin"() AND "public"."workforce_has_permission"('manage_employees'::"text")));
-
-
 
 CREATE POLICY "Workforce admins can delete teams" ON "public"."teams" FOR DELETE TO "authenticated" USING (("public"."workforce_is_admin"() AND "public"."workforce_has_permission"('manage_employees'::"text")));
 
-
-
 CREATE POLICY "Workforce admins can insert permissions" ON "public"."user_permissions" FOR INSERT TO "authenticated" WITH CHECK (("public"."workforce_is_admin"() AND "public"."workforce_has_permission"('manage_employees'::"text")));
-
-
 
 CREATE POLICY "Workforce admins can insert profiles" ON "public"."profiles" FOR INSERT TO "authenticated" WITH CHECK (("public"."workforce_is_admin"() AND "public"."workforce_has_permission"('manage_employees'::"text")));
 
-
-
 CREATE POLICY "Workforce admins can insert teams" ON "public"."teams" FOR INSERT TO "authenticated" WITH CHECK (("public"."workforce_is_admin"() AND "public"."workforce_has_permission"('manage_employees'::"text")));
-
-
 
 CREATE POLICY "Workforce admins can update permissions" ON "public"."user_permissions" FOR UPDATE TO "authenticated" USING (("public"."workforce_is_admin"() AND "public"."workforce_has_permission"('manage_employees'::"text"))) WITH CHECK (("public"."workforce_is_admin"() AND "public"."workforce_has_permission"('manage_employees'::"text")));
 
-
-
 CREATE POLICY "Workforce admins can update profiles" ON "public"."profiles" FOR UPDATE TO "authenticated" USING (("public"."workforce_is_admin"() AND "public"."workforce_has_permission"('manage_employees'::"text"))) WITH CHECK (("public"."workforce_is_admin"() AND "public"."workforce_has_permission"('manage_employees'::"text")));
-
-
 
 CREATE POLICY "Workforce admins can update teams" ON "public"."teams" FOR UPDATE TO "authenticated" USING (("public"."workforce_is_admin"() AND "public"."workforce_has_permission"('manage_employees'::"text"))) WITH CHECK (("public"."workforce_is_admin"() AND "public"."workforce_has_permission"('manage_employees'::"text")));
 
-
-
 ALTER TABLE "public"."agent_dimension_metrics" ENABLE ROW LEVEL SECURITY;
-
 
 ALTER TABLE "public"."agent_identity_map" ENABLE ROW LEVEL SECURITY;
 
-
 ALTER TABLE "public"."agent_productivity" ENABLE ROW LEVEL SECURITY;
-
 
 ALTER TABLE "public"."articles" ENABLE ROW LEVEL SECURITY;
 
-
 ALTER TABLE "public"."attendance" ENABLE ROW LEVEL SECURITY;
-
 
 ALTER TABLE "public"."attendance_corrections" ENABLE ROW LEVEL SECURITY;
 
-
 ALTER TABLE "public"."daily_distribution_metrics" ENABLE ROW LEVEL SECURITY;
-
 
 ALTER TABLE "public"."daily_operations_metrics" ENABLE ROW LEVEL SECURITY;
 
-
 ALTER TABLE "public"."daily_ticket_metrics" ENABLE ROW LEVEL SECURITY;
-
 
 ALTER TABLE "public"."dashboard_alert_events" ENABLE ROW LEVEL SECURITY;
 
-
 ALTER TABLE "public"."dashboard_audit_events" ENABLE ROW LEVEL SECURITY;
-
 
 ALTER TABLE "public"."dashboard_data_quality_results" ENABLE ROW LEVEL SECURITY;
 
-
 ALTER TABLE "public"."dashboard_targets" ENABLE ROW LEVEL SECURITY;
-
 
 ALTER TABLE "public"."google_calendar_connections" ENABLE ROW LEVEL SECURITY;
 
-
 ALTER TABLE "public"."google_calendar_oauth_states" ENABLE ROW LEVEL SECURITY;
-
 
 ALTER TABLE "public"."leave_requests" ENABLE ROW LEVEL SECURITY;
 
-
 ALTER TABLE "public"."login" ENABLE ROW LEVEL SECURITY;
-
 
 ALTER TABLE "public"."profiles" ENABLE ROW LEVEL SECURITY;
 
-
 ALTER TABLE "public"."raw_sheet_imports" ENABLE ROW LEVEL SECURITY;
-
 
 ALTER TABLE "public"."reporting_data_dictionary" ENABLE ROW LEVEL SECURITY;
 
-
 ALTER TABLE "public"."sheet_sync_metadata" ENABLE ROW LEVEL SECURITY;
-
 
 ALTER TABLE "public"."sheet_sync_runs" ENABLE ROW LEVEL SECURITY;
 
-
 ALTER TABLE "public"."teams" ENABLE ROW LEVEL SECURITY;
-
 
 ALTER TABLE "public"."ticket_dimension_profiles" ENABLE ROW LEVEL SECURITY;
 
-
 ALTER TABLE "public"."ticket_driver_metrics" ENABLE ROW LEVEL SECURITY;
-
 
 ALTER TABLE "public"."ticket_events" ENABLE ROW LEVEL SECURITY;
 
-
 ALTER TABLE "public"."user_permissions" ENABLE ROW LEVEL SECURITY;
-
 
 ALTER TABLE "public"."work_schedules" ENABLE ROW LEVEL SECURITY;
 
-
 ALTER TABLE "public"."workforce_audit_logs" ENABLE ROW LEVEL SECURITY;
-
 
 ALTER TABLE "public"."workforce_identity_links" ENABLE ROW LEVEL SECURITY;
 
-
 ALTER TABLE "public"."zendesk_agent_directory" ENABLE ROW LEVEL SECURITY;
-
 
 ALTER TABLE "public"."zendesk_sync_runs" ENABLE ROW LEVEL SECURITY;
 
-
 ALTER TABLE "public"."zendesk_sync_state" ENABLE ROW LEVEL SECURITY;
-
-
-
 
 ALTER PUBLICATION "supabase_realtime" OWNER TO "postgres";
 
-
 GRANT USAGE ON SCHEMA "public" TO "postgres";
+
 GRANT USAGE ON SCHEMA "public" TO "anon";
+
 GRANT USAGE ON SCHEMA "public" TO "authenticated";
+
 GRANT USAGE ON SCHEMA "public" TO "service_role";
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 REVOKE ALL ON FUNCTION "public"."acquire_zendesk_sync_lock"("p_stream_key" "text", "p_lock_token" "uuid", "p_lease_seconds" integer) FROM PUBLIC;
+
 GRANT ALL ON FUNCTION "public"."acquire_zendesk_sync_lock"("p_stream_key" "text", "p_lock_token" "uuid", "p_lease_seconds" integer) TO "service_role";
 
-
-
 REVOKE ALL ON FUNCTION "public"."advance_zendesk_sync_state"("p_stream_key" "text", "p_lock_token" "uuid", "p_cursor" "text", "p_start_time" bigint, "p_last_event_timestamp" timestamp with time zone) FROM PUBLIC;
+
 GRANT ALL ON FUNCTION "public"."advance_zendesk_sync_state"("p_stream_key" "text", "p_lock_token" "uuid", "p_cursor" "text", "p_start_time" bigint, "p_last_event_timestamp" timestamp with time zone) TO "service_role";
 
-
-
 GRANT ALL ON FUNCTION "public"."capture_agent_identity_from_productivity"() TO "anon";
+
 GRANT ALL ON FUNCTION "public"."capture_agent_identity_from_productivity"() TO "authenticated";
+
 GRANT ALL ON FUNCTION "public"."capture_agent_identity_from_productivity"() TO "service_role";
 
-
-
 REVOKE ALL ON FUNCTION "public"."current_user_can_edit_articles"() FROM PUBLIC;
+
 GRANT ALL ON FUNCTION "public"."current_user_can_edit_articles"() TO "anon";
+
 GRANT ALL ON FUNCTION "public"."current_user_can_edit_articles"() TO "authenticated";
+
 GRANT ALL ON FUNCTION "public"."current_user_can_edit_articles"() TO "service_role";
 
-
-
 GRANT ALL ON FUNCTION "public"."enforce_admin_article_access"() TO "anon";
+
 GRANT ALL ON FUNCTION "public"."enforce_admin_article_access"() TO "authenticated";
+
 GRANT ALL ON FUNCTION "public"."enforce_admin_article_access"() TO "service_role";
 
-
-
 REVOKE ALL ON FUNCTION "public"."get_agent_analytics_dashboard"("p_start_date" "date", "p_end_date" "date", "p_agent_key" "text", "p_time_zone" "text") FROM PUBLIC;
+
 GRANT ALL ON FUNCTION "public"."get_agent_analytics_dashboard"("p_start_date" "date", "p_end_date" "date", "p_agent_key" "text", "p_time_zone" "text") TO "authenticated";
+
 GRANT ALL ON FUNCTION "public"."get_agent_analytics_dashboard"("p_start_date" "date", "p_end_date" "date", "p_agent_key" "text", "p_time_zone" "text") TO "service_role";
 
-
-
 REVOKE ALL ON FUNCTION "public"."get_dashboard_filtered_data"("p_start_date" "date", "p_end_date" "date", "p_app_key" "text", "p_platform_key" "text", "p_country_key" "text", "p_driver_key" "text", "p_agent_key" "text", "p_priority" "text", "p_channel" "text", "p_time_zone" "text") FROM PUBLIC;
+
 GRANT ALL ON FUNCTION "public"."get_dashboard_filtered_data"("p_start_date" "date", "p_end_date" "date", "p_app_key" "text", "p_platform_key" "text", "p_country_key" "text", "p_driver_key" "text", "p_agent_key" "text", "p_priority" "text", "p_channel" "text", "p_time_zone" "text") TO "authenticated";
+
 GRANT ALL ON FUNCTION "public"."get_dashboard_filtered_data"("p_start_date" "date", "p_end_date" "date", "p_app_key" "text", "p_platform_key" "text", "p_country_key" "text", "p_driver_key" "text", "p_agent_key" "text", "p_priority" "text", "p_channel" "text", "p_time_zone" "text") TO "service_role";
 
-
-
 REVOKE ALL ON FUNCTION "public"."get_dashboard_period_comparison"("p_start_date" "date", "p_end_date" "date", "p_app_key" "text", "p_platform_key" "text", "p_country_key" "text", "p_driver_key" "text", "p_agent_key" "text", "p_priority" "text", "p_channel" "text", "p_time_zone" "text", "p_period_kind" "text") FROM PUBLIC;
+
 GRANT ALL ON FUNCTION "public"."get_dashboard_period_comparison"("p_start_date" "date", "p_end_date" "date", "p_app_key" "text", "p_platform_key" "text", "p_country_key" "text", "p_driver_key" "text", "p_agent_key" "text", "p_priority" "text", "p_channel" "text", "p_time_zone" "text", "p_period_kind" "text") TO "authenticated";
+
 GRANT ALL ON FUNCTION "public"."get_dashboard_period_comparison"("p_start_date" "date", "p_end_date" "date", "p_app_key" "text", "p_platform_key" "text", "p_country_key" "text", "p_driver_key" "text", "p_agent_key" "text", "p_priority" "text", "p_channel" "text", "p_time_zone" "text", "p_period_kind" "text") TO "service_role";
 
-
-
 REVOKE ALL ON FUNCTION "public"."get_dashboard_reporting_status"() FROM PUBLIC;
+
 GRANT ALL ON FUNCTION "public"."get_dashboard_reporting_status"() TO "authenticated";
+
 GRANT ALL ON FUNCTION "public"."get_dashboard_reporting_status"() TO "service_role";
 
-
-
 REVOKE ALL ON FUNCTION "public"."get_sla_response_dashboard"("p_start_date" "date", "p_end_date" "date", "p_app_key" "text", "p_platform_key" "text", "p_country_key" "text", "p_driver_key" "text", "p_agent_key" "text", "p_priority" "text", "p_channel" "text", "p_time_zone" "text") FROM PUBLIC;
+
 GRANT ALL ON FUNCTION "public"."get_sla_response_dashboard"("p_start_date" "date", "p_end_date" "date", "p_app_key" "text", "p_platform_key" "text", "p_country_key" "text", "p_driver_key" "text", "p_agent_key" "text", "p_priority" "text", "p_channel" "text", "p_time_zone" "text") TO "authenticated";
+
 GRANT ALL ON FUNCTION "public"."get_sla_response_dashboard"("p_start_date" "date", "p_end_date" "date", "p_app_key" "text", "p_platform_key" "text", "p_country_key" "text", "p_driver_key" "text", "p_agent_key" "text", "p_priority" "text", "p_channel" "text", "p_time_zone" "text") TO "service_role";
 
-
-
 REVOKE ALL ON FUNCTION "public"."get_unresolved_zendesk_agent_ids"("p_limit" integer) FROM PUBLIC;
+
 GRANT ALL ON FUNCTION "public"."get_unresolved_zendesk_agent_ids"("p_limit" integer) TO "service_role";
 
-
-
 GRANT ALL ON FUNCTION "public"."normalize_agent_productivity_aht_unit"() TO "anon";
+
 GRANT ALL ON FUNCTION "public"."normalize_agent_productivity_aht_unit"() TO "authenticated";
+
 GRANT ALL ON FUNCTION "public"."normalize_agent_productivity_aht_unit"() TO "service_role";
 
-
-
 REVOKE ALL ON FUNCTION "public"."record_dashboard_export"("p_dataset" "text", "p_row_count" integer, "p_start_date" "date", "p_end_date" "date") FROM PUBLIC;
+
 GRANT ALL ON FUNCTION "public"."record_dashboard_export"("p_dataset" "text", "p_row_count" integer, "p_start_date" "date", "p_end_date" "date") TO "authenticated";
+
 GRANT ALL ON FUNCTION "public"."record_dashboard_export"("p_dataset" "text", "p_row_count" integer, "p_start_date" "date", "p_end_date" "date") TO "service_role";
 
-
-
 REVOKE ALL ON FUNCTION "public"."record_dashboard_quality_operations"() FROM PUBLIC;
+
 GRANT ALL ON FUNCTION "public"."record_dashboard_quality_operations"() TO "service_role";
 
-
-
 REVOKE ALL ON FUNCTION "public"."record_dashboard_sync_operations"() FROM PUBLIC;
+
 GRANT ALL ON FUNCTION "public"."record_dashboard_sync_operations"() TO "service_role";
 
-
-
 REVOKE ALL ON FUNCTION "public"."record_sheet_sync_quality_results"() FROM PUBLIC;
+
 GRANT ALL ON FUNCTION "public"."record_sheet_sync_quality_results"() TO "service_role";
 
-
-
 REVOKE ALL ON FUNCTION "public"."refresh_daily_operations_metrics"("p_start_date" "date", "p_end_date" "date", "p_time_zone" "text") FROM PUBLIC;
+
 GRANT ALL ON FUNCTION "public"."refresh_daily_operations_metrics"("p_start_date" "date", "p_end_date" "date", "p_time_zone" "text") TO "service_role";
 
-
-
 REVOKE ALL ON FUNCTION "public"."release_zendesk_sync_lock"("p_stream_key" "text", "p_lock_token" "uuid") FROM PUBLIC;
+
 GRANT ALL ON FUNCTION "public"."release_zendesk_sync_lock"("p_stream_key" "text", "p_lock_token" "uuid") TO "service_role";
 
-
-
 REVOKE ALL ON FUNCTION "public"."set_article_update_metadata"() FROM PUBLIC;
+
 GRANT ALL ON FUNCTION "public"."set_article_update_metadata"() TO "anon";
+
 GRANT ALL ON FUNCTION "public"."set_article_update_metadata"() TO "authenticated";
+
 GRANT ALL ON FUNCTION "public"."set_article_update_metadata"() TO "service_role";
 
-
-
 GRANT ALL ON FUNCTION "public"."update_updated_at_column"() TO "anon";
+
 GRANT ALL ON FUNCTION "public"."update_updated_at_column"() TO "authenticated";
+
 GRANT ALL ON FUNCTION "public"."update_updated_at_column"() TO "service_role";
 
-
-
 REVOKE ALL ON FUNCTION "public"."upsert_ticket_dimension_profiles"("p_profiles" "jsonb") FROM PUBLIC;
+
 GRANT ALL ON FUNCTION "public"."upsert_ticket_dimension_profiles"("p_profiles" "jsonb") TO "service_role";
 
-
-
 REVOKE ALL ON FUNCTION "public"."workforce_admin_save_employee"("p_user_id" "uuid", "p_full_name" "text", "p_employee_id" "text", "p_employment_status" "text", "p_access_type" "text", "p_team_id" "uuid", "p_supervisor_id" "uuid", "p_timezone" "text", "p_permissions" "jsonb", "p_reason" "text") FROM PUBLIC;
+
 GRANT ALL ON FUNCTION "public"."workforce_admin_save_employee"("p_user_id" "uuid", "p_full_name" "text", "p_employee_id" "text", "p_employment_status" "text", "p_access_type" "text", "p_team_id" "uuid", "p_supervisor_id" "uuid", "p_timezone" "text", "p_permissions" "jsonb", "p_reason" "text") TO "authenticated";
+
 GRANT ALL ON FUNCTION "public"."workforce_admin_save_employee"("p_user_id" "uuid", "p_full_name" "text", "p_employee_id" "text", "p_employment_status" "text", "p_access_type" "text", "p_team_id" "uuid", "p_supervisor_id" "uuid", "p_timezone" "text", "p_permissions" "jsonb", "p_reason" "text") TO "service_role";
 
-
-
 GRANT ALL ON TABLE "public"."work_schedules" TO "authenticated";
+
 GRANT ALL ON TABLE "public"."work_schedules" TO "service_role";
 
-
-
 REVOKE ALL ON FUNCTION "public"."workforce_admin_save_schedule"("p_schedule_id" "uuid", "p_user_id" "uuid", "p_shift_date" "date", "p_shift_sequence" integer, "p_shift_start" timestamp with time zone, "p_shift_end" timestamp with time zone, "p_timezone" "text", "p_status" "text", "p_is_rest_day" boolean, "p_is_holiday" boolean, "p_holiday_name" "text", "p_notes" "text") FROM PUBLIC;
+
 GRANT ALL ON FUNCTION "public"."workforce_admin_save_schedule"("p_schedule_id" "uuid", "p_user_id" "uuid", "p_shift_date" "date", "p_shift_sequence" integer, "p_shift_start" timestamp with time zone, "p_shift_end" timestamp with time zone, "p_timezone" "text", "p_status" "text", "p_is_rest_day" boolean, "p_is_holiday" boolean, "p_holiday_name" "text", "p_notes" "text") TO "authenticated";
+
 GRANT ALL ON FUNCTION "public"."workforce_admin_save_schedule"("p_schedule_id" "uuid", "p_user_id" "uuid", "p_shift_date" "date", "p_shift_sequence" integer, "p_shift_start" timestamp with time zone, "p_shift_end" timestamp with time zone, "p_timezone" "text", "p_status" "text", "p_is_rest_day" boolean, "p_is_holiday" boolean, "p_holiday_name" "text", "p_notes" "text") TO "service_role";
 
-
-
 GRANT ALL ON FUNCTION "public"."workforce_audit_row_change"() TO "anon";
+
 GRANT ALL ON FUNCTION "public"."workforce_audit_row_change"() TO "authenticated";
+
 GRANT ALL ON FUNCTION "public"."workforce_audit_row_change"() TO "service_role";
 
-
-
 REVOKE ALL ON FUNCTION "public"."workforce_calculate_attendance"("p_scheduled_start" timestamp with time zone, "p_scheduled_end" timestamp with time zone, "p_clock_in" timestamp with time zone, "p_clock_out" timestamp with time zone, "p_scheduled_work_date" "date", "p_timezone" "text", "p_available_overtime_minutes" integer) FROM PUBLIC;
+
 GRANT ALL ON FUNCTION "public"."workforce_calculate_attendance"("p_scheduled_start" timestamp with time zone, "p_scheduled_end" timestamp with time zone, "p_clock_in" timestamp with time zone, "p_clock_out" timestamp with time zone, "p_scheduled_work_date" "date", "p_timezone" "text", "p_available_overtime_minutes" integer) TO "service_role";
 
-
-
 REVOKE ALL ON FUNCTION "public"."workforce_calculate_attendance"("p_scheduled_start" timestamp with time zone, "p_scheduled_end" timestamp with time zone, "p_clock_in" timestamp with time zone, "p_clock_out" timestamp with time zone, "p_scheduled_work_date" "date", "p_timezone" "text", "p_available_overtime_minutes" integer, "p_is_rest_day" boolean, "p_is_holiday" boolean) FROM PUBLIC;
+
 GRANT ALL ON FUNCTION "public"."workforce_calculate_attendance"("p_scheduled_start" timestamp with time zone, "p_scheduled_end" timestamp with time zone, "p_clock_in" timestamp with time zone, "p_clock_out" timestamp with time zone, "p_scheduled_work_date" "date", "p_timezone" "text", "p_available_overtime_minutes" integer, "p_is_rest_day" boolean, "p_is_holiday" boolean) TO "service_role";
 
-
-
 REVOKE ALL ON FUNCTION "public"."workforce_can_approve_attendance"("p_target_user_id" "uuid") FROM PUBLIC;
+
 GRANT ALL ON FUNCTION "public"."workforce_can_approve_attendance"("p_target_user_id" "uuid") TO "service_role";
+
 GRANT ALL ON FUNCTION "public"."workforce_can_approve_attendance"("p_target_user_id" "uuid") TO "authenticated";
 
-
-
 REVOKE ALL ON FUNCTION "public"."workforce_can_correct_attendance"("p_target_user_id" "uuid") FROM PUBLIC;
+
 GRANT ALL ON FUNCTION "public"."workforce_can_correct_attendance"("p_target_user_id" "uuid") TO "service_role";
+
 GRANT ALL ON FUNCTION "public"."workforce_can_correct_attendance"("p_target_user_id" "uuid") TO "authenticated";
 
-
-
 REVOKE ALL ON FUNCTION "public"."workforce_can_manage_user"("p_target_user_id" "uuid", "p_permission_key" "text") FROM PUBLIC;
+
 GRANT ALL ON FUNCTION "public"."workforce_can_manage_user"("p_target_user_id" "uuid", "p_permission_key" "text") TO "anon";
+
 GRANT ALL ON FUNCTION "public"."workforce_can_manage_user"("p_target_user_id" "uuid", "p_permission_key" "text") TO "authenticated";
+
 GRANT ALL ON FUNCTION "public"."workforce_can_manage_user"("p_target_user_id" "uuid", "p_permission_key" "text") TO "service_role";
 
-
-
 REVOKE ALL ON FUNCTION "public"."workforce_can_view_user"("p_target_user_id" "uuid", "p_permission_key" "text") FROM PUBLIC;
+
 GRANT ALL ON FUNCTION "public"."workforce_can_view_user"("p_target_user_id" "uuid", "p_permission_key" "text") TO "anon";
+
 GRANT ALL ON FUNCTION "public"."workforce_can_view_user"("p_target_user_id" "uuid", "p_permission_key" "text") TO "authenticated";
+
 GRANT ALL ON FUNCTION "public"."workforce_can_view_user"("p_target_user_id" "uuid", "p_permission_key" "text") TO "service_role";
 
-
-
 GRANT SELECT,INSERT,REFERENCES,TRIGGER,TRUNCATE,MAINTAIN ON TABLE "public"."leave_requests" TO "authenticated";
+
 GRANT ALL ON TABLE "public"."leave_requests" TO "service_role";
 
-
-
 REVOKE ALL ON FUNCTION "public"."workforce_cancel_leave_request"("p_request_id" "uuid") FROM PUBLIC;
+
 GRANT ALL ON FUNCTION "public"."workforce_cancel_leave_request"("p_request_id" "uuid") TO "anon";
+
 GRANT ALL ON FUNCTION "public"."workforce_cancel_leave_request"("p_request_id" "uuid") TO "authenticated";
+
 GRANT ALL ON FUNCTION "public"."workforce_cancel_leave_request"("p_request_id" "uuid") TO "service_role";
 
-
-
 GRANT ALL ON TABLE "public"."attendance" TO "authenticated";
+
 GRANT ALL ON TABLE "public"."attendance" TO "service_role";
 
-
-
 REVOKE ALL ON FUNCTION "public"."workforce_clock_in"("p_schedule_id" "uuid") FROM PUBLIC;
+
 GRANT ALL ON FUNCTION "public"."workforce_clock_in"("p_schedule_id" "uuid") TO "authenticated";
+
 GRANT ALL ON FUNCTION "public"."workforce_clock_in"("p_schedule_id" "uuid") TO "service_role";
 
-
-
 REVOKE ALL ON FUNCTION "public"."workforce_clock_out"() FROM PUBLIC;
+
 GRANT ALL ON FUNCTION "public"."workforce_clock_out"() TO "authenticated";
+
 GRANT ALL ON FUNCTION "public"."workforce_clock_out"() TO "service_role";
 
-
-
 REVOKE ALL ON FUNCTION "public"."workforce_correct_attendance"("p_attendance_id" "uuid", "p_new_clock_in" timestamp with time zone, "p_new_clock_out" timestamp with time zone, "p_new_status" "text", "p_schedule_id" "uuid", "p_admin_notes" "text", "p_reason_code" "text", "p_reason_notes" "text") FROM PUBLIC;
+
 GRANT ALL ON FUNCTION "public"."workforce_correct_attendance"("p_attendance_id" "uuid", "p_new_clock_in" timestamp with time zone, "p_new_clock_out" timestamp with time zone, "p_new_status" "text", "p_schedule_id" "uuid", "p_admin_notes" "text", "p_reason_code" "text", "p_reason_notes" "text") TO "service_role";
+
 GRANT ALL ON FUNCTION "public"."workforce_correct_attendance"("p_attendance_id" "uuid", "p_new_clock_in" timestamp with time zone, "p_new_clock_out" timestamp with time zone, "p_new_status" "text", "p_schedule_id" "uuid", "p_admin_notes" "text", "p_reason_code" "text", "p_reason_notes" "text") TO "authenticated";
 
-
-
 REVOKE ALL ON FUNCTION "public"."workforce_current_profile_id"() FROM PUBLIC;
+
 GRANT ALL ON FUNCTION "public"."workforce_current_profile_id"() TO "anon";
+
 GRANT ALL ON FUNCTION "public"."workforce_current_profile_id"() TO "authenticated";
+
 GRANT ALL ON FUNCTION "public"."workforce_current_profile_id"() TO "service_role";
 
-
-
 REVOKE ALL ON FUNCTION "public"."workforce_current_user_is_active"() FROM PUBLIC;
+
 GRANT ALL ON FUNCTION "public"."workforce_current_user_is_active"() TO "anon";
+
 GRANT ALL ON FUNCTION "public"."workforce_current_user_is_active"() TO "authenticated";
+
 GRANT ALL ON FUNCTION "public"."workforce_current_user_is_active"() TO "service_role";
 
-
-
 REVOKE ALL ON FUNCTION "public"."workforce_current_user_is_agent"() FROM PUBLIC;
+
 GRANT ALL ON FUNCTION "public"."workforce_current_user_is_agent"() TO "anon";
+
 GRANT ALL ON FUNCTION "public"."workforce_current_user_is_agent"() TO "authenticated";
+
 GRANT ALL ON FUNCTION "public"."workforce_current_user_is_agent"() TO "service_role";
 
-
-
 GRANT ALL ON FUNCTION "public"."workforce_enforce_admin_payroll_profile"() TO "anon";
+
 GRANT ALL ON FUNCTION "public"."workforce_enforce_admin_payroll_profile"() TO "authenticated";
+
 GRANT ALL ON FUNCTION "public"."workforce_enforce_admin_payroll_profile"() TO "service_role";
 
-
-
 REVOKE ALL ON FUNCTION "public"."workforce_get_current_access"() FROM PUBLIC;
+
 GRANT ALL ON FUNCTION "public"."workforce_get_current_access"() TO "authenticated";
+
 GRANT ALL ON FUNCTION "public"."workforce_get_current_access"() TO "service_role";
 
-
-
 REVOKE ALL ON FUNCTION "public"."workforce_has_permission"("p_permission_key" "text") FROM PUBLIC;
+
 GRANT ALL ON FUNCTION "public"."workforce_has_permission"("p_permission_key" "text") TO "anon";
+
 GRANT ALL ON FUNCTION "public"."workforce_has_permission"("p_permission_key" "text") TO "authenticated";
+
 GRANT ALL ON FUNCTION "public"."workforce_has_permission"("p_permission_key" "text") TO "service_role";
 
-
-
 REVOKE ALL ON FUNCTION "public"."workforce_is_admin"() FROM PUBLIC;
+
 GRANT ALL ON FUNCTION "public"."workforce_is_admin"() TO "anon";
+
 GRANT ALL ON FUNCTION "public"."workforce_is_admin"() TO "authenticated";
+
 GRANT ALL ON FUNCTION "public"."workforce_is_admin"() TO "service_role";
 
-
-
 REVOKE ALL ON FUNCTION "public"."workforce_is_assigned_supervisor"("p_target_user_id" "uuid") FROM PUBLIC;
+
 GRANT ALL ON FUNCTION "public"."workforce_is_assigned_supervisor"("p_target_user_id" "uuid") TO "anon";
+
 GRANT ALL ON FUNCTION "public"."workforce_is_assigned_supervisor"("p_target_user_id" "uuid") TO "authenticated";
+
 GRANT ALL ON FUNCTION "public"."workforce_is_assigned_supervisor"("p_target_user_id" "uuid") TO "service_role";
 
-
-
 REVOKE ALL ON FUNCTION "public"."workforce_is_authorized_attendance_admin"("p_permission_key" "text") FROM PUBLIC;
+
 GRANT ALL ON FUNCTION "public"."workforce_is_authorized_attendance_admin"("p_permission_key" "text") TO "service_role";
+
 GRANT ALL ON FUNCTION "public"."workforce_is_authorized_attendance_admin"("p_permission_key" "text") TO "authenticated";
 
-
-
 REVOKE ALL ON FUNCTION "public"."workforce_is_current_identity"("p_target_user_id" "uuid") FROM PUBLIC;
+
 GRANT ALL ON FUNCTION "public"."workforce_is_current_identity"("p_target_user_id" "uuid") TO "authenticated";
+
 GRANT ALL ON FUNCTION "public"."workforce_is_current_identity"("p_target_user_id" "uuid") TO "service_role";
 
-
-
 REVOKE ALL ON FUNCTION "public"."workforce_list_team_attendance"("p_start_date" "date", "p_end_date" "date") FROM PUBLIC;
+
 GRANT ALL ON FUNCTION "public"."workforce_list_team_attendance"("p_start_date" "date", "p_end_date" "date") TO "service_role";
+
 GRANT ALL ON FUNCTION "public"."workforce_list_team_attendance"("p_start_date" "date", "p_end_date" "date") TO "authenticated";
 
-
-
 REVOKE ALL ON FUNCTION "public"."workforce_normalize_timezone_default"() FROM PUBLIC;
+
 GRANT ALL ON FUNCTION "public"."workforce_normalize_timezone_default"() TO "anon";
+
 GRANT ALL ON FUNCTION "public"."workforce_normalize_timezone_default"() TO "authenticated";
+
 GRANT ALL ON FUNCTION "public"."workforce_normalize_timezone_default"() TO "service_role";
 
-
-
 GRANT ALL ON FUNCTION "public"."workforce_prepare_attendance_storage"() TO "anon";
+
 GRANT ALL ON FUNCTION "public"."workforce_prepare_attendance_storage"() TO "authenticated";
+
 GRANT ALL ON FUNCTION "public"."workforce_prepare_attendance_storage"() TO "service_role";
 
-
-
 REVOKE ALL ON FUNCTION "public"."workforce_recalculate_attendance"("p_attendance_id" "uuid") FROM PUBLIC;
+
 GRANT ALL ON FUNCTION "public"."workforce_recalculate_attendance"("p_attendance_id" "uuid") TO "service_role";
 
-
-
 REVOKE ALL ON FUNCTION "public"."workforce_recalculate_attendance_work_date"("p_user_id" "uuid", "p_work_date" "date") FROM PUBLIC;
+
 GRANT ALL ON FUNCTION "public"."workforce_recalculate_attendance_work_date"("p_user_id" "uuid", "p_work_date" "date") TO "service_role";
 
-
-
 REVOKE ALL ON FUNCTION "public"."workforce_review_leave_request"("p_request_id" "uuid", "p_status" "text", "p_review_notes" "text") FROM PUBLIC;
+
 GRANT ALL ON FUNCTION "public"."workforce_review_leave_request"("p_request_id" "uuid", "p_status" "text", "p_review_notes" "text") TO "service_role";
+
 GRANT ALL ON FUNCTION "public"."workforce_review_leave_request"("p_request_id" "uuid", "p_status" "text", "p_review_notes" "text") TO "authenticated";
 
-
-
 GRANT ALL ON FUNCTION "public"."workforce_set_updated_at"() TO "anon";
+
 GRANT ALL ON FUNCTION "public"."workforce_set_updated_at"() TO "authenticated";
+
 GRANT ALL ON FUNCTION "public"."workforce_set_updated_at"() TO "service_role";
 
-
-
 GRANT ALL ON FUNCTION "public"."workforce_sync_admin_payroll_permission"() TO "anon";
+
 GRANT ALL ON FUNCTION "public"."workforce_sync_admin_payroll_permission"() TO "authenticated";
+
 GRANT ALL ON FUNCTION "public"."workforce_sync_admin_payroll_permission"() TO "service_role";
 
-
-
 GRANT ALL ON FUNCTION "public"."workforce_sync_identity_link_from_login"() TO "anon";
+
 GRANT ALL ON FUNCTION "public"."workforce_sync_identity_link_from_login"() TO "authenticated";
+
 GRANT ALL ON FUNCTION "public"."workforce_sync_identity_link_from_login"() TO "service_role";
 
-
-
 GRANT ALL ON FUNCTION "public"."workforce_sync_identity_link_from_profile"() TO "anon";
+
 GRANT ALL ON FUNCTION "public"."workforce_sync_identity_link_from_profile"() TO "authenticated";
+
 GRANT ALL ON FUNCTION "public"."workforce_sync_identity_link_from_profile"() TO "service_role";
 
-
-
 GRANT ALL ON FUNCTION "public"."workforce_sync_login_record"() TO "anon";
+
 GRANT ALL ON FUNCTION "public"."workforce_sync_login_record"() TO "authenticated";
+
 GRANT ALL ON FUNCTION "public"."workforce_sync_login_record"() TO "service_role";
 
-
-
 GRANT ALL ON FUNCTION "public"."workforce_sync_profile_compatibility"() TO "anon";
+
 GRANT ALL ON FUNCTION "public"."workforce_sync_profile_compatibility"() TO "authenticated";
+
 GRANT ALL ON FUNCTION "public"."workforce_sync_profile_compatibility"() TO "service_role";
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 GRANT ALL ON TABLE "public"."agent_dimension_metrics" TO "service_role";
+
 GRANT SELECT ON TABLE "public"."agent_dimension_metrics" TO "authenticated";
 
-
-
 GRANT ALL ON TABLE "public"."agent_identity_map" TO "anon";
+
 GRANT ALL ON TABLE "public"."agent_identity_map" TO "authenticated";
+
 GRANT ALL ON TABLE "public"."agent_identity_map" TO "service_role";
 
-
-
 GRANT ALL ON TABLE "public"."agent_productivity" TO "service_role";
+
 GRANT SELECT ON TABLE "public"."agent_productivity" TO "authenticated";
 
-
-
 GRANT ALL ON TABLE "public"."articles" TO "anon";
+
 GRANT ALL ON TABLE "public"."articles" TO "authenticated";
+
 GRANT ALL ON TABLE "public"."articles" TO "service_role";
 
-
-
 GRANT ALL ON SEQUENCE "public"."articles_id_seq" TO "anon";
+
 GRANT ALL ON SEQUENCE "public"."articles_id_seq" TO "authenticated";
+
 GRANT ALL ON SEQUENCE "public"."articles_id_seq" TO "service_role";
 
-
-
 GRANT ALL ON TABLE "public"."attendance_corrections" TO "anon";
+
 GRANT ALL ON TABLE "public"."attendance_corrections" TO "authenticated";
+
 GRANT ALL ON TABLE "public"."attendance_corrections" TO "service_role";
 
-
-
 GRANT ALL ON TABLE "public"."daily_distribution_metrics" TO "service_role";
+
 GRANT SELECT ON TABLE "public"."daily_distribution_metrics" TO "authenticated";
 
-
-
 GRANT ALL ON TABLE "public"."daily_operations_metrics" TO "service_role";
+
 GRANT SELECT ON TABLE "public"."daily_operations_metrics" TO "authenticated";
 
-
-
 GRANT ALL ON TABLE "public"."daily_ticket_metrics" TO "service_role";
+
 GRANT SELECT ON TABLE "public"."daily_ticket_metrics" TO "authenticated";
 
-
-
 GRANT ALL ON SEQUENCE "public"."daily_ticket_metrics_id_seq" TO "anon";
+
 GRANT ALL ON SEQUENCE "public"."daily_ticket_metrics_id_seq" TO "authenticated";
+
 GRANT ALL ON SEQUENCE "public"."daily_ticket_metrics_id_seq" TO "service_role";
 
-
-
 GRANT ALL ON TABLE "public"."dashboard_alert_events" TO "service_role";
+
 GRANT SELECT ON TABLE "public"."dashboard_alert_events" TO "authenticated";
 
-
-
 GRANT ALL ON TABLE "public"."sheet_sync_runs" TO "service_role";
+
 GRANT SELECT ON TABLE "public"."sheet_sync_runs" TO "authenticated";
 
-
-
 GRANT ALL ON TABLE "public"."dashboard_sync_runs" TO "service_role";
+
 GRANT SELECT ON TABLE "public"."dashboard_sync_runs" TO "authenticated";
 
-
-
 GRANT ALL ON TABLE "public"."dashboard_active_alerts" TO "service_role";
+
 GRANT SELECT ON TABLE "public"."dashboard_active_alerts" TO "authenticated";
 
-
-
 GRANT ALL ON SEQUENCE "public"."dashboard_alert_events_id_seq" TO "anon";
+
 GRANT ALL ON SEQUENCE "public"."dashboard_alert_events_id_seq" TO "authenticated";
+
 GRANT ALL ON SEQUENCE "public"."dashboard_alert_events_id_seq" TO "service_role";
 
-
-
 GRANT ALL ON TABLE "public"."dashboard_audit_events" TO "service_role";
+
 GRANT SELECT ON TABLE "public"."dashboard_audit_events" TO "authenticated";
 
-
-
 GRANT ALL ON SEQUENCE "public"."dashboard_audit_events_id_seq" TO "anon";
+
 GRANT ALL ON SEQUENCE "public"."dashboard_audit_events_id_seq" TO "authenticated";
+
 GRANT ALL ON SEQUENCE "public"."dashboard_audit_events_id_seq" TO "service_role";
 
-
-
 GRANT ALL ON TABLE "public"."dashboard_data_quality_results" TO "service_role";
+
 GRANT SELECT ON TABLE "public"."dashboard_data_quality_results" TO "authenticated";
 
-
-
 GRANT ALL ON SEQUENCE "public"."dashboard_data_quality_results_id_seq" TO "anon";
+
 GRANT ALL ON SEQUENCE "public"."dashboard_data_quality_results_id_seq" TO "authenticated";
+
 GRANT ALL ON SEQUENCE "public"."dashboard_data_quality_results_id_seq" TO "service_role";
 
-
-
 GRANT ALL ON TABLE "public"."dashboard_filter_capabilities" TO "service_role";
+
 GRANT SELECT ON TABLE "public"."dashboard_filter_capabilities" TO "authenticated";
 
-
-
 GRANT ALL ON TABLE "public"."dashboard_targets" TO "service_role";
+
 GRANT SELECT ON TABLE "public"."dashboard_targets" TO "authenticated";
-
-
 
 GRANT ALL ON TABLE "public"."google_calendar_connections" TO "service_role";
 
-
-
 GRANT ALL ON TABLE "public"."google_calendar_oauth_states" TO "service_role";
 
-
-
 GRANT ALL ON TABLE "public"."login" TO "anon";
+
 GRANT ALL ON TABLE "public"."login" TO "authenticated";
+
 GRANT ALL ON TABLE "public"."login" TO "service_role";
 
-
-
 GRANT ALL ON SEQUENCE "public"."login_id_seq" TO "anon";
+
 GRANT ALL ON SEQUENCE "public"."login_id_seq" TO "authenticated";
+
 GRANT ALL ON SEQUENCE "public"."login_id_seq" TO "service_role";
 
-
-
 GRANT ALL ON TABLE "public"."profiles" TO "authenticated";
+
 GRANT ALL ON TABLE "public"."profiles" TO "service_role";
 
-
-
 GRANT ALL ON TABLE "public"."raw_sheet_imports" TO "anon";
+
 GRANT ALL ON TABLE "public"."raw_sheet_imports" TO "authenticated";
+
 GRANT ALL ON TABLE "public"."raw_sheet_imports" TO "service_role";
 
-
-
 GRANT ALL ON TABLE "public"."reporting_data_dictionary" TO "service_role";
+
 GRANT SELECT ON TABLE "public"."reporting_data_dictionary" TO "authenticated";
 
-
-
 GRANT ALL ON TABLE "public"."sheet_sync_metadata" TO "service_role";
+
 GRANT SELECT ON TABLE "public"."sheet_sync_metadata" TO "authenticated";
 
-
-
 GRANT ALL ON TABLE "public"."teams" TO "authenticated";
+
 GRANT ALL ON TABLE "public"."teams" TO "service_role";
-
-
 
 GRANT ALL ON TABLE "public"."ticket_dimension_profiles" TO "service_role";
 
-
-
 GRANT ALL ON TABLE "public"."ticket_driver_metrics" TO "service_role";
+
 GRANT SELECT ON TABLE "public"."ticket_driver_metrics" TO "authenticated";
 
-
-
 GRANT ALL ON TABLE "public"."ticket_events" TO "service_role";
+
 GRANT SELECT ON TABLE "public"."ticket_events" TO "authenticated";
 
-
-
 GRANT ALL ON TABLE "public"."user_permissions" TO "authenticated";
+
 GRANT ALL ON TABLE "public"."user_permissions" TO "service_role";
 
-
-
 GRANT ALL ON TABLE "public"."workforce_audit_logs" TO "authenticated";
+
 GRANT ALL ON TABLE "public"."workforce_audit_logs" TO "service_role";
-
-
 
 GRANT ALL ON TABLE "public"."workforce_identity_links" TO "service_role";
 
-
-
 GRANT ALL ON TABLE "public"."zendesk_agent_directory" TO "service_role";
+
 GRANT SELECT ON TABLE "public"."zendesk_agent_directory" TO "authenticated";
-
-
 
 GRANT ALL ON TABLE "public"."zendesk_sync_runs" TO "service_role";
 
-
-
 GRANT ALL ON TABLE "public"."zendesk_sync_state" TO "service_role";
 
-
-
-
-
-
-
-
-
 ALTER DEFAULT PRIVILEGES FOR ROLE "postgres" IN SCHEMA "public" GRANT ALL ON SEQUENCES TO "postgres";
+
 ALTER DEFAULT PRIVILEGES FOR ROLE "postgres" IN SCHEMA "public" GRANT ALL ON SEQUENCES TO "anon";
+
 ALTER DEFAULT PRIVILEGES FOR ROLE "postgres" IN SCHEMA "public" GRANT ALL ON SEQUENCES TO "authenticated";
+
 ALTER DEFAULT PRIVILEGES FOR ROLE "postgres" IN SCHEMA "public" GRANT ALL ON SEQUENCES TO "service_role";
 
-
-
-
-
-
 ALTER DEFAULT PRIVILEGES FOR ROLE "postgres" IN SCHEMA "public" GRANT ALL ON FUNCTIONS TO "postgres";
+
 ALTER DEFAULT PRIVILEGES FOR ROLE "postgres" IN SCHEMA "public" GRANT ALL ON FUNCTIONS TO "anon";
+
 ALTER DEFAULT PRIVILEGES FOR ROLE "postgres" IN SCHEMA "public" GRANT ALL ON FUNCTIONS TO "authenticated";
+
 ALTER DEFAULT PRIVILEGES FOR ROLE "postgres" IN SCHEMA "public" GRANT ALL ON FUNCTIONS TO "service_role";
 
-
-
-
-
-
 ALTER DEFAULT PRIVILEGES FOR ROLE "postgres" IN SCHEMA "public" GRANT ALL ON TABLES TO "postgres";
+
 ALTER DEFAULT PRIVILEGES FOR ROLE "postgres" IN SCHEMA "public" GRANT ALL ON TABLES TO "anon";
+
 ALTER DEFAULT PRIVILEGES FOR ROLE "postgres" IN SCHEMA "public" GRANT ALL ON TABLES TO "authenticated";
+
 ALTER DEFAULT PRIVILEGES FOR ROLE "postgres" IN SCHEMA "public" GRANT ALL ON TABLES TO "service_role";
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 
 drop extension if exists "pg_net";
 
@@ -8239,30 +7128,23 @@ revoke trigger on table "public"."zendesk_sync_state" from "authenticated";
 
 revoke truncate on table "public"."zendesk_sync_state" from "authenticated";
 
-
-  create policy "Article editors can delete article images"
+create policy "Article editors can delete article images"
   on "storage"."objects"
   as permissive
   for delete
   to authenticated
 using (((bucket_id = 'article-images'::text) AND public.current_user_can_edit_articles()));
 
-
-
-  create policy "Article editors can upload article images"
+create policy "Article editors can upload article images"
   on "storage"."objects"
   as permissive
   for insert
   to authenticated
 with check (((bucket_id = 'article-images'::text) AND public.current_user_can_edit_articles()));
 
-
-
-  create policy "Public can view article images"
+create policy "Public can view article images"
   on "storage"."objects"
   as permissive
   for select
   to public
 using ((bucket_id = 'article-images'::text));
-
-

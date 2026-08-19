@@ -4,11 +4,11 @@ import test from 'node:test'
 import { isOvernightShift, scheduleEndDate } from '../scripts/workforce-schedule-times.js'
 
 const migration = await readFile(new URL(
-  '../supabase/migrations/20260819090000_normalize_overnight_template_offsets.sql',
+  '../supabase/migrations/20260818193224_normalize_overnight_template_offsets.sql',
   import.meta.url
 ), 'utf8')
 const weeklyMigration = await readFile(new URL(
-  '../supabase/migrations/20260810113000_friday_monday_week_schedule_automation.sql',
+  '../supabase/migrations/20260810063228_friday_monday_week_schedule_automation.sql',
   import.meta.url
 ), 'utf8')
 const schedulesClient = await readFile(new URL('../scripts/workforce-schedules.js', import.meta.url), 'utf8')

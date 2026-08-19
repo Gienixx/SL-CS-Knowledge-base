@@ -36,6 +36,9 @@ comment on view public.workforce_attendance_payroll_readiness is
   'RLS-preserving attendance projection with a payroll-readiness indicator that includes the aggregate 1,200-minute employee work-date overtime ceiling.';
 
 revoke all on public.workforce_attendance_payroll_readiness from public;
+
 revoke all on public.workforce_attendance_payroll_readiness from anon;
+
 grant select on public.workforce_attendance_payroll_readiness to authenticated;
+
 grant select on public.workforce_attendance_payroll_readiness to service_role;
