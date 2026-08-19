@@ -19,7 +19,7 @@ declare
   v_definition text;
   v_updated text;
 begin
-  v_definition := pg_get_functiondef('public.workforce_clock_in(uuid)'::regprocedure);
+  v_definition := replace(pg_get_functiondef('public.workforce_clock_in(uuid)'::regprocedure), chr(13), '');
   v_updated := replace(
     v_definition,
     'where a.user_id = v_profile_user_id',
@@ -290,7 +290,7 @@ begin
     'public.workforce_correct_attendance(uuid,timestamptz,timestamptz,text,uuid,text,text,text)'
   ] loop
     if to_regprocedure(v_signature) is null then continue; end if;
-    v_definition := pg_get_functiondef(v_signature::regprocedure);
+    v_definition := replace(pg_get_functiondef(v_signature::regprocedure), chr(13), '');
     v_updated := replace(
       v_definition,
       'if not found then raise exception ''Attendance record not found.''; end if;',
@@ -310,8 +310,12 @@ declare
   v_definition text;
   v_updated text;
 begin
-  v_definition := pg_get_functiondef(
-    'public.workforce_correct_attendance_legacy(uuid,timestamptz,timestamptz,text,uuid,text,text,text)'::regprocedure
+  v_definition := replace(
+    pg_get_functiondef(
+      'public.workforce_correct_attendance_legacy(uuid,timestamptz,timestamptz,text,uuid,text,text,text)'::regprocedure
+    ),
+    chr(13),
+    ''
   );
   v_updated := replace(
     v_definition,
@@ -334,7 +338,7 @@ declare
   v_definition text;
   v_updated text;
 begin
-  v_definition := pg_get_functiondef('public.workforce_clock_out(text,uuid,uuid)'::regprocedure);
+  v_definition := replace(pg_get_functiondef('public.workforce_clock_out(text,uuid,uuid)'::regprocedure), chr(13), '');
   v_updated := replace(
     v_definition,
     'and attendance_row.clock_out is null',
@@ -353,7 +357,7 @@ declare
   v_definition text;
   v_updated text;
 begin
-  v_definition := pg_get_functiondef('public.workforce_admin_assist_clock_out(uuid,text)'::regprocedure);
+  v_definition := replace(pg_get_functiondef('public.workforce_admin_assist_clock_out(uuid,text)'::regprocedure), chr(13), '');
   v_updated := replace(
     v_definition,
     'where user_id = p_target_user_id and clock_in is not null and clock_out is null',
@@ -374,7 +378,7 @@ declare
   v_definition text;
   v_updated text;
 begin
-  v_definition := pg_get_functiondef('public.workforce_reject_attended_leave_schedule()'::regprocedure);
+  v_definition := replace(pg_get_functiondef('public.workforce_reject_attended_leave_schedule()'::regprocedure), chr(13), '');
   v_updated := replace(
     v_definition,
     'where attendance_row.schedule_id = new.id',
@@ -393,7 +397,7 @@ declare
   v_definition text;
   v_updated text;
 begin
-  v_definition := pg_get_functiondef('public.payroll_assert_ready_for_approval(uuid)'::regprocedure);
+  v_definition := replace(pg_get_functiondef('public.payroll_assert_ready_for_approval(uuid)'::regprocedure), chr(13), '');
   v_updated := replace(
     v_definition,
     'on attendance_row.id = snapshot.attendance_id',
@@ -412,7 +416,7 @@ declare
   v_definition text;
   v_updated text;
 begin
-  v_definition := pg_get_functiondef('public.payroll_get_period_attendance_import_status(uuid)'::regprocedure);
+  v_definition := replace(pg_get_functiondef('public.payroll_get_period_attendance_import_status(uuid)'::regprocedure), chr(13), '');
   v_updated := replace(
     v_definition,
     'on attendance_row.id = snapshot.attendance_id',
@@ -433,7 +437,7 @@ declare
   v_definition text;
   v_updated text;
 begin
-  v_definition := pg_get_functiondef('public.payroll_import_attendance(uuid,uuid)'::regprocedure);
+  v_definition := replace(pg_get_functiondef('public.payroll_import_attendance(uuid,uuid)'::regprocedure), chr(13), '');
   v_updated := replace(
     v_definition,
     'on attendance_row.user_id = record.employee_id
@@ -471,7 +475,7 @@ begin
     'public.payroll_get_preplot_candidates(uuid)',
     'public.payroll_import_attendance(uuid,uuid)'
   ] loop
-    v_definition := pg_get_functiondef(v_signature::regprocedure);
+    v_definition := replace(pg_get_functiondef(v_signature::regprocedure), chr(13), '');
     v_updated := v_definition;
     if v_signature = 'public.payroll_get_period_employee_readiness(uuid)' then
       v_updated := replace(
@@ -510,8 +514,12 @@ declare
   v_definition text;
   v_updated text;
 begin
-  v_definition := pg_get_functiondef(
-    'public.payroll_save_and_approve_prepaid_schedule(uuid,uuid,date,time without time zone,time without time zone,text,text,boolean)'::regprocedure
+  v_definition := replace(
+    pg_get_functiondef(
+      'public.payroll_save_and_approve_prepaid_schedule(uuid,uuid,date,time without time zone,time without time zone,text,text,boolean)'::regprocedure
+    ),
+    chr(13),
+    ''
   );
   v_updated := replace(
     v_definition,
@@ -531,7 +539,7 @@ declare
   v_definition text;
   v_updated text;
 begin
-  v_definition := pg_get_functiondef('public.payroll_capture_snapshot_special_details()'::regprocedure);
+  v_definition := replace(pg_get_functiondef('public.payroll_capture_snapshot_special_details()'::regprocedure), chr(13), '');
   v_updated := replace(
     v_definition,
     'and attendance_row.attendance_version = new.attendance_version;',
@@ -550,7 +558,7 @@ declare
   v_definition text;
   v_updated text;
 begin
-  v_definition := pg_get_functiondef('public.payroll_get_period_exceptions_base(uuid)'::regprocedure);
+  v_definition := replace(pg_get_functiondef('public.payroll_get_period_exceptions_base(uuid)'::regprocedure), chr(13), '');
   v_updated := replace(
     v_definition,
     'on attendance_row.user_id = record.employee_id',
@@ -581,7 +589,7 @@ begin
     'public.workforce_admin_assist_snapshot(uuid,date,date)'
   ] loop
     if to_regprocedure(v_signature) is null then continue; end if;
-    v_definition := pg_get_functiondef(v_signature::regprocedure);
+    v_definition := replace(pg_get_functiondef(v_signature::regprocedure), chr(13), '');
     v_updated := replace(
       v_definition,
       'where user_id = p_target_user_id',
@@ -607,7 +615,7 @@ declare
   v_definition text;
   v_updated text;
 begin
-  v_definition := pg_get_functiondef('public.workforce_list_my_attendance_log(date,date)'::regprocedure);
+  v_definition := replace(pg_get_functiondef('public.workforce_list_my_attendance_log(date,date)'::regprocedure), chr(13), '');
   v_updated := replace(
     v_definition,
     'where attendance_row.user_id = v_employee_id',
@@ -626,7 +634,7 @@ declare
   v_definition text;
   v_updated text;
 begin
-  v_definition := pg_get_functiondef('public.workforce_list_team_attendance_prepaid(date,date)'::regprocedure);
+  v_definition := replace(pg_get_functiondef('public.workforce_list_team_attendance_prepaid(date,date)'::regprocedure), chr(13), '');
   v_updated := replace(
     v_definition,
     'where attendance_row.work_date between p_start_date and p_end_date',
@@ -645,7 +653,7 @@ declare
   v_definition text;
   v_updated text;
 begin
-  v_definition := pg_get_functiondef('public.workforce_recalculate_attendance(uuid)'::regprocedure);
+  v_definition := replace(pg_get_functiondef('public.workforce_recalculate_attendance(uuid)'::regprocedure), chr(13), '');
   v_updated := replace(
     v_definition,
     '  v_clock_in := coalesce(v_attendance.billed_clock_in, v_attendance.clock_in);',
@@ -683,7 +691,7 @@ declare
   v_definition text;
   v_updated text;
 begin
-  v_definition := pg_get_functiondef('public.workforce_recalculate_attendance_work_date(uuid,date)'::regprocedure);
+  v_definition := replace(pg_get_functiondef('public.workforce_recalculate_attendance_work_date(uuid,date)'::regprocedure), chr(13), '');
   v_updated := replace(
     v_definition,
     'where user_id = p_user_id
@@ -712,7 +720,7 @@ declare
   v_definition text;
   v_updated text;
 begin
-  v_definition := pg_get_viewdef('public.workforce_attendance_payroll_readiness'::regclass, true);
+  v_definition := replace(pg_get_viewdef('public.workforce_attendance_payroll_readiness'::regclass, true), chr(13), '');
   v_updated := regexp_replace(
     v_definition,
     '(left join[[:space:]]+work_schedules[[:space:]]+schedule_row[[:space:]]+on[[:space:]]+schedule_row[.]id[[:space:]]*=[[:space:]]*attendance_row[.]schedule_id)',
