@@ -116,6 +116,22 @@ function formatCorrectionScheduleLabel(schedule) {
   return `${date} · ${type} · ${sequence}${time}`
 }
 
+function isCorrectionOpenSchedule(schedule) {
+  return Boolean(schedule)
+    && !schedule.is_rest_day
+    && !schedule.is_holiday
+    && schedule.shift_start == null
+    && schedule.shift_end == null
+}
+
+function isEligibleCorrectionSchedule(schedule, workDate) {
+  if (!schedule || schedule.is_leave || schedule.is_absent) return false
+  if (!['published', 'changed'].includes(schedule.status)) return false
+  if (schedule.is_rest_day || schedule.is_holiday) return true
+  if (schedule.shift_start && schedule.shift_end) return true
+  return isCorrectionOpenSchedule(schedule) && schedule.shift_date === workDate
+}
+
 async function persistOverDurationFlagsBeforeTeamListing() {
   if (access?.is_admin === true) {
     const { error } = await supabase.rpc('workforce_flag_open_attendance_over_duration')
@@ -1611,11 +1627,24 @@ async function loadCorrectionSchedules(row) {
 
   modal._correctionSchedules = [...(data || [])]
 
-  select.replaceChildren(new Option(row.schedule_id ? 'Keep current assigned shift' : 'Unscheduled (RDOT)', ''))
+  const currentSchedule = row.schedule_id
+    ? modal._correctionSchedules.find(schedule => schedule.id === row.schedule_id) || {
+      ...row,
+      shift_date: row.work_date,
+      shift_sequence: row.schedule_sequence,
+      shift_start: row.schedule_start,
+      shift_end: row.schedule_end,
+      timezone: row.timezone
+    }
+    : null
+  if (currentSchedule && !modal._correctionSchedules.some(schedule => schedule.id === currentSchedule.id)) {
+    modal._correctionSchedules.push(currentSchedule)
+  }
+
+  select.replaceChildren(new Option(row.schedule_id ? 'Keep current assigned shift' : 'Unscheduled (RDOT)', row.schedule_id || ''))
   const eligibleSchedules = (data || []).filter(schedule => (
-    schedule.is_rest_day
-      || schedule.is_holiday
-      || (schedule.shift_start && schedule.shift_end)
+    schedule.id !== row.schedule_id
+      && isEligibleCorrectionSchedule(schedule, row.work_date)
   ))
   for (const schedule of eligibleSchedules) {
     const specialDay = schedule.is_rest_day
@@ -1628,14 +1657,6 @@ async function loadCorrectionSchedules(row) {
     select.appendChild(option)
   }
 
-  if (row.schedule_id && ![...select.options].some(option => option.value === row.schedule_id)) {
-    const currentSchedule = { ...row, shift_date: row.work_date, shift_sequence: row.schedule_sequence, shift_start: row.schedule_start, shift_end: row.schedule_end, timezone: row.timezone }
-    modal._correctionSchedules.push(currentSchedule)
-    const currentOption = new Option(`Current (outside eligible window) · ${formatCorrectionScheduleLabel(currentSchedule)}`, row.schedule_id)
-    currentOption.disabled = true
-    currentOption.dataset.status = 'Current schedule is outside the eligible reassignment window'
-    select.appendChild(currentOption)
-  }
   select.value = row.schedule_id || ''
   const updateStatus = () => {
     const option = select.selectedOptions[0]
