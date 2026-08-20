@@ -30,5 +30,5 @@ test('Schedule Management resets pagination when data or filters change', () => 
   assert.match(script, /async function loadScheduleData\(\) \{\s*schedulePage = 1/)
   assert.match(script, /teamFilter\.addEventListener\('change',[\s\S]*?schedulePage = 1/)
   assert.match(script, /employeeFilter\.addEventListener\('change',[\s\S]*?schedulePage = 1/)
-  assert.match(script, /statusFilter\.addEventListener\('change',[\s\S]*?schedulePage = 1/)
+  assert.doesNotMatch(script, /statusFilter\.addEventListener/)
 })

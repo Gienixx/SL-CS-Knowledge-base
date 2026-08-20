@@ -10,7 +10,7 @@ test('Attendance enables tomorrow special-day schedules after today is completed
   const page = await read('attendance.html')
   const script = await read('scripts/attendance.js')
 
-   assert.match(page, /scripts\/attendance\.js\?v=27/)
+   assert.match(page, /scripts\/attendance\.js\?v=28/)
   assert.match(script, /function hasCompletedAttendanceForDate\(workDate\)/)
   assert.match(script, /schedule\.shift_date === tomorrow[\s\S]*hasCompletedAttendanceForDate\(today\)/)
   assert.match(script, /state: 'next-day-special'/)

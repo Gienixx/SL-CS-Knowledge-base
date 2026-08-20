@@ -31,9 +31,9 @@ test('workforce administration includes the schedule management interface', asyn
   assert.match(script, /viewSelect\.value === 'month'/)
 })
 
-test('schedule deletion is admin-only, scoped, audited, and preserves attendance', async () => {
+test('schedule deletion is admin-only, scoped, and blocks protected history', async () => {
   const [migration, verification] = await Promise.all([
-    read('supabase/migrations/20260714121353_workforce_schedule_delete.sql'),
+    read('supabase/migrations/20260820153000_simplify_workforce_schedule_status_model.sql'),
     read('supabase/verification/workforce_schedule_delete_check.sql')
   ])
 
@@ -41,7 +41,10 @@ test('schedule deletion is admin-only, scoped, audited, and preserves attendance
   assert.match(migration, /workforce_has_permission\('manage_schedules'\)/)
   assert.match(migration, /workforce_can_manage_user\(v_schedule\.user_id, 'manage_schedules'\)/)
   assert.match(migration, /delete from public\.work_schedules/)
-  assert.match(migration, /detached_attendance_records/)
+  assert.match(migration, /attendance history is linked/)
+  assert.match(migration, /correction history references it/)
+  assert.match(migration, /payroll history references it/)
+  assert.doesNotMatch(migration, /detached_attendance_records/)
   assert.match(migration, /revoke all[\s\S]*from anon/)
   assert.match(migration, /grant execute[\s\S]*to authenticated/)
   assert.match(verification, /schedule_delete_is_audited/)
@@ -51,7 +54,7 @@ test('schedule deletion hides database details from the page and logs the full e
   const script = await read('scripts/workforce-schedules.js')
 
   assert.match(script, /console\.error\('Schedule deletion failed:', error\)/)
-  assert.match(script, /setMessage\(scheduleMessage, 'Unable to delete schedule\.', 'error'\)/)
+  assert.match(script, /setMessage\(scheduleMessage, errorMessage\(error\), 'error'\)/)
 })
 
 test('schedule RPC enforces authorization, validation, and change visibility', async () => {

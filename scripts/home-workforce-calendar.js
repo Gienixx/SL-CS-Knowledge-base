@@ -7,6 +7,11 @@ import {
   setUpcomingEventDate,
   sortUpcomingEventCards
 } from './home-upcoming-events.js?v=1'
+import {
+  isChangedSchedule,
+  operationalScheduleStatus,
+  scheduleStatusTags
+} from '../shared/workforce-schedule-status.js?v=1'
 
 const RELEASED_SCHEDULE_STATUSES = Object.freeze([
   'published',
@@ -14,14 +19,6 @@ const RELEASED_SCHEDULE_STATUSES = Object.freeze([
   'cancelled',
   'completed'
 ])
-
-const STATUS_LABELS = Object.freeze({
-  scheduled: 'Scheduled',
-  published: 'Published',
-  changed: 'Changed',
-  cancelled: 'Cancelled',
-  completed: 'Completed'
-})
 
 const LEAVE_TYPE_LABELS = Object.freeze({
   incentive_vl: 'Incentive VL',
@@ -119,7 +116,7 @@ function installCalendarNavigationRefresh() {
 function buildScheduleQuery(startDate, endDate) {
   let query = supabase
     .from('work_schedules')
-    .select('id, user_id, shift_date, shift_sequence, shift_start, shift_end, timezone, status, is_rest_day, is_holiday, is_leave, is_absent, leave_type, absence_type, holiday_name, notes')
+    .select('id, user_id, shift_date, shift_sequence, shift_start, shift_end, timezone, status, changed_at, changed_by, admin_override, is_rest_day, is_holiday, is_leave, is_absent, leave_type, absence_type, holiday_name, notes, attendance(id, schedule_id, clock_in, clock_out, voided_at)')
     .in('user_id', state.profileIds)
     .gte('shift_date', startDate)
     .lte('shift_date', endDate)
@@ -196,13 +193,13 @@ async function refreshUpcomingSchedules() {
 }
 
 function isUpcomingSchedule(schedule, now, today) {
-  if (schedule.status === 'cancelled') {
+  if (operationalScheduleStatus(schedule) === 'cancelled') {
     return false
   }
 
   if (schedule.shift_date > today) return true
   if (schedule.shift_date < today) return false
-  if (schedule.status === 'completed') return true
+  if (scheduleStatusTags(schedule, schedule.attendance || []).includes('Completed')) return true
 
   if (schedule.is_leave || schedule.is_absent || schedule.is_rest_day || schedule.is_holiday) return true
   if (!schedule.shift_end) return true
@@ -255,9 +252,8 @@ function createUpcomingScheduleCard(schedule) {
   card.setAttribute('aria-label', `${formatScheduleDate(schedule.shift_date)}: ${scheduleDescription(schedule)}`)
   setUpcomingEventDate(card, schedule.shift_date)
 
-  if (schedule.status === 'changed') card.classList.add('changed')
-  if (schedule.status === 'scheduled') card.classList.add('scheduled')
-  if (schedule.status === 'completed') card.classList.add('completed')
+  if (isChangedSchedule(schedule)) card.classList.add('changed')
+  if (scheduleStatusTags(schedule, schedule.attendance || []).includes('Completed')) card.classList.add('completed')
 
   const dateBox = document.createElement('div')
   dateBox.className = 'event-date-box'
@@ -319,11 +315,7 @@ function upcomingScheduleTitle(schedule) {
 function upcomingScheduleMeta(schedule) {
   const details = []
 
-  if (schedule.status === 'completed') {
-    details.push('✓ Completed')
-  } else if (schedule.status === 'changed' || schedule.status === 'scheduled') {
-    details.push(STATUS_LABELS[schedule.status])
-  }
+  details.push(...scheduleStatusTags(schedule, schedule.attendance || []).slice(1))
 
   if (schedule.is_holiday && schedule.shift_start) {
     details.push(schedule.holiday_name || 'Holiday')
@@ -468,10 +460,10 @@ function renderCalendarDay(button, date, schedules) {
 }
 
 function applyScheduleClasses(button, schedules) {
-  if (schedules.some(schedule => schedule.status === 'cancelled')) {
+  if (schedules.some(schedule => operationalScheduleStatus(schedule) === 'cancelled')) {
     button.classList.add('work-cancelled')
   }
-  if (schedules.some(schedule => schedule.status === 'changed')) {
+  if (schedules.some(isChangedSchedule)) {
     button.classList.add('work-changed')
   }
   if (schedules.some(schedule => schedule.is_leave)) {
@@ -500,7 +492,7 @@ function compactScheduleLabel(schedules) {
 
   const schedule = schedules[0]
 
-  if (schedule.status === 'cancelled') return 'Cancelled'
+  if (operationalScheduleStatus(schedule) === 'cancelled') return 'Cancelled'
   if (schedule.is_leave || schedule.is_absent) return specialScheduleLabel(schedule)
   if (schedule.is_rest_day) return 'Rest day'
   if (schedule.is_holiday) return 'Holiday'
@@ -514,11 +506,7 @@ function compactScheduleLabel(schedules) {
 }
 
 function scheduleDescription(schedule) {
-  const status = schedule.status === 'changed'
-    ? 'changed'
-    : schedule.status === 'cancelled'
-      ? 'cancelled'
-      : schedule.status
+  const status = scheduleStatusTags(schedule, schedule.attendance || []).join(', ').toLowerCase()
 
   if (schedule.is_leave) {
     return `${specialScheduleLabel(schedule)}, leave, ${status}`

@@ -98,7 +98,7 @@ test('Open Schedule publication-change warning is informational and duplicate gu
     read('supabase/migrations/20260819101616_allow_open_schedule_clock_in_production_forward.sql')
   ])
 
-  assert.match(script, /schedule\.status === 'changed'/)
+  assert.match(script, /isChangedSchedule\(schedule\)/)
   assert.match(script, /A visible schedule was changed after publication\. Review the selected shift before clocking in\./)
   assert.match(migration, /You are already clocked in to another shift\./)
   assert.match(migration, /where a\.user_id = v_profile_user_id[\s\S]*a\.schedule_id is null/)

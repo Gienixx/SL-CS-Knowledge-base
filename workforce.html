@@ -144,17 +144,6 @@
           <span>User</span>
           <select class="wf-control" id="scheduleEmployeeFilter"><option value="">All users</option></select>
         </label>
-        <label class="wf-field">
-          <span>Status</span>
-          <select class="wf-control" id="scheduleStatusFilter">
-            <option value="">All statuses</option>
-            <option value="scheduled">Scheduled</option>
-            <option value="published">Published</option>
-            <option value="changed">Changed</option>
-            <option value="cancelled">Cancelled</option>
-            <option value="completed">Completed</option>
-          </select>
-        </label>
       </div>
 
       <div class="wf-schedule-legend" aria-label="Schedule legend">
@@ -429,16 +418,7 @@
                 <span>Schedule timezone</span>
                 <input class="wf-control" id="scheduleTimezone" value="America/New_York" required>
               </label>
-              <label class="wf-field full">
-                <span>Status</span>
-                <select class="wf-control" id="scheduleStatus" required>
-                  <option value="scheduled">Scheduled (draft — hidden from agents)</option>
-                  <option value="published" selected>Published (visible to agent)</option>
-                  <option value="changed">Changed</option>
-                  <option value="cancelled">Cancelled</option>
-                  <option value="completed">Completed</option>
-                </select>
-              </label>
+          <p class="wf-form-help full">Schedules are Published automatically. Changed and Completed are informational badges derived from schedule history and attendance. Delete an unused schedule when it is no longer needed.</p>
             </div>
           </details>
           <label class="wf-field half">
@@ -498,7 +478,7 @@
   </div>
 
   <script type="module" src="./scripts/workforce.js?v=18"></script>
-  <script type="module" src="./scripts/workforce-schedules-entry.js?v=16"></script>
+  <script type="module" src="./scripts/workforce-schedules-entry.js?v=17"></script>
   <script type="module" src="./scripts/workforce-view-switcher.js?v=2"></script>
 </body>
 </html>

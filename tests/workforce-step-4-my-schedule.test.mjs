@@ -29,7 +29,7 @@ test('My Schedule provides calendar, list, changed-shift visibility, and details
   assert.match(html, /id="myScheduleTableBody"/)
   assert.match(html, /id="myScheduleModal"/)
   assert.match(html, /scripts\/my-schedule-v2\.js/)
-  assert.match(script, /schedule\.status\s*===\s*'changed'/)
+  assert.match(script, /isChangedSchedule\(schedule\)/)
   assert.match(script, /openScheduleDetails/)
   assert.match(styles, /\.schedule-entry\.changed/)
 })

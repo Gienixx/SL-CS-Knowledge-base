@@ -11,7 +11,7 @@ test('Home loads the workforce schedule calendar integration', async () => {
   assert.match(page, /class="sidebar-link" href="\.\/dashboard\.html" title="Analytics"/)
   assert.doesNotMatch(page, /Open full analytics|analytics-cta/)
   assert.match(page, /home-workforce-calendar\.css\?v=5/)
-  assert.match(page, /home-workforce-calendar\.js\?v=8/)
+  assert.match(page, /home-workforce-calendar\.js\?v=9/)
   assert.match(page, /<h2 id="homeUpcomingTitle">Upcoming Events<\/h2>/)
   assert.doesNotMatch(page, /homeUpcomingEyebrow/)
   assert.match(page, />My shift</)
@@ -131,10 +131,9 @@ test('Home upcoming events hide Published and mark completed entries with a chec
     /function upcomingScheduleMeta\(schedule\) \{[\s\S]*?\n\}/
   )?.[0] || ''
 
-  assert.match(script, /if \(schedule\.status === 'completed'\) return true/)
+  assert.match(script, /scheduleStatusTags\(schedule, schedule\.attendance \|\| \[\]\)\.includes\('Completed'\)/)
   assert.match(script, /card\.classList\.add\('completed'\)/)
-  assert.match(metaFunction, /details\.push\('✓ Completed'\)/)
-  assert.match(metaFunction, /schedule\.status === 'changed' \|\| schedule\.status === 'scheduled'/)
+  assert.match(metaFunction, /scheduleStatusTags\(schedule, schedule\.attendance \|\| \[\]\)\.slice\(1\)/)
   assert.doesNotMatch(metaFunction, /Published/)
   assert.doesNotMatch(metaFunction, /STATUS_LABELS\[schedule\.status\] \|\| schedule\.status/)
 })
@@ -142,7 +141,7 @@ test('Home upcoming events hide Published and mark completed entries with a chec
 test('Home upcoming events exclude cancelled and ended incomplete shifts', async () => {
   const script = await read('scripts/home-workforce-calendar.js')
 
-  assert.match(script, /schedule\.status === 'cancelled'/)
+  assert.match(script, /operationalScheduleStatus\(schedule\) === 'cancelled'/)
   assert.match(script, /new Date\(schedule\.shift_end\)\.getTime\(\) > now\.getTime\(\)/)
   assert.match(script, /\.slice\(0, UPCOMING_SCHEDULE_LIMIT\)/)
 })

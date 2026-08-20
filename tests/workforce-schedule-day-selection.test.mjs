@@ -54,5 +54,5 @@ test('description and required schedule settings remain available', () => {
   assert.match(html, /<summary>Schedule settings<\/summary>/)
   assert.match(html, /id="scheduleSequence"/)
   assert.match(html, /id="scheduleTimezone"/)
-  assert.match(html, /id="scheduleStatus"/)
+  assert.match(html, /Schedules are Published automatically\./)
 })

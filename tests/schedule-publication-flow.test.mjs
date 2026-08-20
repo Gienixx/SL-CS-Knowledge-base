@@ -4,24 +4,27 @@ import test from 'node:test'
 
 const read = path => readFile(new URL(`../${path}`, import.meta.url), 'utf8')
 
-test('new schedules default to Published while Scheduled is clearly identified as a draft', async () => {
+test('manual schedule creation has no operational status selector and defaults to Published', async () => {
   const [html, entry] = await Promise.all([
     read('workforce.html'),
     read('scripts/workforce-schedules-entry.js')
   ])
 
-  assert.match(html, /option value="scheduled">Scheduled \(draft — hidden from agents\)<\/option>/)
-  assert.match(html, /option value="published" selected>Published \(visible to agent\)<\/option>/)
+  assert.match(html, /Schedules are Published automatically\./)
+  assert.doesNotMatch(html, /id="scheduleStatus"/)
   assert.match(html, /workforce-schedules-entry\.js\?v=\d+/)
-  assert.match(entry, /const isNewSchedule = !scheduleId\?\.value/)
-  assert.match(entry, /scheduleStatus\.value = 'published'/)
+  assert.match(entry, /workforce-schedules\.js\?v=\d+/)
 })
 
-test('editing an existing draft preserves its stored status until an administrator publishes it', async () => {
-  const entry = await read('scripts/workforce-schedules-entry.js')
+test('editing a Published schedule retains Published and records Changed separately', async () => {
+  const [script, migration] = await Promise.all([
+    read('scripts/workforce-schedules.js'),
+    read('supabase/migrations/20260820153000_simplify_workforce_schedule_status_model.sql')
+  ])
 
-  assert.match(entry, /if \(isNewSchedule\) \{/)
-  assert.doesNotMatch(entry, /scheduleId\?\.value\s*&&[\s\S]*scheduleStatus\.value = 'published'/)
+  assert.match(script, /const status = 'published'/)
+  assert.match(migration, /add column if not exists changed_at timestamptz/)
+  assert.match(migration, /new\.status := 'published'/)
 })
 
 test('authorized schedule managers default to Team schedule scope', async () => {

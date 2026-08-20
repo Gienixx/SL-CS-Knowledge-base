@@ -4,6 +4,10 @@ import {
   loadCurrentWorkforceAccess
 } from './workforce-permissions.js?v=1'
 import { scheduleEndDate } from './workforce-schedule-times.js?v=1'
+import {
+  operationalScheduleStatus,
+  scheduleStatusTags
+} from '../shared/workforce-schedule-status.js?v=1'
 
 const section = document.getElementById('scheduleManagementSection')
 
@@ -15,7 +19,6 @@ if (section) {
   const viewSelect = document.getElementById('scheduleView')
   const teamFilter = document.getElementById('scheduleTeamFilter')
   const employeeFilter = document.getElementById('scheduleEmployeeFilter')
-  const statusFilter = document.getElementById('scheduleStatusFilter')
   const previousButton = document.getElementById('previousScheduleRange')
   const todayButton = document.getElementById('currentScheduleRange')
   const nextButton = document.getElementById('nextScheduleRange')
@@ -52,14 +55,6 @@ if (section) {
   let schedulePage = 1
 
   const TABLE_PAGE_SIZE = 10
-
-  const STATUS_LABELS = Object.freeze({
-    scheduled: 'Scheduled',
-    published: 'Published',
-    changed: 'Changed',
-    cancelled: 'Cancelled',
-    completed: 'Completed'
-  })
 
   const LEAVE_TYPE_LABELS = Object.freeze({
     incentive_vl: 'Incentive VL',
@@ -344,8 +339,7 @@ if (section) {
   }
 
   function statusModifier(status) {
-    if (status === 'published' || status === 'completed') return 'success'
-    if (status === 'changed' || status === 'scheduled') return 'warning'
+    if (operationalScheduleStatus({ status }) === 'published') return 'success'
     if (status === 'cancelled') return 'danger'
     return 'muted'
   }
@@ -355,17 +349,15 @@ if (section) {
       const profile = profileById(schedule.user_id)
       const selectedTeam = teamFilter.value
       const selectedEmployee = employeeFilter.value
-      const selectedStatus = statusFilter.value
 
       return (!selectedTeam || profile?.team_id === selectedTeam) &&
-        (!selectedEmployee || schedule.user_id === selectedEmployee) &&
-        (!selectedStatus || schedule.status === selectedStatus)
+        (!selectedEmployee || schedule.user_id === selectedEmployee)
     })
   }
 
   function renderSummary(rows) {
     document.getElementById('scheduleCount').textContent = rows.length
-    document.getElementById('publishedScheduleCount').textContent = rows.filter(item => item.status === 'published').length
+    document.getElementById('publishedScheduleCount').textContent = rows.filter(item => operationalScheduleStatus(item) === 'published').length
     document.getElementById('restDayCount').textContent = rows.filter(item => item.is_rest_day).length
     document.getElementById('leaveScheduleCount').textContent = rows.filter(item => item.is_leave).length
     document.getElementById('absentScheduleCount').textContent = rows.filter(item => item.is_absent).length
@@ -436,11 +428,12 @@ if (section) {
           const chip = document.createElement('div')
           const isOpenSchedule = !schedule.is_leave && !schedule.is_absent && !schedule.is_rest_day && !schedule.is_holiday && !schedule.shift_start && !schedule.shift_end
           const chipType = schedule.is_absent ? 'absent' : schedule.is_leave ? 'leave' : schedule.is_holiday ? 'holiday' : schedule.is_rest_day ? 'rest' : isOpenSchedule ? 'open' : 'shift'
-          chip.className = `wf-schedule-chip ${chipType} ${schedule.status === 'scheduled' ? 'draft' : 'published'}`
+          chip.className = `wf-schedule-chip ${chipType} ${operationalScheduleStatus(schedule) === 'published' ? 'published' : 'cancelled'}`
           const editButton = document.createElement('button')
           editButton.type = 'button'
           editButton.className = 'wf-chip-main'
           const sequenceLabel = `Sequence ${schedule.shift_sequence}`
+          const statusTags = scheduleStatusTags(schedule, schedule.attendance || [])
           const scheduleMeta = schedule.is_leave
             ? `Leave · ${sequenceLabel}`
             : schedule.is_absent
@@ -448,7 +441,7 @@ if (section) {
             : isOpenSchedule
             ? `${formatPlannedHours(schedule.planned_paid_minutes)} · ${sequenceLabel}`
             : schedule.is_rest_day ? '' : sequenceLabel
-          editButton.innerHTML = `<strong>${schedule.is_leave || schedule.is_absent ? specialScheduleLabel(schedule) : schedule.is_rest_day ? 'Rest day' : schedule.is_holiday ? schedule.holiday_name || 'Holiday' : formatShift(schedule)}</strong><small>${scheduleMeta}</small>`
+          editButton.innerHTML = `<strong>${schedule.is_leave || schedule.is_absent ? specialScheduleLabel(schedule) : schedule.is_rest_day ? 'Rest day' : schedule.is_holiday ? schedule.holiday_name || 'Holiday' : formatShift(schedule)}</strong><small>${[scheduleMeta, ...statusTags].filter(Boolean).join(' · ')}</small>`
           editButton.addEventListener('click', () => openSchedule(schedule.id))
           const deleteButton = document.createElement('button')
           deleteButton.type = 'button'
@@ -601,7 +594,6 @@ if (section) {
     scheduleFrequency.value = 'one'
     document.getElementById('scheduleSequence').value = '1'
     document.getElementById('scheduleTimezone').value = 'America/New_York'
-    document.getElementById('scheduleStatus').value = 'published'
     plannedPaidHoursInput.value = '8'
     document.getElementById('scheduleEmployee').value = employeeFilter.value || ''
     scheduleFrequency.disabled = false
@@ -624,7 +616,6 @@ if (section) {
       scheduleFrequency.disabled = true
       document.getElementById('scheduleSequence').value = String(schedule.shift_sequence)
       document.getElementById('scheduleTimezone').value = schedule.timezone || 'America/New_York'
-      document.getElementById('scheduleStatus').value = schedule.status
       otherTypeSelect.value = schedule.is_absent
         ? 'absent'
         : schedule.is_leave
@@ -668,7 +659,7 @@ if (section) {
           .order('name'),
         supabase
           .from('work_schedules')
-          .select('id, user_id, team_id, shift_date, shift_sequence, shift_start, shift_end, timezone, status, is_rest_day, is_holiday, is_leave, is_absent, leave_type, absence_type, holiday_name, notes, planned_paid_minutes, updated_at')
+          .select('id, user_id, team_id, shift_date, shift_sequence, shift_start, shift_end, timezone, status, is_rest_day, is_holiday, is_leave, is_absent, leave_type, absence_type, holiday_name, notes, planned_paid_minutes, updated_at, changed_at, changed_by, admin_override, attendance(id, schedule_id, clock_in, clock_out, billed_clock_out, voided_at)')
           .gte('shift_date', range.start)
           .lte('shift_date', range.end)
           .order('shift_date')
@@ -706,7 +697,7 @@ if (section) {
     const toDate = scheduleFrequency.value === 'one' ? expectedOneDayEndDate : scheduleToDate.value
     const sequence = Number(document.getElementById('scheduleSequence').value)
     const timezone = normalizeText(document.getElementById('scheduleTimezone').value) || 'America/New_York'
-    const status = document.getElementById('scheduleStatus').value
+    const status = 'published'
     const otherType = otherTypeSelect.value
     const isRestDay = otherType === 'rest_day'
     const isHoliday = otherType === 'holiday'
@@ -856,7 +847,7 @@ if (section) {
     const employeeName = profile?.full_name || 'this employee'
     const confirmed = window.confirm(
       `Delete ${employeeName}'s schedule for ${formatDate(schedule.shift_date)}? ` +
-      'Linked attendance records will be kept. This cannot be undone.'
+      'Schedules with attendance, payroll, leave, correction, or audit history cannot be deleted.'
     )
 
     if (!confirmed) return
@@ -874,7 +865,7 @@ if (section) {
       setMessage(scheduleMessage, 'Schedule entry deleted successfully.', 'success')
     } catch (error) {
       console.error('Schedule deletion failed:', error)
-      setMessage(scheduleMessage, 'Unable to delete schedule.', 'error')
+      setMessage(scheduleMessage, errorMessage(error), 'error')
       setLoading(button, false, 'Deleting...', 'Delete')
     }
   }
@@ -925,10 +916,6 @@ if (section) {
       renderSchedules()
     })
     employeeFilter.addEventListener('change', () => {
-      schedulePage = 1
-      renderSchedules()
-    })
-    statusFilter.addEventListener('change', () => {
       schedulePage = 1
       renderSchedules()
     })

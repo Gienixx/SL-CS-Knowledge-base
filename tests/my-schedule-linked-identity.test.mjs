@@ -34,6 +34,6 @@ test('authorized managers still default to Team schedule and can switch to linke
 
 test('My Schedule page loads the canonical identity controller', async () => {
   const html = await read('my-schedule.html')
-  assert.match(html, /scripts\/my-schedule-v2\.js\?v=3/)
+  assert.match(html, /scripts\/my-schedule-v2\.js\?v=4/)
   assert.doesNotMatch(html, /scripts\/my-schedule-entry\.js/)
 })

@@ -6,6 +6,7 @@ import {
 } from './workforce-permissions.js?v=2'
 import { confirmClockOutIfNeeded } from '../shared/attendance-clock-out-confirmation.js'
 import { formatScheduleOptionLabel } from '../shared/schedule-labels.js?v=1'
+import { isChangedSchedule } from '../shared/workforce-schedule-status.js?v=1'
 
 const RELEASED_SCHEDULE_STATUSES = Object.freeze(['published', 'changed'])
 const SCHEDULE_PLACEHOLDER = '__SCHEDULE_PLACEHOLDER__'
@@ -875,7 +876,7 @@ function scheduleOptionLabel(
 ) {
   const baseLabel = formatScheduleOptionLabel(schedule, access?.timezone)
   const relativeDateLabel = relativeScheduleDateLabel(schedule.shift_date, now)
-  const statusLabel = schedule.status === 'changed' ? ' · Changed' : ''
+  const statusLabel = isChangedSchedule(schedule) ? ' · Changed' : ''
   const overtimeLabel = schedule.is_rest_day
     ? ' · RDOT'
     : schedule.is_holiday
@@ -1014,7 +1015,7 @@ function renderScheduleChooser() {
 
 function renderScheduleNotice() {
   const selected = selectedSchedule()
-  const changedSchedules = visibleSchedules.filter(schedule => schedule.status === 'changed')
+  const changedSchedules = visibleSchedules.filter(isChangedSchedule)
   const paidLeaveToday = todaySchedules.some(schedule =>
     schedule.shift_date === activeLocalDate &&
     schedule.is_leave &&
@@ -1427,7 +1428,7 @@ async function loadToday() {
 
   const scheduleQuery = supabase
     .from('work_schedules')
-    .select('id, user_id, shift_date, shift_sequence, shift_start, shift_end, timezone, status, is_rest_day, is_holiday, is_leave, is_absent, leave_type, holiday_name, notes')
+    .select('id, user_id, shift_date, shift_sequence, shift_start, shift_end, timezone, status, changed_at, admin_override, is_rest_day, is_holiday, is_leave, is_absent, leave_type, holiday_name, notes')
     .in('user_id', profileIds)
     .gte('shift_date', rangeStart)
     .lte('shift_date', rangeEnd)

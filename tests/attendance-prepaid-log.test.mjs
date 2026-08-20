@@ -37,7 +37,7 @@ test('Attendance Log distinguishes scheduled prepaid, fulfilled prepaid, and reg
   ])
 
   assert.match(html, /<th>Pay type<\/th>/)
-   assert.match(html, /scripts\/attendance\.js\?v=27/)
+   assert.match(html, /scripts\/attendance\.js\?v=28/)
   assert.match(html, /styles\/attendance-theme-fix\.css\?v=7/)
   assert.match(script, /workforce_list_my_attendance_log/)
   assert.match(script, /Prepaid scheduled/)

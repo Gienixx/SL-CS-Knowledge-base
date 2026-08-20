@@ -3,6 +3,11 @@ import {
   hasWorkforcePermission,
   loadCurrentWorkforceAccess
 } from './workforce-permissions.js?v=1'
+import {
+  isChangedSchedule,
+  operationalScheduleStatus,
+  scheduleStatusTags
+} from '../shared/workforce-schedule-status.js?v=1'
 
 const RELEASED_STATUSES = Object.freeze([
   'published',
@@ -10,14 +15,6 @@ const RELEASED_STATUSES = Object.freeze([
   'cancelled',
   'completed'
 ])
-
-const STATUS_LABELS = Object.freeze({
-  scheduled: 'Scheduled',
-  published: 'Published',
-  changed: 'Changed',
-  cancelled: 'Cancelled',
-  completed: 'Completed'
-})
 
 const LEAVE_TYPE_LABELS = Object.freeze({
   incentive_vl: 'Incentive VL',
@@ -48,7 +45,6 @@ const elements = {
   view: document.getElementById('myScheduleView'),
   scope: document.getElementById('myScheduleScope'),
   employee: document.getElementById('myScheduleEmployee'),
-  status: document.getElementById('myScheduleStatus'),
   scopeField: document.getElementById('scheduleScopeField'),
   employeeField: document.getElementById('scheduleEmployeeField'),
   previous: document.getElementById('previousMyScheduleRange'),
@@ -257,21 +253,18 @@ function resolvePersonalProfileIds() {
 }
 
 function visibleSchedules() {
-  const selectedStatus = elements.status.value
   const selectedEmployee = currentScope() === 'team'
     ? elements.employee.value
     : ''
 
   return schedules.filter(schedule => {
-    const matchesStatus = !selectedStatus || schedule.status === selectedStatus
     const matchesEmployee = !selectedEmployee || schedule.user_id === selectedEmployee
-    return matchesStatus && matchesEmployee
+    return matchesEmployee
   })
 }
 
 function statusModifier(status) {
-  if (status === 'published' || status === 'completed') return 'success'
-  if (status === 'changed' || status === 'scheduled') return 'warning'
+  if (operationalScheduleStatus({ status }) === 'published') return 'success'
   if (status === 'cancelled') return 'danger'
   return 'muted'
 }
@@ -310,15 +303,15 @@ function scheduleType(schedule) {
 
 function renderSummary(rows) {
   document.getElementById('myScheduleCount').textContent = rows.length
-  document.getElementById('myPublishedCount').textContent = rows.filter(item => item.status === 'published').length
-  document.getElementById('myChangedCount').textContent = rows.filter(item => item.status === 'changed').length
+  document.getElementById('myPublishedCount').textContent = rows.filter(item => operationalScheduleStatus(item) === 'published').length
+  document.getElementById('myChangedCount').textContent = rows.filter(isChangedSchedule).length
   document.getElementById('myRestDayCount').textContent = rows.filter(item => item.is_rest_day).length
   document.getElementById('myLeaveCount').textContent = rows.filter(item => item.is_leave).length
   document.getElementById('myAbsentCount').textContent = rows.filter(item => item.is_absent).length
 }
 
 function renderChangeNotice(rows) {
-  const changed = rows.filter(schedule => schedule.status === 'changed')
+  const changed = rows.filter(isChangedSchedule)
   if (!changed.length) {
     elements.changeNotice.hidden = true
     return
@@ -814,19 +807,15 @@ function createCalendarEntry(schedule) {
   button.type = 'button'
   button.className = 'schedule-entry'
 
-  if (schedule.status === 'changed') {
+  if (isChangedSchedule(schedule)) {
     button.classList.add('changed')
-  }
-
-  if (schedule.status === 'scheduled') {
-    button.classList.add('scheduled')
   }
 
   if (schedule.status === 'cancelled') {
     button.classList.add('cancelled')
   }
 
-  if (schedule.status === 'completed') {
+  if (scheduleStatusTags(schedule, schedule.attendance || []).includes('Completed')) {
     button.classList.add('completed')
   }
 
@@ -844,7 +833,7 @@ function createCalendarEntry(schedule) {
 
   button.setAttribute(
     'aria-label',
-    `${employeeName(schedule.user_id)}, ${formatDate(schedule.shift_date)}, ${formatShift(schedule)}, ${STATUS_LABELS[schedule.status] || schedule.status}`
+    `${employeeName(schedule.user_id)}, ${formatDate(schedule.shift_date)}, ${formatShift(schedule)}, ${scheduleStatusTags(schedule, schedule.attendance || []).join(', ')}`
   )
 
   const content = document.createElement('span')
@@ -1005,10 +994,9 @@ function renderTable(rows) {
     detailsCell.className = 'wf-row-actions'
 
     typeCell.appendChild(badge(scheduleType(schedule), schedule.is_rest_day || schedule.is_leave || schedule.is_absent ? 'muted' : ''))
-    statusCell.appendChild(badge(
-      STATUS_LABELS[schedule.status] || schedule.status,
-      statusModifier(schedule.status)
-    ))
+    scheduleStatusTags(schedule, schedule.attendance || []).forEach((tag, index) => {
+      statusCell.appendChild(badge(tag, index === 0 ? statusModifier(schedule.status) : 'muted'))
+    })
 
     const detailsButton = document.createElement('button')
     detailsButton.type = 'button'
@@ -1112,7 +1100,7 @@ async function loadSchedules() {
 
   let query = supabase
     .from('work_schedules')
-    .select('id, user_id, team_id, shift_date, shift_sequence, shift_start, shift_end, timezone, status, is_rest_day, is_holiday, is_leave, is_absent, leave_type, absence_type, holiday_name, notes, updated_at')
+    .select('id, user_id, team_id, shift_date, shift_sequence, shift_start, shift_end, timezone, status, is_rest_day, is_holiday, is_leave, is_absent, leave_type, absence_type, holiday_name, notes, updated_at, changed_at, changed_by, admin_override, attendance(id, schedule_id, clock_in, clock_out, billed_clock_out, voided_at)')
 
   // constrain by user id depending on scope
   if (currentScope() === 'team') {
@@ -1165,10 +1153,10 @@ function openScheduleDetails(scheduleId) {
   document.getElementById('detailShift').textContent = formatShift(schedule)
   document.getElementById('detailTimezone').textContent = schedule.timezone || 'America/New_York'
   document.getElementById('detailType').textContent = scheduleType(schedule)
-  document.getElementById('detailStatus').textContent = STATUS_LABELS[schedule.status] || schedule.status
+  document.getElementById('detailStatus').textContent = scheduleStatusTags(schedule, schedule.attendance || []).join(' · ')
   document.getElementById('detailUpdated').textContent = formatDateTime(schedule.updated_at, schedule.timezone)
   document.getElementById('detailNotes').textContent = schedule.notes || 'No notes provided.'
-  document.getElementById('detailChangedNote').hidden = schedule.status !== 'changed'
+  document.getElementById('detailChangedNote').hidden = !isChangedSchedule(schedule)
 
   lastFocusedElement = document.activeElement
   elements.modal.hidden = false
@@ -1209,10 +1197,6 @@ function bindEvents() {
 
   elements.refresh.addEventListener('click', refresh)
   elements.view.addEventListener('change', refresh)
-  elements.status.addEventListener('change', () => {
-    tablePage = 1
-    render()
-  })
   elements.employee.addEventListener('change', () => {
     tablePage = 1
     render()
