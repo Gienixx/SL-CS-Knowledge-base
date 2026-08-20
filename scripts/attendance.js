@@ -720,6 +720,20 @@ function hasAttendanceForSchedule(schedule) {
   return Boolean(schedule?.id) && recentAttendance.some(record => record.schedule_id === schedule.id)
 }
 
+function isYesterdaySchedule(schedule, now = new Date()) {
+  return Boolean(schedule) && schedule.shift_date === offsetDateKey(localDateKey(now), -1)
+}
+
+function isPreviousDayScheduleEligible(schedule, now = new Date()) {
+  if (!schedule || !RELEASED_SCHEDULE_STATUSES.includes(schedule.status)) return false
+  if (!isYesterdaySchedule(schedule, now) || schedule.is_leave || schedule.is_absent) return false
+  if (hasAttendanceForSchedule(schedule) || openAttendanceRecord()) return false
+
+  return isSpecialDay(schedule) ||
+    isOpenSchedule(schedule) ||
+    Boolean(schedule.shift_start && schedule.shift_end)
+}
+
 function timeZoneDateParts(date, timezone) {
   const parts = new Intl.DateTimeFormat('en-CA', {
     timeZone: timezone,
@@ -868,7 +882,9 @@ function scheduleOptionLabel(
       ? ' · OT'
       : ''
   const availabilityLabel = availability.state === 'ended' ? ' · Ended' : ''
-  const attendanceLabel = managerAssist && hasAttendance ? ' · Attendance recorded' : ''
+  const attendanceLabel = hasAttendance && (managerAssist || isYesterdaySchedule(schedule, now))
+    ? ' · Attendance recorded'
+    : ''
   return [
     relativeDateLabel,
     baseLabel,
@@ -887,7 +903,11 @@ function renderScheduleChooser() {
     .slice()
     .sort((left, right) => left.shift_date.localeCompare(right.shift_date) || (left.shift_sequence || 0) - (right.shift_sequence || 0))
   const displayedSchedules = visibleSchedules
-    .filter(schedule => adminAssistMode || scheduleAvailability(schedule, now).state !== 'ended')
+    .filter(schedule =>
+      adminAssistMode ||
+      scheduleAvailability(schedule, now).state !== 'ended' ||
+      isYesterdaySchedule(schedule, now)
+    )
     .slice()
     .sort((left, right) => {
       const leftTime = left.shift_start ? new Date(left.shift_start).getTime() : parseDateKey(left.shift_date).getTime()
@@ -914,7 +934,9 @@ function renderScheduleChooser() {
         }),
         schedule.id
       )
-      option.disabled = adminAssistMode ? hasAttendance : availability.state === 'ended'
+      option.disabled = adminAssistMode
+        ? hasAttendance
+        : availability.state === 'ended' && !isPreviousDayScheduleEligible(schedule, now)
       assignedGroup.appendChild(option)
     })
     elements.scheduleSelect.appendChild(assignedGroup)
@@ -1070,6 +1092,10 @@ function updateScheduleHelp() {
     elements.scheduleHelp.textContent = isSpecialDay(schedule)
       ? 'This special-day schedule is still active. Credited work remains overtime.'
       : 'This shift is currently active. You can clock in now.'
+  } else if (isPreviousDayScheduleEligible(schedule)) {
+    elements.scheduleHelp.textContent = isOpenSchedule(schedule)
+      ? 'This previous-day Open Schedule is available for clock-in. The actual clock-in time will be recorded now and linked to the selected work date.'
+      : 'This previous-day schedule is available for clock-in. The actual clock-in time will be recorded now and linked to the selected work date.'
   } else if (availability.state === 'ended') {
     elements.scheduleHelp.textContent = isOpenSchedule(schedule)
       ? 'This Open Schedule work date has ended and is no longer available for clock-in.'
@@ -1100,7 +1126,8 @@ function updateActionState() {
       (['ended', 'next-day-special', 'next-day-overnight', 'special', 'early', 'active'].includes(availability.state) ||
         isUntimedRestDayWithinClockInWindow(schedule))
     : schedule
-      ? ['next-day-special', 'next-day-overnight', 'special', 'early', 'active'].includes(availability.state) ||
+      ? isPreviousDayScheduleEligible(schedule) ||
+        ['next-day-special', 'next-day-overnight', 'special', 'early', 'active'].includes(availability.state) ||
         availability.state === 'open' ||
         isUntimedRestDayWithinClockInWindow(schedule)
       : (isAdditionalWorkSessionSelected() && canClockAdditionalSession()) ||

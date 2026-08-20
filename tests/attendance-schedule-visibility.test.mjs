@@ -48,15 +48,16 @@ function loadScheduleAvailability(script) {
   )
 }
 
-test('ended yesterday schedules are hidden for agents but available to Admin Assist', async () => {
+test('only an unused released yesterday schedule is selectable for agents while ended schedules remain Admin Assist-visible', async () => {
   const script = await read('scripts/attendance.js')
   const chooser = script.match(/function renderScheduleChooser\(\) \{[\s\S]*?\n\}/)?.[0]
 
   assert.ok(chooser)
-  assert.match(chooser, /const displayedSchedules = visibleSchedules[\s\S]*\.filter\(schedule => adminAssistMode \|\| scheduleAvailability\(schedule, now\)\.state !== 'ended'\)/)
+  assert.match(chooser, /const displayedSchedules = visibleSchedules[\s\S]*isYesterdaySchedule\(schedule, now\)/)
   assert.match(chooser, /const availability = scheduleAvailability\(schedule, now\)/)
-  assert.match(chooser, /option\.disabled = adminAssistMode \? hasAttendance : availability\.state === 'ended'/)
+  assert.match(chooser, /option\.disabled = adminAssistMode[\s\S]*isPreviousDayScheduleEligible\(schedule, now\)/)
   assert.match(script, /function hasAttendanceForSchedule\(schedule\)/)
+  assert.match(script, /function isPreviousDayScheduleEligible\(schedule, now = new Date\(\)/)
   assert.match(script, /const availabilityLabel = availability\.state === 'ended' \? ' · Ended' : ''/)
   assert.match(script, /const scheduleClockInOpen = adminAssistMode[\s\S]*'ended'/)
 
@@ -78,9 +79,10 @@ test('ended yesterday schedules are hidden for agents but available to Admin Ass
     shift_end: null
   }, now).state, 'ended')
 
-  const agentVisible = (adminAssistMode, state) => adminAssistMode || state !== 'ended'
-  assert.equal(agentVisible(false, 'ended'), false)
-  assert.equal(agentVisible(true, 'ended'), true)
+  const agentVisible = (adminAssistMode, state, yesterday) => adminAssistMode || state !== 'ended' || yesterday
+  assert.equal(agentVisible(false, 'ended', true), true)
+  assert.equal(agentVisible(false, 'ended', false), false)
+  assert.equal(agentVisible(true, 'ended', false), true)
 })
 
 test('retroactive yesterday schedule created today is inside the unchanged loading window', async () => {
@@ -104,7 +106,7 @@ test('retroactive yesterday schedule created today is inside the unchanged loadi
   assert.match(page, /id="attendanceAdminAssistClockInDate"[^>]*type="date"/)
   assert.match(page, /id="attendanceAdminAssistClockInTime"[^>]*type="time"/)
   assert.match(script, /if \(historicalClockIn\.timestamp\) payload\.p_clock_in = historicalClockIn\.timestamp/)
-   assert.match(page, /scripts\/attendance\.js\?v=26/)
+   assert.match(page, /scripts\/attendance\.js\?v=27/)
 })
 
 test('historical Agent Assist converts Aug 16 8:05 AM New York to the correct UTC timestamp', async () => {

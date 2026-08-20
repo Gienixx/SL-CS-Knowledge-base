@@ -33,7 +33,7 @@ test('Attendance schedule labels use workforce-local Today/Yesterday/Tomorrow da
   assert.equal(labelFor('2026-08-19', now), 'Tomorrow')
 })
 
-test('Attendance prepends relative labels without changing schedule option content or selection wiring', async () => {
+test('Attendance prepends relative labels while preserving selection wiring and prior-day guards', async () => {
   const script = await read('scripts/attendance.js')
 
   assert.match(script, /function relativeScheduleDateLabel\(workDate, now = new Date\(\)\)/)
@@ -41,6 +41,6 @@ test('Attendance prepends relative labels without changing schedule option conte
   assert.match(script, /const relativeDateLabel = relativeScheduleDateLabel\(schedule\.shift_date, now\)/)
   assert.match(script, /return \[\s*relativeDateLabel,\s*baseLabel/)
   assert.match(script, /scheduleOptionLabel\(schedule, availability, \{[\s\S]*now\s*\n\s*\}\)/)
-  assert.match(script, /option\.disabled = adminAssistMode \? hasAttendance : availability\.state === 'ended'/)
+  assert.match(script, /option\.disabled = adminAssistMode[\s\S]*isPreviousDayScheduleEligible\(schedule, now\)/)
   assert.match(script, /formatScheduleDateLabel\(activeLocalDate, now\)/)
 })
