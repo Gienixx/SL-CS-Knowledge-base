@@ -1121,6 +1121,11 @@
   line-height: 1.45;
 }
 
+.attendance-billed-clock-cell {
+  min-width: 106px;
+  white-space: nowrap;
+}
+
 .attendance-history-footer {
   display: flex;
   align-items: center;

@@ -5,6 +5,11 @@ import {
   redactAttendanceCorrectionForViewer
 } from './workforce-permissions.js?v=2'
 import { formatScheduleOptionLabel } from '../shared/schedule-labels.js?v=1'
+import {
+  effectiveAttendanceClocks,
+  formatAttendanceTimestamp,
+  hasBilledOverride
+} from '../shared/attendance-billed-timestamps.js?v=1'
 
 const ATTENDANCE_STATUS_LABELS = Object.freeze({
   present: 'Present',
@@ -252,13 +257,7 @@ function formatDate(value) {
 }
 
 function formatDateTime(value, timezone, includeDate = false) {
-  if (!value) return '—'
-  return new Intl.DateTimeFormat('en-US', {
-    timeZone: WORKFORCE_TIMEZONE,
-    ...(includeDate ? { month: 'short', day: 'numeric', year: 'numeric' } : {}),
-    hour: 'numeric',
-    minute: '2-digit'
-  }).format(new Date(value))
+  return formatAttendanceTimestamp(value, includeDate)
 }
 
 function toDateTimeLocal(value) {
@@ -382,27 +381,6 @@ function formatMinutes(value) {
 function formatOptionalMinutes(value) {
   if (value === null || value === undefined) return '—'
   return formatMinutes(value)
-}
-
-function hasBilledOverride(record) {
-  if (record?.is_corrected === true) return true
-  return Boolean(record?.billed_clock_in && record?.billed_clock_out
-    && (record.billed_clock_in !== (record.original_clock_in || record.clock_in)
-      || record.billed_clock_out !== (record.original_clock_out || record.clock_out)))
-}
-
-function effectiveAttendanceClocks(record) {
-  const originalClockIn = record?.original_clock_in || record?.clock_in || null
-  const originalClockOut = record?.original_clock_out || record?.clock_out || null
-  if (!hasBilledOverride(record)) {
-    return { renderedClockIn: originalClockIn, renderedClockOut: originalClockOut, billedClockIn: originalClockIn, billedClockOut: originalClockOut }
-  }
-  return {
-    renderedClockIn: originalClockIn,
-    renderedClockOut: originalClockOut,
-    billedClockIn: record?.billed_clock_in || null,
-    billedClockOut: record?.billed_clock_out || null
-  }
 }
 
 function durationMinutes(clockIn, clockOut) {

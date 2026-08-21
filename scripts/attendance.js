@@ -7,6 +7,11 @@ import {
 import { confirmClockOutIfNeeded } from '../shared/attendance-clock-out-confirmation.js'
 import { formatScheduleOptionLabel } from '../shared/schedule-labels.js?v=1'
 import { isChangedSchedule } from '../shared/workforce-schedule-status.js?v=1'
+import {
+  effectiveAttendanceClocks,
+  formatAttendanceTimestamp,
+  hasBilledOverride
+} from '../shared/attendance-billed-timestamps.js?v=1'
 
 const RELEASED_SCHEDULE_STATUSES = Object.freeze(['published', 'changed'])
 const SCHEDULE_PLACEHOLDER = '__SCHEDULE_PLACEHOLDER__'
@@ -1276,6 +1281,22 @@ function createStatusCell(record) {
   return cell
 }
 
+function createBilledTimestampCell(record, clockKey) {
+  const cell = document.createElement('td')
+  cell.className = 'attendance-billed-clock-cell'
+  if (!hasBilledOverride(record)) {
+    cell.textContent = '—'
+    return cell
+  }
+
+  const clocks = effectiveAttendanceClocks(record)
+  const value = clocks[clockKey]
+  cell.textContent = clockKey === 'billedClockOut' && record.is_open && value
+    ? 'In progress'
+    : formatAttendanceTimestamp(value)
+  return cell
+}
+
 function createPayTypeCell(record) {
   const cell = document.createElement('td')
   const wrap = document.createElement('div')
@@ -1379,16 +1400,17 @@ function renderHistory() {
       const noteCell = document.createElement('td')
       noteCell.className = 'attendance-note-cell'
       noteCell.textContent = formatCorrectionReason(record.correction_reason)
+      const clocks = effectiveAttendanceClocks(record)
 
       row.append(
         createTextCell(formatDate(record.work_date), record.corrected_at ? 'Corrected by an administrator' : ''),
         createTextCell(formatShift(schedule), scheduleNote),
-        createTextCell(formatTime(record.clock_in)),
-        createTextCell(formatTime(record.clock_out)),
+        createTextCell(formatTime(clocks.renderedClockIn)),
+        createTextCell(formatTime(clocks.renderedClockOut)),
         createTextCell(record.clock_in ? formatMinutes(workedMinutes(record)) : '—'),
         createStatusCell(record),
-        createPayTypeCell(record),
-        createAdjustmentsCell(record),
+        createBilledTimestampCell(record, 'billedClockIn'),
+        createBilledTimestampCell(record, 'billedClockOut'),
         noteCell
       )
       elements.historyBody.appendChild(row)

@@ -2,6 +2,8 @@ import assert from 'node:assert/strict'
 import { readFile } from 'node:fs/promises'
 import test from 'node:test'
 
+import { effectiveAttendanceClocks, formatAttendanceTimestamp } from '../shared/attendance-billed-timestamps.js'
+
 const read = path => readFile(new URL(`../${path}`, import.meta.url), 'utf8')
 
 test('Attendance exposes local-only Admin Assist navigation and cache-busted assets', async () => {
@@ -23,7 +25,7 @@ test('Attendance exposes local-only Admin Assist navigation and cache-busted ass
 
   assert.match(html, /attendance\.css\?v=9/)
   assert.match(html, /attendance-theme-fix\.css\?v=7/)
-   assert.match(html, /scripts\/attendance\.js\?v=28/)
+   assert.match(html, /scripts\/attendance\.js\?v=29/)
   assert.match(styles, /attendance-admin-assist-arrow-previous/)
   assert.match(styles, /attendance-admin-assist-arrow-next/)
   assert.match(lightStyles, /attendance-admin-assist/)
@@ -46,6 +48,61 @@ test('Admin Assist is permission-gated and uses employee-scoped snapshot/action 
   assert.match(script, /if \(!adminAssistAllowed\) return/)
   assert.match(script, /workforce_clock_in/)
   assert.match(script, /workforce_clock_out/)
+})
+
+test('Admin Assist history exposes the shared original and billed timestamp contract', async () => {
+  const [migration, script] = await Promise.all([
+    read('supabase/migrations/20260821130000_expose_billed_timestamps_in_admin_assist_history.sql'),
+    read('scripts/attendance.js')
+  ])
+
+  assert.match(migration, /pg_get_functiondef\('public\.workforce_admin_assist_snapshot\(uuid,date,date\)'::regprocedure\)/)
+  for (const field of [
+    'attendance_row.original_clock_in',
+    'attendance_row.original_clock_out',
+    'attendance_row.billed_clock_in',
+    'attendance_row.billed_clock_out'
+  ]) assert.match(migration, new RegExp(field.replaceAll('.', '\\.'), 'g'))
+  assert.match(script, /adminAssistSnapshot\.history \|\| \[\]\)\.map\(record => \(\{[\s\S]*\.\.\.record/)
+  assert.match(script, /effectiveAttendanceClocks/)
+  assert.doesNotMatch(migration, /\b(insert|update|delete)\b/i)
+})
+
+test('Admin Assist billed history preserves originals and uses shared fallback/formatting', () => {
+  const record = {
+    clock_in: '2026-08-20T01:00:00.000Z',
+    clock_out: '2026-08-20T09:00:00.000Z',
+    original_clock_in: '2026-08-20T01:00:00.000Z',
+    original_clock_out: '2026-08-20T09:00:00.000Z',
+    billed_clock_in: '2026-08-20T01:15:00.000Z',
+    billed_clock_out: '2026-08-20T08:45:00.000Z',
+    is_corrected: true
+  }
+  const clocks = effectiveAttendanceClocks(record)
+
+  assert.equal(clocks.renderedClockIn, record.original_clock_in)
+  assert.equal(clocks.renderedClockOut, record.original_clock_out)
+  assert.equal(clocks.billedClockIn, record.billed_clock_in)
+  assert.equal(clocks.billedClockOut, record.billed_clock_out)
+  assert.equal(
+    formatAttendanceTimestamp(record.billed_clock_in),
+    new Intl.DateTimeFormat('en-US', {
+      timeZone: 'America/New_York',
+      hour: 'numeric',
+      minute: '2-digit'
+    }).format(new Date(record.billed_clock_in))
+  )
+
+  const unchanged = effectiveAttendanceClocks({
+    clock_in: record.clock_in,
+    clock_out: record.clock_out,
+    original_clock_in: record.original_clock_in,
+    original_clock_out: record.original_clock_out,
+    billed_clock_in: record.original_clock_in,
+    billed_clock_out: record.original_clock_out
+  })
+  assert.equal(unchanged.billedClockIn, record.original_clock_in)
+  assert.equal(unchanged.billedClockOut, record.original_clock_out)
 })
 
 test('Admin Assist migration protects target reads/actions and writes explicit actor audit events', async () => {

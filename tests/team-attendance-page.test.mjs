@@ -297,9 +297,10 @@ test('Team Attendance exposes unscheduled filtering and audited schedule assignm
 test('Team Attendance uses rendered hours until correction, then billed hours', async () => {
   const script = await read('scripts/team-attendance.js')
 
-  assert.match(script, /if \(!hasBilledOverride\(record\)\)/)
-  assert.match(script, /billedClockIn: originalClockIn, billedClockOut: originalClockOut/)
-  assert.match(script, /billedClockIn: record\?\.billed_clock_in \|\| null/)
+  assert.match(script, /attendance-billed-timestamps\.js/)
+  assert.match(script, /hasBilledOverride\(record\)/)
+  assert.match(script, /effectiveAttendanceClocks\(record\)/)
+  assert.match(script, /formatAttendanceTimestamp/)
   assert.match(script, /renderedMinutes: durationMinutes\(clocks\.renderedClockIn, clocks\.renderedClockOut\)/)
   assert.match(script, /billedMinutes: durationMinutes\(clocks\.billedClockIn, clocks\.billedClockOut\)/)
   assert.match(script, /durationMinutes\(clockIn, clockOut\)/)
