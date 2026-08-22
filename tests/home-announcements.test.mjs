@@ -78,6 +78,8 @@ test('Announcement Management provides draft and publish workflows', async () =>
   assert.match(page, /id="announcementSaveDraft"/)
   assert.match(page, /id="announcementPublish"/)
   assert.match(page, /id="announcementList"/)
+  assert.match(page, /id="announcementImportant"[^>]+type="checkbox"/)
+  assert.match(page, /Show this announcement once after login/)
   assert.match(page, /<option>Updates<\/option>/)
   assert.match(page, /Updates appear in Updates and changelogs/)
   assert.match(script, /hasWorkforcePermission\(access, 'manage_announcements'\)/)
@@ -85,6 +87,9 @@ test('Announcement Management provides draft and publish workflows', async () =>
   assert.match(script, /\.update\(/)
   assert.match(script, /\.delete\(\)/)
   assert.match(script, /published_at/)
+  assert.match(script, /is_important: elements\.important\.checked/)
+  assert.match(script, /Maximum of 2 Important announcements allowed\./)
+  assert.match(script, /important-badge/)
 })
 
 test('Announcement messages support sanitized rich-text formatting', async () => {
@@ -137,7 +142,7 @@ test('Home gives more desktop width to updates and equal lower panels', async ()
 })
 
 test('Announcement records use RLS for published reads and admin writes', async () => {
-  const migration = await read('supabase/migrations/20260718082259_team_announcements.sql')
+  const migration = `${await read('supabase/migrations/20260718082259_team_announcements.sql')}\n${await read('supabase/migrations/20260718093749_add_announcement_manager_permission.sql')}`
 
   assert.match(migration, /alter table public\.team_announcements enable row level security/)
   assert.match(migration, /status = 'published'/)

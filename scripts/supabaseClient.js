@@ -239,6 +239,17 @@ window.addEventListener('focus', () => {
   void enforceSessionLifetime()
 })
 
+// Authenticated pages share this client, so initialize the Important
+// announcement popup once without changing the login flow itself. The popup
+// module performs its own session and page-readiness checks.
+void import('../shared/important-announcement-popup.js?v=2')
+  .then(({ initializeImportantAnnouncementPopup }) => {
+    initializeImportantAnnouncementPopup(supabase)
+  })
+  .catch(error => {
+    console.warn('Unable to initialize Important announcements:', error)
+  })
+
 const FIRST_LOGIN_POLICY_START = Date.parse(
   '2026-06-20T16:00:00.000Z'
 )

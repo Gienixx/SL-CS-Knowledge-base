@@ -9,6 +9,7 @@ import {
   renderAnnouncementHtml,
   sanitizeAnnouncementHtml
 } from './announcement-rich-text.js?v=2'
+import { eligibleImportantAnnouncementCount } from '../shared/important-announcement-popup.js?v=2'
 
 const state = {
   access: null,
@@ -22,6 +23,9 @@ const state = {
   todoSaving: false,
   todoActivityLogs: []
 }
+
+const MAX_IMPORTANT_ANNOUNCEMENTS = 2
+const MAX_IMPORTANT_MESSAGE = 'Maximum of 2 Important announcements allowed.'
 
 const elements = {}
 
@@ -99,6 +103,7 @@ function collectElements() {
   elements.form = document.getElementById('announcementForm')
   elements.title = document.getElementById('announcementTitle')
   elements.category = document.getElementById('announcementCategory')
+  elements.important = document.getElementById('announcementImportant')
   elements.body = document.getElementById('announcementBody')
   elements.messageEditor = document.getElementById('announcementMessageEditor')
   elements.formatButtons = [...document.querySelectorAll('[data-format-command]')]
@@ -216,13 +221,13 @@ function handleTabKeydown(event) {
 async function loadAnnouncements() {
   let result = await supabase
     .from('team_announcements')
-    .select('id, title, body, category, status, created_by_name, published_by_name, published_at, created_at, updated_at, like_count, dislike_count')
+    .select('id, title, body, category, status, is_important, created_by_name, published_by_name, published_at, created_at, updated_at, like_count, dislike_count')
     .order('created_at', { ascending: false })
 
   if (result.error && isMissingAnnouncementReactionSchema(result.error)) {
     result = await supabase
       .from('team_announcements')
-      .select('id, title, body, category, status, created_by_name, published_by_name, published_at, created_at, updated_at')
+      .select('id, title, body, category, status, is_important, created_by_name, published_by_name, published_at, created_at, updated_at')
       .order('created_at', { ascending: false })
   }
 
@@ -665,6 +670,10 @@ function setTodoFormStatus(message, type = '') {
   elements.todoFormStatus.className = `form-status${type ? ` ${type}` : ''}`
 }
 
+function countImportantAnnouncements(excludeId = null) {
+  return eligibleImportantAnnouncementCount(state.announcements, excludeId)
+}
+
 function profileLabel(profile) {
   const name = profile.full_name || profile.email || 'Unnamed user'
   return profile.employee_id ? `${name} · ${profile.employee_id}` : name
@@ -690,6 +699,15 @@ async function handleSubmit(event) {
     return
   }
 
+  if (
+    action === 'published' &&
+    elements.important.checked &&
+    countImportantAnnouncements(state.editingId) >= MAX_IMPORTANT_ANNOUNCEMENTS
+  ) {
+    setFormStatus(MAX_IMPORTANT_MESSAGE, 'error')
+    return
+  }
+
   elements.body.value = body
 
   const publisherName = state.access.full_name || state.access.email || 'Administrator'
@@ -698,6 +716,7 @@ async function handleSubmit(event) {
     title,
     body,
     category,
+    is_important: elements.important.checked,
     status: action,
     published_by: action === 'published' ? state.access.user_id : null,
     published_by_name: action === 'published' ? publisherName : null,
@@ -772,6 +791,7 @@ function beginEditing(item) {
   state.editingId = item.id
   elements.title.value = item.title
   elements.category.value = item.category
+  elements.important.checked = item.is_important === true
   renderAnnouncementHtml(elements.messageEditor, item.body)
   elements.body.value = sanitizeAnnouncementHtml(item.body)
   elements.editorTitle.textContent = 'Edit announcement'
@@ -788,6 +808,7 @@ function beginEditing(item) {
 function resetEditor() {
   state.editingId = null
   elements.form.reset()
+  elements.important.checked = false
   elements.messageEditor.replaceChildren()
   elements.body.value = ''
   elements.editorTitle.textContent = 'Create announcement'
@@ -876,7 +897,16 @@ function createAnnouncementItem(item) {
   const status = document.createElement('span')
   status.className = `status-badge ${item.status}`
   status.textContent = item.status === 'published' ? 'Published' : 'Draft'
-  heading.append(title, status)
+  const badges = document.createElement('div')
+  badges.className = 'announcement-item-badges'
+  badges.append(status)
+  if (item.is_important === true) {
+    const important = document.createElement('span')
+    important.className = 'important-badge'
+    important.textContent = 'Important'
+    badges.append(important)
+  }
+  heading.append(title, badges)
 
   const body = document.createElement('div')
   body.className = 'announcement-rich-preview'

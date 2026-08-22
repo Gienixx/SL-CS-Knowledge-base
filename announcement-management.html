@@ -7,7 +7,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Space+Grotesk:wght@500;600;700&display=swap" rel="stylesheet" />
-  <link rel="stylesheet" href="./styles/announcement-management.css?v=6" />
+  <link rel="stylesheet" href="./styles/announcement-management.css?v=7" />
   <link rel="stylesheet" href="./styles/site-theme.css?v=1" />
   <script src="./scripts/site-theme.js?v=1"></script>
 </head>
@@ -54,6 +54,12 @@
               <option>Training</option>
               <option>Recognition</option>
             </select>
+
+            <label class="announcement-important-toggle" for="announcementImportant">
+              <input id="announcementImportant" name="is_important" type="checkbox" />
+              <span>Important</span>
+              <small>Show this announcement once after login.</small>
+            </label>
 
             <label id="announcementBodyLabel" for="announcementBody">Message</label>
             <div class="announcement-editor-field">
@@ -204,6 +210,6 @@
     </form>
   </dialog>
 
-  <script type="module" src="./scripts/announcement-management.js?v=7"></script>
+  <script type="module" src="./scripts/announcement-management.js?v=8"></script>
 </body>
 </html>
