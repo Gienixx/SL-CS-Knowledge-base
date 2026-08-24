@@ -57,6 +57,9 @@ body:has(.team-attendance-page){background:#eef1f5}
 .team-attendance-record .wf-badge.needs-review{background:#fbe9e2;color:#b3401d}
 .team-attendance-record .wf-badge.overtime{background:#f7ecd8;color:#95611a}
 .team-attendance-record .wf-badge.completed{background:#e1f1ea;color:#12735a}
+.team-attendance-record .wf-badge.approved{background:#dcefe6;color:#12735a}
+.team-attendance-lock-icon{display:inline-grid;place-items:center;width:28px;height:28px;border:1px solid #cbd5e1;border-radius:999px;background:#f1f5f9;color:#50627c}
+.team-attendance-lock-icon svg{width:15px;height:15px;fill:none;stroke:currentColor;stroke-linecap:round;stroke-linejoin:round;stroke-width:2}
 .team-attendance-record-actions{position:relative}
 .team-attendance-record-actions summary{display:grid;place-items:center;width:30px;height:28px;border-radius:8px;color:var(--ta-muted);cursor:pointer;list-style:none;font-weight:800}
 .team-attendance-record-actions summary::-webkit-details-marker{display:none}

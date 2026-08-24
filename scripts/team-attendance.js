@@ -10,6 +10,7 @@ import {
   formatAttendanceTimestamp,
   hasBilledOverride
 } from '../shared/attendance-billed-timestamps.js?v=1'
+import { resolveAttendanceEntryPresentation } from '../shared/attendance-entry-presentation.js?v=1'
 
 const ATTENDANCE_STATUS_LABELS = Object.freeze({
   present: 'Present',
@@ -864,6 +865,22 @@ function addBadge(parent, label, modifier) {
   parent.appendChild(badge)
 }
 
+function addLockedIcon(parent) {
+  const icon = document.createElement('span')
+  icon.className = 'team-attendance-lock-icon'
+  icon.setAttribute('role', 'img')
+  icon.setAttribute('aria-label', 'Locked')
+  icon.title = 'Locked'
+
+  const svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg')
+  svg.setAttribute('viewBox', '0 0 24 24')
+  svg.setAttribute('aria-hidden', 'true')
+  svg.setAttribute('focusable', 'false')
+  svg.innerHTML = '<rect x="5" y="10" width="14" height="10" rx="2"></rect><path d="M8 10V7a4 4 0 0 1 8 0v3"></path>'
+  icon.appendChild(svg)
+  parent.appendChild(icon)
+}
+
 function presentationStatus(record) {
   if (record.is_over_duration) return { label: 'Over 20h · Review', modifier: 'needs-review' }
   if (record.is_open) return { label: 'In progress', modifier: 'in-progress' }
@@ -941,9 +958,15 @@ function createAttendanceCard(record) {
   person.append(avatar, identity)
   const badges = document.createElement('div')
   badges.className = 'team-attendance-badges'
-  const displayStatus = presentationStatus(record)
-  card.classList.add(`status-${displayStatus.modifier}`)
-  addBadge(badges, displayStatus.label, displayStatus.modifier)
+  const normalStatus = presentationStatus(record)
+  const displayStatus = resolveAttendanceEntryPresentation({
+    reviewStatus: record.review_status,
+    payrollApprovedAt: record.payroll_approved_at,
+    normalTag: normalStatus
+  })
+  card.classList.add(`status-${normalStatus.modifier}`)
+  addBadge(badges, displayStatus.tag.label, displayStatus.tag.modifier)
+  if (displayStatus.isLocked) addLockedIcon(badges)
   const actionMenu = document.createElement('details')
   actionMenu.className = 'team-attendance-record-actions'
   const actionSummary = document.createElement('summary')

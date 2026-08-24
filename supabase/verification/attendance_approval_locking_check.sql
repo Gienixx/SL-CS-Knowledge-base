@@ -6,6 +6,14 @@ select to_regprocedure('public.workforce_review_attendance(uuid,text,text)') is 
 
 select exists (
   select 1
+  from information_schema.columns
+  where table_schema = 'public'
+    and table_name = 'attendance'
+    and column_name = 'payroll_approved_at'
+) as payroll_approval_marker_exists;
+
+select exists (
+  select 1
   from pg_trigger
   where tgrelid = 'public.attendance'::regclass
     and tgname = 'zz_attendance_locked_immutable'
@@ -30,6 +38,18 @@ where review_status in ('approved', 'locked')
     or post_shift_overtime_minutes is null
   );
 
+-- Current approved rows must carry the independent marker. A locked row with
+-- no marker is intentionally reviewable historical data, not proof of approval.
+select id, user_id, work_date, review_status
+from public.attendance
+where review_status = 'approved'
+  and payroll_approved_at is null;
+
+select id, user_id, work_date, review_status
+from public.attendance
+where review_status = 'locked'
+  and payroll_approved_at is null;
+
 -- Every finalized row must carry reviewer metadata.
 select id, user_id, work_date, review_status
 from public.attendance
@@ -39,5 +59,6 @@ where review_status in ('approved', 'locked')
 select action, entity_type, after_data, created_at
 from public.workforce_audit_logs
 where action = 'attendance_approval_locking_deployed'
+   or action = 'attendance_payroll_approval_state_deployed'
 order by created_at desc
 limit 1;
