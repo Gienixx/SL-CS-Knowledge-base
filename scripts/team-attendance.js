@@ -12,6 +12,10 @@ import {
 } from '../shared/attendance-billed-timestamps.js?v=1'
 import { resolveAttendanceEntryPresentation } from '../shared/attendance-entry-presentation.js?v=1'
 import { matchesTeamAttendanceQuickFilter } from '../shared/team-attendance-filters.js?v=1'
+import {
+  linkedScheduleDisplay,
+  mergeLinkedScheduleDetails
+} from '../shared/team-attendance-schedule-display.js?v=1'
 
 const ATTENDANCE_STATUS_LABELS = Object.freeze({
   present: 'Present',
@@ -446,10 +450,19 @@ function prepaidStatusLabel(value, appliedMinutes = 0) {
 }
 
 function formatShift(row) {
-  if (!row.schedule_id) return 'Unscheduled'
-  if (!row.scheduled_start || !row.scheduled_end) return 'Shift unavailable'
+  const display = linkedScheduleDisplay(row)
+  if (display.kind === 'unscheduled' || display.kind === 'unavailable') return display.label
+
+  const scheduleStart = row.schedule_start || row.scheduled_start
+  const scheduleEnd = row.schedule_end || row.scheduled_end
+  if (!scheduleStart || !scheduleEnd) {
+    const date = row.schedule_work_date || row.work_date
+    const sequence = `Sequence ${row.schedule_sequence || row.shift_sequence || 1}`
+    return [display.label, date, sequence].filter(Boolean).join(' · ')
+  }
+
   const timezone = row.schedule_timezone || row.employee_timezone || access?.timezone
-  return `${formatDateTime(row.scheduled_start, timezone)} – ${formatDateTime(row.scheduled_end, timezone)}`
+  return `${formatDateTime(scheduleStart, timezone)} – ${formatDateTime(scheduleEnd, timezone)}`
 }
 
 function statusBadgeClass(status) {
@@ -1414,17 +1427,34 @@ async function loadAttendance() {
   if (prepaidResult.error) throw prepaidResult.error
   if (voidedResult.error) throw voidedResult.error
 
-  voidedRows = (voidedResult.data || []).map(row => ({
+  const rawVoidedRows = (voidedResult.data || []).map(row => ({
     ...row,
     is_voided: true,
     employee_timezone: row.employee_timezone || WORKFORCE_TIMEZONE
   }))
 
+  const rawAttendanceRows = attendanceResult.data || []
+  const linkedScheduleIds = [...new Set(
+    [...rawAttendanceRows, ...rawVoidedRows]
+      .filter(row => row.schedule_id && (!row.scheduled_start || !row.scheduled_end))
+      .map(row => row.schedule_id)
+  )]
+  let linkedScheduleDetails = []
+  if (linkedScheduleIds.length) {
+    const { data, error } = await supabase.rpc('workforce_get_attendance_schedule_display', {
+      p_schedule_ids: linkedScheduleIds
+    })
+    if (!error) linkedScheduleDetails = data || []
+    else console.warn('Linked schedule display metadata could not be loaded.', error)
+  }
+
+  voidedRows = mergeLinkedScheduleDetails(rawVoidedRows, linkedScheduleDetails)
+
   const prepaidByAttendance = new Map(
     (prepaidResult.data || []).map(row => [row.attendance_id, row])
   )
   const classificationNow = new Date()
-  attendanceRows = (attendanceResult.data || []).map(row => (
+  attendanceRows = rawAttendanceRows.map(row => (
     redactAttendanceCorrectionForViewer(access, {
       prepaid_clock_in: null,
       prepaid_clock_out: null,
@@ -1440,6 +1470,7 @@ async function loadAttendance() {
     ...row,
     ...classifyOpenSession(row, classificationNow)
   }))
+  attendanceRows = mergeLinkedScheduleDetails(attendanceRows, linkedScheduleDetails)
   if (access?.is_admin !== true) {
     attendanceRows = attendanceRows.filter(row => row.clock_in && !row.clock_out)
   }
