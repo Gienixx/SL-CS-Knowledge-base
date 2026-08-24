@@ -12,6 +12,7 @@ import {
   formatAttendanceTimestamp,
   hasBilledOverride
 } from '../shared/attendance-billed-timestamps.js?v=1'
+import { calculateAttendanceSnapshotMetrics } from '../shared/attendance-snapshot-metrics.js?v=1'
 
 const RELEASED_SCHEDULE_STATUSES = Object.freeze(['published', 'changed'])
 const SCHEDULE_PLACEHOLDER = '__SCHEDULE_PLACEHOLDER__'
@@ -1431,12 +1432,11 @@ function renderHistory() {
     setHistoryMessage(`${rangeLabel} · Showing ${pageStart + 1}–${visibleEnd} of ${rows.length} record${rows.length === 1 ? '' : 's'}.`)
   }
 
-  const presentRows = historyRows.filter(record => record.attendance_status === 'present')
-  const workedTotal = historyRows.reduce((sum, record) => sum + workedMinutes(record), 0)
-  document.getElementById('attendanceMonthCount').textContent = historyRows.length
-  document.getElementById('attendancePresentCount').textContent = presentRows.length
-  document.getElementById('attendanceLateCount').textContent = historyRows.filter(record => record.is_late).length
-  document.getElementById('attendanceWorkedTotal').textContent = formatMinutes(workedTotal)
+  const metrics = calculateAttendanceSnapshotMetrics(historyRows)
+  document.getElementById('attendanceMonthCount').textContent = metrics.records
+  document.getElementById('attendancePresentCount').textContent = metrics.present
+  document.getElementById('attendanceWorkedTotal').textContent = formatMinutes(metrics.totalWorkedMinutes)
+  document.getElementById('attendanceBilledTotal').textContent = formatMinutes(metrics.totalBilledMinutes)
 }
 
 async function loadToday() {

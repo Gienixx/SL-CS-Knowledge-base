@@ -11,6 +11,7 @@ import {
   hasBilledOverride
 } from '../shared/attendance-billed-timestamps.js?v=1'
 import { resolveAttendanceEntryPresentation } from '../shared/attendance-entry-presentation.js?v=1'
+import { matchesTeamAttendanceQuickFilter } from '../shared/team-attendance-filters.js?v=1'
 
 const ATTENDANCE_STATUS_LABELS = Object.freeze({
   present: 'Present',
@@ -80,6 +81,14 @@ function errorMessage(error) {
     return 'The correction could not be applied because the recalculated attendance totals were inconsistent. Review the billed timestamps and assigned shift, then try again.'
   }
   return message || 'An unexpected error occurred.'
+}
+
+function reviewActionErrorMessage(error, action) {
+  const message = error?.message || ''
+  if (/attendance_structured_totals_check/i.test(message) && action === 'Approve') {
+    return 'Approval could not be completed because the attendance totals do not match canonical billed time. Review the billed timestamps and assigned shift, then try again.'
+  }
+  return errorMessage(error)
 }
 
 function setMessage(element, text, type = '') {
@@ -586,6 +595,7 @@ async function reviewAttendance(row, reviewStatus, button) {
   busy = true
   button.disabled = true
   button.textContent = isLock ? 'Locking...' : 'Approving...'
+  setMessage(document.getElementById('teamAttendanceCorrectionMessage'), '')
   setMessage(elements.tableMessage, `${action} attendance...`)
 
   try {
@@ -605,7 +615,7 @@ async function reviewAttendance(row, reviewStatus, button) {
     elements.search.setSelectionRange(searchCaret, searchCaret)
     setMessage(elements.tableMessage, `Attendance ${reviewStatus} successfully.`, 'success')
   } catch (error) {
-    setMessage(elements.tableMessage, errorMessage(error), 'error')
+    setMessage(elements.tableMessage, reviewActionErrorMessage(error, action), 'error')
   } finally {
     busy = false
     button.disabled = false
@@ -782,10 +792,7 @@ function filteredRows() {
     if (row.review_status === 'voided') return false
     if (search && ![row.employee_name, row.employee_id, row.employee_email]
       .some(value => String(value || '').toLowerCase().includes(search))) return false
-    if (attendanceQuickFilter === 'open' && !row.is_open) return false
-    if (attendanceQuickFilter === 'missing' && !row.is_missing_clock_out) return false
-    if (attendanceQuickFilter === 'overtime' && Number(row.total_overtime_minutes) <= 0) return false
-    if (attendanceQuickFilter === 'review' && row.review_status !== 'pending' && !row.is_missing_clock_out && !row.is_over_duration) return false
+    if (!matchesTeamAttendanceQuickFilter(row, attendanceQuickFilter)) return false
     if (employeeId && row.employee_user_id !== employeeId) return false
     if (teamId && row.team_id !== teamId) return false
     if (status && row.attendance_status !== status) return false
@@ -1852,6 +1859,7 @@ async function handleCorrectionSubmit(messageElement) {
   }
 
   setMessage(messageElement, 'Submitting correction…')
+  setMessage(elements.tableMessage, '')
 
   const scheduleOnlyChange = scheduleChanged && !billedTimeChanged
   const rpcName = scheduleOnlyChange
@@ -1884,6 +1892,7 @@ async function handleCorrectionSubmit(messageElement) {
   }
 
   setMessage(messageElement, 'Correction saved successfully.', 'success')
+  setMessage(elements.tableMessage, '')
   await refreshAttendance()
   window.setTimeout(closeCorrectionModal, 700)
 }

@@ -46,8 +46,8 @@ test('attendance redesign preserves functional hooks and accessible theme contro
     'attendanceHistoryPageStatus',
     'attendanceMonthCount',
     'attendancePresentCount',
-    'attendanceLateCount',
-    'attendanceWorkedTotal'
+    'attendanceWorkedTotal',
+    'attendanceBilledTotal'
   ]) {
     assert.match(html, new RegExp(`id="${id}"`))
   }

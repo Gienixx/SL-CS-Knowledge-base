@@ -1,7 +1,10 @@
 import assert from 'node:assert/strict'
 import { readFile } from 'node:fs/promises'
 import test from 'node:test'
-import { resolveAttendanceEntryPresentation } from '../shared/attendance-entry-presentation.js'
+import {
+  isEffectivelyApproved,
+  resolveAttendanceEntryPresentation
+} from '../shared/attendance-entry-presentation.js'
 
 const read = path => readFile(new URL(`../${path}`, import.meta.url), 'utf8')
 
@@ -20,6 +23,12 @@ test('approved attendance replaces its normal tag with Approved', () => {
     resolveAttendanceEntryPresentation({ reviewStatus: 'approved', payrollApprovedAt: '2026-08-24T01:00:00Z', normalTag: overtime }),
     { tag: { label: 'Approved', modifier: 'approved' }, isLocked: false }
   )
+})
+
+test('effective approval is shared by approved and locked rows with a marker', () => {
+  assert.equal(isEffectivelyApproved({ reviewStatus: 'approved', payrollApprovedAt: '2026-08-24T01:00:00Z' }), true)
+  assert.equal(isEffectivelyApproved({ reviewStatus: 'locked', payrollApprovedAt: '2026-08-24T01:00:00Z' }), true)
+  assert.equal(isEffectivelyApproved({ reviewStatus: 'locked', payrollApprovedAt: null }), false)
 })
 
 test('locked-only attendance keeps its normal tag and adds the lock state', () => {
