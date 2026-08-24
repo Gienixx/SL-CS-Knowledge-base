@@ -45,10 +45,28 @@ from public.attendance
 where review_status = 'approved'
   and payroll_approved_at is null;
 
+-- Historical locked rows may legitimately remain physically null. A physical
+-- marker on a locked row must still have deterministic approval evidence; the
+-- immutable audit-backed admin read path handles pre-feature locked history.
 select id, user_id, work_date, review_status
 from public.attendance
 where review_status = 'locked'
-  and payroll_approved_at is null;
+  and payroll_approved_at is not null
+  and not exists (
+    select 1
+    from public.workforce_audit_logs approval_log
+    where approval_log.entity_type = 'attendance'
+      and approval_log.action = 'attendance_approved'
+      and approval_log.entity_id = public.attendance.id
+      and approval_log.after_data ->> 'review_status' = 'approved'
+      and nullif(approval_log.after_data ->> 'reviewed_at', '') is not null
+  );
+
+-- No non-finalized row may retain a current physical approval marker.
+select id, user_id, work_date, review_status
+from public.attendance
+where review_status not in ('approved', 'locked')
+  and payroll_approved_at is not null;
 
 -- Every finalized row must carry reviewer metadata.
 select id, user_id, work_date, review_status

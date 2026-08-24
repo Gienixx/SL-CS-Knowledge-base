@@ -48,15 +48,29 @@ test('historical backfill requires current approval metadata or explicit approva
   assert.match(migration, /log\.action = 'attendance_approved'/)
   assert.match(migration, /log\.after_data ->> 'review_status' = 'approved'/)
   assert.match(migration, /attendance_row\.review_status = 'approved'/)
-  assert.match(migration, /attendance_row\.review_status = 'locked'/)
-  assert.match(migration, /locked row alone is not proof/i)
-  assert.doesNotMatch(migration, /where attendance_row\.review_status = 'locked'[\s\S]{0,120}set payroll_approved_at = attendance_row\.reviewed_at/)
+  assert.match(migration, /Historical locked rows are intentionally never updated/i)
+  assert.match(migration, /historical locked rows may remain null/i)
+  assert.match(migration, /attendance_row\.review_status = 'approved';/)
+  assert.doesNotMatch(migration, /attendance_row\.review_status = 'approved'[\s\S]{0,80}or\s*\n?\s*attendance_row\.review_status = 'locked'/)
+  assert.doesNotMatch(migration, /set payroll_approved_at[\s\S]{0,220}attendance_row\.review_status = 'locked'/)
 })
 
 test('Team Attendance listing exposes approval state only to administrators', async () => {
   const migration = await read(migrationPath)
 
   assert.match(migration, /payroll_approved_at timestamptz, corrected_by uuid/)
-  assert.match(migration, /case when v_is_admin then attendance_row\.payroll_approved_at else null end/)
+  assert.match(migration, /coalesce\([\s\S]*attendance_row\.payroll_approved_at[\s\S]*workforce_audit_logs/)
+  assert.match(migration, /log\.entity_id = attendance_row\.id/)
+  assert.match(migration, /case when v_is_admin then[\s\S]*else null end,/)
   assert.match(migration, /drop function public\.workforce_list_team_attendance\(date,date\)/)
+})
+
+test('historical locked approval is read-only audit-derived and cannot be inferred from lock state', async () => {
+  const migration = await read(migrationPath)
+
+  assert.match(migration, /when attendance_row\.review_status = 'locked' then/)
+  assert.match(migration, /log\.action = 'attendance_approved'/)
+  assert.match(migration, /max\(nullif\(log\.after_data ->> 'reviewed_at'/)
+  assert.match(migration, /log\.after_data ->> 'review_status' = 'approved'/)
+  assert.match(migration, /historical_locked_approval_derived_in_admin_rpc/)
 })

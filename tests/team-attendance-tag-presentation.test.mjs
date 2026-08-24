@@ -43,6 +43,25 @@ test('approved attendance keeps Approved when subsequently locked', () => {
   )
 })
 
+test('historical locked attendance with an audit-derived marker displays Approved without mutating the row', () => {
+  const record = {
+    review_status: 'locked',
+    payroll_approved_at: null,
+    total_overtime_minutes: 45
+  }
+  const before = structuredClone(record)
+
+  assert.deepEqual(
+    resolveAttendanceEntryPresentation({
+      reviewStatus: record.review_status,
+      payrollApprovedAt: '2026-08-17T09:00:00Z',
+      normalTag: overtime
+    }),
+    { tag: { label: 'Approved', modifier: 'approved' }, isLocked: true }
+  )
+  assert.deepEqual(record, before)
+})
+
 test('reopened or corrected attendance loses current approval presentation', () => {
   assert.deepEqual(
     resolveAttendanceEntryPresentation({ reviewStatus: 'corrected', payrollApprovedAt: null, normalTag: overtime }),

@@ -7,16 +7,16 @@ alter table public.attendance
   add column if not exists payroll_approved_at timestamptz;
 
 comment on column public.attendance.payroll_approved_at is
-  'Timestamp when this attendance entry was last approved for payroll. It survives locking and is cleared when an attendance correction reopens review.';
+  'Timestamp when this attendance entry was last approved for payroll. It survives locking and is cleared when an attendance correction reopens review. Historical locked rows may remain null when approval can only be proven from immutable audit history.';
 
 create index if not exists attendance_payroll_approved_at_idx
   on public.attendance (payroll_approved_at, work_date desc)
   where payroll_approved_at is not null;
 
--- Backfill only deterministic approval evidence:
--- * an active approved row with its canonical reviewed_at, or
--- * an explicit attendance_approved audit event with an approval timestamp.
--- A locked row alone is not proof and is intentionally left null.
+-- Backfill only rows that the locked-attendance protection legally permits us
+-- to update. Historical locked rows are intentionally never updated: when
+-- their approval is provable from immutable audit history, the authorized
+-- Team Attendance listing derives the effective marker at read time.
 with approval_events as (
   select
     log.entity_id as attendance_id,
@@ -29,18 +29,11 @@ with approval_events as (
   group by log.entity_id
 )
 update public.attendance attendance_row
-set payroll_approved_at = case
-  when attendance_row.review_status = 'approved'
-    then coalesce(attendance_row.reviewed_at, approval_events.approved_at)
-  else approval_events.approved_at
-end
+set payroll_approved_at = coalesce(attendance_row.reviewed_at, approval_events.approved_at)
 from approval_events
 where attendance_row.id = approval_events.attendance_id
   and attendance_row.payroll_approved_at is null
-  and (
-    attendance_row.review_status = 'approved'
-    or attendance_row.review_status = 'locked'
-  );
+  and attendance_row.review_status = 'approved';
 
 -- Current approved rows are themselves canonical approval evidence, even when
 -- the explicit approval audit event predates the retained audit window.
@@ -243,6 +236,24 @@ do $$
 declare
   v_definition text;
   v_updated text;
+  v_effective_marker_expression text := $effective_marker$
+    case when v_is_admin then
+      coalesce(
+        attendance_row.payroll_approved_at,
+        case
+          when attendance_row.review_status = 'locked' then (
+            select max(nullif(log.after_data ->> 'reviewed_at', '')::timestamptz)
+            from public.workforce_audit_logs log
+            where log.entity_type = 'attendance'
+              and log.action = 'attendance_approved'
+              and log.entity_id = attendance_row.id
+              and log.after_data ->> 'review_status' = 'approved'
+              and nullif(log.after_data ->> 'reviewed_at', '') is not null
+          )
+        end
+      )
+    else null end,
+  $effective_marker$;
 begin
   v_definition := replace(
     pg_get_functiondef('public.workforce_list_team_attendance(date,date)'::regprocedure),
@@ -256,13 +267,15 @@ begin
   v_updated := replace(
     v_updated,
     'case when v_is_admin then attendance_row.review_status else ''pending'' end,',
-    'case when v_is_admin then attendance_row.review_status else ''pending'' end,
-    case when v_is_admin then attendance_row.payroll_approved_at else null end,'
+    'case when v_is_admin then attendance_row.review_status else ''pending'' end,'
+      || v_effective_marker_expression
   );
   if v_updated = v_definition
      or position('payroll_approved_at timestamptz' in v_updated) = 0
-     or position('attendance_row.payroll_approved_at' in v_updated) = 0 then
-    raise exception 'workforce_list_team_attendance live definition did not expose the additive approval marker';
+     or position('attendance_row.payroll_approved_at' in v_updated) = 0
+     or position('workforce_audit_logs' in v_updated) = 0
+     or position('log.entity_id = attendance_row.id' in v_updated) = 0 then
+    raise exception 'workforce_list_team_attendance live definition did not expose the protected effective approval marker';
   end if;
   drop function public.workforce_list_team_attendance(date,date);
   execute v_updated;
@@ -281,6 +294,7 @@ insert into public.workforce_audit_logs (
     'column', 'payroll_approved_at',
     'locked_review_status_unchanged', true,
     'historical_backfill_requires_proof', true,
+    'historical_locked_approval_derived_in_admin_rpc', true,
     'locked_attendance_immutable', true
   ),
   'Added independent payroll approval state without changing attendance review or lock semantics.'
