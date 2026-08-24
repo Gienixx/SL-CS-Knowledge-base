@@ -7,11 +7,15 @@ const LEAVE_LABELS = Object.freeze({
   incentive_vl: 'Incentive VL'
 })
 
-export function mergeLinkedScheduleDetails(rows, details) {
+export function mergeLinkedScheduleDetails(rows, details, lookedUpScheduleIds = null) {
   const byId = new Map((Array.isArray(details) ? details : []).map(schedule => [schedule.schedule_id, schedule]))
+  const lookedUpIds = Array.isArray(lookedUpScheduleIds)
+    ? new Set(lookedUpScheduleIds)
+    : null
 
   return (Array.isArray(rows) ? rows : []).map(row => {
     if (!row?.schedule_id) return row
+    if (lookedUpIds && !lookedUpIds.has(row.schedule_id)) return row
 
     const schedule = byId.get(row.schedule_id)
     if (!schedule) return { ...row, linked_schedule_exists: false }

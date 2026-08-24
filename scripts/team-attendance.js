@@ -1448,7 +1448,7 @@ async function loadAttendance() {
     else console.warn('Linked schedule display metadata could not be loaded.', error)
   }
 
-  voidedRows = mergeLinkedScheduleDetails(rawVoidedRows, linkedScheduleDetails)
+  voidedRows = mergeLinkedScheduleDetails(rawVoidedRows, linkedScheduleDetails, linkedScheduleIds)
 
   const prepaidByAttendance = new Map(
     (prepaidResult.data || []).map(row => [row.attendance_id, row])
@@ -1470,7 +1470,7 @@ async function loadAttendance() {
     ...row,
     ...classifyOpenSession(row, classificationNow)
   }))
-  attendanceRows = mergeLinkedScheduleDetails(attendanceRows, linkedScheduleDetails)
+  attendanceRows = mergeLinkedScheduleDetails(attendanceRows, linkedScheduleDetails, linkedScheduleIds)
   if (access?.is_admin !== true) {
     attendanceRows = attendanceRows.filter(row => row.clock_in && !row.clock_out)
   }

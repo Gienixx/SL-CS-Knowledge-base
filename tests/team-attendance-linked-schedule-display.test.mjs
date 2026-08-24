@@ -33,7 +33,7 @@ test('linked Open Schedule with null times has a displayable current schedule la
 
   assert.deepEqual(linkedScheduleDisplay(merged), { kind: 'open', label: 'Open Schedule' })
   assert.match(script, /workforce_get_attendance_schedule_display/)
-  assert.match(script, /mergeLinkedScheduleDetails\(attendanceRows, linkedScheduleDetails\)/)
+  assert.match(script, /mergeLinkedScheduleDetails\(attendanceRows, linkedScheduleDetails, linkedScheduleIds\)/)
 })
 
 test('current linked schedule display is independent of reassignment candidates', () => {
@@ -113,6 +113,29 @@ test('holiday, leave, and absence labels remain explicit for untimed linked sche
 test('deleted or nonexistent schedules remain safely unavailable', () => {
   const [merged] = mergeLinkedScheduleDetails([row()], [])
   assert.equal(linkedScheduleDisplay(merged).label, 'Shift unavailable')
+})
+
+test('rows not included in the linked-schedule lookup are not falsely marked unavailable', () => {
+  const [timed, open] = mergeLinkedScheduleDetails([
+    row({ schedule_id: 'timed-schedule', scheduled_start: '2026-08-23T09:00:00Z', scheduled_end: '2026-08-23T17:00:00Z', is_open: true }),
+    row({ schedule_id: 'open-schedule' })
+  ], [{
+    schedule_id: 'open-schedule',
+    shift_date: '2026-08-23',
+    shift_sequence: 1,
+    shift_start: null,
+    shift_end: null,
+    is_rest_day: false,
+    is_holiday: false,
+    is_leave: false,
+    is_absent: false
+  }], ['open-schedule'])
+
+  assert.equal(timed.linked_schedule_exists, undefined)
+  assert.equal(timed.is_open, true)
+  assert.equal(timed.scheduled_start, '2026-08-23T09:00:00Z')
+  assert.equal(open.linked_schedule_exists, true)
+  assert.equal(linkedScheduleDisplay(open).label, 'Open Schedule')
 })
 
 test('timed schedule display remains unchanged', () => {
