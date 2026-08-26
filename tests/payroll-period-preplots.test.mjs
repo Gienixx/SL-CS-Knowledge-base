@@ -32,7 +32,7 @@ test('Step 5 supports controlled early payment with a documented override', asyn
   assert.match(migration, /'early_payment_override', v_override_reason is not null/)
   assert.match(page, /id="payrollEarlyPaymentReason"/)
   assert.match(page, /id="payrollPaymentTimingResult"/)
-  assert.match(script, /const STANDARD_EARLY_PAYMENT_DAYS = 3/)
+  assert.match(script, /const STANDARD_EARLY_PAYMENT_DAYS = 10/)
   assert.match(script, /p_early_payment_override_reason:/)
   assert.doesNotMatch(
     script,

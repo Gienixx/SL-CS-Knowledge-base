@@ -76,14 +76,14 @@
             class="payroll-control"
             type="text"
             maxlength="500"
-            placeholder="Required when paying more than 3 days early"
+            placeholder="Required when paying more than 10 days early"
           >
         </label>
         <button id="createPayrollPeriodButton" class="payroll-button payroll-button-primary" type="submit">Create draft period</button>
       </form>
 
       <div id="payrollPaymentTimingResult" class="payroll-overlap-result neutral" role="status" aria-live="polite">
-        Payment may be on the cutoff or up to 3 calendar days early.
+        Payment may be on the cutoff or up to 10 calendar days early.
       </div>
       <div id="payrollOverlapResult" class="payroll-overlap-result neutral" role="status" aria-live="polite">
         Select a start and end date to check for overlapping payroll periods.
@@ -104,6 +104,6 @@
     </section>
   </main>
 
-  <script type="module" src="./scripts/payroll-dashboard.js?v=2"></script>
+  <script type="module" src="./scripts/payroll-dashboard.js?v=3"></script>
 </body>
 </html>

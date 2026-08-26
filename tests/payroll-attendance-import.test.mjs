@@ -169,7 +169,7 @@ test('payroll period page imports and displays snapshot status', async () => {
     assert.match(page, new RegExp(`id="${id}"`))
   }
 
-  assert.match(page, /scripts\/payroll-period\.js\?v=15/)
+  assert.match(page, /scripts\/payroll-period\.js\?v=16/)
   assert.match(page, /styles\/payroll-periods\.css\?v=14/)
   assert.match(
     script,

@@ -82,7 +82,7 @@
         <div>
           <p class="payroll-eyebrow">Early-payment coverage</p>
           <h2 id="payrollPreplotTitle">Approve pre-plotted schedules</h2>
-          <p>Select eligible ordinary shifts after the payment date. Approval creates prepaid hours without creating attendance. Actual approved hours settle the oldest balance first; any remainder carries forward. Rest days and guaranteed special days never reduce prepaid balances.</p>
+          <p>Select eligible ordinary shifts within 10 calendar days before the payroll cutoff, through the cutoff date. Approval creates prepaid hours without creating attendance. Actual approved hours settle the oldest balance first; any remainder carries forward. Rest days and guaranteed special days never reduce prepaid balances.</p>
         </div>
         <div class="payroll-preplot-heading-actions">
           <button id="addPayrollPrepaidButton" class="payroll-button payroll-button-primary" type="button" hidden>
@@ -133,7 +133,7 @@
           Approve selected schedules
         </button>
       </div>
-      <p id="payrollPreplotStatus" class="payroll-import-status">No eligible post-payment schedules are loaded.</p>
+      <p id="payrollPreplotStatus" class="payroll-import-status">No eligible schedules in the 10-calendar-day prepaid window are loaded.</p>
     </section>
 
     <dialog id="payrollPrepaidDialog" class="payroll-dialog" aria-labelledby="payrollPrepaidDialogTitle">
@@ -142,7 +142,7 @@
           <div>
             <p class="payroll-eyebrow">Early-payment coverage</p>
             <h2 id="payrollPrepaidDialogTitle">Add prepaid schedule</h2>
-            <p>Create prepaid hours from a real employee schedule. This does not create or edit attendance.</p>
+            <p>Create prepaid hours from a real employee schedule dated within 10 calendar days before the payroll cutoff, through the cutoff date. This does not create or edit attendance.</p>
           </div>
           <button id="closePayrollPrepaidDialogButton" class="payroll-dialog-close" type="button" aria-label="Close">×</button>
         </header>
@@ -563,6 +563,6 @@
     </section>
   </main>
 
-  <script type="module" src="./scripts/payroll-period.js?v=15"></script>
+  <script type="module" src="./scripts/payroll-period.js?v=16"></script>
 </body>
 </html>

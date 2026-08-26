@@ -55,7 +55,7 @@ test('Payroll Period exposes six direct-click workflow panels and preserves exis
   assert.match(styles, /max-height:min\(58vh,520px\)/)
   assert.match(styles, /\.payroll-stepper \{[\s\S]*?overflow-x:auto/)
   assert.match(styles, /@media \(max-width:700px\)[\s\S]*?\.payroll-step-copy small/)
-  assert.match(page, /payroll-period\.js\?v=15/)
+  assert.match(page, /payroll-period\.js\?v=16/)
   assert.match(page, /id="payrollEmployeeSearch"/)
   assert.match(page, /id="payrollEmployeeSearchCount"/)
   assert.match(script, /payrollEmployeeSearch: ''/)

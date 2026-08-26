@@ -11,7 +11,7 @@ const PROCESS_PERMISSIONS = [
   'reopen_payroll'
 ]
 
-const STANDARD_EARLY_PAYMENT_DAYS = 3
+const STANDARD_EARLY_PAYMENT_DAYS = 10
 
 const state = {
   periods: [],
@@ -220,7 +220,7 @@ function validateDates({ includePayment = false } = {}) {
     requiresEarlyPaymentOverride() &&
     !elements.earlyPaymentReason.value.trim()
   ) {
-    return 'Add an override reason when payment is more than 3 days early.'
+    return `Add an override reason when payment is more than ${STANDARD_EARLY_PAYMENT_DAYS} days early.`
   }
   return ''
 }
@@ -237,7 +237,7 @@ function renderPaymentTiming() {
   if (!payment || !end) {
     elements.paymentTiming.className = 'payroll-overlap-result neutral'
     elements.paymentTiming.textContent =
-      'Payment may be on the cutoff or up to 3 calendar days early.'
+      `Payment may be on the cutoff or up to ${STANDARD_EARLY_PAYMENT_DAYS} calendar days early.`
     return
   }
 

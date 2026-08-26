@@ -11,6 +11,8 @@ const PROCESS_PERMISSIONS = [
   'reopen_payroll'
 ]
 
+const PREPAID_ELIGIBILITY_WINDOW_DAYS = 10
+
 const ATTENDANCE_EXCEPTION_CODES = new Set([
   'incomplete_attendance',
   'unapproved_attendance',
@@ -338,6 +340,10 @@ function addCalendarDays(value, days) {
   return date.toISOString().slice(0, 10)
 }
 
+function prepaidEligibilityStart(periodEnd) {
+  return addCalendarDays(periodEnd, -PREPAID_ELIGIBILITY_WINDOW_DAYS)
+}
+
 function timeInputValue(value, timezone = 'America/New_York') {
   if (!value) return ''
   try {
@@ -634,14 +640,14 @@ function renderPeriod() {
     ? 'Copy current payroll-ready attendance into immutable snapshots'
     : 'Attendance can only be imported into draft or reopened payroll periods'
   const hasPrepaidWindow =
-    Boolean(period.payment_date) &&
     Boolean(period.period_end) &&
-    period.payment_date < period.period_end
+    Boolean(period.period_start) &&
+    period.period_start <= period.period_end
   elements.addPrepaidButton.hidden = !state.canApprovePreplots
   elements.addPrepaidButton.disabled =
     state.loading || !importable || !hasPrepaidWindow
   elements.addPrepaidButton.title = !hasPrepaidWindow
-    ? 'This period is paid on the cutoff date and has no prepaid work dates'
+    ? 'This period has no valid prepaid work-date window'
     : importable
       ? 'Add prepaid hours from a real source schedule'
       : 'Prepaid schedules can only be added to draft or reopened periods'
@@ -955,9 +961,7 @@ function renderPreplots() {
     const cell = element(
       'td',
       'payroll-table-empty',
-      Number(state.period?.early_payment_days || 0) > 0
-        ? 'No schedules fall after the payment date in this payroll period.'
-        : 'Payment is on the cutoff date, so this period has no pre-plot candidates.'
+      'No schedules fall within the 10-calendar-day prepaid window in this payroll period.'
     )
     cell.colSpan = 7
     row.append(cell)
@@ -2098,10 +2102,7 @@ function renderPrepaidEntryControls() {
   }
 
   if (state.period) {
-    elements.prepaidDate.min = addCalendarDays(
-      state.period.payment_date,
-      1
-    )
+    elements.prepaidDate.min = prepaidEligibilityStart(state.period.period_end)
     elements.prepaidDate.max = state.period.period_end
   }
   updatePrepaidFormState()
@@ -2928,10 +2929,7 @@ async function approveSelectedPreplots() {
 function openPrepaidDialog() {
   elements.prepaidForm.reset()
   elements.prepaidTimezone.value = 'America/New_York'
-  elements.prepaidDate.min = addCalendarDays(
-    state.period.payment_date,
-    1
-  )
+  elements.prepaidDate.min = prepaidEligibilityStart(state.period.period_end)
   elements.prepaidDate.max = state.period.period_end
   state.prepaidCandidate = null
   setPrepaidMessage('')

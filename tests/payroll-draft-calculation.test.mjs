@@ -131,7 +131,7 @@ test('payroll period exposes permission-aware calculation totals and line detail
 
   assert.match(page, /id="calculatePayrollButton"/)
   assert.match(page, /id="payrollCalculationBody"/)
-  assert.match(page, /scripts\/payroll-period\.js\?v=15/)
+  assert.match(page, /scripts\/payroll-period\.js\?v=16/)
   assert.match(page, /styles\/payroll-periods\.css\?v=14/)
   assert.match(script, /supabase\.rpc\('payroll_calculate_draft'/)
   assert.match(script, /safePayrollRpc\('calculation', 'payroll_get_period_calculation'/)
