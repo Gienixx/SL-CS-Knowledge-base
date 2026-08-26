@@ -173,6 +173,29 @@ test('payroll period page exposes explicit batch approval without pay rates', as
   assert.doesNotMatch(page, /Hourly rate|Daily rate|Monthly rate|Salary/)
 })
 
+test('already prepaid schedules are identified and blocked in both prepaid views', async () => {
+  const script = await read('scripts/payroll-period.js')
+
+  assert.match(script, /approved: 'Already Prepaid'/)
+  assert.match(
+    script,
+    /const ALREADY_PREPAID_MESSAGE =\s+'Already prepaid — this schedule has already been approved for prepaid hours\.'/
+  )
+  assert.match(script, /function alreadyPrepaidMessage\(candidate, prepaidBalance = null\)/)
+  assert.match(script, /prepaidBalance\?\.work_date \|\| candidate\?\.work_date/)
+  assert.match(script, /prepaidBalance\?\.prepaid_minutes != null/)
+  assert.match(script, /alreadyPrepaidMessage\(candidate, prepaidBalance\)/)
+  assert.match(
+    script,
+    /candidate\?\.approval_status === 'approved'[\s\S]*?sourceMessage = alreadyPrepaidMessage[\s\S]*?sourceClass = 'ready'[\s\S]*?blocked = true/
+  )
+  assert.match(
+    script,
+    /checkbox\.disabled =\s*!state\.canApprovePreplots \|\| !periodCanApprove \|\| !candidate\.can_approve/
+  )
+  assert.match(script, /blocked \|\|/)
+})
+
 test('new privileged RPCs deny anonymous execution', async () => {
   const migration = await read(migrationPath)
 

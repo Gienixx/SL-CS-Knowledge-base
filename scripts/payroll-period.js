@@ -446,6 +446,28 @@ function selectedPrepaidCandidates() {
   )
 }
 
+const ALREADY_PREPAID_MESSAGE =
+  'Already prepaid — this schedule has already been approved for prepaid hours.'
+
+function prepaidBalanceForSchedule(scheduleId) {
+  if (!scheduleId) return null
+  return state.prepaidBalances.find(balance => balance.schedule_id === scheduleId) || null
+}
+
+function alreadyPrepaidMessage(candidate, prepaidBalance = null) {
+  const details = []
+  const workDate = prepaidBalance?.work_date || candidate?.work_date
+  if (workDate) details.push(`Work date: ${formatDate(workDate)}`)
+  if (prepaidBalance?.prepaid_minutes != null) {
+    details.push(
+      `Prepaid: ${prepaidBalance.prepaid_minutes} minutes (${formatHours(prepaidBalance.prepaid_minutes)} hours)`
+    )
+  }
+  return details.length
+    ? `${ALREADY_PREPAID_MESSAGE} ${details.join(' · ')}.`
+    : ALREADY_PREPAID_MESSAGE
+}
+
 function prepaidValuesDiffer(candidate) {
   if (!candidate) return false
   const timezone = candidate.timezone || 'America/New_York'
@@ -539,8 +561,10 @@ function updatePrepaidFormState({ loadCandidateTimes = false } = {}) {
     sourceClass = 'blocked'
     blocked = true
   } else if (candidate?.approval_status === 'approved') {
-    sourceMessage =
-      'This exact schedule version is already approved and preserved as prepaid hours.'
+    sourceMessage = alreadyPrepaidMessage(
+      candidate,
+      prepaidBalanceForSchedule(candidate.schedule_id)
+    )
     sourceClass = 'ready'
     blocked = true
   } else if (
@@ -902,7 +926,7 @@ function renderMetrics() {
 
 function preplotStatusLabel(candidate) {
   const labels = {
-    approved: 'Approved',
+    approved: 'Already Prepaid',
     attendance_exists: 'Attendance available',
     rest_day: 'Rest day',
     guaranteed_special_day: 'Guaranteed special day',
@@ -1032,17 +1056,17 @@ function renderPreplots() {
 
     const statusCell = document.createElement('td')
     const prepaidBalance = prepaidBySchedule.get(candidate.schedule_id)
+    const statusMessage =
+      candidate.approval_status === 'approved'
+        ? alreadyPrepaidMessage(candidate, prepaidBalance)
+        : candidate.approval_message || ''
     statusCell.append(
       element(
         'span',
-        `payroll-preplot-status ${candidate.approval_status}`,
+        `payroll-preplot-status ${candidate.approval_status}${candidate.approval_status === 'approved' ? ' already_prepaid' : ''}`,
         preplotStatusLabel(candidate)
       ),
-      element(
-        'small',
-        'payroll-cell-note',
-        candidate.approval_message || ''
-      )
+      element('small', 'payroll-cell-note', statusMessage)
     )
     if (candidate.approved_at) {
       statusCell.append(
