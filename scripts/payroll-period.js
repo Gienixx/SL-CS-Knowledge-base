@@ -72,7 +72,9 @@ const state = {
   selectedAdjustment: null,
   approvingPreplots: false,
   savingPrepaid: false,
-  prepaidCandidate: null
+  prepaidCandidate: null,
+  prepaidMode: 'add',
+  prepaidEditBalance: null
   ,rateOverrides: new Map(),
   activeStep: 'readiness'
 }
@@ -98,6 +100,10 @@ const elements = {
   preplotStatus: document.getElementById('payrollPreplotStatus'),
   addPrepaidButton: document.getElementById('addPayrollPrepaidButton'),
   prepaidDialog: document.getElementById('payrollPrepaidDialog'),
+  prepaidDialogTitle: document.getElementById('payrollPrepaidDialogTitle'),
+  prepaidDialogDescription: document.getElementById(
+    'payrollPrepaidDialogDescription'
+  ),
   prepaidForm: document.getElementById('payrollPrepaidForm'),
   prepaidEmployee: document.getElementById('payrollPrepaidEmployee'),
   prepaidDate: document.getElementById('payrollPrepaidDate'),
@@ -120,6 +126,8 @@ const elements = {
   prepaidReason: document.getElementById(
     'payrollPrepaidApprovalReason'
   ),
+  prepaidReasonLabel: document.getElementById('payrollPrepaidReasonLabel'),
+  prepaidHistory: document.getElementById('payrollPrepaidHistory'),
   prepaidMessage: document.getElementById('payrollPrepaidMessage'),
   savePrepaidButton: document.getElementById(
     'savePayrollPrepaidButton'
@@ -451,7 +459,11 @@ const ALREADY_PREPAID_MESSAGE =
 
 function prepaidBalanceForSchedule(scheduleId) {
   if (!scheduleId) return null
-  return state.prepaidBalances.find(balance => balance.schedule_id === scheduleId) || null
+  return state.prepaidBalances.find(
+    balance =>
+      balance.schedule_id === scheduleId &&
+      balance.balance_status !== 'void'
+  ) || null
 }
 
 function alreadyPrepaidMessage(candidate, prepaidBalance = null) {
@@ -480,7 +492,107 @@ function prepaidValuesDiffer(candidate) {
   )
 }
 
+function prepaidCorrectionHistory(balance) {
+  if (!balance?.prepaid_hour_id) return []
+  const history = []
+  let current = balance
+  while (current) {
+    history.unshift(current)
+    current = state.prepaidBalances.find(
+      item => item.prepaid_hour_id === current.correction_of_id
+    ) || null
+  }
+  return history
+}
+
+function updatePrepaidEditFormState() {
+  const balance = state.prepaidEditBalance
+  const editablePeriod = ['draft', 'reopened'].includes(
+    state.period?.period_status
+  )
+  const settledMinutes = Number(balance?.settled_minutes || 0)
+  const settled = settledMinutes > 0
+  const active = Boolean(balance) && balance.balance_status !== 'void'
+  const minutes = prepaidMinutes(
+    elements.prepaidDate.value,
+    elements.prepaidLogin.value,
+    elements.prepaidLogout.value,
+    elements.prepaidTimezone.value.trim()
+  )
+
+  elements.prepaidHours.textContent = minutes
+    ? `${formatHours(minutes)} hours`
+    : '—'
+  elements.prepaidConfirmWrap.hidden = true
+  elements.prepaidConfirm.checked = false
+  elements.prepaidLogin.readOnly = false
+  elements.prepaidLogout.readOnly = false
+  elements.prepaidTimezone.readOnly = false
+
+  let message = balance
+    ? `${alreadyPrepaidMessage(null, balance)} Editing creates a new audited version; the published schedule is not changed.`
+    : 'Select an already prepaid schedule to correct.'
+  let sourceClass = balance ? 'ready' : 'blocked'
+  if (settled) {
+    message = 'This prepaid balance has already been partially or fully settled and cannot be corrected safely.'
+    sourceClass = 'blocked'
+  } else if (!editablePeriod) {
+    message = 'Prepaid corrections are allowed only while payroll is draft or reopened.'
+    sourceClass = 'blocked'
+  }
+  elements.prepaidSourceStatus.className =
+    `payroll-prepaid-source payroll-prepaid-wide ${sourceClass}`
+  elements.prepaidSourceStatus.textContent = message
+
+  const history = prepaidCorrectionHistory(balance)
+  elements.prepaidHistory.replaceChildren()
+  if (history.length > 1) {
+    elements.prepaidHistory.hidden = false
+    elements.prepaidHistory.append(
+      element('strong', '', 'Correction history')
+    )
+    for (const version of history) {
+      elements.prepaidHistory.append(
+        element(
+          'small',
+          '',
+          `Version ${version.prepaid_version || 1} · ${formatDate(version.work_date)} · ${version.prepaid_minutes} minutes · ${version.balance_status} · ${version.corrected_by_name || version.created_by_name || 'payroll'} · ${formatDateTime(version.corrected_at || version.created_at)}`
+        )
+      )
+      const historyReason =
+        version.correction_reason || version.original_approval_reason
+      if (historyReason) {
+        elements.prepaidHistory.append(
+          element('small', '', `Reason: ${historyReason}`)
+        )
+      }
+    }
+  } else {
+    elements.prepaidHistory.hidden = true
+  }
+
+  const complete =
+    active &&
+    Boolean(elements.prepaidDate.value) &&
+    Boolean(elements.prepaidLogin.value) &&
+    Boolean(elements.prepaidLogout.value) &&
+    Boolean(elements.prepaidTimezone.value.trim()) &&
+    Boolean(elements.prepaidReason.value.trim()) &&
+    minutes > 0
+  elements.savePrepaidButton.disabled =
+    state.savingPrepaid ||
+    !state.canApprovePreplots ||
+    !editablePeriod ||
+    settled ||
+    !complete
+  elements.savePrepaidButton.textContent = 'Save prepaid correction'
+}
+
 function updatePrepaidFormState({ loadCandidateTimes = false } = {}) {
+  if (state.prepaidMode === 'edit') {
+    updatePrepaidEditFormState()
+    return
+  }
   const candidates = selectedPrepaidCandidates()
   const candidate = candidates.length === 1 ? candidates[0] : null
   const hasSelection =
@@ -949,7 +1061,9 @@ function renderPreplots() {
     candidate => candidate.approval_status === 'approved'
   )
   const prepaidBySchedule = new Map(
-    state.prepaidBalances.map(balance => [balance.schedule_id, balance])
+    state.prepaidBalances
+      .filter(balance => balance.balance_status !== 'void')
+      .map(balance => [balance.schedule_id, balance])
   )
   const remainingMinutes = state.prepaidBalances
     .filter(balance => balance.balance_status !== 'void')
@@ -1031,13 +1145,21 @@ function renderPreplots() {
     )
 
     const shiftCell = document.createElement('td')
+    const prepaidBalance = prepaidBySchedule.get(candidate.schedule_id)
+    const displayWorkDate = prepaidBalance?.work_date || candidate.work_date
+    const displayShiftStart =
+      prepaidBalance?.effective_shift_start || candidate.shift_start
+    const displayShiftEnd =
+      prepaidBalance?.effective_shift_end || candidate.shift_end
+    const displayTimezone =
+      prepaidBalance?.effective_timezone || candidate.timezone
     shiftCell.append(
       element(
         'strong',
         'payroll-preplot-shift',
-        `${formatShiftTime(candidate.shift_start, candidate.timezone)} – ${formatShiftTime(candidate.shift_end, candidate.timezone)}`
+        `${formatShiftTime(displayShiftStart, displayTimezone)} – ${formatShiftTime(displayShiftEnd, displayTimezone)}`
       ),
-      element('small', 'payroll-cell-note', candidate.timezone)
+      element('small', 'payroll-cell-note', displayTimezone)
     )
 
     const typeCell = document.createElement('td')
@@ -1055,7 +1177,6 @@ function renderPreplots() {
     }
 
     const statusCell = document.createElement('td')
-    const prepaidBalance = prepaidBySchedule.get(candidate.schedule_id)
     const statusMessage =
       candidate.approval_status === 'approved'
         ? alreadyPrepaidMessage(candidate, prepaidBalance)
@@ -1101,13 +1222,38 @@ function renderPreplots() {
       }
       statusCell.append(balanceNote)
     }
+    if (candidate.approval_status === 'approved' && prepaidBalance) {
+      const editButton = element(
+        'button',
+        'payroll-button payroll-button-secondary payroll-prepaid-edit-button',
+        'Edit Prepaid'
+      )
+      editButton.type = 'button'
+      editButton.dataset.prepaidAction = 'edit'
+      editButton.dataset.prepaidId = prepaidBalance.prepaid_hour_id
+      const settled = Number(prepaidBalance.settled_minutes || 0) > 0
+      editButton.disabled =
+        !state.canApprovePreplots ||
+        !periodCanApprove ||
+        settled
+      editButton.title = settled
+        ? 'Settled prepaid balances cannot be corrected safely'
+        : !periodCanApprove
+          ? 'Prepaid corrections are allowed only while payroll is draft or reopened'
+          : 'Create an audited prepaid correction version'
+      statusCell.append(editButton)
+    }
 
     row.append(
       selectCell,
       employeeCell,
-      element('td', '', formatDate(candidate.work_date)),
+      element('td', '', formatDate(displayWorkDate)),
       shiftCell,
-      element('td', '', formatHours(candidate.scheduled_minutes)),
+      element(
+        'td',
+        '',
+        formatHours(prepaidBalance?.prepaid_minutes ?? candidate.scheduled_minutes)
+      ),
       typeCell,
       statusCell
     )
@@ -2951,11 +3097,63 @@ async function approveSelectedPreplots() {
 }
 
 function openPrepaidDialog() {
+  state.prepaidMode = 'add'
+  state.prepaidEditBalance = null
   elements.prepaidForm.reset()
+  elements.prepaidEmployee.disabled = false
   elements.prepaidTimezone.value = 'America/New_York'
   elements.prepaidDate.min = prepaidEligibilityStart(state.period.period_end)
   elements.prepaidDate.max = state.period.period_end
   state.prepaidCandidate = null
+  elements.prepaidDialogTitle.textContent = 'Add prepaid schedule'
+  elements.prepaidDialogDescription.textContent =
+    'Create prepaid hours from a real employee schedule dated within 10 calendar days before the payroll cutoff, through the cutoff date. This does not create or edit attendance.'
+  elements.prepaidReasonLabel.textContent = 'Approval reason'
+  elements.prepaidReason.placeholder =
+    'Why these future hours are approved for early payment'
+  elements.prepaidHistory.hidden = true
+  setPrepaidMessage('')
+  updatePrepaidFormState()
+  if (typeof elements.prepaidDialog.showModal === 'function') {
+    elements.prepaidDialog.showModal()
+  } else {
+    elements.prepaidDialog.setAttribute('open', '')
+  }
+}
+
+function openPrepaidEditDialog(prepaidHourId) {
+  const balance = state.prepaidBalances.find(
+    item =>
+      item.prepaid_hour_id === prepaidHourId &&
+      item.balance_status !== 'void'
+  )
+  if (!balance) return
+
+  state.prepaidMode = 'edit'
+  state.prepaidEditBalance = balance
+  state.prepaidCandidate = null
+  elements.prepaidForm.reset()
+  elements.prepaidEmployee.disabled = true
+  elements.prepaidEmployee.value = balance.employee_user_id || ''
+  elements.prepaidDate.min = prepaidEligibilityStart(state.period.period_end)
+  elements.prepaidDate.max = state.period.period_end
+  elements.prepaidDate.value = balance.work_date || ''
+  elements.prepaidTimezone.value =
+    balance.effective_timezone || balance.original_timezone || 'America/New_York'
+  elements.prepaidLogin.value = timeInputValue(
+    balance.effective_shift_start || balance.original_shift_start,
+    elements.prepaidTimezone.value
+  )
+  elements.prepaidLogout.value = timeInputValue(
+    balance.effective_shift_end || balance.original_shift_end,
+    elements.prepaidTimezone.value
+  )
+  elements.prepaidDialogTitle.textContent = 'Edit prepaid hours'
+  elements.prepaidDialogDescription.textContent =
+    'Correct the prepaid version with an audited reason. The original snapshot and published work schedule will remain unchanged.'
+  elements.prepaidReasonLabel.textContent = 'Correction reason (required)'
+  elements.prepaidReason.placeholder =
+    'Why are these prepaid hours being corrected?'
   setPrepaidMessage('')
   updatePrepaidFormState()
   if (typeof elements.prepaidDialog.showModal === 'function') {
@@ -2971,6 +3169,9 @@ function closePrepaidDialog() {
   } else {
     elements.prepaidDialog.removeAttribute('open')
   }
+  state.prepaidMode = 'add'
+  state.prepaidEditBalance = null
+  elements.prepaidEmployee.disabled = false
 }
 
 async function savePrepaidSchedule(event) {
@@ -2985,6 +3186,42 @@ async function savePrepaidSchedule(event) {
   }
 
   const candidate = state.prepaidCandidate
+  if (state.prepaidMode === 'edit') {
+    state.savingPrepaid = true
+    updatePrepaidFormState()
+    setPrepaidMessage('Validating and saving the audited prepaid correction…')
+
+    const { data, error } = await supabase.rpc(
+      'payroll_correct_prepaid_hours',
+      {
+        p_prepaid_hour_id: state.prepaidEditBalance?.prepaid_hour_id,
+        p_work_date: elements.prepaidDate.value,
+        p_prepaid_login: elements.prepaidLogin.value,
+        p_prepaid_logout: elements.prepaidLogout.value,
+        p_timezone: elements.prepaidTimezone.value.trim(),
+        p_correction_reason: elements.prepaidReason.value.trim()
+      }
+    )
+
+    state.savingPrepaid = false
+    if (error) {
+      setPrepaidMessage(
+        error.message ||
+          'The prepaid correction could not be saved. Refresh and try again.',
+        'error'
+      )
+      updatePrepaidFormState()
+      return
+    }
+
+    closePrepaidDialog()
+    await loadPeriod()
+    setMessage(
+      `Prepaid hours corrected to ${formatHours(Number(data?.prepaid_minutes || 0))} hours. The original entry remains in the audit history.`,
+      'success'
+    )
+    return
+  }
   const scheduleChangeConfirmed =
     Boolean(candidate) &&
     (
@@ -3202,6 +3439,12 @@ elements.preplotBody.addEventListener('change', event => {
   renderPreplots()
 })
 elements.preplotBody.addEventListener('click', event => {
+  const editButton = event.target.closest('[data-prepaid-action="edit"]')
+  if (editButton) {
+    event.preventDefault()
+    openPrepaidEditDialog(editButton.dataset.prepaidId)
+    return
+  }
   const link = event.target.closest('[data-exception-filter]')
   if (!link) return
   event.preventDefault()

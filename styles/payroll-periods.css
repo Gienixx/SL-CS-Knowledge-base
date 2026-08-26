@@ -1151,6 +1151,32 @@ html[data-site-theme="dark"] .payroll-preplot-table .payroll-prepaid-review-link
   margin-top: 14px;
 }
 
+.payroll-prepaid-edit-button {
+  min-height: 28px;
+  margin-top: 7px;
+  padding: 5px 9px;
+  font-size: 10px;
+}
+
+.payroll-prepaid-history {
+  display: grid;
+  gap: 4px;
+  padding: 10px 12px;
+  border: 1px solid var(--payroll-border);
+  border-radius: 9px;
+  background: var(--payroll-bg);
+}
+
+.payroll-prepaid-history strong {
+  font-size: 11px;
+}
+
+.payroll-prepaid-history small {
+  color: var(--payroll-muted);
+  font-size: 10px;
+  line-height: 1.4;
+}
+
 .payroll-preplot-reason { min-width: 0; }
 
 .payroll-dialog {

@@ -142,7 +142,7 @@
           <div>
             <p class="payroll-eyebrow">Early-payment coverage</p>
             <h2 id="payrollPrepaidDialogTitle">Add prepaid schedule</h2>
-            <p>Create prepaid hours from a real employee schedule dated within 10 calendar days before the payroll cutoff, through the cutoff date. This does not create or edit attendance.</p>
+            <p id="payrollPrepaidDialogDescription">Create prepaid hours from a real employee schedule dated within 10 calendar days before the payroll cutoff, through the cutoff date. This does not create or edit attendance.</p>
           </div>
           <button id="closePayrollPrepaidDialogButton" class="payroll-dialog-close" type="button" aria-label="Close">×</button>
         </header>
@@ -204,7 +204,7 @@
           </label>
 
           <label class="payroll-field payroll-prepaid-wide">
-            <span>Approval reason</span>
+            <span id="payrollPrepaidReasonLabel">Approval reason</span>
             <textarea
               id="payrollPrepaidApprovalReason"
               class="payroll-control"
@@ -214,6 +214,8 @@
               required
             ></textarea>
           </label>
+
+          <div id="payrollPrepaidHistory" class="payroll-prepaid-history payroll-prepaid-wide" hidden></div>
         </div>
 
         <p id="payrollPrepaidMessage" class="payroll-prepaid-message" role="status" aria-live="polite"></p>
