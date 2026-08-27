@@ -4,6 +4,7 @@ import test from 'node:test'
 
 const read = path => readFile(new URL(`../${path}`, import.meta.url), 'utf8')
 const migrationPath = 'supabase/migrations/20260728073925_add_prepaid_columns_to_team_attendance.sql'
+const shiftAliasFixMigrationPath = 'supabase/migrations/20260827102355_fix_team_attendance_prepaid_shift_alias.sql'
 
 test('Team Attendance exposes every calculated prepaid reconciliation column', async () => {
   const page = await read('team-attendance.html')
@@ -72,4 +73,21 @@ test('eligible and applied minutes follow the prepaid reconciliation rules', asy
   assert.match(migration, /else -allocation\.allocated_minutes/)
   assert.match(migration, /source_prepaid\.remaining_minutes/)
   assert.match(migration, /source_prepaid\.status/)
+})
+
+test('admin prepaid Team Attendance keeps effective shift values addressable by the lateral source', async () => {
+  const migration = await read(shiftAliasFixMigrationPath)
+
+  assert.match(migration, /workforce_list_team_attendance_prepaid\(date,date\)/)
+  assert.match(
+    migration,
+    /coalesce\(prepaid\.effective_shift_start, snapshot\.shift_start\) as shift_start/
+  )
+  assert.match(
+    migration,
+    /coalesce\(prepaid\.effective_shift_end, snapshot\.shift_end\) as shift_end/
+  )
+  assert.match(migration, /source_prepaid\.shift_start/)
+  assert.match(migration, /source_prepaid\.shift_end/)
+  assert.doesNotMatch(migration, /alter table public\.payroll_prepaid_hours[\s\S]*add column[^;]*shift_start/)
 })
