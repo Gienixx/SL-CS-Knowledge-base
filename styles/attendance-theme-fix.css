@@ -517,3 +517,41 @@ html[data-site-theme="light"] .attendance-brand-mark {
 html[data-site-theme="light"] .attendance-note-cell {
   color: var(--site-text) !important;
 }
+
+/* Attendance Log billed columns and pagination use the shared light palette.
+   The page-specific table rules otherwise retain the low-opacity dark palette
+   used by attendance.css. Keep enabled and disabled controls explicit so the
+   disabled state remains distinguishable without making it disappear. */
+html[data-site-theme="light"] .attendance-history-card .attendance-billed-clock-cell {
+  border-color: var(--site-border) !important;
+  color: var(--site-text) !important;
+  background: var(--site-surface-solid) !important;
+}
+
+html[data-site-theme="light"] .attendance-history-footer {
+  border-color: var(--site-border) !important;
+}
+
+html[data-site-theme="light"] .attendance-history-pagination span {
+  color: var(--site-heading) !important;
+}
+
+html[data-site-theme="light"] .attendance-history-pagination .wf-row-btn:not(:disabled) {
+  border-color: var(--site-border) !important;
+  color: var(--site-blue-strong) !important;
+  background: var(--site-surface-solid) !important;
+  opacity: 1;
+}
+
+html[data-site-theme="light"] .attendance-history-pagination .wf-row-btn:hover:not(:disabled) {
+  border-color: color-mix(in srgb, var(--site-blue) 48%, var(--site-border)) !important;
+  color: var(--site-blue-strong) !important;
+  background: var(--site-blue-soft) !important;
+}
+
+html[data-site-theme="light"] .attendance-history-pagination .wf-row-btn:disabled {
+  border-color: var(--site-border) !important;
+  color: var(--site-muted) !important;
+  background: var(--site-neutral-soft) !important;
+  opacity: 1;
+}

@@ -36,9 +36,10 @@ test('Attendance Log distinguishes scheduled prepaid, fulfilled prepaid, and reg
     read('styles/attendance.css')
   ])
 
-  assert.match(html, /<th>Pay type<\/th>/)
-   assert.match(html, /scripts\/attendance\.js\?v=28/)
-  assert.match(html, /styles\/attendance-theme-fix\.css\?v=7/)
+  assert.match(html, /<th>Billed Clock In<\/th>/)
+  assert.match(html, /<th>Billed Clock Out<\/th>/)
+   assert.match(html, /scripts\/attendance\.js\?v=29/)
+  assert.match(html, /styles\/attendance-theme-fix\.css\?v=8/)
   assert.match(script, /workforce_list_my_attendance_log/)
   assert.match(script, /Prepaid scheduled/)
   assert.match(script, /Prepaid \$\{formatMinutes\(fulfilledMinutes\)\}/)
