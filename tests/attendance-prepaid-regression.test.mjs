@@ -45,7 +45,7 @@ test('pending or for-review attendance cannot consume prepaid balance', async ()
   const [readiness, importMigration, reconciliation] = await Promise.all([
     read('supabase/migrations/20260824143000_payroll_readiness_canonical_billed_duration.sql'),
     read('supabase/migrations/20260808093641_latest_snapshot_recalculation_transition.sql'),
-    read('supabase/migrations/20260828071452_fix_prepaid_import_canonical_timestamps.sql')
+    read('supabase/migrations/20260828082817_fix_prepaid_import_canonical_timestamps.sql')
   ])
 
   const pending = {
@@ -64,7 +64,7 @@ test('pending or for-review attendance cannot consume prepaid balance', async ()
 test('approved matching attendance consumes canonical captured duration', async () => {
   const [reconciliation, importFix] = await Promise.all([
     read('supabase/migrations/20260728053329_payroll_prepaid_hour_reconciliation.sql'),
-    read('supabase/migrations/20260828071452_fix_prepaid_import_canonical_timestamps.sql')
+    read('supabase/migrations/20260828082817_fix_prepaid_import_canonical_timestamps.sql')
   ])
   const approved = {
     reviewStatus: 'approved',

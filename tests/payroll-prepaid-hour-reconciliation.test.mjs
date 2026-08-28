@@ -91,7 +91,7 @@ test('approved attendance settles prepaid minutes FIFO and carries shortfalls', 
 test('canonical billed duration is imported for prepaid reconciliation', async () => {
   const [reconciliation, importFix] = await Promise.all([
     read(migrationPath),
-    read('supabase/migrations/20260828071452_fix_prepaid_import_canonical_timestamps.sql')
+    read('supabase/migrations/20260828082817_fix_prepaid_import_canonical_timestamps.sql')
   ])
 
   assert.match(reconciliation, /new\.regular_minutes/)
