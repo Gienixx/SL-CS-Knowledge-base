@@ -34,11 +34,6 @@ const PROTECTED_ROUTES = Object.freeze({
     permission: 'manage_employees',
     requireAdmin: true
   },
-  '/api/paypal-exchange-rate': {
-    methods: ['GET'],
-    permission: 'manage_agent_rates',
-    requireAdmin: false
-  },
   '/api/payslips/generate': {
     methods: ['POST'],
     permission: 'export_payslips',

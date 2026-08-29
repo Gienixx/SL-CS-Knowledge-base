@@ -13,10 +13,12 @@ const state = {
   selectedEmployeeId: '',
   search: '',
   loading: false,
-  accessToken: '',
-  paypalQuote: null,
-  paypalQuoteLoading: false,
-  paypalQuoteError: ''
+  paypalConversionRate: null,
+  paypalConversionUpdatedAt: null,
+  paypalConversionUpdatedByName: '',
+  paypalConversionLoading: false,
+  paypalConversionError: '',
+  canEditPaypalConversion: false
 }
 
 const usdFormatter = new Intl.NumberFormat('en-US', {
@@ -57,8 +59,11 @@ const saveButton = document.getElementById('saveAgentRateButton')
 const refreshButton = document.getElementById('refreshAgentRatesButton')
 const paypalFxPanel = document.getElementById('paypalFxPanel')
 const paypalFxTitle = document.getElementById('paypalFxTitle')
+const paypalFxHelper = document.getElementById('paypalFxHelper')
 const paypalFxMeta = document.getElementById('paypalFxMeta')
-const refreshPaypalRateButton = document.getElementById('refreshPaypalRateButton')
+const paypalConversionForm = document.getElementById('paypalConversionForm')
+const paypalConversionInput = document.getElementById('paypalConversionRate')
+const applyPaypalRateButton = document.getElementById('applyPaypalRateButton')
 const rateInputIds = [
   'hourlyRate',
   'dailyRate',
@@ -89,18 +94,18 @@ function formatUsd(value) {
 
 function phpConversion(value) {
   const number = Number(value)
-  const exchangeRate = Number(state.paypalQuote?.exchangeRate)
+  const conversionRate = Number(state.paypalConversionRate)
   if (
     value === null ||
     value === undefined ||
     value === '' ||
     !Number.isFinite(number) ||
-    !Number.isFinite(exchangeRate) ||
-    exchangeRate <= 0
+    !Number.isFinite(conversionRate) ||
+    conversionRate <= 0
   ) {
     return null
   }
-  return number * exchangeRate
+  return number * conversionRate
 }
 
 function formatPhpConversion(value) {
@@ -317,84 +322,68 @@ function updateCalculatedBaseRates() {
   renderRateInputPreviews()
 }
 
-function renderPaypalQuote() {
-  const quote = state.paypalQuote
-  const isEstimate = quote?.rateType === 'paypal_estimate'
-  paypalFxPanel.classList.toggle('loading', state.paypalQuoteLoading)
-  paypalFxPanel.classList.toggle('available', Boolean(quote))
-  paypalFxPanel.classList.toggle('estimated', isEstimate)
-  paypalFxPanel.classList.toggle('unavailable', !quote)
-  refreshPaypalRateButton.disabled = state.paypalQuoteLoading
+function renderPaypalConversion() {
+  const rate = Number(state.paypalConversionRate)
+  const hasRate = Number.isFinite(rate) && rate > 0
+  paypalFxPanel.classList.toggle('loading', state.paypalConversionLoading)
+  paypalFxPanel.classList.toggle('available', hasRate)
+  paypalFxPanel.classList.toggle('estimated', false)
+  paypalFxPanel.classList.toggle('unavailable', !hasRate)
+  const canEdit = state.canEditPaypalConversion
+  paypalFxHelper.hidden = state.paypalConversionLoading
+  paypalConversionInput.disabled = !canEdit || state.paypalConversionLoading
+  applyPaypalRateButton.disabled = !canEdit || state.paypalConversionLoading
 
-  if (state.paypalQuoteLoading) {
-    paypalFxTitle.textContent = 'Checking PayPal USD to PHP rate…'
-    paypalFxMeta.textContent = 'The quote is requested securely from the server.'
-  } else if (quote) {
-    paypalFxTitle.textContent =
-      `1 USD ${isEstimate ? '≈' : '='} ${phpFormatter.format(quote.exchangeRate)}`
-
-    if (isEstimate) {
-      paypalFxMeta.textContent =
-        `Estimated PayPal payout conversion · ECB reference ${phpFormatter.format(quote.marketRate)} on ${formatDate(quote.referenceDate)}, reduced by PayPal's published ${quote.spreadPercent}% payment/Payouts spread. PHP values are display-only.`
-    } else {
-      const timing = quote.expiresAt
-        ? ` · Expires ${formatDateTime(quote.expiresAt)}`
-        : ''
-      paypalFxMeta.textContent =
-        `Live PayPal quote · Retrieved ${formatDateTime(quote.fetchedAt)}${timing}. PHP values are display-only.`
-    }
+  if (state.paypalConversionLoading) {
+    paypalFxTitle.textContent = 'Loading manual PayPal conversion'
+    paypalFxMeta.textContent = 'Reading the saved admin rate…'
+  } else if (hasRate) {
+    paypalFxTitle.textContent = `1 USD = ${phpFormatter.format(rate)}`
+    const updatedBy = state.paypalConversionUpdatedByName || 'authorized admin'
+    paypalFxMeta.textContent = state.paypalConversionUpdatedAt
+      ? `Last updated ${formatDateTime(state.paypalConversionUpdatedAt)} by ${updatedBy}. PHP amounts are display-only.`
+      : `Saved by ${updatedBy}. PHP amounts are display-only.`
   } else {
-    paypalFxTitle.textContent = 'PHP conversion unavailable'
-    paypalFxMeta.textContent =
-      state.paypalQuoteError ||
-      'A live PayPal USD to PHP quote is not currently available.'
+    paypalFxTitle.textContent = 'No manual rate set'
+    paypalFxMeta.textContent = state.paypalConversionError
   }
 
+  if (!canEdit) {
+    paypalFxMeta.textContent += ' Only payroll-authorized admins can change this rate.'
+  }
+
+  if (document.activeElement !== paypalConversionInput) {
+    paypalConversionInput.value = hasRate ? String(rate) : ''
+  }
   renderRateInputPreviews()
 }
 
-async function loadPaypalQuote() {
-  if (state.paypalQuoteLoading || !state.accessToken) return
-  state.paypalQuoteLoading = true
-  state.paypalQuoteError = ''
-  renderPaypalQuote()
+async function loadPaypalConversion() {
+  if (state.paypalConversionLoading) return
+  state.paypalConversionLoading = true
+  state.paypalConversionError = ''
+  renderPaypalConversion()
 
   try {
-    const response = await fetch('./api/paypal-exchange-rate', {
-      method: 'GET',
-      headers: {
-        Accept: 'application/json',
-        Authorization: `Bearer ${state.accessToken}`
-      },
-      cache: 'no-store'
-    })
-    const result = await response.json().catch(() => null)
-
-    if (!response.ok || !Number.isFinite(Number(result?.exchangeRate))) {
-      state.paypalQuote = null
-      state.paypalQuoteError =
-        result?.error || 'The live PayPal rate could not be loaded.'
+    const { data, error } = await supabase.rpc('payroll_get_paypal_conversion_rate')
+    if (error) throw error
+    const row = Array.isArray(data) ? data[0] : data
+    const rate = Number(row?.usd_to_php_rate)
+    if (!Number.isFinite(rate) || rate <= 0) {
+      state.paypalConversionRate = null
+      state.paypalConversionUpdatedAt = null
+      state.paypalConversionUpdatedByName = ''
     } else {
-      state.paypalQuote = {
-        source: result.source,
-        rateType: result.rateType,
-        exchangeRate: Number(result.exchangeRate),
-        marketRate: Number(result.marketRate),
-        spreadPercent: Number(result.spreadPercent),
-        referenceSource: result.referenceSource,
-        referenceProvider: result.referenceProvider,
-        referenceDate: result.referenceDate,
-        fetchedAt: result.fetchedAt,
-        expiresAt: result.expiresAt,
-        refreshesAt: result.refreshesAt
-      }
+      state.paypalConversionRate = rate
+      state.paypalConversionUpdatedAt = row.updated_at || null
+      state.paypalConversionUpdatedByName = row.updated_by_name || ''
     }
   } catch {
-    state.paypalQuote = null
-    state.paypalQuoteError = 'The live PayPal rate could not be loaded.'
+    state.paypalConversionError =
+      'The saved PayPal conversion rate could not be loaded.'
   } finally {
-    state.paypalQuoteLoading = false
-    renderPaypalQuote()
+    state.paypalConversionLoading = false
+    renderPaypalConversion()
     renderSelectedEmployee()
   }
 }
@@ -558,7 +547,7 @@ function renderAll() {
   renderEmployeeSelect()
   renderEmployeeList()
   renderSelectedEmployee()
-  renderPaypalQuote()
+  renderPaypalConversion()
 }
 
 async function loadDirectory({ preserveSelection = true } = {}) {
@@ -598,6 +587,71 @@ async function loadDirectory({ preserveSelection = true } = {}) {
       ? ''
       : 'No active or on-leave agents are available for rate management.'
   )
+}
+
+function parsePaypalConversionRate() {
+  const value = paypalConversionInput.value.trim()
+  if (value === '') return { error: 'Enter a PayPal conversion rate.' }
+
+  const rate = Number(value)
+  if (!Number.isFinite(rate) || rate <= 0) {
+    return { error: 'Enter a valid positive decimal rate.' }
+  }
+
+  return { rate }
+}
+
+async function applyPaypalConversion(event) {
+  event.preventDefault()
+
+  if (!state.canEditPaypalConversion) {
+    setMessage(
+      pageMessage,
+      'Only payroll-authorized admins can change the PayPal conversion rate.',
+      'error'
+    )
+    return
+  }
+
+  const parsed = parsePaypalConversionRate()
+  if (parsed.error) {
+    setMessage(pageMessage, parsed.error, 'error')
+    return
+  }
+
+  applyPaypalRateButton.disabled = true
+  setMessage(pageMessage, 'Saving the PayPal display conversion rate…')
+
+  try {
+    const { data, error } = await supabase.rpc(
+      'payroll_set_paypal_conversion_rate',
+      { p_usd_to_php_rate: parsed.rate }
+    )
+    if (error) throw error
+
+    const row = Array.isArray(data) ? data[0] : data
+    state.paypalConversionRate = Number(row.usd_to_php_rate)
+    state.paypalConversionUpdatedAt = row.updated_at || null
+    state.paypalConversionUpdatedByName = row.updated_by_name || ''
+    state.paypalConversionError = ''
+    renderPaypalConversion()
+    renderSelectedEmployee()
+    setMessage(pageMessage, 'PayPal display conversion rate applied.', 'success')
+  } catch (error) {
+    const safeMessage = String(error?.message || '')
+    const knownMessage = [
+      'You do not have permission',
+      'conversion rate must be positive',
+      'valid positive decimal'
+    ].find(message => safeMessage.toLowerCase().includes(message.toLowerCase()))
+    setMessage(
+      pageMessage,
+      knownMessage ? safeMessage : 'The PayPal conversion rate could not be saved.',
+      'error'
+    )
+  } finally {
+    applyPaypalRateButton.disabled = !state.canEditPaypalConversion || state.paypalConversionLoading
+  }
 }
 
 function parseOptionalRate(inputId) {
@@ -711,9 +765,9 @@ employeeSelect.addEventListener('change', () => {
 })
 
 refreshButton.addEventListener('click', async () => {
-  await Promise.all([loadDirectory(), loadPaypalQuote()])
+  await Promise.all([loadDirectory(), loadPaypalConversion()])
 })
-refreshPaypalRateButton.addEventListener('click', loadPaypalQuote)
+paypalConversionForm.addEventListener('submit', applyPaypalConversion)
 rateForm.addEventListener('submit', submitRate)
 for (const inputId of rateInputIds) {
   document.getElementById(inputId).addEventListener('input', renderRateInputPreviews)
@@ -740,11 +794,11 @@ async function initializeAgentRates() {
     )
 
     if (!access) return
-    state.accessToken = access.session?.access_token || ''
+    state.canEditPaypalConversion = access.is_admin === true
     document.body.classList.remove('rate-access-pending')
     await Promise.all([
       loadDirectory({ preserveSelection: false }),
-      loadPaypalQuote()
+      loadPaypalConversion()
     ])
   } catch {
     document.body.classList.remove('rate-access-pending')

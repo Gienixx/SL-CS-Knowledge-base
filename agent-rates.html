@@ -6,7 +6,7 @@
   <title>Agent Rates | SocialLoop CS Base</title>
   <link rel="stylesheet" href="./styles/button-theme.css?v=1">
   <link rel="stylesheet" href="./styles/workforce-admin.css?v=8">
-  <link rel="stylesheet" href="./styles/agent-rates.css?v=7">
+  <link rel="stylesheet" href="./styles/agent-rates.css?v=8">
   <link rel="stylesheet" href="./styles/site-theme.css?v=1">
   <script src="./scripts/site-theme.js?v=1"></script>
 </head>
@@ -58,12 +58,19 @@
     <p id="agentRatesPageMessage" class="wf-message rate-page-message" role="status" aria-live="polite"></p>
 
     <section id="paypalFxPanel" class="rate-conversion-banner unavailable" aria-labelledby="paypalFxTitle">
-      <div>
-        <p class="rate-eyebrow">Display conversion · PayPal</p>
-        <strong id="paypalFxTitle">PHP conversion unavailable</strong>
-        <p id="paypalFxMeta">Checking the PayPal USD to PHP conversion…</p>
+      <div class="rate-conversion-copy">
+        <p class="rate-eyebrow">DISPLAY CONVERSION · PAYPAL</p>
+        <strong id="paypalFxTitle">No manual rate set</strong>
+        <p id="paypalFxHelper">Enter the current USD → PHP conversion rate shown by PayPal. PHP amounts are display-only.</p>
+        <p id="paypalFxMeta"></p>
       </div>
-      <button id="refreshPaypalRateButton" class="rate-button rate-button-secondary" type="button">Refresh PayPal rate</button>
+      <form id="paypalConversionForm" class="rate-conversion-form">
+        <label class="rate-conversion-rate">
+          <span>1 USD = ₱</span>
+          <input id="paypalConversionRate" class="rate-control rate-number-control" type="number" min="0" step="0.0001" inputmode="decimal" placeholder="58.7731" aria-label="PayPal USD to PHP conversion rate" required>
+        </label>
+        <button id="applyPaypalRateButton" class="rate-button rate-button-primary" type="submit">Apply Rate</button>
+      </form>
     </section>
 
     <div class="rate-workspace">
@@ -192,6 +199,6 @@
     </div>
   </main>
 
-  <script type="module" src="./scripts/agent-rates.js?v=6"></script>
+  <script type="module" src="./scripts/agent-rates.js?v=7"></script>
 </body>
 </html>

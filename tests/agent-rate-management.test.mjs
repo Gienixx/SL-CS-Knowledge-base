@@ -10,6 +10,10 @@ const usdMigrationUrl = new URL(
   '../supabase/migrations/20260723081057_use_usd_payroll_currency.sql',
   import.meta.url
 )
+const manualConversionMigrationUrl = new URL(
+  '../supabase/migrations/20260829165812_manual_paypal_conversion_rate.sql',
+  import.meta.url
+)
 const hourlyDerivationMigrationUrl = new URL(
   '../supabase/migrations/20260723091517_derive_agent_rates_from_hourly.sql',
   import.meta.url
@@ -107,9 +111,10 @@ test('agent rates page supports all effective-dated rate fields and history', as
   assert.doesNotMatch(page, />\s*(?:Edit|Delete)\s*</i)
 })
 
-test('USD is canonical and PHP is a live PayPal display conversion', async () => {
-  const [migration, page, script] = await Promise.all([
+test('USD is canonical and PHP uses the persisted manual PayPal display conversion', async () => {
+  const [migration, manualMigration, page, script] = await Promise.all([
     readFile(usdMigrationUrl, 'utf8'),
+    readFile(manualConversionMigrationUrl, 'utf8'),
     readFile(pageUrl, 'utf8'),
     readFile(scriptUrl, 'utf8')
   ])
@@ -125,16 +130,53 @@ test('USD is canonical and PHP is a live PayPal display conversion', async () =>
   assert.match(migration, /'USD'[\s\S]*v_reason/)
   assert.match(page, /USD \(\$\)/)
   assert.match(page, /data-php-preview-for="hourlyRate"/)
+  assert.match(page, /DISPLAY CONVERSION · PAYPAL/)
+  assert.match(page, /Enter the current USD → PHP conversion rate shown by PayPal\. PHP amounts are display-only\./)
+  assert.match(page, /id="paypalFxHelper"/)
+  assert.match(page, /id="paypalConversionRate"[^>]*type="number"[^>]*min="0"/)
+  assert.match(page, /id="applyPaypalRateButton"[^>]*>Apply Rate</)
+  assert.doesNotMatch(page, /Refresh PayPal rate/)
   assert.match(script, /currency: 'USD'/)
   assert.match(script, /currency: 'PHP'/)
-  assert.match(script, /fetch\('\.\/api\/paypal-exchange-rate'/)
-  assert.match(script, /Authorization: `Bearer \$\{state\.accessToken\}`/)
-  assert.match(script, /quote\?\.rateType === 'paypal_estimate'/)
-  assert.match(
-    script,
-    /PayPal's published \$\{quote\.spreadPercent\}% payment\/Payouts spread/
-  )
+  assert.match(script, /supabase\.rpc\('payroll_get_paypal_conversion_rate'\)/)
+  assert.match(script, /supabase\.rpc\([\s\S]*?'payroll_set_paypal_conversion_rate'/)
+  assert.match(script, /const conversionRate = Number\(state\.paypalConversionRate\)/)
+  assert.match(script, /renderRateInputPreviews\(\)/)
+  assert.doesNotMatch(script, /paypal-exchange-rate|ECB|spreadPercent|paypal_estimate|PAYPAL_CLIENT_ID/)
+  assert.match(manualMigration, /payroll_display_conversion_settings/)
+  assert.match(manualMigration, /usd_to_php_rate > 0/)
+  assert.match(manualMigration, /payroll_get_paypal_conversion_rate/)
+  assert.match(manualMigration, /payroll_set_paypal_conversion_rate/)
+  assert.match(manualMigration, /display_only.*true/)
+  assert.match(manualMigration, /canonical_payroll_currency.*USD/)
+  assert.doesNotMatch(manualMigration, /attendance|prepaid/i)
   assert.doesNotMatch(page, /effective-dated PHP pay rates/)
+})
+
+test('manual PayPal conversion validates, persists attribution, and cannot change USD payroll values', async () => {
+  const [migration, script] = await Promise.all([
+    readFile(manualConversionMigrationUrl, 'utf8'),
+    readFile(scriptUrl, 'utf8')
+  ])
+
+  assert.match(script, /function parsePaypalConversionRate\(\)/)
+  assert.match(script, /value === ''/)
+  assert.match(script, /!Number\.isFinite\(rate\) \|\| rate <= 0/)
+  assert.match(script, /p_usd_to_php_rate: parsed\.rate/)
+  assert.match(script, /state\.paypalConversionUpdatedAt = row\.updated_at/)
+  assert.match(script, /state\.paypalConversionUpdatedByName = row\.updated_by_name/)
+  assert.match(script, /state\.canEditPaypalConversion = access\.is_admin === true/)
+  assert.match(script, /Only payroll-authorized admins can change the PayPal conversion rate/)
+  assert.doesNotMatch(script, /requireAdmin:\s*true/)
+
+  assert.match(migration, /check \(usd_to_php_rate > 0\)/)
+  assert.match(migration, /not public\.workforce_is_admin\(\)/)
+  assert.match(migration, /not public\.workforce_has_permission\('manage_agent_rates'\)/)
+  assert.match(migration, /insert into public\.payroll_audit_logs/)
+  assert.match(migration, /'payroll_display_conversion_setting_updated'/)
+  assert.match(migration, /'display_only', true/)
+  assert.match(migration, /'canonical_payroll_currency', 'USD'/)
+  assert.doesNotMatch(migration, /update public\.(?:agent_rates|payroll_records|attendance)/i)
 })
 
 test('daily and monthly rates are derived from hourly in the browser and database', async () => {
@@ -180,8 +222,8 @@ test('agent rates uses the supplied compact card design', async () => {
     readFile(styleUrl, 'utf8')
   ])
 
-  assert.match(page, /styles\/agent-rates\.css\?v=7/)
-  assert.match(page, /scripts\/agent-rates\.js\?v=6/)
+  assert.match(page, /styles\/agent-rates\.css\?v=8/)
+  assert.match(page, /scripts\/agent-rates\.js\?v=7/)
   assert.match(page, /class="rate-metrics"/)
   assert.match(page, /class="rate-conversion-banner unavailable"/)
   assert.match(page, /class="rate-workspace"/)
