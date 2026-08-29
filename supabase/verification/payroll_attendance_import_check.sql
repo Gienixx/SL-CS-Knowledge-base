@@ -13,6 +13,10 @@ select
   ) as attendance_version_exists,
   to_regprocedure('public.payroll_import_attendance(uuid)') is not null
     as import_rpc_exists,
+  to_regprocedure('public.payroll_import_attendance(uuid,uuid)') is null
+    as ambiguous_import_rpc_removed,
+  to_regprocedure('public.payroll_import_attendance_for_record(uuid,uuid)') is not null
+    as record_import_rpc_exists,
   to_regprocedure(
     'public.payroll_get_period_attendance_import_status(uuid)'
   ) is not null as import_status_rpc_exists,
@@ -59,7 +63,12 @@ select
     'authenticated',
     'public.payroll_import_attendance(uuid)',
     'execute'
-  ) as authenticated_can_call_import_rpc_should_be_true;
+  ) as authenticated_can_call_import_rpc_should_be_true,
+  has_function_privilege(
+    'authenticated',
+    'public.payroll_import_attendance_for_record(uuid,uuid)',
+    'execute'
+  ) as authenticated_can_call_record_import_rpc_should_be_true;
 
 -- 3. Blockers: zero rows required.
 select id, attendance_version
