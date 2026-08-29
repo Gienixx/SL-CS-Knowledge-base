@@ -14,6 +14,13 @@ The import does not expose rates or calculate pay. Missing, incomplete, or
 unapproved attendance remains outside payroll and continues to appear in the
 readiness checks.
 
+Approval makes attendance payroll-ready; it does not itself create a payroll
+attendance snapshot or settle a prepaid balance. Prepaid fulfillment is
+recorded when the authorized payroll import inserts the snapshot. The
+append-only snapshot trigger then applies the captured billed minutes through
+the normal FIFO allocation rules. Run the import after approvals and after any
+correction that changes the approved attendance version.
+
 ## Prepaid-hours foundation
 
 The reconciliation tables, schedule versioning, future-attendance guard, and

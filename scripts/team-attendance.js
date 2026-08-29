@@ -626,7 +626,14 @@ async function reviewAttendance(row, reviewStatus, button) {
     elements.search.focus({ preventScroll: true })
     const searchCaret = elements.search.value.length
     elements.search.setSelectionRange(searchCaret, searchCaret)
-    setMessage(elements.tableMessage, `Attendance ${reviewStatus} successfully.`, 'success')
+    const importNotice = reviewStatus === 'approved' || reviewStatus === 'locked'
+      ? ' Payroll import is still required before prepaid fulfillment is recorded.'
+      : ''
+    setMessage(
+      elements.tableMessage,
+      `Attendance ${reviewStatus} successfully.${importNotice}`,
+      'success'
+    )
   } catch (error) {
     setMessage(elements.tableMessage, reviewActionErrorMessage(error, action), 'error')
   } finally {

@@ -1540,8 +1540,10 @@ function renderImportStatus() {
       `${recalculationFlagCount} payroll ${recalculationFlagCount === 1 ? 'record requires' : 'records require'} recalculation because attendance changed after import.`
     elements.importStatus.classList.add('warning')
   } else if (!currentSnapshotCount) {
-    elements.importStatus.textContent =
-      'No attendance snapshots have been imported yet.'
+    elements.importStatus.textContent = readyAttendanceCount
+      ? `No attendance snapshots have been imported yet. Approved attendance will not fulfill prepaid balances until import runs.`
+      : 'No attendance snapshots have been imported yet.'
+    if (readyAttendanceCount) elements.importStatus.classList.add('warning')
   } else if (currentSnapshotCount < readyAttendanceCount) {
     elements.importStatus.textContent =
       `${currentSnapshotCount} of ${readyAttendanceCount} currently payroll-ready attendance entries are captured.`
