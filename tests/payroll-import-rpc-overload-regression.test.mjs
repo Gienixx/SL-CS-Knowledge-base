@@ -16,8 +16,11 @@ test('full-period attendance import has one unambiguous public RPC', async () =>
 
   assert.match(
     migration,
-    /alter function public\.payroll_import_attendance\(uuid, uuid\)\s+rename to payroll_import_attendance_for_record/
+    /'public\.payroll_import_attendance\(uuid,uuid\)'::regprocedure/
   )
+  assert.match(migration, /public\.payroll_import_attendance_for_record\(/)
+  assert.match(migration, /' DEFAULT NULL::uuid'/)
+  assert.match(migration, /drop function public\.payroll_import_attendance\(uuid, uuid\)/)
   assert.match(
     migration,
     /create or replace function public\.payroll_import_attendance\(\s*p_payroll_period_id uuid\s*\)/
@@ -41,16 +44,11 @@ test('record-specific attendance import remains available through distinct RPC n
 
   assert.match(
     migration,
-    /create or replace function public\.payroll_import_attendance_for_record|alter function public\.payroll_import_attendance\(uuid, uuid\)[\s\S]*rename to payroll_import_attendance_for_record/
+    /public\.payroll_import_attendance_for_record\(/
   )
   assert.match(
     migration,
     /return public\.payroll_import_attendance_for_record\(v_period_id, p_payroll_record_id\)/
-  )
-  assert.match(migration, /' DEFAULT NULL::uuid'/)
-  assert.match(
-    migration,
-    /p_payroll_record_id uuid DEFAULT' in v_updated/
   )
   assert.match(
     migration,

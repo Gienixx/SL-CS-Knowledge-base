@@ -17,6 +17,16 @@ select
     as ambiguous_import_rpc_removed,
   to_regprocedure('public.payroll_import_attendance_for_record(uuid,uuid)') is not null
     as record_import_rpc_exists,
+  not exists (
+    select 1
+    from pg_proc as function_row
+    join pg_namespace as function_schema
+      on function_schema.oid = function_row.pronamespace
+    where function_schema.nspname = 'public'
+      and function_row.proname = 'payroll_import_attendance_for_record'
+      and function_row.pronargs = 2
+      and function_row.proargdefaults is not null
+  ) as record_import_has_no_defaults,
   to_regprocedure(
     'public.payroll_get_period_attendance_import_status(uuid)'
   ) is not null as import_status_rpc_exists,

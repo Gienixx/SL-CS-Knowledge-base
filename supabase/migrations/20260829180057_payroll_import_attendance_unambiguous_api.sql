@@ -4,35 +4,45 @@ begin;
 -- two-argument implementation when the latter's record argument defaults to
 -- NULL. Keep the public full-period RPC unambiguous and give the scoped
 -- implementation its own name. The implementation body is deliberately
--- preserved so snapshot, authorization, idempotency, and reconciliation
--- behavior do not change.
-alter function public.payroll_import_attendance(uuid, uuid)
-  rename to payroll_import_attendance_for_record;
-
--- The old implementation used a nullable default for its record scope. Drop
--- that default on the renamed function so the record-specific API requires
--- both identifiers while retaining the exact live implementation body.
+-- copied from the live function so snapshot, authorization, idempotency, and
+-- reconciliation behavior do not change.
 do $$
 declare
   v_definition text;
   v_updated text;
+  v_owner text;
 begin
   v_definition := pg_get_functiondef(
-    'public.payroll_import_attendance_for_record(uuid,uuid)'::regprocedure
+    'public.payroll_import_attendance(uuid,uuid)'::regprocedure
   );
+  select pg_get_userbyid(proowner)
+    into v_owner
+  from pg_proc
+  where oid = 'public.payroll_import_attendance(uuid,uuid)'::regprocedure;
+
   v_updated := replace(
     v_definition,
+    'public.payroll_import_attendance(',
+    'public.payroll_import_attendance_for_record('
+  );
+  v_updated := replace(
+    v_updated,
     ' DEFAULT NULL::uuid',
     ''
   );
 
   if v_updated = v_definition
+     or position('public.payroll_import_attendance_for_record(' in v_updated) = 0
      or position('p_payroll_record_id uuid DEFAULT' in v_updated) > 0 then
     raise exception
-      'payroll_import_attendance_for_record retained its nullable record default';
+      'Could not create the required-argument record attendance import function';
   end if;
 
   execute v_updated;
+  execute format(
+    'alter function public.payroll_import_attendance_for_record(uuid,uuid) owner to %I',
+    v_owner
+  );
 end;
 $$;
 
@@ -70,6 +80,8 @@ begin
   return public.payroll_import_attendance_for_record(v_period_id, p_payroll_record_id);
 end;
 $$;
+
+drop function public.payroll_import_attendance(uuid, uuid);
 
 revoke all on function public.payroll_import_attendance(uuid)
   from public, anon;
