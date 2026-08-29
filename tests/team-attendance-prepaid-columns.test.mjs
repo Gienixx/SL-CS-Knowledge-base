@@ -4,7 +4,7 @@ import test from 'node:test'
 
 const read = path => readFile(new URL(`../${path}`, import.meta.url), 'utf8')
 const migrationPath = 'supabase/migrations/20260728073925_add_prepaid_columns_to_team_attendance.sql'
-const shiftAliasFixMigrationPath = 'supabase/migrations/20260827102355_fix_team_attendance_prepaid_shift_alias.sql'
+const shiftAliasFixMigrationPath = 'supabase/migrations/20260827105406_fix_team_attendance_prepaid_shift_alias.sql'
 
 test('Team Attendance exposes every calculated prepaid reconciliation column', async () => {
   const page = await read('team-attendance.html')

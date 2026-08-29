@@ -4,11 +4,11 @@ import test from 'node:test'
 
 const read = path => readFile(path, 'utf8')
 const migrationPath =
-  'supabase/migrations/20260826202522_prepaid_hour_corrections.sql'
+  'supabase/migrations/20260826220419_prepaid_hour_corrections.sql'
 const hardeningMigrationPath =
-  'supabase/migrations/20260826210223_prepaid_hour_correction_hardening.sql'
+  'supabase/migrations/20260826220429_prepaid_hour_correction_hardening.sql'
 const readerRetirementMigrationPath =
-  'supabase/migrations/20260826215013_retire_stale_prepaid_exception_base.sql'
+  'supabase/migrations/20260826220436_retire_stale_prepaid_exception_base.sql'
 
 test('corrections use an append-only versioned prepaid balance', async () => {
   const migration = await read(migrationPath)
