@@ -33,6 +33,27 @@ test('Home and agent UI expose the unified Schedule Request workflow', async () 
   assert.doesNotMatch(script, /\.from\('leave_requests'\)[\s\S]*?\.insert/)
 })
 
+test('Schedule Request uses three role-aware accessible tabs', async () => {
+  const [page, script] = await Promise.all([
+    read('leave-requests.html'),
+    read('scripts/leave-requests.js')
+  ])
+
+  assert.match(page, /role="tablist" aria-label="Schedule request sections"/)
+  assert.match(page, /id="newScheduleRequestTab"[^>]*>New Schedule Request/)
+  assert.match(page, /id="scheduleRequestApprovalTab"[^>]*>Schedule Request Approval Queue/)
+  assert.doesNotMatch(page, /id="scheduleRequestApprovalTab"[^>]*hidden/)
+  assert.match(page, /id="scheduleRequestHistoryTab"[^>]*>Request History/)
+  assert.match(page, /id="newScheduleRequestPanel"[^>]*role="tabpanel"/)
+  assert.match(page, /id="scheduleRequestApprovalPanel"[^>]*role="tabpanel"/)
+  assert.match(page, /id="scheduleRequestHistoryPanel"[^>]*role="tabpanel"/)
+  assert.match(script, /elements\.newRequestTab\.disabled = isApproverView/)
+  assert.match(script, /elements\.approvalTab\.disabled = !isApproverView/)
+  assert.match(script, /activateRequestTab\(isApproverView \? 'approval' : 'new'\)/)
+  assert.match(script, /event\.key === 'ArrowRight'/)
+  assert.match(script, /event\.key === 'Home'/)
+})
+
 test('production-forward request migration reuses the leave ledger and canonical schedules', async () => {
   const migration = await read('supabase/migrations/20260817125628_unified_schedule_requests.sql')
 

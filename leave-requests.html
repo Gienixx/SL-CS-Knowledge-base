@@ -6,7 +6,7 @@
   <title>Schedule Requests | SocialLoop CS Base</title>
   <link rel="stylesheet" href="./styles/button-theme.css?v=1">
   <link rel="stylesheet" href="./styles/workforce-admin.css?v=15">
-  <link rel="stylesheet" href="./styles/leave-requests.css?v=2">
+  <link rel="stylesheet" href="./styles/leave-requests.css?v=4">
   <link rel="stylesheet" href="./styles/site-theme.css?v=5">
   <script src="./scripts/site-theme.js?v=1"></script>
 </head>
@@ -32,6 +32,13 @@
       <article class="wf-summary"><span>Denied</span><strong id="leaveRequestRejectedCount">—</strong></article>
     </section>
 
+    <nav id="leaveRequestTabs" class="wf-view-switcher leave-request-tabs" role="tablist" aria-label="Schedule request sections">
+      <button id="newScheduleRequestTab" class="active" type="button" role="tab" aria-controls="newScheduleRequestPanel" aria-selected="true" tabindex="0">New Schedule Request</button>
+      <button id="scheduleRequestApprovalTab" type="button" role="tab" aria-controls="scheduleRequestApprovalPanel" aria-selected="false" tabindex="-1">Schedule Request Approval Queue</button>
+      <button id="scheduleRequestHistoryTab" type="button" role="tab" aria-controls="scheduleRequestHistoryPanel" aria-selected="false" tabindex="-1">Request History</button>
+    </nav>
+
+    <section id="newScheduleRequestPanel" class="leave-request-tab-panel" role="tabpanel" aria-labelledby="newScheduleRequestTab" tabindex="0" hidden>
     <section id="leaveRequestSubmissionSection" class="wf-card leave-request-form-card" aria-labelledby="leaveRequestFormTitle" hidden>
       <div class="wf-card-header">
         <div>
@@ -73,6 +80,32 @@
             <span>End date</span>
             <input id="leaveRequestEndDate" class="wf-control" type="date" required>
           </label>
+          <label id="leaveRequestDurationField" class="wf-field">
+            <span>Leave Duration</span>
+            <select id="leaveRequestDuration" class="wf-control" required>
+              <option value="whole_day">Whole Day</option>
+              <option value="half_day">Half Day</option>
+              <option value="specific_time">Specific Time</option>
+            </select>
+          </label>
+          <label id="leaveRequestHalfField" class="wf-field" hidden>
+            <span>Half Day Period</span>
+            <select id="leaveRequestHalf" class="wf-control">
+              <option value="first">First Half</option>
+              <option value="second">Second Half</option>
+            </select>
+          </label>
+          <div id="leaveRequestSpecificTimes" class="wf-form-grid full" hidden>
+            <label class="wf-field">
+              <span id="leaveRequestFromLabel">From (schedule time)</span>
+              <input id="leaveRequestFromTime" class="wf-control" type="time" step="60">
+            </label>
+            <label class="wf-field">
+              <span id="leaveRequestToLabel">To (schedule time)</span>
+              <input id="leaveRequestToTime" class="wf-control" type="time" step="60">
+            </label>
+          </div>
+          <p id="leaveRequestDurationMessage" class="wf-message full" aria-live="polite"></p>
           <label id="leaveRequestPlannedMinutesField" class="wf-field" hidden>
             <span>Open Schedule planned paid minutes</span>
             <input id="leaveRequestPlannedMinutes" class="wf-control" type="number" min="15" max="1440" step="15" placeholder="480">
@@ -100,14 +133,19 @@
         <p id="leaveRequestFormMessage" class="wf-message" aria-live="polite"></p>
       </form>
     </section>
+    </section>
 
+    <section id="scheduleRequestApprovalPanel" class="leave-request-tab-panel" role="tabpanel" aria-labelledby="scheduleRequestApprovalTab" tabindex="0" hidden>
     <section id="leaveApprovalQueueSection" class="wf-card leave-approval-card" aria-labelledby="leaveApprovalQueueTitle" hidden>
       <div class="wf-card-header">
         <div>
           <h2 id="leaveApprovalQueueTitle">Schedule request approval queue</h2>
           <p class="wf-message">Pending agent leave and schedule-change requests that require a decision.</p>
         </div>
-        <span id="leaveApprovalQueueCount" class="leave-queue-count">0 pending</span>
+        <div class="wf-actions leave-approval-actions">
+          <span id="leaveApprovalQueueCount" class="leave-queue-count">0 pending</span>
+          <button id="leaveApprovalQueueRefreshButton" class="wf-btn secondary" type="button">Refresh queue</button>
+        </div>
       </div>
 
       <div class="wf-table-wrap">
@@ -128,7 +166,9 @@
         </table>
       </div>
     </section>
+    </section>
 
+    <section id="scheduleRequestHistoryPanel" class="leave-request-tab-panel" role="tabpanel" aria-labelledby="scheduleRequestHistoryTab" tabindex="0" hidden>
     <section class="wf-card" aria-labelledby="leaveRequestTableTitle">
       <div class="wf-card-header">
         <div>
@@ -160,6 +200,7 @@
         </table>
       </div>
       <p id="leaveRequestTableMessage" class="wf-message" aria-live="polite"></p>
+    </section>
     </section>
   </main>
 
@@ -193,7 +234,7 @@
             <input id="leaveRequestReviewDates" class="wf-control" type="text" readonly>
           </label>
           <label class="wf-field full">
-            <span>Current/requested schedule</span>
+            <span>Leave duration / requested schedule</span>
             <textarea id="leaveRequestReviewSchedule" class="wf-control" rows="2" readonly></textarea>
           </label>
           <label class="wf-field full">
@@ -223,6 +264,6 @@
     </section>
   </div>
 
-  <script type="module" src="./scripts/leave-requests.js?v=2"></script>
+  <script type="module" src="./scripts/leave-requests.js?v=4"></script>
 </body>
 </html>

@@ -1,6 +1,12 @@
 .leave-role-pending .leave-requests-page{visibility:hidden}
 .leave-requests-page{max-width:1240px}
+.leave-request-tabs{margin-top:4px;margin-bottom:12px}
+.leave-request-tabs button{white-space:nowrap}
+.leave-request-tabs button:disabled{cursor:not-allowed;opacity:.5}
+.leave-request-tab-panel[hidden]{display:none}
+.leave-request-tab-panel>.wf-card{margin-bottom:0}
 .leave-request-form-card,.leave-approval-card{margin-bottom:16px}
+.leave-approval-actions{align-items:center;flex-wrap:wrap}
 .leave-request-form{padding:0 22px 18px}
 .leave-request-form-grid{grid-template-columns:minmax(190px,.9fr) repeat(2,minmax(160px,.7fr))}
 .leave-request-form-grid .full{grid-column:1/-1}

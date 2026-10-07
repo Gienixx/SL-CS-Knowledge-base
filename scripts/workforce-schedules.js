@@ -8,6 +8,7 @@ import {
   operationalScheduleStatus,
   scheduleStatusTags
 } from '../shared/workforce-schedule-status.js?v=1'
+import { formatLeaveMinutes } from '../shared/leave-duration.js?v=1'
 
 const section = document.getElementById('scheduleManagementSection')
 
@@ -196,12 +197,25 @@ if (section) {
     }).format(parseDateKey(value))
   }
 
-  function formatDateTime(value) {
+  function formatDateTime(value, timeZone = 'America/New_York') {
     if (!value) return '—'
     return new Intl.DateTimeFormat('en-US', {
+      timeZone,
       dateStyle: 'medium',
       timeStyle: 'short'
     }).format(new Date(value))
+  }
+
+  function partialLeaveSummary(request, fallbackTimezone = 'America/New_York') {
+    if (!request || !['half_day', 'specific_time'].includes(request.leave_duration)) return ''
+    const timezone = request.requested_schedule_timezone || fallbackTimezone
+    const duration = request.leave_duration === 'half_day'
+      ? 'Half Day · ' + (request.leave_half === 'second' ? 'Second Half' : 'First Half')
+      : 'Specific Time'
+    return duration + ' · ' +
+      formatDateTime(request.requested_leave_start, timezone) + ' – ' +
+      formatDateTime(request.requested_leave_end, timezone) + ' · ' +
+      formatLeaveMinutes(request.requested_leave_minutes) + ' · ' + timezone
   }
 
   function formatShift(schedule) {
@@ -435,7 +449,7 @@ if (section) {
           const sequenceLabel = `Sequence ${schedule.shift_sequence}`
           const statusTags = scheduleStatusTags(schedule, schedule.attendance || [])
           const scheduleMeta = schedule.is_leave
-            ? `Leave · ${sequenceLabel}`
+            ? [partialLeaveSummary(schedule.leave_request, schedule.timezone), `Leave · ${sequenceLabel}`].filter(Boolean).join(' · ')
             : schedule.is_absent
               ? `Absent · ${sequenceLabel}`
             : isOpenSchedule
@@ -659,7 +673,7 @@ if (section) {
           .order('name'),
         supabase
           .from('work_schedules')
-          .select('id, user_id, team_id, shift_date, shift_sequence, shift_start, shift_end, timezone, status, is_rest_day, is_holiday, is_leave, is_absent, leave_type, absence_type, holiday_name, notes, planned_paid_minutes, updated_at, changed_at, changed_by, admin_override, attendance(id, schedule_id, clock_in, clock_out, billed_clock_out, voided_at)')
+          .select('id, user_id, team_id, shift_date, shift_sequence, shift_start, shift_end, timezone, status, is_rest_day, is_holiday, is_leave, is_absent, leave_type, absence_type, holiday_name, notes, planned_paid_minutes, updated_at, changed_at, changed_by, admin_override, leave_request:leave_requests!work_schedules_leave_request_id_fkey(leave_duration, leave_half, requested_leave_start, requested_leave_end, requested_leave_minutes, requested_schedule_timezone), attendance(id, schedule_id, clock_in, clock_out, billed_clock_out, voided_at)')
           .gte('shift_date', range.start)
           .lte('shift_date', range.end)
           .order('shift_date')

@@ -8,6 +8,7 @@ import {
   operationalScheduleStatus,
   scheduleStatusTags
 } from '../shared/workforce-schedule-status.js?v=1'
+import { formatLeaveMinutes } from '../shared/leave-duration.js?v=1'
 
 const RELEASED_STATUSES = Object.freeze([
   'published',
@@ -28,7 +29,19 @@ const ABSENCE_TYPE_LABELS = Object.freeze({
 })
 
 function specialScheduleLabel(schedule) {
-  if (schedule.is_leave) return LEAVE_TYPE_LABELS[schedule.leave_type] || 'Leave'
+  if (schedule.is_leave) {
+    const label = LEAVE_TYPE_LABELS[schedule.leave_type] || 'Leave'
+    const request = schedule.leave_request
+    if (!request || !['half_day', 'specific_time'].includes(request.leave_duration)) return label
+    const timezone = request.requested_schedule_timezone || schedule.timezone || 'America/New_York'
+    const duration = request.leave_duration === 'half_day'
+      ? 'Half Day · ' + (request.leave_half === 'second' ? 'Second Half' : 'First Half')
+      : 'Specific Time'
+    return label + ' · ' + duration + ' · ' +
+      formatDateTime(request.requested_leave_start, timezone) + ' – ' +
+      formatDateTime(request.requested_leave_end, timezone) + ' · ' +
+      formatLeaveMinutes(request.requested_leave_minutes) + ' · ' + timezone
+  }
   if (schedule.is_absent) return ABSENCE_TYPE_LABELS[schedule.absence_type] || 'Absent'
   return ''
 }
@@ -1100,7 +1113,7 @@ async function loadSchedules() {
 
   let query = supabase
     .from('work_schedules')
-    .select('id, user_id, team_id, shift_date, shift_sequence, shift_start, shift_end, timezone, status, is_rest_day, is_holiday, is_leave, is_absent, leave_type, absence_type, holiday_name, notes, updated_at, changed_at, changed_by, admin_override, attendance(id, schedule_id, clock_in, clock_out, billed_clock_out, voided_at)')
+    .select('id, user_id, team_id, shift_date, shift_sequence, shift_start, shift_end, timezone, status, is_rest_day, is_holiday, is_leave, is_absent, leave_type, absence_type, holiday_name, notes, updated_at, changed_at, changed_by, admin_override, leave_request:leave_requests!work_schedules_leave_request_id_fkey(leave_duration, leave_half, requested_leave_start, requested_leave_end, requested_leave_minutes, requested_schedule_timezone), attendance(id, schedule_id, clock_in, clock_out, billed_clock_out, voided_at)')
 
   // constrain by user id depending on scope
   if (currentScope() === 'team') {

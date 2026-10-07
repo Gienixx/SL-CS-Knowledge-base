@@ -1,5 +1,6 @@
 import { supabase } from './supabaseClient.js?v=11'
 import { hasWorkforcePermission, loadCurrentWorkforceAccess } from './workforce-permissions.js?v=1'
+import { calculatePartialLeaveInterval, formatLeaveMinutes, partialLeaveScheduleEligibility } from '../shared/leave-duration.js?v=1'
 
 const STATUS_LABELS = Object.freeze({ pending: 'Pending', approved: 'Approved', rejected: 'Denied', cancelled: 'Cancelled' })
 const LEAVE_TYPE_LABELS = Object.freeze({
@@ -13,13 +14,22 @@ const elements = {
   pageDescription: document.getElementById('leaveRequestsPageDescription'), workforceLink: document.getElementById('leaveRequestsWorkforceLink'),
   totalCount: document.getElementById('leaveRequestTotalCount'), pendingCount: document.getElementById('leaveRequestPendingCount'),
   approvedCount: document.getElementById('leaveRequestApprovedCount'), rejectedCount: document.getElementById('leaveRequestRejectedCount'),
+  newRequestTab: document.getElementById('newScheduleRequestTab'), approvalTab: document.getElementById('scheduleRequestApprovalTab'),
+  historyTab: document.getElementById('scheduleRequestHistoryTab'), newRequestPanel: document.getElementById('newScheduleRequestPanel'),
+  approvalPanel: document.getElementById('scheduleRequestApprovalPanel'), historyPanel: document.getElementById('scheduleRequestHistoryPanel'),
   submissionSection: document.getElementById('leaveRequestSubmissionSection'), approvalSection: document.getElementById('leaveApprovalQueueSection'),
-  approvalCount: document.getElementById('leaveApprovalQueueCount'), approvalTableBody: document.getElementById('leaveApprovalTableBody'),
+  approvalCount: document.getElementById('leaveApprovalQueueCount'), approvalRefreshButton: document.getElementById('leaveApprovalQueueRefreshButton'),
+  approvalTableBody: document.getElementById('leaveApprovalTableBody'),
   form: document.getElementById('leaveRequestForm'), category: document.getElementById('leaveRequestCategory'),
   type: document.getElementById('leaveRequestType'), targetScheduleField: document.getElementById('leaveRequestTargetScheduleField'),
   targetSchedule: document.getElementById('leaveRequestTargetSchedule'), startDate: document.getElementById('leaveRequestStartDate'),
   startDateLabel: document.getElementById('leaveRequestStartDateLabel'), endDateField: document.getElementById('leaveRequestEndDateField'),
-  endDate: document.getElementById('leaveRequestEndDate'), plannedMinutesField: document.getElementById('leaveRequestPlannedMinutesField'),
+  endDate: document.getElementById('leaveRequestEndDate'), durationField: document.getElementById('leaveRequestDurationField'),
+  duration: document.getElementById('leaveRequestDuration'), halfField: document.getElementById('leaveRequestHalfField'),
+  half: document.getElementById('leaveRequestHalf'), specificTimes: document.getElementById('leaveRequestSpecificTimes'),
+  fromTime: document.getElementById('leaveRequestFromTime'), toTime: document.getElementById('leaveRequestToTime'),
+  fromLabel: document.getElementById('leaveRequestFromLabel'), toLabel: document.getElementById('leaveRequestToLabel'),
+  durationMessage: document.getElementById('leaveRequestDurationMessage'), plannedMinutesField: document.getElementById('leaveRequestPlannedMinutesField'),
   plannedMinutes: document.getElementById('leaveRequestPlannedMinutes'), shiftTimes: document.getElementById('leaveRequestShiftTimes'),
   shiftStart: document.getElementById('leaveRequestShiftStart'), shiftEnd: document.getElementById('leaveRequestShiftEnd'),
   reason: document.getElementById('leaveRequestReason'), resetButton: document.getElementById('leaveRequestResetButton'),
@@ -42,8 +52,41 @@ let schedules = []
 let selectedReviewRequest = null
 let isApproverView = false
 
+const scheduleRequestTabs = [
+  { name: 'new', tab: elements.newRequestTab, panel: elements.newRequestPanel },
+  { name: 'approval', tab: elements.approvalTab, panel: elements.approvalPanel },
+  { name: 'history', tab: elements.historyTab, panel: elements.historyPanel }
+]
+
 const errorMessage = error => error?.message || 'An unexpected error occurred.'
 function setMessage(element, text, type = '') { if (element) { element.textContent = text; element.className = type ? `wf-message ${type}` : 'wf-message' } }
+function activateRequestTab(name) {
+  const selected = scheduleRequestTabs.find(item => item.name === name)
+  if (!selected || selected.tab.disabled) return
+
+  scheduleRequestTabs.forEach(item => {
+    const active = item === selected
+    item.tab.classList.toggle('active', active)
+    item.tab.setAttribute('aria-selected', String(active))
+    item.tab.tabIndex = active ? 0 : -1
+    item.panel.hidden = !active || item.tab.disabled
+  })
+}
+function handleRequestTabKeydown(event) {
+  const enabledTabs = scheduleRequestTabs.filter(item => !item.tab.disabled)
+  const currentIndex = enabledTabs.findIndex(item => item.tab === event.currentTarget)
+  let nextIndex = currentIndex
+  if (event.key === 'ArrowRight') nextIndex = (currentIndex + 1) % enabledTabs.length
+  else if (event.key === 'ArrowLeft') nextIndex = (currentIndex - 1 + enabledTabs.length) % enabledTabs.length
+  else if (event.key === 'Home') nextIndex = 0
+  else if (event.key === 'End') nextIndex = enabledTabs.length - 1
+  else return
+
+  event.preventDefault()
+  const next = enabledTabs[nextIndex]
+  activateRequestTab(next.name)
+  next.tab.focus()
+}
 function formatDate(value) {
   if (!value) return '—'
   const date = new Date(/^\d{4}-\d{2}-\d{2}$/.test(value) ? `${value}T12:00:00Z` : value)
@@ -61,8 +104,22 @@ function scheduleLabel(schedule) {
   if (!schedule.shift_start || !schedule.shift_end) return 'Open Schedule'
   return `${formatDateTime(schedule.shift_start, schedule.timezone)} – ${formatDateTime(schedule.shift_end, schedule.timezone)}`
 }
+function leaveDurationLabel(request) {
+  const duration = request?.leave_duration || 'whole_day'
+  if (duration === 'whole_day') return 'Whole Day'
+  const timezone = request?.requested_schedule_timezone || 'America/New_York'
+  const start = formatDateTime(request?.requested_leave_start, timezone)
+  const end = formatDateTime(request?.requested_leave_end, timezone)
+  const interval = start + ' – ' + end + ' · ' + formatLeaveMinutes(request?.requested_leave_minutes) + ' · ' + timezone
+  if (duration === 'half_day') {
+    const half = request?.leave_half === 'second' ? 'Second Half' : 'First Half'
+    return 'Half Day · ' + half + ' · ' + interval
+  }
+  return 'Specific Time · ' + interval
+}
+
 function requestedScheduleLabel(request) {
-  if (request?.request_category !== 'schedule_change') return scheduleLabel(request?.target_schedule)
+  if (request?.request_category !== 'schedule_change') return leaveDurationLabel(request)
   if (request.request_type === 'open_schedule') return `Open Schedule · ${request.requested_planned_paid_minutes || '—'} planned minutes${request.target_schedule ? ` · current: ${scheduleLabel(request.target_schedule)}` : ''}`
   return `Slide Shift · ${formatDateTime(request.requested_shift_start)} – ${formatDateTime(request.requested_shift_end)}${request.target_schedule ? ` · current: ${scheduleLabel(request.target_schedule)}` : ''}`
 }
@@ -76,6 +133,75 @@ function createCell(content, secondary = '', className = '') {
 function createStatusCell(status) { const cell = document.createElement('td'); const badge = document.createElement('span'); badge.className = `leave-status ${status || 'pending'}`; badge.textContent = STATUS_LABELS[status] || status || '—'; cell.appendChild(badge); return cell }
 function createButton(label, handler, disabled = false) { const button = document.createElement('button'); button.type = 'button'; button.className = 'wf-btn compact'; button.textContent = label; button.disabled = disabled; button.addEventListener('click', handler); return button }
 function selectedSchedule() { return schedules.find(schedule => schedule.id === elements.targetSchedule?.value) || null }
+function selectedPartialSchedule() {
+  return partialLeaveScheduleEligibility(schedules, elements.startDate.value)
+}
+function refreshDurationPreview() {
+  if (!elements.durationMessage || elements.category.value !== 'leave') {
+    setMessage(elements.durationMessage, '')
+    return
+  }
+
+  const duration = elements.duration.value
+  const halfOption = [...elements.duration.options].find(option => option.value === 'half_day')
+  const specificOption = [...elements.duration.options].find(option => option.value === 'specific_time')
+  if (!elements.startDate.value) {
+    if (halfOption) halfOption.disabled = false
+    if (specificOption) specificOption.disabled = false
+    setMessage(elements.durationMessage, 'Choose a work date before selecting a partial duration.')
+    return
+  }
+
+  const eligibility = selectedPartialSchedule()
+  const scheduleTimezone = eligibility.schedule?.timezone || 'America/New_York'
+  if (elements.fromLabel) elements.fromLabel.textContent = `From (${scheduleTimezone})`
+  if (elements.toLabel) elements.toLabel.textContent = `To (${scheduleTimezone})`
+  if (halfOption) halfOption.disabled = !eligibility.schedule
+  if (specificOption) specificOption.disabled = !eligibility.schedule
+
+  if (duration === 'whole_day') {
+    setMessage(
+      elements.durationMessage,
+      eligibility.schedule
+        ? 'Whole Day covers the applicable scheduled work period on each selected date.'
+        : eligibility.reason + ' Whole Day remains available.'
+    )
+    return
+  }
+
+  if (!eligibility.schedule) {
+    elements.duration.value = 'whole_day'
+    elements.halfField.hidden = true; elements.specificTimes.hidden = true
+    elements.half.required = false; elements.fromTime.required = false; elements.toTime.required = false
+    elements.endDateField.hidden = false; elements.endDate.required = true
+    elements.endDate.value = elements.startDate.value
+    setMessage(elements.durationMessage, eligibility.reason + ' Whole Day remains available.', 'error')
+    return
+  }
+
+  try {
+    const interval = calculatePartialLeaveInterval({
+      duration,
+      half: elements.half.value,
+      fromTime: elements.fromTime.value,
+      toTime: elements.toTime.value,
+      schedule: eligibility.schedule
+    })
+    setMessage(
+      elements.durationMessage,
+      formatDateTime(interval.start, scheduleTimezone) +
+        ' – ' +
+        formatDateTime(interval.end, scheduleTimezone) +
+        ' · ' +
+        formatLeaveMinutes(interval.minutes) +
+        ' · ' +
+        scheduleTimezone
+    )
+  } catch (error) {
+    const incompleteSpecificTime = duration === 'specific_time' && (!elements.fromTime.value || !elements.toTime.value)
+    setMessage(elements.durationMessage, errorMessage(error), incompleteSpecificTime ? '' : 'error')
+  }
+}
 
 function zoneParts(timestamp, timeZone) {
   const parts = new Intl.DateTimeFormat('en-US', { timeZone, year: 'numeric', month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit', second: '2-digit', hourCycle: 'h23' }).formatToParts(new Date(timestamp))
@@ -104,11 +230,20 @@ function populateTargetSchedules() {
 }
 function updateFormFields() {
   const isScheduleChange = elements.category.value === 'schedule_change'; const isOpen = isScheduleChange && elements.type.value === 'open_schedule'; const isSlide = isScheduleChange && elements.type.value === 'slide_shift'
-  elements.targetScheduleField.hidden = !isScheduleChange; elements.plannedMinutesField.hidden = !isOpen; elements.shiftTimes.hidden = !isSlide; elements.endDateField.hidden = isScheduleChange
-  elements.endDate.required = !isScheduleChange; elements.startDateLabel.textContent = isScheduleChange ? 'Target work date' : 'Start date'; elements.targetSchedule.required = isSlide
-  if (isScheduleChange) elements.endDate.value = elements.startDate.value
+  const isPartial = !isScheduleChange && elements.duration.value !== 'whole_day'
+  const isHalf = !isScheduleChange && elements.duration.value === 'half_day'
+  const isSpecific = !isScheduleChange && elements.duration.value === 'specific_time'
+  elements.targetScheduleField.hidden = !isScheduleChange; elements.plannedMinutesField.hidden = !isOpen; elements.shiftTimes.hidden = !isSlide
+  elements.durationField.hidden = isScheduleChange; elements.halfField.hidden = !isHalf; elements.specificTimes.hidden = !isSpecific
+  elements.endDateField.hidden = isScheduleChange || isPartial
+  elements.endDate.required = !isScheduleChange && !isPartial
+  elements.half.required = isHalf; elements.fromTime.required = isSpecific; elements.toTime.required = isSpecific
+  elements.startDateLabel.textContent = isScheduleChange ? 'Target work date' : isPartial ? 'Work date' : 'Start date'; elements.targetSchedule.required = isSlide
+  if (isScheduleChange || isPartial) elements.endDate.value = elements.startDate.value
+  if (isScheduleChange) elements.duration.value = 'whole_day'
   if (!isScheduleChange) { elements.targetSchedule.value = ''; elements.plannedMinutes.value = ''; elements.shiftStart.value = ''; elements.shiftEnd.value = '' }
   populateTargetSchedules()
+  refreshDurationPreview()
 }
 function resetForm({ clearMessage = true } = {}) { elements.form?.reset(); populateRequestTypes(); updateFormFields(); if (clearMessage) setMessage(elements.formMessage, '') }
 
@@ -139,13 +274,15 @@ function updateReviewNotesRequirement() { const denied = elements.reviewAction.v
 async function loadSchedules() {
   if (isApproverView) return
   const { data, error } = await supabase.from('work_schedules').select('id, user_id, shift_date, shift_sequence, shift_start, shift_end, timezone, status, is_rest_day, is_holiday, is_leave, is_absent, leave_type').order('shift_date', { ascending: false })
-  if (error) { schedules = []; setMessage(elements.formMessage, 'Existing schedules could not be loaded; Open Schedule requests can still specify a date.', 'error'); return }
-  schedules = data || []; populateTargetSchedules()
+  if (error) { schedules = []; setMessage(elements.formMessage, 'Existing schedules could not be loaded; Whole Day requests can still specify dates.', 'error'); refreshDurationPreview(); return }
+  schedules = data || []; populateTargetSchedules(); refreshDurationPreview()
 }
 async function loadRequests() {
   setMessage(elements.tableMessage, 'Loading schedule requests...'); elements.refreshButton.disabled = true
+  if (elements.approvalRefreshButton) elements.approvalRefreshButton.disabled = true
   const { data, error } = await supabase.from('leave_requests').select('*, user:profiles!leave_requests_user_id_fkey(full_name), target_schedule:work_schedules!leave_requests_target_schedule_id_fkey(id, shift_date, shift_start, shift_end, timezone, status, is_rest_day, is_holiday, is_leave, is_absent, leave_type)').order('created_at', { ascending: false })
   elements.refreshButton.disabled = false
+  if (elements.approvalRefreshButton) elements.approvalRefreshButton.disabled = false
   if (error) { setMessage(elements.tableMessage, errorMessage(error), 'error'); return }
   requests = (data || []).map(request => ({ ...request, full_name: request.user?.full_name || (isApproverView ? 'Unknown employee' : 'You') })); renderRequests(); setMessage(elements.tableMessage, `${requests.length} schedule request${requests.length === 1 ? '' : 's'} loaded.`)
 }
@@ -160,10 +297,37 @@ async function submitRequest(event) {
   event.preventDefault(); const category = elements.category.value; const type = elements.type.value; const startDate = elements.startDate.value; const endDate = elements.endDate.value; const reason = elements.reason.value.trim()
   if (!type || !startDate || !reason) { setMessage(elements.formMessage, 'Request type, target date, and reason are required.', 'error'); return }
   if (category === 'leave') {
-    if (!endDate || endDate < startDate) { setMessage(elements.formMessage, 'End date cannot be earlier than start date.', 'error'); return }
-    elements.submitButton.disabled = true; setMessage(elements.formMessage, 'Submitting leave request...')
-    const { error } = await supabase.rpc('workforce_submit_leave_request', { p_leave_type: type, p_start_date: startDate, p_end_date: endDate, p_reason: reason }); elements.submitButton.disabled = false
-    if (error) { setMessage(elements.formMessage, errorMessage(error), 'error'); return }
+    const duration = elements.duration.value
+    if (duration === 'whole_day') {
+      if (!endDate || endDate < startDate) { setMessage(elements.formMessage, 'End date cannot be earlier than start date.', 'error'); return }
+      elements.submitButton.disabled = true; setMessage(elements.formMessage, 'Submitting leave request...')
+      const { error } = await supabase.rpc('workforce_submit_leave_request', { p_leave_type: type, p_start_date: startDate, p_end_date: endDate, p_reason: reason }); elements.submitButton.disabled = false
+      if (error) { setMessage(elements.formMessage, errorMessage(error), 'error'); return }
+    } else {
+      const eligibility = selectedPartialSchedule()
+      if (!eligibility.schedule) { setMessage(elements.formMessage, eligibility.reason + ' Choose Whole Day or another date.', 'error'); return }
+      try {
+        calculatePartialLeaveInterval({
+          duration,
+          half: elements.half.value,
+          fromTime: elements.fromTime.value,
+          toTime: elements.toTime.value,
+          schedule: eligibility.schedule
+        })
+      } catch (error) { setMessage(elements.formMessage, errorMessage(error), 'error'); return }
+
+      elements.submitButton.disabled = true; setMessage(elements.formMessage, 'Submitting partial leave request...')
+      const { error } = await supabase.rpc('workforce_submit_partial_leave_request', {
+        p_leave_type: type,
+        p_work_date: startDate,
+        p_leave_duration: duration,
+        p_leave_half: duration === 'half_day' ? elements.half.value : null,
+        p_from_time: duration === 'specific_time' ? elements.fromTime.value + ':00' : null,
+        p_to_time: duration === 'specific_time' ? elements.toTime.value + ':00' : null,
+        p_reason: reason
+      }); elements.submitButton.disabled = false
+      if (error) { setMessage(elements.formMessage, errorMessage(error), 'error'); return }
+    }
   } else {
     const target = selectedSchedule(); const plannedMinutes = type === 'open_schedule' ? Number(elements.plannedMinutes.value) : null; let requestedStart = null; let requestedEnd = null
     if (type === 'slide_shift') {
@@ -185,19 +349,33 @@ async function reviewRequest(event) {
   const rpcName = selectedReviewRequest.request_category === 'schedule_change' ? 'workforce_review_schedule_request' : 'workforce_review_leave_request'
   const { error } = await supabase.rpc(rpcName, { p_request_id: selectedReviewRequest.id, p_status: status, p_review_notes: notes || null }); elements.reviewSubmitButton.disabled = false
   if (error) { setMessage(elements.reviewMessage, errorMessage(error), 'error'); return }
-  closeReviewModal(); await loadRequests(); setMessage(elements.tableMessage, status === 'approved' ? 'Request approved and Schedule Management was updated.' : 'Request denied; the reason is now visible to the agent.', 'success')
+  closeReviewModal(); await loadRequests(); activateRequestTab('history'); setMessage(elements.tableMessage, status === 'approved' ? 'Request approved and Schedule Management was updated.' : 'Request denied; the reason is now visible to the agent.', 'success')
 }
 function configureRoleView() {
   elements.submissionSection.hidden = isApproverView; elements.approvalSection.hidden = !isApproverView
+  elements.newRequestTab.disabled = isApproverView
+  elements.newRequestTab.setAttribute('aria-disabled', String(isApproverView))
+  elements.newRequestTab.title = isApproverView ? 'New requests are available to agent profiles.' : ''
+  elements.approvalTab.disabled = !isApproverView
+  elements.approvalTab.setAttribute('aria-disabled', String(!isApproverView))
+  elements.approvalTab.title = isApproverView ? '' : 'Approval access is limited to authorized administrators.'
+  activateRequestTab(isApproverView ? 'approval' : 'new')
   if (isApproverView) { elements.pageTitle.textContent = 'Schedule Request Approvals'; elements.pageDescription.textContent = 'Review agent leave and schedule-change requests through Schedule Management.'; elements.tableTitle.textContent = 'Request history'; elements.tableDescription.textContent = 'Reviewed requests in your authorized workforce scope.' }
   else { elements.pageTitle.textContent = 'My Schedule Requests'; elements.pageDescription.textContent = 'Request leave or a schedule change and track the administrator’s decision.'; elements.tableTitle.textContent = 'My schedule requests'; elements.tableDescription.textContent = 'Denied requests display the administrator’s reason here.' }
 }
 function bindEvents() {
+  scheduleRequestTabs.forEach(item => {
+    item.tab.addEventListener('click', () => activateRequestTab(item.name))
+    item.tab.addEventListener('keydown', handleRequestTabKeydown)
+  })
   if (!isApproverView) {
     elements.form.addEventListener('submit', submitRequest); elements.resetButton.addEventListener('click', () => resetForm())
     elements.category.addEventListener('change', () => { populateRequestTypes(); updateFormFields() }); elements.type.addEventListener('change', updateFormFields); elements.startDate.addEventListener('change', updateFormFields)
+    elements.duration.addEventListener('change', updateFormFields); elements.half.addEventListener('change', refreshDurationPreview)
+    elements.fromTime.addEventListener('input', refreshDurationPreview); elements.toTime.addEventListener('input', refreshDurationPreview)
   }
   elements.refreshButton.addEventListener('click', loadRequests)
+  elements.approvalRefreshButton?.addEventListener('click', loadRequests)
   if (isApproverView) { elements.reviewForm.addEventListener('submit', reviewRequest); elements.reviewAction.addEventListener('change', updateReviewNotesRequirement) }
   document.querySelectorAll('[data-close="leaveRequestReviewModal"]').forEach(button => button.addEventListener('click', closeReviewModal))
 }
