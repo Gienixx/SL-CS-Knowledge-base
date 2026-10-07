@@ -13,6 +13,7 @@ import {
   hasBilledOverride
 } from '../shared/attendance-billed-timestamps.js?v=1'
 import { calculateAttendanceSnapshotMetrics } from '../shared/attendance-snapshot-metrics.js?v=1'
+import { upsertAttendanceRowById } from '../shared/team-attendance-targeted-refresh.js?v=1'
 
 const RELEASED_SCHEDULE_STATUSES = Object.freeze(['published', 'changed'])
 const SCHEDULE_PLACEHOLDER = '__SCHEDULE_PLACEHOLDER__'
@@ -26,6 +27,7 @@ const ATTENDANCE_STATUS_LABELS = Object.freeze({
   present: 'Present',
   absent: 'Absent',
   on_leave: 'On leave',
+  leave: 'Leave',
   excused: 'Excused'
 })
 const CORRECTION_REASON_LABELS = Object.freeze({
@@ -74,8 +76,8 @@ const elements = {
   adminAssistExit: document.getElementById('attendanceAdminAssistExit'),
   adminAssistPrevious: document.getElementById('attendanceAdminAssistPrevious'),
   adminAssistNext: document.getElementById('attendanceAdminAssistNext'),
-  prepaidBalance: document.getElementById('attendancePrepaidBalance'),
-  prepaidBalanceBody: document.getElementById('attendancePrepaidBalanceBody'),
+  committedHours: document.getElementById('attendanceCommittedHours'),
+  committedHoursBody: document.getElementById('attendanceCommittedHoursBody'),
   historyMonth: document.getElementById('attendanceHistoryMonth'),
   historyPeriod: document.getElementById('attendanceHistoryPeriod'),
   historyStatus: document.getElementById('attendanceHistoryStatus'),
@@ -92,7 +94,8 @@ let visibleSchedules = []
 let todaySchedules = []
 let recentAttendance = []
 let historyRows = []
-let prepaidBalances = []
+let committedHoursSummary = null
+let committedHoursDateRange = null
 let historyPage = 1
 let activeHistoryRange = null
 let busy = false
@@ -554,12 +557,78 @@ async function loadAdminAssistSnapshot() {
         }
       : null
   }))
-  prepaidBalances = adminAssistSnapshot.prepaid_balances || []
   renderToday()
   activeHistoryRange = historyRange(elements.historyMonth.value, elements.historyPeriod.value)
   historyPage = 1
   renderHistory()
-  renderPrepaidBalances()
+}
+
+function localAttendanceRow(saved, previous = null) {
+  const schedule = todaySchedules.find(candidate => candidate.id === saved.schedule_id) ||
+    previous?.work_schedules || null
+  const scheduleForRow = saved.schedule_id
+    ? schedule || {
+        id: saved.schedule_id,
+        shift_start: previous?.schedule_start || null,
+        shift_end: previous?.schedule_end || null,
+        timezone: previous?.schedule_timezone || null,
+        status: previous?.schedule_status || null,
+        is_rest_day: false,
+        is_holiday: false
+      }
+    : null
+  const row = redactAttendanceCorrectionForViewer(access, {
+    ...previous,
+    ...saved,
+    id: saved.id || saved.attendance_id || previous?.id || previous?.attendance_id,
+    attendance_id: saved.id || saved.attendance_id || previous?.attendance_id || previous?.id,
+    user_id: saved.user_id || (adminAssistMode ? adminAssistTarget?.user_id : access?.user_id),
+    work_schedules: scheduleForRow,
+    schedule_start: scheduleForRow?.shift_start || null,
+    schedule_end: scheduleForRow?.shift_end || null,
+    schedule_timezone: scheduleForRow?.timezone || null
+  })
+  return row
+}
+
+function dateInRange(workDate, range) {
+  return Boolean(workDate && range?.start && range?.end && workDate >= range.start && workDate <= range.end)
+}
+
+function sortLocalAttendanceRows(rows) {
+  return rows.sort((left, right) =>
+    right.work_date.localeCompare(left.work_date) ||
+    (right.clock_in || right.created_at || '').localeCompare(left.clock_in || left.created_at || '') ||
+    (right.created_at || '').localeCompare(left.created_at || '')
+  )
+}
+
+async function applyAttendanceWriteResult(saved) {
+  if (!saved) throw new Error('Attendance was saved, but the updated attendance row was not returned.')
+  const attendanceId = saved.id || saved.attendance_id
+  const previous = recentAttendance.find(record => record.id === attendanceId || record.attendance_id === attendanceId) ||
+    historyRows.find(record => record.id === attendanceId || record.attendance_id === attendanceId) ||
+    openAttendanceRecord()
+  const row = localAttendanceRow(saved, previous)
+  const todayRange = { start: offsetDateKey(localDateKey(), -1), end: offsetDateKey(localDateKey(), 1) }
+  const recentAttendanceRange = adminAssistMode ? assistSnapshotRange() : todayRange
+  const historyScope = adminAssistMode
+    ? assistSnapshotRange()
+    : activeHistoryRange || historyRange(elements.historyMonth.value, elements.historyPeriod.value)
+
+  recentAttendance = upsertAttendanceRowById(recentAttendance, row, {
+    allowInsert: dateInRange(row.work_date, recentAttendanceRange)
+  })
+  sortLocalAttendanceRows(recentAttendance)
+
+  historyRows = upsertAttendanceRowById(historyRows, row, {
+    allowInsert: dateInRange(row.work_date, historyScope)
+  })
+  sortLocalAttendanceRows(historyRows)
+
+  renderToday()
+  renderHistory()
+  return row
 }
 
 async function enterAdminAssist() {
@@ -576,6 +645,7 @@ async function enterAdminAssist() {
   profileIds = [adminAssistTarget.user_id]
   renderAdminAssistControls()
   await loadAdminAssistSnapshot()
+  await loadCommittedHours()
   setActionMessage('Admin Assist is ready.')
 }
 
@@ -598,20 +668,12 @@ async function selectAdminAssistEmployee(index) {
   profileIds = [adminAssistTarget.user_id]
   renderAdminAssistControls()
   await loadAdminAssistSnapshot()
+  await loadCommittedHours()
 }
 
 function assistReason(action) {
   const reason = window.prompt(`Reason for Admin Assist ${action}:`, 'Agent unable to use Attendance page')
   return typeof reason === 'string' && reason.trim().length >= 5 ? reason.trim() : null
-}
-
-function formatPrepaidTime(value, timezone = access?.timezone || 'America/New_York') {
-  if (!value) return '—'
-  return new Intl.DateTimeFormat('en-US', {
-    timeZone: timezone,
-    hour: 'numeric',
-    minute: '2-digit'
-  }).format(new Date(value))
 }
 
 function formatLiveClockDate(date, timezone = 'America/New_York') {
@@ -624,35 +686,116 @@ function formatLiveClockDate(date, timezone = 'America/New_York') {
   }).format(date)
 }
 
-function renderPrepaidBalances() {
-  if (!prepaidBalances.length) {
-    elements.prepaidBalance.hidden = true
-    elements.prepaidBalanceBody.replaceChildren()
-    return
+function committedHoursRows(summary) {
+  const byId = new Map()
+  const addTargets = targets => {
+    if (!Array.isArray(targets)) return
+    targets.forEach(target => {
+      if (!target?.work_date) return
+      const key = target.commitment_id || (String(target.work_date) + ':' + String(target.expected_minutes ?? target.target_minutes ?? 0))
+      byId.set(key, target)
+    })
   }
-
-  const fragment = document.createDocumentFragment()
-  prepaidBalances.forEach(balance => {
-    const item = document.createElement('article')
-    item.className = 'attendance-prepaid-balance-item'
-
-    const heading = document.createElement('div')
-    heading.className = 'attendance-prepaid-balance-heading'
-    const date = document.createElement('strong')
-    date.textContent = `${formatDate(balance.work_date, false)} · ${formatPrepaidTime(balance.prepaid_clock_in, balance.timezone)}–${formatPrepaidTime(balance.prepaid_clock_out, balance.timezone)}`
-    heading.appendChild(date)
-
-    const detail = document.createElement('p')
-    detail.textContent = `Original: ${formatMinutes(balance.prepaid_minutes)} | Fulfilled: ${formatMinutes(balance.settled_minutes)} | Remaining: ${formatMinutes(balance.remaining_minutes)}`
-
-    item.append(heading, detail)
-    fragment.appendChild(item)
+  addTargets(summary?.carryover_targets)
+  ;(Array.isArray(summary?.targets) ? summary.targets : []).forEach(day => {
+    addTargets(day?.targets)
   })
-
-  elements.prepaidBalanceBody.replaceChildren(fragment)
-  elements.prepaidBalance.hidden = false
+  return [...byId.values()].sort((a, b) => String(b.work_date).localeCompare(String(a.work_date)))
 }
 
+function formatCommittedDate(value) {
+  if (!value) return '—'
+  return new Intl.DateTimeFormat('en-US', {
+    timeZone: 'UTC',
+    month: '2-digit',
+    day: '2-digit',
+    year: 'numeric'
+  }).format(parseDateKey(value))
+}
+
+function formatCommittedHours(value) {
+  const minutes = Math.max(0, Number(value) || 0)
+  const hours = Math.floor(minutes / 60)
+  const remainder = minutes % 60
+  return remainder ? hours + 'h ' + remainder + 'm' : hours + 'h'
+}
+
+function renderCommittedHours() {
+  const fragment = document.createDocumentFragment()
+  const rows = committedHoursRows(committedHoursSummary || {})
+  if (!rows.length) {
+    const message = document.createElement('p')
+    message.className = 'wf-message attendance-commitment-empty'
+    message.textContent = 'No committed hours.'
+    fragment.appendChild(message)
+  } else {
+    const table = document.createElement('table')
+    table.className = 'attendance-commitment-table'
+    const thead = document.createElement('thead')
+    const headerRow = document.createElement('tr')
+    for (const label of ['Date', 'Committed Hours', 'Rendered', 'Remaining']) {
+      const header = document.createElement('th')
+      header.scope = 'col'
+      header.textContent = label
+      headerRow.appendChild(header)
+    }
+    thead.appendChild(headerRow)
+    const tbody = document.createElement('tbody')
+    rows.forEach(target => {
+      const row = document.createElement('tr')
+      const renderedMinutes = target.covered_minutes ?? target.credited_minutes ?? 0
+      for (const value of [
+        formatCommittedDate(target.work_date),
+        formatCommittedHours(target.expected_minutes ?? target.target_minutes),
+        formatCommittedHours(renderedMinutes),
+        formatCommittedHours(target.remaining_minutes)
+      ]) {
+        const cell = document.createElement('td')
+        cell.textContent = value
+        row.appendChild(cell)
+      }
+      tbody.appendChild(row)
+    })
+    table.append(thead, tbody)
+    fragment.appendChild(table)
+  }
+  elements.committedHoursBody.replaceChildren(fragment)
+  elements.committedHours.hidden = false
+}
+
+function defaultCommittedHoursDateRange(date = localDateKey()) {
+  const [year, month, day] = date.split('-').map(Number)
+  const firstHalf = day <= 15
+  const monthKey = String(year) + '-' + String(month).padStart(2, '0')
+  const lastDay = new Date(Date.UTC(year, month, 0)).getUTCDate()
+  return firstHalf
+    ? { from: monthKey + '-01', to: monthKey + '-15' }
+    : { from: monthKey + '-16', to: monthKey + '-' + String(lastDay).padStart(2, '0') }
+}
+
+async function loadCommittedHours() {
+  if (!committedHoursDateRange) committedHoursDateRange = defaultCommittedHoursDateRange()
+  elements.committedHoursBody.textContent = 'Loading Committed Hours...'
+  if (!adminAssistMode && access?.is_agent !== true) {
+    committedHoursSummary = { status: 'No commitment required' }
+    renderCommittedHours()
+    return
+  }
+  try {
+    const { data, error } = await supabase.rpc('workforce_get_attendance_committed_hours_summary', {
+      p_employee_user_id: adminAssistMode ? adminAssistTarget?.user_id : access?.user_id,
+      p_start_date: committedHoursDateRange.from,
+      p_end_date: committedHoursDateRange.to
+    })
+    if (error) throw error
+    committedHoursSummary = data || { status: 'No commitment required' }
+    renderCommittedHours()
+  } catch (error) {
+    elements.committedHoursBody.textContent = 'Unable to load Committed Hours. Refresh to try again.'
+    elements.committedHours.hidden = false
+    console.warn('Unable to load the Committed Hours summary:', error)
+  }
+}
 function workedMinutes(record, now = new Date()) {
   if (!record?.clock_in) return 0
   if (record.clock_out && Number.isFinite(Number(record.total_worked_minutes))) {
@@ -1260,15 +1403,11 @@ function createStatusCell(record) {
   const line = document.createElement('div')
   line.className = 'attendance-status-line'
   const status = document.createElement('span')
-  const pendingApproval = !record.is_prepaid_schedule &&
-    record.clock_out &&
-    !['approved', 'locked'].includes(record.review_status)
-  status.className = `wf-badge ${record.is_prepaid_schedule ? 'info' : pendingApproval ? 'warning' : badgeClass(record.attendance_status)}`
-  status.textContent = record.is_prepaid_schedule
-    ? 'Prepaid scheduled'
-    : pendingApproval
-      ? 'For review'
-      : ATTENDANCE_STATUS_LABELS[record.attendance_status] || record.attendance_status
+  const pendingApproval = record.clock_out && !['approved', 'locked'].includes(record.review_status)
+  status.className = `wf-badge ${pendingApproval ? 'warning' : badgeClass(record.attendance_status)}`
+  status.textContent = pendingApproval
+    ? 'For review'
+    : ATTENDANCE_STATUS_LABELS[record.attendance_status] || record.attendance_status
   line.appendChild(status)
 
   if (record.is_late) {
@@ -1295,47 +1434,6 @@ function createBilledTimestampCell(record, clockKey) {
   cell.textContent = clockKey === 'billedClockOut' && record.is_open && value
     ? 'In progress'
     : formatAttendanceTimestamp(value)
-  return cell
-}
-
-function createPayTypeCell(record) {
-  const cell = document.createElement('td')
-  const wrap = document.createElement('div')
-  wrap.className = 'attendance-pay-type'
-
-  if (record.is_prepaid_schedule) {
-    const badge = document.createElement('span')
-    badge.className = 'wf-badge info'
-    badge.textContent = `Prepaid ${formatMinutes(record.prepaid_minutes)}`
-    wrap.appendChild(badge)
-  } else {
-    const pendingApproval = record.clock_out && !['approved', 'locked'].includes(record.review_status)
-    const fulfilledMinutes = Math.max(0, Number(record.fulfilled_prepaid_minutes) || 0)
-    const regularMinutes = pendingApproval
-      ? 0
-      : Math.max(0, Number(record.regular_payable_minutes) || 0)
-    if (fulfilledMinutes) {
-      const badge = document.createElement('span')
-      badge.className = 'wf-badge success'
-      badge.textContent = `Prepaid ${formatMinutes(fulfilledMinutes)}`
-      wrap.appendChild(badge)
-    }
-    if (regularMinutes) {
-      const badge = document.createElement('span')
-      badge.className = 'wf-badge muted'
-      badge.textContent = `Regular ${formatMinutes(regularMinutes)}`
-      wrap.appendChild(badge)
-    }
-    if (pendingApproval && !fulfilledMinutes) {
-      const badge = document.createElement('span')
-      badge.className = 'wf-badge warning'
-      badge.textContent = 'For review'
-      wrap.appendChild(badge)
-    }
-  }
-
-  if (!wrap.childElementCount) wrap.textContent = '—'
-  cell.appendChild(wrap)
   return cell
 }
 
@@ -1389,7 +1487,6 @@ function renderHistory() {
   } else {
     visibleRows.forEach(record => {
       const row = document.createElement('tr')
-      if (record.is_prepaid_schedule) row.classList.add('attendance-prepaid-schedule-row')
       const schedule = record.work_schedules || null
       const scheduleNote = schedule?.is_rest_day
         ? 'Rest-day overtime'
@@ -1405,7 +1502,7 @@ function renderHistory() {
 
       row.append(
         createTextCell(formatDate(record.work_date), record.corrected_at ? 'Corrected by an administrator' : ''),
-        createTextCell(formatShift(schedule), scheduleNote),
+        createTextCell(record.attendance_status === 'leave' ? 'Leave' : formatShift(schedule), scheduleNote),
         createTextCell(formatTime(clocks.renderedClockIn)),
         createTextCell(formatTime(clocks.renderedClockOut)),
         createTextCell(record.clock_in ? formatMinutes(workedMinutes(record)) : '—'),
@@ -1517,20 +1614,6 @@ async function loadHistory() {
   renderHistory()
 }
 
-async function loadPrepaidBalances() {
-  if (adminAssistMode) {
-    renderPrepaidBalances()
-    return
-  }
-  const { data, error } = await supabase.rpc(
-    'workforce_list_my_prepaid_balances'
-  )
-
-  if (error) throw error
-  prepaidBalances = data || []
-  renderPrepaidBalances()
-}
-
 function setBusy(value, label = '') {
   busy = value
   elements.refreshButton.disabled = value
@@ -1545,7 +1628,7 @@ async function refreshAll({ silent = false } = {}) {
   if (!silent) setActionMessage('Refreshing attendance...')
 
   try {
-    await Promise.all([loadToday(), loadHistory(), loadPrepaidBalances()])
+    await Promise.all([loadToday(), loadHistory(), loadCommittedHours()])
     if (!silent) setActionMessage('Attendance is up to date.', 'success')
   } catch (error) {
     setActionMessage(errorMessage(error), 'error')
@@ -1585,9 +1668,9 @@ async function clockIn() {
         p_reason: reason
       }
       if (historicalClockIn.timestamp) payload.p_clock_in = historicalClockIn.timestamp
-      const { error } = await supabase.rpc('workforce_admin_assist_clock_in', payload)
+      const { data, error } = await supabase.rpc('workforce_admin_assist_clock_in', payload)
       if (error) throw error
-      await loadAdminAssistSnapshot()
+      await applyAttendanceWriteResult(data)
       setActionMessage('Admin-assisted clock-in recorded.', 'success')
     } catch (error) {
       setActionMessage(errorMessage(error), 'error')
@@ -1610,11 +1693,11 @@ async function clockIn() {
   )
 
   try {
-    const { error } = await supabase
+    const { data, error } = await supabase
       .rpc('workforce_clock_in', { p_schedule_id: scheduleId })
       .abortSignal(requestSignal())
     if (error) throw error
-    await Promise.all([loadToday(), loadHistory(), loadPrepaidBalances()])
+    await applyAttendanceWriteResult(data)
     setActionMessage(
       workOnVLSelected
         ? 'Work on VL recorded and sent for manager review.'
@@ -1645,12 +1728,12 @@ async function clockOut() {
     }
     setBusy(true, 'clock-out')
     try {
-      const { error } = await supabase.rpc('workforce_admin_assist_clock_out', {
+      const { data, error } = await supabase.rpc('workforce_admin_assist_clock_out', {
         p_target_user_id: adminAssistTarget.user_id,
         p_reason: reason
       })
       if (error) throw error
-      await loadAdminAssistSnapshot()
+      await applyAttendanceWriteResult(data)
       setActionMessage('Admin-assisted clock-out recorded.', 'success')
     } catch (error) {
       setActionMessage(errorMessage(error), 'error')
@@ -1678,7 +1761,7 @@ async function clockOut() {
   setActionMessage('Recording your clock-out...')
 
   try {
-    const { error } = await supabase
+    const { data, error } = await supabase
       .rpc('workforce_clock_out', {
         p_action_source: 'explicit_clock_out',
         p_client_request_id: clientRequestId,
@@ -1686,7 +1769,7 @@ async function clockOut() {
       })
       .abortSignal(requestSignal())
     if (error) throw error
-    await Promise.all([loadToday(), loadHistory(), loadPrepaidBalances()])
+    await applyAttendanceWriteResult(data)
     setActionMessage('Clock-out recorded successfully.', 'success')
   } catch (error) {
     setActionMessage(errorMessage(error), 'error')
@@ -1699,13 +1782,13 @@ async function initialize() {
   access = await loadCurrentWorkforceAccess(supabase)
 
   if (!access.authenticated) {
-    window.location.replace(`./login.html?returnTo=${encodeURIComponent('./attendance.html')}`)
+    window.location.replace(`./login?returnTo=${encodeURIComponent('./attendance')}`)
     return
   }
 
   if (!access.allowed) {
     window.alert('Attendance access is available only to active workforce profiles.')
-    window.location.replace('./home.html')
+    window.location.replace('./home')
     return
   }
 
