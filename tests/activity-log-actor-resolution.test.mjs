@@ -5,7 +5,7 @@ import test from 'node:test'
 const read = path => readFile(new URL(`../${path}`, import.meta.url), 'utf8')
 
 test('Activity Log actor resolution preserves the display priority', async () => {
-  const migration = await read('supabase/migrations/20260815100000_activity_log_actor_resolution.sql')
+  const migration = await read('supabase/migrations/20260814213147_activity_log_actor_resolution.sql')
 
   assert.match(migration, /actor\.is_system_admin then 'System Admin'/)
   assert.match(migration, /event\.actor_user_id is null then 'System'/)

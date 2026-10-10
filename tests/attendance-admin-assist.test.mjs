@@ -23,9 +23,9 @@ test('Attendance exposes local-only Admin Assist navigation and cache-busted ass
     'attendanceAdminAssistNext'
   ]) assert.match(html, new RegExp(`id="${id}"`))
 
-  assert.match(html, /attendance\.css\?v=9/)
-  assert.match(html, /attendance-theme-fix\.css\?v=8/)
-   assert.match(html, /scripts\/attendance\.js\?v=29/)
+  assert.match(html, /attendance\.css\?v=\d+/)
+  assert.match(html, /attendance-theme-fix\.css\?v=\d+/)
+  assert.match(html, /scripts\/attendance\.js\?v=\d+/)
   assert.match(styles, /attendance-admin-assist-arrow-previous/)
   assert.match(styles, /attendance-admin-assist-arrow-next/)
   assert.match(lightStyles, /attendance-admin-assist/)

@@ -6,7 +6,7 @@
   <title>Schedule Requests | SocialLoop CS Base</title>
   <link rel="stylesheet" href="./styles/button-theme.css?v=1">
   <link rel="stylesheet" href="./styles/workforce-admin.css?v=15">
-  <link rel="stylesheet" href="./styles/leave-requests.css?v=4">
+  <link rel="stylesheet" href="./styles/leave-requests.css?v=5">
   <link rel="stylesheet" href="./styles/site-theme.css?v=5">
   <script src="./scripts/site-theme.js?v=1"></script>
 </head>
@@ -70,7 +70,8 @@
             <select id="leaveRequestTargetSchedule" class="wf-control">
               <option value="">Select the schedule and date</option>
             </select>
-            <small class="wf-subtext">Slide Shift requires an existing timed schedule. Open Schedule may use a date without a schedule.</small>
+            <small class="wf-subtext">Slide Shift and date conversions require one eligible published schedule. Open Schedule may use a date without a schedule.</small>
+            <span id="leaveRequestCurrentSchedule" class="wf-subtext" aria-live="polite"></span>
           </label>
           <label class="wf-field">
             <span id="leaveRequestStartDateLabel">Start date</span>
@@ -112,14 +113,16 @@
           </label>
           <div id="leaveRequestShiftTimes" class="wf-form-grid full" hidden>
             <label class="wf-field">
-              <span>Requested shift start (America/New_York)</span>
+              <span id="leaveRequestShiftStartLabel">Requested shift start (schedule time)</span>
               <input id="leaveRequestShiftStart" class="wf-control" type="datetime-local">
             </label>
             <label class="wf-field">
-              <span>Requested shift end (America/New_York)</span>
+              <span id="leaveRequestShiftEndLabel">Requested shift end (schedule time)</span>
               <input id="leaveRequestShiftEnd" class="wf-control" type="datetime-local">
             </label>
+            <small class="wf-subtext full">For an overnight shift, choose the end time on the following date. The shift may not exceed 24 hours.</small>
           </div>
+          <p id="leaveRequestSchedulePreview" class="wf-message full" aria-live="polite" hidden></p>
           <label class="wf-field full">
             <span>Reason</span>
             <textarea id="leaveRequestReason" class="wf-control" rows="3" required placeholder="Explain why you are requesting this change"></textarea>
@@ -264,6 +267,6 @@
     </section>
   </div>
 
-  <script type="module" src="./scripts/leave-requests.js?v=4"></script>
+  <script type="module" src="./scripts/leave-requests.js?v=5"></script>
 </body>
 </html>

@@ -29,7 +29,7 @@ test('Admin Tool splits Activity into Surveys & Sessions and Offers tabs', async
 
   assert.deepEqual(tabs.map(tab => tab.match(/label:'([^']+)'/)?.[1]), [
     'Overview', 'Surveys & Sessions', 'Offers', 'Referrals',
-    'Profile & Device', 'Cashouts', 'Transactions', 'Associations', 'Review', 'Action'
+    'Profile', 'Device & Location', 'Cashouts', 'Events', 'Associations', 'Review', 'Action'
   ])
   assert.doesNotMatch(page, /id:'activity'|label:'Activity'/)
   assert.match(page, /'surveys-sessions': \(\) => `[\s\S]*sidePanels\.surveySession\(\)[\s\S]*tableContent\.surveys\(\)/)
@@ -39,7 +39,9 @@ test('Admin Tool splits Activity into Surveys & Sessions and Offers tabs', async
 
 test('Surveys & Sessions uses one compact summary and keeps Survey History below it', async () => {
   const page = await read()
-  const tab = page.match(/'surveys-sessions': \(\) => `[\s\S]*?`,\n\n  offers:/)?.[0] || ''
+  const start = page.indexOf("'surveys-sessions': () => `")
+  const end = page.indexOf('offers: () => `', start)
+  const tab = start >= 0 && end > start ? page.slice(start, end) : ''
 
   assert.match(tab, /class="info-grid surveys-sessions-content"/)
   assert.match(tab, /sidePanels\.surveySession\(\)/)

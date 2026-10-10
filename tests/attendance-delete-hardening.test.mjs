@@ -16,7 +16,7 @@ test('delete UI sends exact UUID and verifies the void before success', async ()
 })
 
 test('delete migration voids exact attendance id and guards the update', async () => {
-  const migration = await read('supabase/migrations/20260814150000_harden_attendance_delete_and_verify.sql')
+  const migration = await read('supabase/migrations/20260813221442_verify_attendance_void_and_harden_delete.sql')
   for (const token of ['where id = v_attendance.id and voided_at is null', 'voided_at', 'voided_by', 'void_reason', 'updated_at', 'if not found then raise exception', 'workforce_verify_attendance_void', 'finalized payroll']) assert.match(migration, new RegExp(token.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'), 'i'))
   assert.doesNotMatch(migration, /delete from public\.attendance/i)
 })

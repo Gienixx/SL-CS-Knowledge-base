@@ -5,7 +5,7 @@ import test from 'node:test'
 const read = path => readFile(new URL(`../${path}`, import.meta.url), 'utf8')
 
 test('historical prepaid restore is scoped, audited, and permits approved RDOT attendance', async () => {
-  const sql = await read('supabase/migrations/20260808095630_restore_historical_prepaid_attendance.sql')
+  const sql = await read('supabase/migrations/20260808095923_restore_historical_prepaid_existing_balance.sql')
   assert.match(sql, /payroll_restore_historical_prepaid_attendance\(/)
   assert.match(sql, /review_status = 'approved'/)
   assert.match(sql, /source_type, source_reference, source_metadata/)
@@ -27,7 +27,7 @@ test('restore creates no attendance and does not alter billed-hour calculation',
 })
 
 test('settled prepaid with matching approved billed attendance is audit-only after schedule changes', async () => {
-  const sql = await read('supabase/migrations/20260729070252_complete_payroll_exception_review.sql')
+  const sql = await read('supabase/migrations/20260808103424_carry_forward_prepaid_not_blocking.sql')
   assert.match(sql, /prepaid\.remaining_minutes = 0/)
   assert.match(sql, /rendered\.review_status in \('approved', 'locked'\)/)
   assert.match(sql, /rendered\.billed_clock_in is not null/)
@@ -45,7 +45,7 @@ test('unsettled schedule conflicts remain blocking and history is not rewritten'
 
 test('restored prepaid settlement allocates existing attendance and excludes only restored sources from new pay', async () => {
   const settlement = await read('supabase/migrations/20260808102519_settle_restored_prepaid_attendance.sql')
-  const calculator = await read('supabase/migrations/20260729073554_calculate_draft_payroll.sql')
+  const calculator = await read('supabase/migrations/20260808102733_historical_restored_allocation_not_payable_deduction.sql')
   assert.match(settlement, /payroll_settle_restored_prepaid_attendance/)
   assert.match(settlement, /payroll_hour_allocations/)
   assert.match(settlement, /settled_minutes=settled_minutes\+v_minutes/)
@@ -55,7 +55,7 @@ test('restored prepaid settlement allocates existing attendance and excludes onl
 })
 
 test('prepaid duration variance and carry-forward are not schedule-source blockers', async () => {
-  const sql = await read('supabase/migrations/20260729070252_complete_payroll_exception_review.sql')
+  const sql = await read('supabase/migrations/20260808103424_carry_forward_prepaid_not_blocking.sql')
   assert.match(sql, /prepaid\.current_schedule_version is distinct from\s+prepaid\.snapshot_schedule_version/)
   assert.match(sql, /prepaid\.current_schedule_status is distinct from\s+prepaid\.schedule_status/)
   assert.doesNotMatch(sql, /prepaid\.current_shift_start is distinct from\s+prepaid\.shift_start/)

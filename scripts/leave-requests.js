@@ -7,7 +7,13 @@ const LEAVE_TYPE_LABELS = Object.freeze({
   incentive_vl: 'Incentive Leave (Incentive VL)', birthday_vl: 'Birthday Leave (Birthday VL)', leave_without_pay: 'Leave Without Pay',
   vacation: 'Vacation', sick: 'Sick', emergency: 'Emergency', unpaid: 'Unpaid', other: 'Other'
 })
-const SCHEDULE_REQUEST_LABELS = Object.freeze({ open_schedule: 'Open Schedule', slide_shift: 'Slide Shift' })
+const SCHEDULE_REQUEST_LABELS = Object.freeze({
+  open_schedule: 'Open Schedule',
+  slide_shift: 'Slide Shift',
+  rest_day: 'Rest Day',
+  regular_shift: 'Regular Shift',
+  rest_day_change: 'Rest Day Change'
+})
 
 const elements = {
   page: document.getElementById('leaveRequestsPage'), pageTitle: document.getElementById('leaveRequestsPageTitle'),
@@ -23,6 +29,7 @@ const elements = {
   form: document.getElementById('leaveRequestForm'), category: document.getElementById('leaveRequestCategory'),
   type: document.getElementById('leaveRequestType'), targetScheduleField: document.getElementById('leaveRequestTargetScheduleField'),
   targetSchedule: document.getElementById('leaveRequestTargetSchedule'), startDate: document.getElementById('leaveRequestStartDate'),
+  currentScheduleMessage: document.getElementById('leaveRequestCurrentSchedule'), schedulePreview: document.getElementById('leaveRequestSchedulePreview'),
   startDateLabel: document.getElementById('leaveRequestStartDateLabel'), endDateField: document.getElementById('leaveRequestEndDateField'),
   endDate: document.getElementById('leaveRequestEndDate'), durationField: document.getElementById('leaveRequestDurationField'),
   duration: document.getElementById('leaveRequestDuration'), halfField: document.getElementById('leaveRequestHalfField'),
@@ -32,6 +39,7 @@ const elements = {
   durationMessage: document.getElementById('leaveRequestDurationMessage'), plannedMinutesField: document.getElementById('leaveRequestPlannedMinutesField'),
   plannedMinutes: document.getElementById('leaveRequestPlannedMinutes'), shiftTimes: document.getElementById('leaveRequestShiftTimes'),
   shiftStart: document.getElementById('leaveRequestShiftStart'), shiftEnd: document.getElementById('leaveRequestShiftEnd'),
+  shiftStartLabel: document.getElementById('leaveRequestShiftStartLabel'), shiftEndLabel: document.getElementById('leaveRequestShiftEndLabel'),
   reason: document.getElementById('leaveRequestReason'), resetButton: document.getElementById('leaveRequestResetButton'),
   submitButton: document.getElementById('leaveRequestSubmitButton'), formMessage: document.getElementById('leaveRequestFormMessage'),
   tableTitle: document.getElementById('leaveRequestTableTitle'), tableDescription: document.getElementById('leaveRequestTableDescription'),
@@ -121,6 +129,18 @@ function leaveDurationLabel(request) {
 function requestedScheduleLabel(request) {
   if (request?.request_category !== 'schedule_change') return leaveDurationLabel(request)
   if (request.request_type === 'open_schedule') return `Open Schedule · ${request.requested_planned_paid_minutes || '—'} planned minutes${request.target_schedule ? ` · current: ${scheduleLabel(request.target_schedule)}` : ''}`
+  if (request.request_type === 'rest_day') {
+    const timezone = request.target_schedule?.timezone || 'America/New_York'
+    const original = request.original_shift_start && request.original_shift_end
+      ? `${formatDateTime(request.original_shift_start, timezone)} – ${formatDateTime(request.original_shift_end, timezone)}`
+      : 'Original shift details unavailable'
+    return `Regular Shift (${original}) → Rest Day`
+  }
+  if (request.request_type === 'regular_shift') {
+    const timezone = request.target_schedule?.timezone || 'America/New_York'
+    return `Rest Day → Regular Shift (${formatDateTime(request.requested_shift_start, timezone)} – ${formatDateTime(request.requested_shift_end, timezone)})`
+  }
+  if (request.request_type === 'rest_day_change') return 'Recurring Rest Day Change'
   return `Slide Shift · ${formatDateTime(request.requested_shift_start)} – ${formatDateTime(request.requested_shift_end)}${request.target_schedule ? ` · current: ${scheduleLabel(request.target_schedule)}` : ''}`
 }
 function createCell(content, secondary = '', className = '') {
@@ -133,6 +153,66 @@ function createCell(content, secondary = '', className = '') {
 function createStatusCell(status) { const cell = document.createElement('td'); const badge = document.createElement('span'); badge.className = `leave-status ${status || 'pending'}`; badge.textContent = STATUS_LABELS[status] || status || '—'; cell.appendChild(badge); return cell }
 function createButton(label, handler, disabled = false) { const button = document.createElement('button'); button.type = 'button'; button.className = 'wf-btn compact'; button.textContent = label; button.disabled = disabled; button.addEventListener('click', handler); return button }
 function selectedSchedule() { return schedules.find(schedule => schedule.id === elements.targetSchedule?.value) || null }
+function isPublishedSchedule(schedule) { return schedule && ['published', 'changed'].includes(schedule.status) }
+function dateConversionCandidates(type, selectedDate) {
+  if (!selectedDate) return []
+  const activeForDate = schedules.filter(schedule => schedule.shift_date === selectedDate && ['published', 'changed', 'scheduled'].includes(schedule.status))
+  if (activeForDate.length !== 1 || !isPublishedSchedule(activeForDate[0])) return []
+  const schedule = activeForDate[0]
+  if (schedule.is_holiday || schedule.is_leave || schedule.is_absent) return []
+  if (type === 'rest_day' && !schedule.is_rest_day && schedule.shift_start && schedule.shift_end) return [schedule]
+  if (type === 'regular_shift' && schedule.is_rest_day && !schedule.shift_start && !schedule.shift_end) return [schedule]
+  return []
+}
+function refreshScheduleRequestPreview() {
+  const type = elements.type.value
+  const isConversion = type === 'rest_day' || type === 'regular_shift'
+  if (!isConversion) {
+    setMessage(elements.currentScheduleMessage, '')
+    setMessage(elements.schedulePreview, '')
+    elements.schedulePreview.hidden = true
+    return
+  }
+
+  const target = selectedSchedule()
+  const eligible = dateConversionCandidates(type, elements.startDate.value)
+  if (!target || !eligible.some(schedule => schedule.id === target.id)) {
+    setMessage(elements.currentScheduleMessage, type === 'rest_day'
+      ? 'Select a date with exactly one published regular shift and no conflicting leave, attendance, or schedule.'
+      : 'Select a date with exactly one published Rest Day and no conflicting leave, attendance, or schedule.')
+    setMessage(elements.schedulePreview, '')
+    elements.schedulePreview.hidden = true
+    return
+  }
+
+  const timezone = target.timezone || 'America/New_York'
+  setMessage(elements.currentScheduleMessage, `Current schedule: ${scheduleLabel(target)} · ${target.status} · ${timezone}`)
+  elements.schedulePreview.hidden = false
+  if (type === 'rest_day') {
+    setMessage(elements.schedulePreview, `Proposed schedule: ${formatDate(target.shift_date)} · Rest Day. The existing shift stays in place until an administrator approves.`)
+    return
+  }
+
+  if (!elements.shiftStart.value || !elements.shiftEnd.value) {
+    setMessage(elements.schedulePreview, 'Proposed schedule: choose start and end times for the Regular Shift.')
+    return
+  }
+  try {
+    const start = zonedDateTimeToIso(elements.shiftStart.value, timezone)
+    const end = zonedDateTimeToIso(elements.shiftEnd.value, timezone)
+    const startParts = zoneParts(Date.parse(start), timezone)
+    const requestedDate = elements.startDate.value.split('-').map(Number)
+    if (startParts.year !== requestedDate[0] || startParts.month !== requestedDate[1] || startParts.day !== requestedDate[2]) {
+      setMessage(elements.schedulePreview, 'Regular Shift start must fall on the selected date.', 'error')
+    } else if (Date.parse(end) <= Date.parse(start) || Date.parse(end) - Date.parse(start) > 24 * 60 * 60 * 1000) {
+      setMessage(elements.schedulePreview, 'The end must be after the start and no more than 24 hours later.', 'error')
+    } else {
+      setMessage(elements.schedulePreview, `Proposed schedule: ${formatDateTime(start, timezone)} – ${formatDateTime(end, timezone)} · ${timezone}. The Rest Day stays in place until an administrator approves.`)
+    }
+  } catch (error) {
+    setMessage(elements.schedulePreview, errorMessage(error), 'error')
+  }
+}
 function selectedPartialSchedule() {
   return partialLeaveScheduleEligibility(schedules, elements.startDate.value)
 }
@@ -217,32 +297,48 @@ function zonedDateTimeToIso(localValue, timeZone = 'America/New_York') {
 }
 
 function populateRequestTypes() {
-  const options = elements.category.value === 'schedule_change' ? [['open_schedule', 'Open Schedule'], ['slide_shift', 'Slide Shift']] : [['incentive_vl', 'Incentive Leave (Incentive VL)'], ['birthday_vl', 'Birthday Leave (Birthday VL)'], ['leave_without_pay', 'Leave Without Pay']]
+  const options = elements.category.value === 'schedule_change'
+    ? [['open_schedule', 'Open Schedule'], ['slide_shift', 'Slide Shift'], ['rest_day', 'Rest Day'], ['regular_shift', 'Regular Shift']]
+    : [['incentive_vl', 'Incentive Leave (Incentive VL)'], ['birthday_vl', 'Birthday Leave (Birthday VL)'], ['leave_without_pay', 'Leave Without Pay']]
   const previous = elements.type.value; elements.type.replaceChildren(new Option('Select request type', ''))
   options.forEach(([value, label]) => elements.type.appendChild(new Option(label, value)))
   if (options.some(([value]) => value === previous)) elements.type.value = previous
 }
 function populateTargetSchedules() {
   const selectedDate = elements.startDate.value; const previous = elements.targetSchedule.value
-  elements.targetSchedule.replaceChildren(new Option('No existing schedule / create one', ''))
-  schedules.filter(schedule => (!selectedDate || schedule.shift_date === selectedDate) && !schedule.is_leave && !schedule.is_absent && !schedule.is_rest_day && !schedule.is_holiday).sort((a, b) => String(a.shift_start || '').localeCompare(String(b.shift_start || ''))).forEach(schedule => elements.targetSchedule.appendChild(new Option(`${formatDate(schedule.shift_date)} · ${scheduleLabel(schedule)}`, schedule.id)))
+  const type = elements.type.value
+  const isConversion = type === 'rest_day' || type === 'regular_shift'
+  const placeholder = isConversion ? 'Select an eligible schedule for this date' : 'No existing schedule / create one'
+  elements.targetSchedule.replaceChildren(new Option(placeholder, ''))
+  const candidates = isConversion
+    ? dateConversionCandidates(type, selectedDate)
+    : schedules.filter(schedule => (!selectedDate || schedule.shift_date === selectedDate) && !schedule.is_leave && !schedule.is_absent && !schedule.is_rest_day && !schedule.is_holiday)
+  candidates.sort((a, b) => String(a.shift_start || '').localeCompare(String(b.shift_start || ''))).forEach(schedule => elements.targetSchedule.appendChild(new Option(`${formatDate(schedule.shift_date)} · ${scheduleLabel(schedule)}`, schedule.id)))
   if ([...elements.targetSchedule.options].some(option => option.value === previous)) elements.targetSchedule.value = previous
+  else if (isConversion && candidates.length === 1) elements.targetSchedule.value = candidates[0].id
 }
 function updateFormFields() {
   const isScheduleChange = elements.category.value === 'schedule_change'; const isOpen = isScheduleChange && elements.type.value === 'open_schedule'; const isSlide = isScheduleChange && elements.type.value === 'slide_shift'
+  const isRestDay = isScheduleChange && elements.type.value === 'rest_day'; const isRegularShift = isScheduleChange && elements.type.value === 'regular_shift'
+  const needsShiftTimes = isSlide || isRegularShift
   const isPartial = !isScheduleChange && elements.duration.value !== 'whole_day'
   const isHalf = !isScheduleChange && elements.duration.value === 'half_day'
   const isSpecific = !isScheduleChange && elements.duration.value === 'specific_time'
-  elements.targetScheduleField.hidden = !isScheduleChange; elements.plannedMinutesField.hidden = !isOpen; elements.shiftTimes.hidden = !isSlide
+  elements.targetScheduleField.hidden = !isScheduleChange; elements.plannedMinutesField.hidden = !isOpen; elements.shiftTimes.hidden = !needsShiftTimes
   elements.durationField.hidden = isScheduleChange; elements.halfField.hidden = !isHalf; elements.specificTimes.hidden = !isSpecific
   elements.endDateField.hidden = isScheduleChange || isPartial
   elements.endDate.required = !isScheduleChange && !isPartial
   elements.half.required = isHalf; elements.fromTime.required = isSpecific; elements.toTime.required = isSpecific
-  elements.startDateLabel.textContent = isScheduleChange ? 'Target work date' : isPartial ? 'Work date' : 'Start date'; elements.targetSchedule.required = isSlide
+  elements.shiftStart.required = needsShiftTimes; elements.shiftEnd.required = needsShiftTimes
+  elements.startDateLabel.textContent = isScheduleChange ? 'Target work date' : isPartial ? 'Work date' : 'Start date'; elements.targetSchedule.required = isSlide || isRestDay || isRegularShift
   if (isScheduleChange || isPartial) elements.endDate.value = elements.startDate.value
   if (isScheduleChange) elements.duration.value = 'whole_day'
   if (!isScheduleChange) { elements.targetSchedule.value = ''; elements.plannedMinutes.value = ''; elements.shiftStart.value = ''; elements.shiftEnd.value = '' }
   populateTargetSchedules()
+  const shiftTimezone = selectedSchedule()?.timezone || 'America/New_York'
+  elements.shiftStartLabel.textContent = `${isRegularShift ? 'Regular Shift start' : 'Requested shift start'} (${shiftTimezone})`
+  elements.shiftEndLabel.textContent = `${isRegularShift ? 'Regular Shift end' : 'Requested shift end'} (${shiftTimezone})`
+  refreshScheduleRequestPreview()
   refreshDurationPreview()
 }
 function resetForm({ clearMessage = true } = {}) { elements.form?.reset(); populateRequestTypes(); updateFormFields(); if (clearMessage) setMessage(elements.formMessage, '') }
@@ -330,6 +426,38 @@ async function submitRequest(event) {
     }
   } else {
     const target = selectedSchedule(); const plannedMinutes = type === 'open_schedule' ? Number(elements.plannedMinutes.value) : null; let requestedStart = null; let requestedEnd = null
+    if (type === 'rest_day' || type === 'regular_shift') {
+      if (!target || !dateConversionCandidates(type, startDate).some(schedule => schedule.id === target.id)) {
+        setMessage(elements.formMessage, 'Select a date with exactly one eligible published schedule.', 'error'); return
+      }
+      if (type === 'regular_shift') {
+        if (!elements.shiftStart.value || !elements.shiftEnd.value) { setMessage(elements.formMessage, 'Regular Shift requires both requested times.', 'error'); return }
+        const timezone = target.timezone || 'America/New_York'
+        try {
+          requestedStart = zonedDateTimeToIso(elements.shiftStart.value, timezone)
+          requestedEnd = zonedDateTimeToIso(elements.shiftEnd.value, timezone)
+        } catch (error) { setMessage(elements.formMessage, errorMessage(error), 'error'); return }
+        const startParts = zoneParts(Date.parse(requestedStart), timezone)
+        const selectedParts = startDate.split('-').map(Number)
+        if (startParts.year !== selectedParts[0] || startParts.month !== selectedParts[1] || startParts.day !== selectedParts[2]) {
+          setMessage(elements.formMessage, 'Regular Shift start must fall on the selected date.', 'error'); return
+        }
+        if (Date.parse(requestedEnd) <= Date.parse(requestedStart)
+          || Date.parse(requestedEnd) - Date.parse(requestedStart) > 24 * 60 * 60 * 1000) {
+          setMessage(elements.formMessage, 'The end must be after the start and no more than 24 hours later.', 'error'); return
+        }
+      }
+      elements.submitButton.disabled = true; setMessage(elements.formMessage, 'Submitting schedule-conversion request...')
+      const { error } = await supabase.rpc('workforce_submit_schedule_conversion_request', {
+        p_request_type: type,
+        p_work_date: startDate,
+        p_target_schedule_id: target.id,
+        p_requested_shift_start: requestedStart,
+        p_requested_shift_end: requestedEnd,
+        p_reason: reason
+      }); elements.submitButton.disabled = false
+      if (error) { setMessage(elements.formMessage, errorMessage(error), 'error'); return }
+    } else {
     if (type === 'slide_shift') {
       if (!target || !elements.shiftStart.value || !elements.shiftEnd.value) { setMessage(elements.formMessage, 'Slide Shift requires an existing schedule and both requested times.', 'error'); return }
       try { requestedStart = zonedDateTimeToIso(elements.shiftStart.value); requestedEnd = zonedDateTimeToIso(elements.shiftEnd.value) } catch (error) { setMessage(elements.formMessage, errorMessage(error), 'error'); return }
@@ -339,6 +467,7 @@ async function submitRequest(event) {
     elements.submitButton.disabled = true; setMessage(elements.formMessage, 'Submitting schedule-change request...')
     const { error } = await supabase.rpc('workforce_submit_schedule_request', { p_request_type: type, p_work_date: startDate, p_target_schedule_id: target?.id || null, p_requested_shift_start: requestedStart, p_requested_shift_end: requestedEnd, p_requested_planned_paid_minutes: Number.isInteger(plannedMinutes) ? plannedMinutes : null, p_reason: reason }); elements.submitButton.disabled = false
     if (error) { setMessage(elements.formMessage, errorMessage(error), 'error'); return }
+    }
   }
   resetForm({ clearMessage: false }); setMessage(elements.formMessage, 'Schedule request submitted. An administrator has been notified.', 'success'); await loadRequests()
 }
@@ -346,8 +475,12 @@ async function reviewRequest(event) {
   event.preventDefault(); if (!selectedReviewRequest) return; const status = elements.reviewAction.value; const notes = elements.reviewNotes.value.trim()
   if (status === 'rejected' && !notes) { setMessage(elements.reviewMessage, 'Enter the reason for denying this request.', 'error'); elements.reviewNotes.focus(); return }
   elements.reviewSubmitButton.disabled = true; setMessage(elements.reviewMessage, status === 'approved' ? 'Applying request to Schedule Management...' : 'Submitting denial...')
+  const isDateConversion = ['rest_day', 'regular_shift'].includes(selectedReviewRequest.request_type)
   const rpcName = selectedReviewRequest.request_category === 'schedule_change' ? 'workforce_review_schedule_request' : 'workforce_review_leave_request'
-  const { error } = await supabase.rpc(rpcName, { p_request_id: selectedReviewRequest.id, p_status: status, p_review_notes: notes || null }); elements.reviewSubmitButton.disabled = false
+  const { error } = isDateConversion && status === 'approved'
+    ? await supabase.rpc('workforce_apply_schedule_conversion_request', { p_request_id: selectedReviewRequest.id, p_review_notes: notes || null })
+    : await supabase.rpc(rpcName, { p_request_id: selectedReviewRequest.id, p_status: status, p_review_notes: notes || null })
+  elements.reviewSubmitButton.disabled = false
   if (error) { setMessage(elements.reviewMessage, errorMessage(error), 'error'); return }
   closeReviewModal(); await loadRequests(); activateRequestTab('history'); setMessage(elements.tableMessage, status === 'approved' ? 'Request approved and Schedule Management was updated.' : 'Request denied; the reason is now visible to the agent.', 'success')
 }
@@ -370,9 +503,11 @@ function bindEvents() {
   })
   if (!isApproverView) {
     elements.form.addEventListener('submit', submitRequest); elements.resetButton.addEventListener('click', () => resetForm())
-    elements.category.addEventListener('change', () => { populateRequestTypes(); updateFormFields() }); elements.type.addEventListener('change', updateFormFields); elements.startDate.addEventListener('change', updateFormFields)
+    elements.category.addEventListener('change', () => { populateRequestTypes(); updateFormFields() }); elements.type.addEventListener('change', () => { elements.shiftStart.value = ''; elements.shiftEnd.value = ''; updateFormFields() }); elements.startDate.addEventListener('change', updateFormFields)
+    elements.targetSchedule.addEventListener('change', () => { updateFormFields() })
     elements.duration.addEventListener('change', updateFormFields); elements.half.addEventListener('change', refreshDurationPreview)
     elements.fromTime.addEventListener('input', refreshDurationPreview); elements.toTime.addEventListener('input', refreshDurationPreview)
+    elements.shiftStart.addEventListener('input', refreshScheduleRequestPreview); elements.shiftEnd.addEventListener('input', refreshScheduleRequestPreview)
   }
   elements.refreshButton.addEventListener('click', loadRequests)
   elements.approvalRefreshButton?.addEventListener('click', loadRequests)

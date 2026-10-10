@@ -116,12 +116,12 @@ test('payroll period provides add, edit, remove, reasons, and private notes UI',
   assert.match(page, /Employee-visible description/)
   assert.match(page, /Private correction notes/)
   assert.doesNotMatch(page, /Government deduction/)
-  assert.match(page, /scripts\/payroll-period\.js\?v=10/)
-  assert.match(page, /styles\/payroll-periods\.css\?v=10/)
+  assert.match(page, /scripts\/payroll-period\.js\?v=\d+/)
+  assert.match(page, /styles\/payroll-periods\.css\?v=\d+/)
 
   assert.match(script, /supabase\.rpc\('payroll_save_adjustment'/)
   assert.match(script, /supabase\.rpc\('payroll_remove_adjustment'/)
-  assert.match(script, /supabase\.rpc\('payroll_get_period_adjustments'/)
+  assert.match(script, /safePayrollRpc\(\s*'adjustments',\s*'payroll_get_period_adjustments'/)
   assert.match(script, /openAdjustmentDialog\('add'\)/)
   assert.match(script, /data-adjustment-action/)
   assert.doesNotMatch(

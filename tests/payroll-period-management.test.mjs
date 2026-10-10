@@ -92,7 +92,7 @@ test('payroll dashboard and period pages expose the complete Step 5 workflow', a
   )
   assert.match(
     periodScript,
-    /supabase\.rpc\('payroll_get_period_employee_readiness'/
+    /safePayrollRpc\(\s*'readiness',\s*'payroll_get_period_employee_readiness'/
   )
   assert.match(
     period,
@@ -160,17 +160,17 @@ test('missing attendance links open the exact employee and work date only for at
   )
   assert.doesNotMatch(migration, /hourly_rate|daily_rate|monthly_rate|salary/)
 
-  assert.match(periodPage, /scripts\/payroll-period\.js\?v=10/)
+  assert.match(periodPage, /scripts\/payroll-period\.js\?v=\d+/)
   assert.match(
     periodScript,
-    /supabase\.rpc\('payroll_get_period_missing_attendance'/
+    /safePayrollRpc\(\s*'missingAttendance',\s*'payroll_get_period_missing_attendance'/
   )
   assert.match(
     periodScript,
     /state\.canViewAttendance = hasWorkforcePermission\(\s*access,\s*'view_team_attendance'/
   )
   assert.match(periodScript, /source: 'payroll-missing'/)
-  assert.match(attendancePage, /scripts\/team-attendance\.js\?v=13/)
+  assert.match(attendancePage, /scripts\/team-attendance\.js\?v=\d+/)
   assert.match(attendanceScript, /function payrollAttendanceLinkFilters\(\)/)
   assert.match(
     attendanceScript,

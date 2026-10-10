@@ -27,30 +27,22 @@ test('agent prepaid balance RPC is authenticated and identity scoped', async () 
   assert.doesNotMatch(migration, /hourly_rate|gross_pay|net_pay|approval_reason|payroll_controls/i)
 })
 
-test('Attendance renders only outstanding prepaid balances in a compact read-only card', async () => {
+test('Attendance does not restore the obsolete prepaid balance card', async () => {
   const [html, script, styles] = await Promise.all([
     read('attendance.html'),
     read('scripts/attendance.js'),
     read('styles/attendance.css')
   ])
 
-  assert.match(html, /id="attendancePrepaidBalance"[^>]+hidden/)
-  assert.match(html, /Prepaid Hours Balance/)
-  assert.match(html, /id="attendancePrepaidBalanceBody"/)
-  assert.match(script, /workforce_list_my_prepaid_balances/)
-  assert.match(script, /prepaidBalances\.length/)
-  assert.match(script, /Original:/)
-  assert.match(script, /Fulfilled:/)
-  assert.match(script, /Remaining:/)
-  assert.match(script, /formatPrepaidTime\(balance\.prepaid_clock_in, balance\.timezone\)/)
-  assert.match(script, /formatPrepaidTime\(balance\.prepaid_clock_out, balance\.timezone\)/)
-  assert.match(styles, /\.attendance-prepaid-card/)
-  assert.match(styles, /\.attendance-prepaid-balance-item/)
+  assert.doesNotMatch(html, /attendancePrepaidBalance|Prepaid Hours Balance/)
+  assert.doesNotMatch(script, /workforce_list_my_prepaid_balances|loadPrepaidBalances/)
+  assert.doesNotMatch(styles, /\.attendance-prepaid-card|\.attendance-prepaid-balance-item/)
 })
 
-test('Attendance refreshes prepaid balances with normal attendance refreshes', async () => {
+test('Attendance refresh keeps its normal attendance data sources', async () => {
   const script = await read('scripts/attendance.js')
 
-  assert.match(script, /async function loadPrepaidBalances\(\)/)
-  assert.match(script, /loadToday\(\), loadHistory\(\), loadPrepaidBalances\(\)/)
+  assert.match(script, /loadToday\(\)/)
+  assert.match(script, /loadHistory\(\)/)
+  assert.doesNotMatch(script, /loadPrepaidBalances/)
 })

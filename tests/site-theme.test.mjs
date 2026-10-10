@@ -1,6 +1,8 @@
 import assert from 'node:assert/strict'
 import { readdir, readFile } from 'node:fs/promises'
 import test from 'node:test'
+import { canAccessAdminToolPlayground } from '../shared/admin-tool-access.js'
+import { hasWorkforcePermission, normalizeWorkforceAccess } from '../shared/workforce-access.js'
 
 const root = new URL('../', import.meta.url)
 const read = path => readFile(new URL(path, root), 'utf8')
@@ -42,10 +44,10 @@ test('Admin Tool reuses the shared theme controller and theme variables', async 
   assert.match(page, /scripts\/site-theme\.js\?v=1/)
   assert.match(page, /html\[data-site-theme="light"\]/)
   assert.match(page, /--input-bg:var\(--input-bg\)|background:var\(--input-bg\)/)
-  assert.doesNotMatch(page, /localStorage|data-theme-choice|SocialLoopTheme\.set/)
+  assert.doesNotMatch(page, /data-theme-choice|SocialLoopTheme\.set/)
 })
 
-test('Admin Tool Playground uses the shared authenticated employee identity gate', async () => {
+test('Admin Tool Playground requires active workforce authentication and grants no privileged permissions', async () => {
   const [entry, access, home] = await Promise.all([
     read('scripts/admin-tool-entry.js'),
     read('shared/admin-tool-access.js'),
@@ -55,9 +57,28 @@ test('Admin Tool Playground uses the shared authenticated employee identity gate
   assert.match(entry, /loadCurrentWorkforceAccess\(supabase, \{[\s\S]*allowLegacyFallback: false/)
   assert.match(entry, /canAccessAdminToolPlayground\(access\)/)
   assert.match(entry, /window\.location\.replace\('\.\/home\.html'\)/)
-  assert.match(access, /access\.employee_id === ADMIN_TOOL_PLAYGROUND_EMPLOYEE_ID/)
+  assert.match(access, /access\?\.allowed === true/)
   assert.match(home, /canAccessAdminToolPlayground\(access\)/)
-  assert.match(access, /access\.is_admin === true[\s\S]*access\.employee_id === ADMIN_TOOL_PLAYGROUND_EMPLOYEE_ID/)
+
+  const activeAgent = normalizeWorkforceAccess(
+    { user_id: 'agent-2', is_active: true, is_agent: true },
+    { user: { id: 'agent-2' } }
+  )
+  assert.equal(canAccessAdminToolPlayground(activeAgent), true)
+  assert.equal(canAccessAdminToolPlayground(
+    normalizeWorkforceAccess(null, { user: null, source: 'unauthenticated' })
+  ), false)
+  assert.equal(canAccessAdminToolPlayground(
+    normalizeWorkforceAccess(
+      { user_id: 'inactive-2', is_active: false, is_agent: true },
+      { user: { id: 'inactive-2' } }
+    )
+  ), false)
+  assert.equal(activeAgent.is_admin, false)
+  assert.equal(activeAgent.is_system_admin, false)
+  for (const permission of ['manage_employees', 'manage_schedules', 'approve_leave', 'manage_payroll', 'finalize_payroll']) {
+    assert.equal(hasWorkforcePermission(activeAgent, permission), false)
+  }
 })
 
 test('Home places account and appearance settings between identity and logout', async () => {

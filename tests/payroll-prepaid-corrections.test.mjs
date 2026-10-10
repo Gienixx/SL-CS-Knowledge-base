@@ -89,7 +89,7 @@ test('settled prepaid balances are blocked without destructive reversal', async 
   )
   assert.match(
     migration,
-    /and other\.voided_at is null\n      and coalesce\(other\.effective_work_date, other_snapshot\.work_date\)/
+    /and other\.voided_at is null\s+and coalesce\(other\.effective_work_date, other_snapshot\.work_date\)/
   )
 })
 
@@ -102,7 +102,7 @@ test('correction creates a new active balance, supersedes the old one, and audit
   )
   assert.match(
     migration,
-    /update public\.payroll_prepaid_hours\n  set[\s\S]*?superseded_by_id = v_new_id\n  where id = v_old\.id/
+    /update public\.payroll_prepaid_hours\s+set[\s\S]*?superseded_by_id = v_new_id\s+where id = v_old\.id/
   )
   assert.match(migration, /'payroll_prepaid_hours_corrected'/)
   assert.match(migration, /before_data/)
