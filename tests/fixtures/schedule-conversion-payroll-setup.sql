@@ -2,6 +2,7 @@ create role anon;
 create role authenticated;
 create role service_role;
 create schema auth;
+create schema private;
 create function auth.uid() returns uuid language sql stable as $$ select nullif(current_setting('request.jwt.claim.sub', true), '')::uuid $$;
 create table public.profiles(
   user_id uuid primary key, team_id uuid, is_agent boolean not null default true,
@@ -10,7 +11,7 @@ create table public.profiles(
 create table public.work_schedule_template_assignments(id uuid primary key, user_id uuid, effective_from date, effective_until date, is_active boolean);
 create table public.work_schedule_templates(id uuid primary key, timezone text, updated_at timestamptz);
 create table public.work_schedules(
-  id uuid primary key, user_id uuid not null, team_id uuid, shift_date date not null, shift_sequence smallint not null default 1,
+  id uuid primary key default gen_random_uuid(), user_id uuid not null, team_id uuid, shift_date date not null, shift_sequence smallint not null default 1,
   shift_start timestamptz, shift_end timestamptz, planned_paid_minutes integer,
   timezone text not null default 'America/New_York', status text not null default 'published',
   is_rest_day boolean not null default false, is_holiday boolean not null default false, holiday_name text,

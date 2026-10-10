@@ -330,6 +330,7 @@ declare
   v_assignment_row public.work_schedule_template_assignments%rowtype;
   v_template public.work_schedule_templates%rowtype;
   v_has_assignment boolean := false;
+  v_active_schedule_count integer;
   v_review_notes text := nullif(trim(coalesce(p_review_notes, '')), '');
   v_timezone text;
   v_notes text;
@@ -503,6 +504,19 @@ begin
     raise exception 'This date is protected by a Committed Hours snapshot or finalized payroll cutoff.';
   end if;
 
+  -- Revalidate the submission-time invariant after the employee/date advisory
+  -- lock and payroll parent locks are held. The INSERT trigger below makes the
+  -- actual schedule creation path take the same employee/date lock, so a new
+  -- schedule cannot appear between this count and the authoritative save.
+  select count(*)::integer into v_active_schedule_count
+  from public.work_schedules schedule_row
+  where schedule_row.user_id = v_request.user_id
+    and schedule_row.shift_date = v_request.start_date
+    and schedule_row.status in ('published', 'changed', 'scheduled');
+  if v_active_schedule_count <> 1 then
+    raise exception 'This date must have exactly one active schedule to be converted.';
+  end if;
+
   select * into v_target
   from public.work_schedules
   where id = v_request.target_schedule_id
@@ -639,5 +653,67 @@ grant execute on function public.workforce_apply_schedule_conversion_request(uui
 
 comment on function public.workforce_apply_schedule_conversion_request(uuid, text) is
   'Atomically approves one-date Rest Day and Regular Shift requests through Schedule Management.';
+
+-- Row locks on the submitted schedule do not prevent another schedule with a
+-- different sequence from being inserted for the same employee/date. Serialize
+-- every schedule insert with conversion approval using its date-level lock.
+create or replace function private.workforce_schedule_insert_date_lock()
+returns trigger
+language plpgsql
+set search_path = ''
+as $$
+begin
+  perform pg_catalog.pg_advisory_xact_lock(
+    pg_catalog.hashtextextended(new.user_id::text || ':' || new.shift_date::text, 0)
+  );
+  return new;
+end;
+$$;
+
+revoke all on function private.workforce_schedule_insert_date_lock()
+  from public, anon, authenticated, service_role;
+
+drop trigger if exists a_work_schedules_conversion_insert_lock
+  on public.work_schedules;
+create trigger a_work_schedules_conversion_insert_lock
+before insert on public.work_schedules
+for each row execute function private.workforce_schedule_insert_date_lock();
+
+comment on function private.workforce_schedule_insert_date_lock() is
+  'Serializes new schedule rows with Schedule Request date conversions for the same employee and date.';
+
+create or replace function private.workforce_schedule_active_transition_lock()
+returns trigger
+language plpgsql
+set search_path = ''
+as $$
+begin
+  if new.status in ('published', 'changed', 'scheduled')
+     and (
+       old.status not in ('published', 'changed', 'scheduled')
+       or old.user_id is distinct from new.user_id
+       or old.shift_date is distinct from new.shift_date
+     )
+     and not pg_catalog.pg_try_advisory_xact_lock(
+       pg_catalog.hashtextextended(new.user_id::text || ':' || new.shift_date::text, 0)
+     ) then
+    raise exception 'An active schedule request is being approved for this employee and date. Retry the schedule change.'
+      using errcode = '55P03';
+  end if;
+  return new;
+end;
+$$;
+
+revoke all on function private.workforce_schedule_active_transition_lock()
+  from public, anon, authenticated, service_role;
+
+drop trigger if exists a_work_schedules_conversion_transition_lock
+  on public.work_schedules;
+create trigger a_work_schedules_conversion_transition_lock
+before update of user_id, shift_date, status on public.work_schedules
+for each row execute function private.workforce_schedule_active_transition_lock();
+
+comment on function private.workforce_schedule_active_transition_lock() is
+  'Serializes activation or reassignment of schedule rows with Schedule Request date conversions without waiting on a row lock cycle.';
 
 commit;

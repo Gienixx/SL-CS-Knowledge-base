@@ -58,6 +58,14 @@ function waitForExit(session) {
   })
 }
 
+async function waitForActivity(container, query, description) {
+  for (let attempt = 0; attempt < 40; attempt += 1) {
+    if (Number(psql(container, query).trim()) > 0) return
+    await new Promise(resolve => setTimeout(resolve, 50))
+  }
+  assert.fail(`PostgreSQL did not reach ${description}`)
+}
+
 test('conversion payroll guards and real concurrent PostgreSQL lock orders', { skip: !dockerAvailable, timeout: 120000 }, async t => {
   const container = `slcs-conversion-payroll-${process.pid}-${Date.now()}`
   const setup = await read('tests/fixtures/schedule-conversion-payroll-setup.sql')
@@ -167,6 +175,90 @@ test('conversion payroll guards and real concurrent PostgreSQL lock orders', { s
       insert into public.payroll_items(payroll_record_id,metadata)
         values('ffffffff-ffff-ffff-ffff-ffffffff0002','{"commitment_id":"aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaa0016"}');
       select test.assert_conversion_blocked(test.seed_conversion('bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbb017','2026-11-16',false));`)
+
+    // Recheck the active-schedule invariant at approval, using the real
+    // schedule-save RPC to add a different sequence after request submission.
+    psql(container, `do $$ declare request_id uuid; begin
+        request_id := test.seed_conversion('bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbb018','2026-11-20',false);
+        perform set_config('test.is_admin','true',false);
+        perform public.workforce_admin_save_schedule(null,'11111111-1111-1111-1111-111111111111','2026-11-20',2,
+          '2026-11-20 18:00+00','2026-11-20 22:00+00','America/New_York','published',false,false,null,'second active schedule');
+        perform test.assert_conversion_blocked(request_id);
+      end $$;
+      do $$ begin
+        if (select count(*) from public.work_schedules where user_id='11111111-1111-1111-1111-111111111111' and shift_date='2026-11-20' and status in ('published','changed','scheduled')) <> 2 then
+          raise exception 'The actual schedule-save RPC did not create the second active schedule';
+        end if;
+      end $$;`)
+    t.diagnostic('approval rejected a second active schedule created after submission through workforce_admin_save_schedule')
+
+    psql(container, `do $$ declare request_id uuid; schedule_row public.work_schedules%rowtype; begin
+        request_id := test.seed_conversion('bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbb024','2026-11-23',false);
+        perform set_config('test.is_admin','true',false);
+        schedule_row := public.workforce_admin_save_schedule(null,'11111111-1111-1111-1111-111111111111','2026-11-23',2,
+          '2026-11-23 18:00+00','2026-11-23 22:00+00','America/New_York','cancelled',false,false,null,'synthetic inactive schedule');
+        schedule_row := public.workforce_admin_save_schedule(schedule_row.id,'11111111-1111-1111-1111-111111111111','2026-11-23',2,
+          '2026-11-23 18:00+00','2026-11-23 22:00+00','America/New_York','published',false,false,null,'synthetic schedule activation');
+        perform test.assert_conversion_blocked(request_id);
+      end $$;`)
+    t.diagnostic('approval rejected an inactive schedule activated after submission through workforce_admin_save_schedule')
+
+    // Test both serial orders between the real creation RPC and approval.
+    // Sleep triggers are timing instrumentation; application paths and the
+    // migration-installed employee/date lock remain real.
+    psql(container, `create function test.pause_schedule_mutation() returns trigger language plpgsql as $$ begin
+        perform pg_sleep(1.25); return new; end $$;
+      create trigger zz_test_pause_schedule_insert before insert on public.work_schedules
+        for each row execute function test.pause_schedule_mutation();
+      create trigger zz_test_pause_schedule_update before update on public.work_schedules
+        for each row execute function test.pause_schedule_mutation();`)
+
+    const settings = `select set_config('request.jwt.claim.sub','11111111-1111-1111-1111-111111111111',false); select set_config('test.is_admin','true',false); select set_config('test.can_manage','true',false);`
+    const createRace = { date: '2026-11-21', schedule: 'bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbb019' }
+    psql(container, `select test.seed_conversion('${createRace.schedule}','${createRace.date}',false);`)
+    const creator = startPsql(container, `begin; ${settings}
+      select public.workforce_admin_save_schedule(null,'11111111-1111-1111-1111-111111111111','${createRace.date}',2,
+        '${createRace.date} 18:00+00','${createRace.date} 22:00+00','America/New_York','published',false,false,null,'concurrent schedule creation');
+      commit;`)
+    await waitForActivity(container,
+      `select count(*) from pg_stat_activity where datname='postgres' and wait_event='PgSleep' and query like '%workforce_admin_save_schedule%' and pid<>pg_backend_pid();`,
+      'schedule creation test trigger')
+    const createRequest = `(select id from public.leave_requests where start_date='${createRace.date}')`
+    const approver = startPsql(container, `begin; ${settings}
+      do $$ begin
+        begin perform public.workforce_apply_schedule_conversion_request(${createRequest},null); raise exception 'TEST_UNEXPECTED_SUCCESS';
+        exception when others then if sqlerrm='TEST_UNEXPECTED_SUCCESS' then raise; end if; end;
+      end $$; commit;`)
+    await waitForActivity(container,
+      `select count(*) from pg_stat_activity where datname='postgres' and wait_event_type='Lock' and query like '%workforce_apply_schedule_conversion_request%' and pid<>pg_backend_pid();`,
+      'approval waiting for the schedule-creation date lock')
+    await waitForExit(creator)
+    await waitForExit(approver)
+    psql(container, `select test.assert_conversion_blocked(${createRequest});`)
+    assert.equal(Number(psql(container, `select count(*) from public.work_schedules where user_id='11111111-1111-1111-1111-111111111111' and shift_date='${createRace.date}' and status in ('published','changed','scheduled');`).trim()), 2)
+    t.diagnostic('creation-first race serialized: approval observed the new schedule and remained pending')
+
+    const approvalRace = { date: '2026-11-22', schedule: 'bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbb021' }
+    psql(container, `select test.seed_conversion('${approvalRace.schedule}','${approvalRace.date}',false);`)
+    const approvalRequest = `(select id from public.leave_requests where start_date='${approvalRace.date}')`
+    const applying = startPsql(container, `begin; ${settings}
+      select public.workforce_apply_schedule_conversion_request(${approvalRequest},null);
+      commit;`)
+    await waitForActivity(container,
+      `select count(*) from pg_stat_activity where datname='postgres' and wait_event='PgSleep' and query like '%workforce_apply_schedule_conversion_request%' and pid<>pg_backend_pid();`,
+      'approval test trigger')
+    const creatingAfter = startPsql(container, `begin; ${settings}
+      select public.workforce_admin_save_schedule(null,'11111111-1111-1111-1111-111111111111','${approvalRace.date}',2,
+        '${approvalRace.date} 18:00+00','${approvalRace.date} 22:00+00','America/New_York','published',false,false,null,'concurrent schedule creation');
+      commit;`)
+    await waitForActivity(container,
+      `select count(*) from pg_stat_activity where datname='postgres' and wait_event_type='Lock' and query like '%workforce_admin_save_schedule%' and pid<>pg_backend_pid();`,
+      'schedule creation waiting for the approval date lock')
+    await waitForExit(applying)
+    await waitForExit(creatingAfter)
+    assert.match(psql(container, `select r.status || ':' || s.is_rest_day::text || ':' || (select count(*) from public.work_schedules extra where extra.user_id=r.user_id and extra.shift_date=r.start_date and extra.status in ('published','changed','scheduled'))::text from public.leave_requests r join public.work_schedules s on s.id=r.target_schedule_id where r.start_date='${approvalRace.date}';`), /approved:true:2/)
+    t.diagnostic('approval-first race serialized: schedule creation completed after approval committed')
+    psql(container, `drop trigger zz_test_pause_schedule_insert on public.work_schedules; drop trigger zz_test_pause_schedule_update on public.work_schedules; drop function test.pause_schedule_mutation();`)
 
     // Each race uses real PostgreSQL sessions. The first transaction holds
     // the same parent-period lock used by production payroll lifecycle RPCs.
