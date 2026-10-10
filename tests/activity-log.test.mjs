@@ -5,7 +5,7 @@ import fs from 'node:fs/promises'
 test('Activity Log is admin-only, read-only, filtered, and paginated', async () => {
   const page = await fs.readFile('activity-log.html', 'utf8')
   const script = await fs.readFile('scripts/activity-log.js', 'utf8')
-  const migration = await fs.readFile('supabase/migrations/20260813120000_activity_log_read_model.sql', 'utf8')
+  const migration = await fs.readFile('supabase/migrations/20260814213147_activity_log_actor_resolution.sql', 'utf8')
 
   assert.match(page, /Activity Log/)
   assert.match(page, /activityCategory/)

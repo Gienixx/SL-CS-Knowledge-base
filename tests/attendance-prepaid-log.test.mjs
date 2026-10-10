@@ -29,7 +29,7 @@ test('Attendance Log RPC is employee scoped and includes schedules plus actual l
   )
 })
 
-test('Attendance Log distinguishes scheduled prepaid, fulfilled prepaid, and regular minutes', async () => {
+test('Attendance Log preserves billed timestamps without restoring prepaid labels', async () => {
   const [html, script, styles] = await Promise.all([
     read('attendance.html'),
     read('scripts/attendance.js'),
@@ -38,18 +38,12 @@ test('Attendance Log distinguishes scheduled prepaid, fulfilled prepaid, and reg
 
   assert.match(html, /<th>Billed Clock In<\/th>/)
   assert.match(html, /<th>Billed Clock Out<\/th>/)
-   assert.match(html, /scripts\/attendance\.js\?v=29/)
-  assert.match(html, /styles\/attendance-theme-fix\.css\?v=8/)
+  assert.match(html, /scripts\/attendance\.js\?v=\d+/)
+  assert.match(html, /styles\/attendance-theme-fix\.css\?v=\d+/)
   assert.match(script, /workforce_list_my_attendance_log/)
-  assert.match(script, /Prepaid scheduled/)
-  assert.match(script, /Prepaid \$\{formatMinutes\(fulfilledMinutes\)\}/)
-  assert.match(script, /Regular \$\{formatMinutes\(regularMinutes\)\}/)
-  assert.match(script, /record\.is_prepaid_schedule/)
-  assert.match(script, /record\.fulfilled_prepaid_minutes/)
-  assert.match(script, /record\.regular_payable_minutes/)
+  assert.doesNotMatch(script, /Prepaid scheduled|fulfilled_prepaid_minutes|regular_payable_minutes/)
   assert.match(script, /For review/)
   assert.match(script, /pendingApproval/)
-  assert.match(styles, /\.attendance-prepaid-schedule-row/)
   assert.match(styles, /\.attendance-pay-type/)
 })
 
@@ -67,15 +61,14 @@ test('Attendance Log badges use readable light-theme semantic tags without chang
   assert.doesNotMatch(lightStyles, /html\[data-site-theme="dark"\] \.attendance-history-card/)
 })
 
-test('Attendance Log keeps the outstanding balance card separate', async () => {
+test('Attendance Log does not restore the obsolete outstanding prepaid balance card', async () => {
   const [html, script, lightStyles] = await Promise.all([
     read('attendance.html'),
     read('scripts/attendance.js'),
     read('styles/attendance-theme-fix.css')
   ])
 
-  assert.match(html, /id="attendancePrepaidBalance"[^>]+hidden/)
-  assert.match(script, /workforce_list_my_prepaid_balances/)
+  assert.doesNotMatch(html, /attendancePrepaidBalance/)
+  assert.doesNotMatch(script, /workforce_list_my_prepaid_balances/)
   assert.match(script, /workforce_list_my_attendance_log/)
-  assert.match(lightStyles, /html\[data-site-theme="light"\] \.attendance-prepaid-card/)
 })

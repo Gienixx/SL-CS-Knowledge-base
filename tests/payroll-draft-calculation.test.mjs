@@ -5,6 +5,10 @@ import test from 'node:test'
 
 const read = path => readFile(new URL(`../${path}`, import.meta.url), 'utf8')
 const migrationPath =
+  'supabase/migrations/20260808102733_historical_restored_allocation_not_payable_deduction.sql'
+const recordScopeMigrationPath =
+  'supabase/migrations/20260808093837_scope_employee_draft_blockers.sql'
+const finalizedAccessMigrationPath =
   'supabase/migrations/20260729073554_calculate_draft_payroll.sql'
 const calculationReadCorrectionPath =
   'supabase/migrations/20260729074006_hide_uncalculated_payroll_results.sql'
@@ -77,7 +81,7 @@ test('138 worked hours plus 92 new prepaid hours pays 230 hours once', () => {
 })
 
 test('Step 7 is atomic, permission-scoped, auditable, and protects finalized payroll', async () => {
-  const migration = await read(migrationPath)
+  const migration = await read(finalizedAccessMigrationPath)
 
   assert.match(migration, /pg_advisory_xact_lock/)
   assert.match(migration, /for update/)
@@ -104,7 +108,7 @@ test('Step 7 is atomic, permission-scoped, auditable, and protects finalized pay
 
 test('employee Draft recalculation reuses the period calculator with a record scope', async () => {
   const [migration, script] = await Promise.all([
-    read(migrationPath),
+    read(recordScopeMigrationPath),
     read('scripts/payroll-period.js')
   ])
 

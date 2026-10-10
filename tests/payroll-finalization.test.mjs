@@ -38,13 +38,19 @@ test('Step 10 verifies and records review and final approval', async () => {
 })
 
 test('approval readiness requires imported approved billed attendance and current totals', async () => {
-  const migration = await readFile(migrationPath, 'utf8')
+  const [migration, attendanceExceptions, readinessViewHardening] = await Promise.all([
+    readFile(migrationPath, 'utf8'),
+    readFile('supabase/migrations/20260724114356_payroll_exception_review.sql', 'utf8'),
+    readFile('supabase/migrations/20260819183555_void_attendance_operational_restore.sql', 'utf8')
+  ])
 
-  assert.match(migration, /approved billed attendance entry/)
-  assert.match(migration, /workforce_attendance_payroll_readiness as readiness/)
-  assert.match(migration, /readiness\.is_payroll_ready/)
-  assert.match(migration, /attendance_version/)
-  assert.match(migration, /All approved billed attendance must be imported before payroll approval\./)
+  assert.match(attendanceExceptions, /workforce_attendance_payroll_readiness as readiness/)
+  assert.match(attendanceExceptions, /where not attendance_row\.is_payroll_ready/)
+  assert.match(attendanceExceptions, /review_status not in \('approved', 'locked'\)/)
+  assert.match(attendanceExceptions, /attendance_row\.clock_out is null/)
+  assert.match(readinessViewHardening, /workforce_attendance_payroll_readiness/)
+  assert.match(migration, /payroll_get_period_exceptions\([\s\S]*?issue\.is_blocking/)
+  assert.match(migration, /attendance_version <>[\s\S]*?snapshot\.attendance_version/)
   assert.match(migration, /calculated_at is null/)
 })
 

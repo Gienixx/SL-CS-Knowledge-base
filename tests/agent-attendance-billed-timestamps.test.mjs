@@ -113,12 +113,11 @@ test('agent attendance RPC returns original and billed fields from the attendanc
 
 test('prepaid Attendance Log rows only suppress duplicates for active attendance', async () => {
   const migration = await read('supabase/migrations/20260821120000_expose_billed_attendance_in_agent_log.sql')
-  const duplicateCheck = migration.match(/and not exists \([\s\S]*?\n\s*\)\n\s*\)/)?.[0] || ''
 
-  assert.match(duplicateCheck, /attendance_row\.user_id = v_employee_id/)
-  assert.match(duplicateCheck, /attendance_row\.voided_at is null/)
-  assert.match(duplicateCheck, /attendance_row\.schedule_id = snapshot\.schedule_id/)
-  assert.match(duplicateCheck, /attendance_row\.work_date = snapshot\.work_date/)
+  assert.match(
+    migration,
+    /and not exists \(\s*select 1\s*from public\.attendance as attendance_row[\s\S]*?attendance_row\.user_id = v_employee_id[\s\S]*?attendance_row\.voided_at is null[\s\S]*?attendance_row\.schedule_id = snapshot\.schedule_id[\s\S]*?attendance_row\.work_date = snapshot\.work_date/
+  )
 
   const suppressesPrepaidDuplicate = (attendance, snapshot) => (
     attendance.user_id === snapshot.employee_id

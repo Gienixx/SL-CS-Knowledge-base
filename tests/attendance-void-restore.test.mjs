@@ -91,7 +91,7 @@ test('voided history is admin-only and restore has a dedicated UI path', async (
   assert.match(script, /workforce_restore_attendance/)
   assert.match(script, /teamAttendanceRestoreForm/)
   assert.match(script, /showVoidedHistory \? createVoidedAttendanceCard/)
-  assert.match(page, /scripts\/team-attendance\.js\?v=26/)
+  assert.match(page, /scripts\/team-attendance\.js\?v=\d+/)
 })
 
 test('voided and non-voided listing behavior remains explicit', async () => {

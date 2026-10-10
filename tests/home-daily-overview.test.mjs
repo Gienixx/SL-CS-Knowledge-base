@@ -29,7 +29,11 @@ test('Daily checklist saves only the current agent daily completion', async () =
 })
 
 test('Daily overview migration protects agent completions with RLS', async () => {
-  const migration = await read('supabase/migrations/20260718075314_home_daily_todos_and_celebrations.sql')
+  const [initialMigration, policyMigration] = await Promise.all([
+    read('supabase/migrations/20260718075314_home_daily_todos_and_celebrations.sql'),
+    read('supabase/migrations/20260718075458_consolidate_home_overview_rls.sql')
+  ])
+  const migration = `${initialMigration}\n${policyMigration}`
 
   assert.match(migration, /alter table public\.home_todo_completions enable row level security/)
   assert.match(migration, /\(select auth\.uid\(\)\) = auth_user_id/)
