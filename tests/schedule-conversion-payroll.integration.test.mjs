@@ -58,6 +58,17 @@ function waitForExit(session) {
   })
 }
 
+function waitForFailure(session) {
+  if (session.exitCode !== null) return session.exitCode !== 0
+    ? Promise.resolve(`${session.output}\n${session.error}`)
+    : Promise.reject(new Error(`PostgreSQL session unexpectedly succeeded: ${session.output}`))
+  return new Promise((resolve, reject) => {
+    session.child.once('exit', code => code !== 0
+      ? resolve(`${session.output}\n${session.error}`)
+      : reject(new Error(`PostgreSQL session unexpectedly succeeded: ${session.output}`)))
+  })
+}
+
 async function waitForActivity(container, query, description) {
   for (let attempt = 0; attempt < 40; attempt += 1) {
     if (Number(psql(container, query).trim()) > 0) return
@@ -251,13 +262,11 @@ test('conversion payroll guards and real concurrent PostgreSQL lock orders', { s
       select public.workforce_admin_save_schedule(null,'11111111-1111-1111-1111-111111111111','${approvalRace.date}',2,
         '${approvalRace.date} 18:00+00','${approvalRace.date} 22:00+00','America/New_York','published',false,false,null,'concurrent schedule creation');
       commit;`)
-    await waitForActivity(container,
-      `select count(*) from pg_stat_activity where datname='postgres' and wait_event_type='Lock' and query like '%workforce_admin_save_schedule%' and pid<>pg_backend_pid();`,
-      'schedule creation waiting for the approval date lock')
+    const rejectedInsert = await waitForFailure(creatingAfter)
+    assert.match(rejectedInsert, /An active schedule request is being approved for this employee and date/)
     await waitForExit(applying)
-    await waitForExit(creatingAfter)
-    assert.match(psql(container, `select r.status || ':' || s.is_rest_day::text || ':' || (select count(*) from public.work_schedules extra where extra.user_id=r.user_id and extra.shift_date=r.start_date and extra.status in ('published','changed','scheduled'))::text from public.leave_requests r join public.work_schedules s on s.id=r.target_schedule_id where r.start_date='${approvalRace.date}';`), /approved:true:2/)
-    t.diagnostic('approval-first race serialized: schedule creation completed after approval committed')
+    assert.match(psql(container, `select r.status || ':' || s.is_rest_day::text || ':' || (select count(*) from public.work_schedules extra where extra.user_id=r.user_id and extra.shift_date=r.start_date and extra.status in ('published','changed','scheduled'))::text from public.leave_requests r join public.work_schedules s on s.id=r.target_schedule_id where r.start_date='${approvalRace.date}';`), /approved:true:1/)
+    t.diagnostic('approval-first race serialized: competing schedule creation failed fast without deadlock')
     psql(container, `drop trigger zz_test_pause_schedule_insert on public.work_schedules; drop trigger zz_test_pause_schedule_update on public.work_schedules; drop function test.pause_schedule_mutation();`)
 
     // Each race uses real PostgreSQL sessions. The first transaction holds

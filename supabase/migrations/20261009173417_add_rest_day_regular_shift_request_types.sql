@@ -663,9 +663,16 @@ language plpgsql
 set search_path = ''
 as $$
 begin
-  perform pg_catalog.pg_advisory_xact_lock(
+  -- Some recurring-schedule approvals already hold assignment/template row
+  -- locks before their generated schedule reaches this trigger. Fail fast if
+  -- conversion approval owns the date lock; waiting here would invert the
+  -- recurring path's lock order and could deadlock.
+  if not pg_catalog.pg_try_advisory_xact_lock(
     pg_catalog.hashtextextended(new.user_id::text || ':' || new.shift_date::text, 0)
-  );
+  ) then
+    raise exception 'An active schedule request is being approved for this employee and date. Retry the schedule change.'
+      using errcode = '55P03';
+  end if;
   return new;
 end;
 $$;
@@ -680,7 +687,7 @@ before insert on public.work_schedules
 for each row execute function private.workforce_schedule_insert_date_lock();
 
 comment on function private.workforce_schedule_insert_date_lock() is
-  'Serializes new schedule rows with Schedule Request date conversions for the same employee and date.';
+  'Serializes new schedule rows with Schedule Request date conversions for the same employee and date without creating recurring lock-order deadlocks.';
 
 create or replace function private.workforce_schedule_active_transition_lock()
 returns trigger
