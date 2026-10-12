@@ -96,6 +96,7 @@ test('production build publishes only browser assets', async () => {
     'dist/index.html',
     'dist/partials',
     'dist/scripts/payroll-v2.js',
+    'dist/scripts/payroll-v2-completed-count.mjs',
     'dist/scripts/payslip-v2-preview.js',
     'dist/scripts/workforce-committed-hours.js',
     'dist/scripts/payroll-v2-finalization.mjs',

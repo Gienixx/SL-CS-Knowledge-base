@@ -8,6 +8,7 @@ import {
   finalizeEmployeeSummary,
   submitEmployeeFinalization
 } from './payroll-v2-finalization.mjs?v=2'
+import { visibleCompletedPayslips } from './payroll-v2-completed-count.mjs?v=1'
 
 const VIEW_PERMISSIONS = [
   'create_payroll',
@@ -1445,7 +1446,8 @@ function renderPeriods() {
     const statusCell = makeCell(row, status.charAt(0).toUpperCase() + status.slice(1))
     applyStatusBadge(statusCell, status.charAt(0).toUpperCase() + status.slice(1), status)
     makeCell(row, formatPaypalRate(period.paypal_conversion_rate))
-    makeCell(row, String(Number(period.payslip_count || 0)))
+    const payslipCountCell = makeCell(row, String(Number(period.payslip_count || 0)))
+    payslipCountCell.dataset.payslipCount = ''
 
     const actionCell = document.createElement('td')
     actionCell.className = 'payroll-v2-period-actions-cell'
@@ -1538,6 +1540,15 @@ function setCompletedPayslipsStatus(message = '') {
   elements.completedPayslipsStatus.hidden = !message
 }
 
+function updatePeriodPayslipCount(periodId, count) {
+  const period = state.periods.find(item => item.period_id === periodId)
+  const row = Array.from(elements.tableBody.querySelectorAll('tr[data-period-id]'))
+    .find(item => item.dataset.periodId === periodId)
+  const cell = row?.querySelector('[data-payslip-count]')
+  if (Number.isInteger(count) && period) period.payslip_count = count
+  if (cell) cell.textContent = Number.isInteger(count) ? String(count) : count
+}
+
 function appendEyeIcon(link) {
   const icon = document.createElementNS('http://www.w3.org/2000/svg', 'svg')
   icon.setAttribute('viewBox', '0 0 24 24')
@@ -1560,9 +1571,8 @@ function appendEyeIcon(link) {
 
 function renderCompletedPayslips(rows) {
   elements.completedPayslipsList.replaceChildren()
-  const completed = (Array.isArray(rows) ? rows : []).filter(record =>
-    ['approved', 'finalized'].includes(String(record.status || '').toLowerCase())
-  )
+  const completed = visibleCompletedPayslips(rows)
+  updatePeriodPayslipCount(selectedPeriod()?.period_id, completed.length)
 
   if (!completed.length) {
     setCompletedPayslipsStatus('No completed payslips yet.')
@@ -1611,12 +1621,14 @@ async function loadCompletedPayslips() {
   }
 
   setCompletedPayslipsStatus('Loading completed payslips…')
+  updatePeriodPayslipCount(period.period_id, '…')
   const { data, error } = await supabase.rpc('payroll_v2_list_completed_payslips', {
     p_payroll_v2_period_id: period.period_id
   })
   if (requestId !== state.completedPayslipRequestId
       || state.selectedPeriodId !== period.period_id) return
   if (error) {
+    updatePeriodPayslipCount(period.period_id, '—')
     setCompletedPayslipsStatus('Completed payslips could not be loaded. Refresh the page to retry.')
     return
   }
