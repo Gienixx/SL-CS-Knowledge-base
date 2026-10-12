@@ -136,13 +136,11 @@ export async function resolveProductivityIdentityMap(
       supabaseUrl,
       serviceRoleKey,
       'agent_identity_map?select=agent_key,agent_name,dashboard_sync_approved' +
-        `&limit=${PRODUCTIVITY_IDENTITY_PAGE_SIZE}`,
+        '&order=agent_key.asc' +
+        `&limit=${PRODUCTIVITY_IDENTITY_PAGE_SIZE}` +
+        `&offset=${offset}`,
       {
-        method: 'GET',
-        headers: {
-          'Range-Unit': 'items',
-          Range: `${offset}-${offset + PRODUCTIVITY_IDENTITY_PAGE_SIZE - 1}`
-        }
+        method: 'GET'
       }
     )
 
@@ -248,7 +246,8 @@ export async function validateProductivityIdentityHistory(
     const encodedDates = encodeURIComponent(`in.(${dateBatch.join(',')})`)
     const query =
       'agent_productivity?select=report_date,agent_key' +
-      `&report_date=${encodedDates}&limit=${PRODUCTIVITY_IDENTITY_PAGE_SIZE}`
+      `&report_date=${encodedDates}&order=report_date.asc,agent_key.asc` +
+      `&limit=${PRODUCTIVITY_IDENTITY_PAGE_SIZE}`
 
     for (
       let offset = 0;
@@ -258,13 +257,9 @@ export async function validateProductivityIdentityHistory(
       const rows = await supabaseRequest(
         supabaseUrl,
         serviceRoleKey,
-        query,
+        query + `&offset=${offset}`,
         {
-          method: 'GET',
-          headers: {
-            'Range-Unit': 'items',
-            Range: `${offset}-${offset + PRODUCTIVITY_IDENTITY_PAGE_SIZE - 1}`
-          }
+          method: 'GET'
         }
       )
 
