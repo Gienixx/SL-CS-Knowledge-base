@@ -135,7 +135,7 @@ export async function resolveProductivityIdentityMap(
     const rows = await supabaseRequest(
       supabaseUrl,
       serviceRoleKey,
-      'agent_identity_map?select=agent_key,agent_name' +
+      'agent_identity_map?select=agent_key,agent_name,dashboard_sync_approved' +
         `&limit=${PRODUCTIVITY_IDENTITY_PAGE_SIZE}`,
       {
         method: 'GET',
@@ -154,13 +154,16 @@ export async function resolveProductivityIdentityMap(
     if (rows.length < PRODUCTIVITY_IDENTITY_PAGE_SIZE) break
   }
 
-  const keyByNormalizedName = new Map()
+  const identityByNormalizedName = new Map()
   identityMap.forEach(identity => {
     const normalizedName = normalizeIdentityName(identity.agent_name)
     if (!normalizedName) return
 
-    const existingKey = keyByNormalizedName.get(normalizedName)
-    if (existingKey && existingKey !== identity.agent_key) {
+    const existingIdentity = identityByNormalizedName.get(normalizedName)
+    if (
+      existingIdentity &&
+      existingIdentity.agent_key !== identity.agent_key
+    ) {
       const error = new Error(
         `Stored productivity identities contain an ambiguous name: ` +
         `${identity.agent_name}. Resolve the identity map before syncing.`
@@ -168,15 +171,21 @@ export async function resolveProductivityIdentityMap(
       error.code = 'PRODUCTIVITY_IDENTITY_CONFLICT'
       throw error
     }
-    keyByNormalizedName.set(normalizedName, identity.agent_key)
+    identityByNormalizedName.set(normalizedName, identity)
   })
 
+  const explicitlyApprovedKeys = new Set()
   const keysByDate = new Map()
   productivityRecords.forEach(record => {
-    const mappedKey = keyByNormalizedName.get(
+    const mappedIdentity = identityByNormalizedName.get(
       normalizeIdentityName(record.agent_name)
     )
-    if (mappedKey) record.agent_key = mappedKey
+    if (mappedIdentity) {
+      record.agent_key = mappedIdentity.agent_key
+      if (mappedIdentity.dashboard_sync_approved === true) {
+        explicitlyApprovedKeys.add(mappedIdentity.agent_key)
+      }
+    }
 
     if (!record.report_date || !record.agent_key) return
     if (!keysByDate.has(record.report_date)) {
@@ -196,6 +205,8 @@ export async function resolveProductivityIdentityMap(
     }
     namesByKey.set(record.agent_key, record.agent_name)
   })
+
+  return explicitlyApprovedKeys
 }
 
 /**
@@ -207,7 +218,8 @@ export async function resolveProductivityIdentityMap(
 export async function validateProductivityIdentityHistory(
   supabaseUrl,
   serviceRoleKey,
-  productivityRecords
+  productivityRecords,
+  explicitlyApprovedKeys = new Set()
 ) {
   const incomingKeysByDate = new Map()
 
@@ -277,7 +289,9 @@ export async function validateProductivityIdentityHistory(
     const existingKeys = existingKeysByDate.get(reportDate)
     if (!existingKeys || existingKeys.size === 0) continue
 
-    const unseenKeys = [...incomingKeys].filter(key => !existingKeys.has(key))
+    const unseenKeys = [...incomingKeys].filter(key =>
+      !existingKeys.has(key) && !explicitlyApprovedKeys.has(key)
+    )
     if (unseenKeys.length === 0) continue
 
     const error = new Error(
@@ -286,7 +300,8 @@ export async function validateProductivityIdentityHistory(
       `(${unseenKeys.join(', ')}). A changed header may represent an agent ` +
       'rename. No Analytics rows were written. Verify whether it is the same ' +
       'person; if so, update that existing agent_identity_map display name ' +
-      'while preserving its agent_key, then retry.'
+      'while preserving its agent_key. If it is a genuinely new person, ' +
+      'register and explicitly approve that new identity before retrying.'
     )
     error.code = 'PRODUCTIVITY_IDENTITY_CONFLICT'
     throw error

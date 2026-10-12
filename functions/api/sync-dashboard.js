@@ -191,7 +191,7 @@ async function runMultiDatasetSync(
   const result = processMultiDatasetPayload(payload, syncRunId)
 
   setStage('resolve_productivity_identity')
-  await resolveProductivityIdentityMap(
+  const explicitlyApprovedAgentKeys = await resolveProductivityIdentityMap(
     environment.supabaseUrl,
     environment.serviceRoleKey,
     result.productivity.importedRecords
@@ -201,7 +201,8 @@ async function runMultiDatasetSync(
   await validateProductivityIdentityHistory(
     environment.supabaseUrl,
     environment.serviceRoleKey,
-    result.productivity.importedRecords
+    result.productivity.importedRecords,
+    explicitlyApprovedAgentKeys
   )
 
   setStage('persist_analytics_data')

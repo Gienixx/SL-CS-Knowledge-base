@@ -69,24 +69,50 @@ productivity rows, the sync returns an identity conflict before writing any
 Analytics data. Verify whether the changed header is the same person. For a
 verified rename, update that person's existing `agent_identity_map.agent_name`
 through authorized database administration while preserving `agent_key`, then
-replay the same reporting dates. For a different or new person, do not reuse an
-existing key. The importer preserves historical rows and does not guess that
-two names belong to the same person.
+replay the same reporting dates.
+
+For a genuinely new person, verify their identity against the current roster,
+derive the key using the same normalized workbook-header format, and register
+that name and key in `agent_identity_map` with
+`dashboard_sync_approved = true` before retrying. The approval column defaults
+to false; a normal sync cannot grant its own approval. An authorized database
+operator can register a verified new person with a plain insert such as:
+
+```sql
+insert into public.agent_identity_map (
+  agent_key,
+  agent_name,
+  dashboard_sync_approved
+) values (
+  'new_support_agent',
+  'New Support Agent',
+  true
+);
+```
+
+Use the exact key derived from the workbook header. The insert intentionally
+fails if that key already exists; inspect the existing identity instead of
+overwriting it. Do not approve a changed header as a new agent until the rename
+check is complete. The importer preserves historical rows and does not guess
+that two names belong to the same person.
 
 ### Production release order
 
-1. Release the dashboard sync endpoint and its shared validation code through
+1. Apply the Dashboard Analytics schema migration
+   `20261012132044_dashboard_agent_identity_approval.sql`. The endpoint reads
+   this explicit approval field, so the migration must be live first.
+2. Release the dashboard sync endpoint and its shared validation code through
    the approved production site workflow.
-2. In the live workbook's Apps Script project, update `dashboard-sync.gs` and
+3. In the live workbook's Apps Script project, update `dashboard-sync.gs` and
    `dashboard-trigger-migration.gs` from the same reviewed release commit.
    Keep the existing `DASHBOARD_SYNC_URL` and `SHEET_SYNC_SECRET` script
    properties.
-3. Run `migrateDashboardSyncTriggers()` and confirm its result is `valid: true`,
+4. Run `migrateDashboardSyncTriggers()` and confirm its result is `valid: true`,
    with exactly one trigger for each configured Eastern schedule. The migration
    deletes and reinstalls all managed triggers because Apps Script does not
    expose existing trigger schedule metadata.
-4. Run `syncAllDashboardData()` once as the controlled manual sync.
-5. Verify the latest `sheet_sync_runs` row is successful and covers the source
+5. Run `syncAllDashboardData()` once as the controlled manual sync.
+6. Verify the latest `sheet_sync_runs` row is successful and covers the source
    workbook's latest valid reporting date. Confirm Daily Volume,
    Ticket Productivity, and Daily Drivers counts and keys, and verify
    Reporting Operations no longer reports a stale synchronization.

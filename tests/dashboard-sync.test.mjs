@@ -388,7 +388,7 @@ test('malformed workbook headers are recorded as failed and write no analytics r
   }
 })
 
-test('reimporting an existing report date after an agent rename is blocked before writes', async () => {
+test('agent renames preserve identity and registered new agents can be imported', async () => {
   const payload = buildIntegrityPayload()
   const originalFetch = globalThis.fetch
   const productivityRows = []
@@ -464,7 +464,8 @@ test('reimporting an existing report date after an agent rename is blocked befor
           } else {
             identityRows.push({
               agent_key: record.agent_key,
-              agent_name: record.agent_name
+              agent_name: record.agent_name,
+              dashboard_sync_approved: false
             })
           }
         })
@@ -527,6 +528,40 @@ test('reimporting an existing report date after an agent rename is blocked befor
         row.agent_name
       ]),
       [['2026-06-01', 'amora', 'Renamed Agent']]
+    )
+
+    // A genuinely new agent must be registered and explicitly approved
+    // before its first import onto a date that already has team history.
+    identityRows.push({
+      agent_key: 'new_support_agent',
+      agent_name: 'New Support Agent',
+      dashboard_sync_approved: true
+    })
+    const [agentHeaders, metricHeaders] = buildProductivityHeaders([
+      'Renamed Agent', 'New Support Agent'
+    ])
+    const row = blankRow(25)
+    row[0] = '2026-06-01'
+    row[1] = 8
+    row[2] = 2
+    row[3] = 5.25
+    row[4] = 4
+    row[5] = 1
+    row[6] = 6.5
+    payload.datasets.ticketProductivity.values = [
+      agentHeaders,
+      metricHeaders,
+      row
+    ]
+
+    const registeredAgentResponse = await sendSync()
+    assert.equal(registeredAgentResponse.status, 200)
+    assert.deepEqual(
+      productivityRows
+        .filter(productivityRow => productivityRow.report_date === '2026-06-01')
+        .map(productivityRow => productivityRow.agent_key)
+        .sort(),
+      ['amora', 'new_support_agent']
     )
   } finally {
     globalThis.fetch = originalFetch
