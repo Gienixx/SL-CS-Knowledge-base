@@ -44,7 +44,7 @@ export const WORKBOOK_SOURCE_INVENTORY = Object.freeze({
 
   ticketProductivity: Object.freeze({
     sheetName: 'Ticket Productivity',
-    usedRange: 'A1:Y367',
+    usedRange: 'A1:AB367',
     headerRows: Object.freeze([1, 2]),
     dataStartRow: 3,
     dateColumn: 'A',
