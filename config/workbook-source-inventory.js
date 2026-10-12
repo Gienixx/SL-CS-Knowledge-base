@@ -53,19 +53,16 @@ export const WORKBOOK_SOURCE_INVENTORY = Object.freeze({
       'Open Tickets',
       'AHT'
     ]),
-    agentBlocks: freezeEntries([
-      { agentName: 'Amora', range: 'B:D' },
-      { agentName: 'Ford', range: 'E:G' },
-      { agentName: 'Gen', range: 'H:J' },
-      { agentName: 'Arez', range: 'K:M' },
-      { agentName: 'Tristan', range: 'N:P' },
-      { agentName: 'Jerson', range: 'Q:S' },
-      { agentName: 'Jean', range: 'T:V' },
-      { agentName: 'Arby', range: 'W:Y' }
+    agentBlockWidth: 3,
+    metricHeaders: Object.freeze([
+      'Solved Ticket',
+      'Open Tickets',
+      'AHT'
     ]),
     notes: Object.freeze([
       'Agent names occupy the first column of each three-column block.',
       'The following two cells in each row-one block are blank by design.',
+      'Agent names and block positions are read from the workbook headers.',
       'AHT is numeric in the source, but its unit must be confirmed before labeling it in the dashboard.',
       'Blank Open Tickets cells must remain null rather than being converted to zero.'
     ])

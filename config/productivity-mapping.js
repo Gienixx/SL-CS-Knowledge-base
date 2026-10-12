@@ -2,270 +2,24 @@ import {
   WORKBOOK_SOURCE_INVENTORY
 } from './workbook-source-inventory.js'
 
-const PRODUCTIVITY_AGENTS = Object.freeze([
+const PRODUCTIVITY_METRICS = Object.freeze([
   Object.freeze({
-    agentKey: 'amora',
-    agentName: 'Amora',
-    sourceName: 'Amora ',
-    sourceNameAliases: Object.freeze(['Amora']),
-    sourceRange: 'B:D',
-    metrics: Object.freeze([
-      Object.freeze({
-        sourceColumn: 'B',
-        sourceIndex: 1,
-        sourceHeader: 'Solved Ticket',
-        targetColumn: 'solved_tickets',
-        valueType: 'integer',
-        nullable: false
-      }),
-      Object.freeze({
-        sourceColumn: 'C',
-        sourceIndex: 2,
-        sourceHeader: 'Open Tickets',
-        targetColumn: 'open_tickets',
-        valueType: 'integer',
-        nullable: true
-      }),
-      Object.freeze({
-        sourceColumn: 'D',
-        sourceIndex: 3,
-        sourceHeader: 'AHT',
-        targetColumn: 'aht_value',
-        valueType: 'number',
-        nullable: true
-      })
-    ])
+    sourceHeader: 'Solved Ticket',
+    targetColumn: 'solved_tickets',
+    valueType: 'integer',
+    nullable: false
   }),
   Object.freeze({
-    agentKey: 'ford',
-    agentName: 'Ford',
-    sourceName: 'Ford',
-    sourceNameAliases: Object.freeze([]),
-    sourceRange: 'E:G',
-    metrics: Object.freeze([
-      Object.freeze({
-        sourceColumn: 'E',
-        sourceIndex: 4,
-        sourceHeader: 'Solved Ticket',
-        targetColumn: 'solved_tickets',
-        valueType: 'integer',
-        nullable: false
-      }),
-      Object.freeze({
-        sourceColumn: 'F',
-        sourceIndex: 5,
-        sourceHeader: 'Open Tickets',
-        targetColumn: 'open_tickets',
-        valueType: 'integer',
-        nullable: true
-      }),
-      Object.freeze({
-        sourceColumn: 'G',
-        sourceIndex: 6,
-        sourceHeader: 'AHT',
-        targetColumn: 'aht_value',
-        valueType: 'number',
-        nullable: true
-      })
-    ])
+    sourceHeader: 'Open Tickets',
+    targetColumn: 'open_tickets',
+    valueType: 'integer',
+    nullable: true
   }),
   Object.freeze({
-    agentKey: 'gen',
-    agentName: 'Gen',
-    sourceName: 'Gen',
-    sourceNameAliases: Object.freeze([]),
-    sourceRange: 'H:J',
-    metrics: Object.freeze([
-      Object.freeze({
-        sourceColumn: 'H',
-        sourceIndex: 7,
-        sourceHeader: 'Solved Ticket',
-        targetColumn: 'solved_tickets',
-        valueType: 'integer',
-        nullable: false
-      }),
-      Object.freeze({
-        sourceColumn: 'I',
-        sourceIndex: 8,
-        sourceHeader: 'Open Tickets',
-        targetColumn: 'open_tickets',
-        valueType: 'integer',
-        nullable: true
-      }),
-      Object.freeze({
-        sourceColumn: 'J',
-        sourceIndex: 9,
-        sourceHeader: 'AHT',
-        targetColumn: 'aht_value',
-        valueType: 'number',
-        nullable: true
-      })
-    ])
-  }),
-  Object.freeze({
-    agentKey: 'arez',
-    agentName: 'Arez',
-    sourceName: 'Arez',
-    sourceNameAliases: Object.freeze([]),
-    sourceRange: 'K:M',
-    metrics: Object.freeze([
-      Object.freeze({
-        sourceColumn: 'K',
-        sourceIndex: 10,
-        sourceHeader: 'Solved Ticket',
-        targetColumn: 'solved_tickets',
-        valueType: 'integer',
-        nullable: false
-      }),
-      Object.freeze({
-        sourceColumn: 'L',
-        sourceIndex: 11,
-        sourceHeader: 'Open Tickets',
-        targetColumn: 'open_tickets',
-        valueType: 'integer',
-        nullable: true
-      }),
-      Object.freeze({
-        sourceColumn: 'M',
-        sourceIndex: 12,
-        sourceHeader: 'AHT',
-        targetColumn: 'aht_value',
-        valueType: 'number',
-        nullable: true
-      })
-    ])
-  }),
-  Object.freeze({
-    agentKey: 'tristan',
-    agentName: 'Tristan',
-    sourceName: 'Tristan',
-    sourceNameAliases: Object.freeze([]),
-    sourceRange: 'N:P',
-    metrics: Object.freeze([
-      Object.freeze({
-        sourceColumn: 'N',
-        sourceIndex: 13,
-        sourceHeader: 'Solved Ticket',
-        targetColumn: 'solved_tickets',
-        valueType: 'integer',
-        nullable: false
-      }),
-      Object.freeze({
-        sourceColumn: 'O',
-        sourceIndex: 14,
-        sourceHeader: 'Open Tickets',
-        targetColumn: 'open_tickets',
-        valueType: 'integer',
-        nullable: true
-      }),
-      Object.freeze({
-        sourceColumn: 'P',
-        sourceIndex: 15,
-        sourceHeader: 'AHT',
-        targetColumn: 'aht_value',
-        valueType: 'number',
-        nullable: true
-      })
-    ])
-  }),
-  Object.freeze({
-    agentKey: 'jerson',
-    agentName: 'Jerson',
-    sourceName: 'Jerson',
-    sourceNameAliases: Object.freeze([]),
-    sourceRange: 'Q:S',
-    metrics: Object.freeze([
-      Object.freeze({
-        sourceColumn: 'Q',
-        sourceIndex: 16,
-        sourceHeader: 'Solved Ticket',
-        targetColumn: 'solved_tickets',
-        valueType: 'integer',
-        nullable: false
-      }),
-      Object.freeze({
-        sourceColumn: 'R',
-        sourceIndex: 17,
-        sourceHeader: 'Open Tickets',
-        targetColumn: 'open_tickets',
-        valueType: 'integer',
-        nullable: true
-      }),
-      Object.freeze({
-        sourceColumn: 'S',
-        sourceIndex: 18,
-        sourceHeader: 'AHT',
-        targetColumn: 'aht_value',
-        valueType: 'number',
-        nullable: true
-      })
-    ])
-  }),
-  Object.freeze({
-    agentKey: 'jean',
-    agentName: 'Jean',
-    sourceName: 'Jean',
-    sourceNameAliases: Object.freeze([]),
-    sourceRange: 'T:V',
-    metrics: Object.freeze([
-      Object.freeze({
-        sourceColumn: 'T',
-        sourceIndex: 19,
-        sourceHeader: 'Solved Ticket',
-        targetColumn: 'solved_tickets',
-        valueType: 'integer',
-        nullable: false
-      }),
-      Object.freeze({
-        sourceColumn: 'U',
-        sourceIndex: 20,
-        sourceHeader: 'Open Tickets',
-        targetColumn: 'open_tickets',
-        valueType: 'integer',
-        nullable: true
-      }),
-      Object.freeze({
-        sourceColumn: 'V',
-        sourceIndex: 21,
-        sourceHeader: 'AHT',
-        targetColumn: 'aht_value',
-        valueType: 'number',
-        nullable: true
-      })
-    ])
-  }),
-  Object.freeze({
-    agentKey: 'arby',
-    agentName: 'Arby',
-    sourceName: 'Arby',
-    sourceNameAliases: Object.freeze([]),
-    sourceRange: 'W:Y',
-    metrics: Object.freeze([
-      Object.freeze({
-        sourceColumn: 'W',
-        sourceIndex: 22,
-        sourceHeader: 'Solved Ticket',
-        targetColumn: 'solved_tickets',
-        valueType: 'integer',
-        nullable: false
-      }),
-      Object.freeze({
-        sourceColumn: 'X',
-        sourceIndex: 23,
-        sourceHeader: 'Open Tickets',
-        targetColumn: 'open_tickets',
-        valueType: 'integer',
-        nullable: true
-      }),
-      Object.freeze({
-        sourceColumn: 'Y',
-        sourceIndex: 24,
-        sourceHeader: 'AHT',
-        targetColumn: 'aht_value',
-        valueType: 'number',
-        nullable: true
-      })
-    ])
+    sourceHeader: 'AHT',
+    targetColumn: 'aht_value',
+    valueType: 'number',
+    nullable: true
   })
 ])
 
@@ -295,16 +49,13 @@ export const PRODUCTIVITY_MAPPING = Object.freeze({
     ])
   }),
 
-  agents: PRODUCTIVITY_AGENTS,
+  agentBlockWidth: PRODUCTIVITY_METRICS.length,
+  metrics: PRODUCTIVITY_METRICS,
 
   defaults: Object.freeze({
     ahtUnit: null
   })
 })
-
-export const PRODUCTIVITY_AGENT_KEYS = Object.freeze(
-  PRODUCTIVITY_AGENTS.map(agent => agent.agentKey)
-)
 
 export const PRODUCTIVITY_EXPECTED_COLUMN_COUNT = 25
 
@@ -314,23 +65,167 @@ function normalizeText(value) {
     : ''
 }
 
-export function findProductivityAgentBySourceName(sourceName) {
-  const normalizedName = normalizeText(sourceName)
+function columnNumberToLetter(columnNumber) {
+  let value = columnNumber
+  let result = ''
 
-  return PRODUCTIVITY_AGENTS.find(agent => {
-    const acceptedNames = [
-      agent.sourceName,
-      ...agent.sourceNameAliases
-    ]
+  while (value > 0) {
+    const remainder = (value - 1) % 26
+    result = String.fromCharCode(65 + remainder) + result
+    value = Math.floor((value - 1) / 26)
+  }
 
-    return acceptedNames.some(
-      name => normalizeText(name) === normalizedName
-    )
-  }) || null
+  return result
 }
 
-export function findProductivityAgentByKey(agentKey) {
-  return PRODUCTIVITY_AGENTS.find(
-    agent => agent.agentKey === agentKey
-  ) || null
+function toAgentKey(agentName) {
+  return agentName
+    .normalize('NFKC')
+    .toLowerCase()
+    .replace(/[^\p{L}\p{N}]+/gu, '_')
+    .replace(/^_+|_+$/g, '')
+}
+
+/**
+ * Derive agent blocks from the workbook headers instead of assuming specific
+ * names or fixed person-to-column mappings. Any non-empty data under an
+ * unnamed block, malformed metric header, or ambiguous name aborts the sync.
+ */
+export function getProductivityAgentBlocks(dataset) {
+  const agentHeaderRow = dataset?.values?.[0]
+  const metricHeaderRow = dataset?.values?.[1]
+
+  if (!Array.isArray(agentHeaderRow) || !Array.isArray(metricHeaderRow)) {
+    throw new Error(
+      'Ticket Productivity must include both agent and metric header rows.'
+    )
+  }
+
+  const blocks = []
+  const seenNames = new Set()
+  const seenKeys = new Set()
+  const blockWidth = PRODUCTIVITY_MAPPING.agentBlockWidth
+
+  for (
+    let startIndex = PRODUCTIVITY_MAPPING.source.dateColumn.sourceIndex + 1;
+    startIndex < PRODUCTIVITY_EXPECTED_COLUMN_COUNT;
+    startIndex += blockWidth
+  ) {
+    const sourceNameValue = agentHeaderRow[startIndex]
+    const sourceName = typeof sourceNameValue === 'string'
+      ? sourceNameValue.replace(/\s+/g, ' ').trim()
+      : ''
+    const normalizedName = normalizeText(sourceName)
+    const hasMetricHeaders = PRODUCTIVITY_MAPPING.metrics.some(
+      (_metric, metricIndex) =>
+        normalizeText(metricHeaderRow[startIndex + metricIndex]) !== ''
+    )
+    const endIndex = Math.min(
+      startIndex + blockWidth,
+      PRODUCTIVITY_EXPECTED_COLUMN_COUNT
+    )
+    const hasBlockData = (dataset.values || []).slice(2).some(row =>
+      Array.isArray(row) && row
+        .slice(startIndex, endIndex)
+        .some(value => value !== null && value !== undefined &&
+          !(typeof value === 'string' && value.trim() === ''))
+    )
+
+    if (!normalizedName) {
+      const misplacedNameIndex = Array.from(
+        { length: Math.max(0, endIndex - startIndex - 1) },
+        (_unused, offset) => startIndex + offset + 1
+      ).find(index => normalizeText(agentHeaderRow[index]))
+      if (misplacedNameIndex !== undefined) {
+        throw new Error(
+          `Ticket Productivity agent header at column ` +
+          `${columnNumberToLetter(misplacedNameIndex + 1)} is inside a ` +
+          'metric block instead of starting a block.'
+        )
+      }
+      if (hasMetricHeaders) {
+        throw new Error(
+          `Ticket Productivity metric block at column ` +
+          `${columnNumberToLetter(startIndex + 1)} is missing its agent header.`
+        )
+      }
+      if (hasBlockData) {
+        throw new Error(
+          `Ticket Productivity has data under the unnamed block at column ` +
+          `${columnNumberToLetter(startIndex + 1)}.`
+        )
+      }
+      continue
+    }
+
+    if (endIndex - startIndex !== blockWidth) {
+      throw new Error(
+        `Ticket Productivity agent ${sourceName} does not have a complete ` +
+        `${blockWidth}-column metric block.`
+      )
+    }
+
+    for (let offset = 1; offset < blockWidth; offset += 1) {
+      if (normalizeText(agentHeaderRow[startIndex + offset])) {
+        throw new Error(
+          `Ticket Productivity agent header at column ` +
+          `${columnNumberToLetter(startIndex + offset + 1)} is inside the ` +
+          `metric block for ${sourceName}.`
+        )
+      }
+    }
+
+    PRODUCTIVITY_MAPPING.metrics.forEach((metric, metricIndex) => {
+      const sourceIndex = startIndex + metricIndex
+      if (
+        normalizeText(metricHeaderRow[sourceIndex]) !==
+        normalizeText(metric.sourceHeader)
+      ) {
+        throw new Error(
+          `Ticket Productivity ${sourceName} column ` +
+          `${columnNumberToLetter(sourceIndex + 1)} must be ` +
+          `${metric.sourceHeader}.`
+        )
+      }
+    })
+
+    if (seenNames.has(normalizedName)) {
+      throw new Error(
+        `Ticket Productivity contains duplicate agent header ${sourceName}.`
+      )
+    }
+    seenNames.add(normalizedName)
+
+    const agentKey = toAgentKey(sourceName)
+    if (!agentKey) {
+      throw new Error(
+        `Ticket Productivity agent header ${sourceName} cannot form a ` +
+        'stable agent key.'
+      )
+    }
+    if (seenKeys.has(agentKey)) {
+      throw new Error(
+        `Ticket Productivity agent headers produce a duplicate key: ` +
+        `${agentKey}.`
+      )
+    }
+    seenKeys.add(agentKey)
+
+    blocks.push({
+      agentKey,
+      agentName: sourceName,
+      sourceIndex: startIndex,
+      metrics: PRODUCTIVITY_MAPPING.metrics.map((metric, metricIndex) => ({
+        ...metric,
+        sourceIndex: startIndex + metricIndex,
+        sourceColumn: columnNumberToLetter(startIndex + metricIndex + 1)
+      }))
+    })
+  }
+
+  if (blocks.length === 0) {
+    throw new Error('Ticket Productivity must include at least one agent block.')
+  }
+
+  return blocks
 }

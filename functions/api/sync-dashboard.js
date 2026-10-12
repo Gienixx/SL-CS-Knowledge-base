@@ -249,11 +249,13 @@ async function runLegacySync(payload, environment, syncRunId) {
 export async function onRequestPost(context) {
   let environment
   let syncRunId = null
+  let stage = 'load_sync_environment'
   const startedAt = new Date().toISOString()
 
   try {
     environment = getRequiredEnvironment(context)
 
+    stage = 'authorize_request'
     const authorized = await secretsMatch(
       getBearerToken(context.request),
       environment.sheetSyncSecret
@@ -269,20 +271,23 @@ export async function onRequestPost(context) {
       )
     }
 
+    stage = 'create_sync_run'
+    syncRunId = await createSyncRun(
+      environment.supabaseUrl,
+      environment.serviceRoleKey,
+      startedAt
+    )
+
+    stage = 'parse_payload'
     let payload
 
     try {
       payload = await context.request.json()
-    } catch {
-      return jsonResponse(
-        {
-          success: false,
-          error: 'The request body must contain valid JSON.'
-        },
-        400
-      )
+    } catch (error) {
+      throw new Error('The request body must contain valid JSON.')
     }
 
+    stage = 'validate_payload'
     const hasDatasetEnvelope =
       payload?.datasets !== undefined ||
       payload?.payloadVersion !== undefined
@@ -294,12 +299,7 @@ export async function onRequestPost(context) {
       validateSheetPayload(legacySheetData)
     }
 
-    syncRunId = await createSyncRun(
-      environment.supabaseUrl,
-      environment.serviceRoleKey,
-      startedAt
-    )
-
+    stage = 'persist_analytics_data'
     const syncResult = isMultiDatasetPayload(payload)
       ? await runMultiDatasetSync(
           payload,
@@ -312,6 +312,7 @@ export async function onRequestPost(context) {
           syncRunId
         )
 
+    stage = 'record_sync_success'
     await updateSyncRun(
       environment.supabaseUrl,
       environment.serviceRoleKey,
@@ -337,7 +338,13 @@ export async function onRequestPost(context) {
       warningCount: syncResult.warnings.length
     })
   } catch (error) {
-    console.error('Dashboard synchronization failed:', error)
+    console.error(JSON.stringify({
+      event: 'dashboard_synchronization_failed',
+      stage: stage,
+      syncRunId: syncRunId,
+      timestamp: new Date().toISOString(),
+      error: String(error?.message || 'Unknown synchronization error.')
+    }))
 
     if (environment && syncRunId) {
       try {
@@ -362,12 +369,16 @@ export async function onRequestPost(context) {
       }
     }
 
+    const status = stage === 'parse_payload' || stage === 'validate_payload'
+      ? 400
+      : 500
+
     return jsonResponse(
       {
         success: false,
         error: error?.message || 'Unable to synchronize dashboard data.'
       },
-      500
+      status
     )
   }
 }

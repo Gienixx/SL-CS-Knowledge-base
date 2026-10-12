@@ -31,17 +31,31 @@ Configure these Google Apps Script properties:
 - `DASHBOARD_SYNC_URL` — the deployed site URL ending in `/api/sync-dashboard`
 - `SHEET_SYNC_SECRET` — the shared bearer secret configured in Cloudflare
 
-Run `migrateDashboardSyncTriggers()` once from the workbook script to replace
-older reporting triggers with two daily Manila-time synchronizations:
+Run `migrateDashboardSyncTriggers()` from the workbook script to install or
+repair the two managed daily synchronizations:
 
-- approximately 9:00 PM Asia/Manila
-- approximately 12:00 AM Asia/Manila
+- approximately 9:00 AM `America/New_York`
+- approximately 12:00 PM `America/New_York`
 
-Google Apps Script time triggers can run within roughly 15 minutes of the
-configured minute. Run `inspectDashboardSyncTriggers()` afterward and confirm
-that `valid` is `true`. `syncAllDashboardData()` remains available for a manual
-synchronization. Successful and failed runs are recorded in the reporting
-operations tables.
+Google Apps Script time triggers are approximate; they do not guarantee
+execution at the exact minute. The IANA timezone setting follows Eastern
+daylight-saving changes. The migration retains one of each desired trigger,
+removes duplicates and retired dashboard handlers, and creates only missing
+triggers. Re-running it is safe. Run `inspectDashboardSyncTriggers()` afterward
+and confirm that `valid` is `true` and that exactly two managed triggers are
+listed.
+
+The productivity importer reads each agent name and its three metric columns
+from the workbook's two header rows. Agent names and positions may change, but
+each populated block must contain `Solved Ticket`, `Open Tickets`, and `AHT`
+in that order. Duplicate, shifted, incomplete, or unnamed populated blocks fail
+validation before any raw or analytics data is written. `syncAllDashboardData()`
+remains available for a manual full-workbook sync; analytics rows are upserted
+by their existing logical keys, so replaying the same snapshot does not create
+duplicate metric records. Apps Script logs identify the failed stage, including
+source setup, properties, payload construction, and endpoint response. Authenticated
+malformed requests are also recorded as failed sync runs; unauthorized requests
+are rejected without creating a sync record.
 
 ## Operations
 

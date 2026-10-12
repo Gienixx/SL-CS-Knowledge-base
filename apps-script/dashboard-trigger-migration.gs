@@ -1,31 +1,47 @@
-const DASHBOARD_SYNC_TRIGGER_TIMEZONE = 'Asia/Manila'
+const DASHBOARD_SYNC_TRIGGER_TIMEZONE = 'America/New_York'
 
 const DASHBOARD_SYNC_TRIGGER_SCHEDULES = Object.freeze([
   Object.freeze({
-    handler: 'syncDashboardAt9Pm',
-    hour: 21,
+    handler: 'syncDashboardAt9AmEastern',
+    hour: 9,
     minute: 0,
-    approximateTime: '9:00 PM Manila'
+    approximateTime: '9:00 AM America/New_York'
   }),
   Object.freeze({
-    handler: 'syncDashboardAtMidnight',
-    hour: 0,
+    handler: 'syncDashboardAtNoonEastern',
+    hour: 12,
     minute: 0,
-    approximateTime: '12:00 AM Manila'
+    approximateTime: '12:00 PM America/New_York'
   })
 ])
 
 const RETIRED_DASHBOARD_SYNC_HANDLERS = Object.freeze([
+  'syncDashboardAt9Pm',
+  'syncDashboardAtMidnight',
   'syncAllDashboardData',
   'syncDashboardData'
 ])
 
-function syncDashboardAt9Pm() {
-  return syncAllDashboardData()
+function syncDashboardAt9AmEastern() {
+  return runDashboardSyncTrigger_('syncDashboardAt9AmEastern')
 }
 
-function syncDashboardAtMidnight() {
-  return syncAllDashboardData()
+function syncDashboardAtNoonEastern() {
+  return runDashboardSyncTrigger_('syncDashboardAtNoonEastern')
+}
+
+function runDashboardSyncTrigger_(handler) {
+  try {
+    return syncAllDashboardData()
+  } catch (error) {
+    console.error(JSON.stringify({
+      event: 'dashboard_sync_trigger_failed',
+      handler: handler,
+      timestamp: new Date().toISOString(),
+      error: String(error && error.message ? error.message : error)
+    }))
+    throw error
+  }
 }
 
 function getManagedDashboardSyncHandlers_() {
@@ -42,12 +58,21 @@ function migrateDashboardSyncTriggers() {
 
   try {
     const managedHandlers = getManagedDashboardSyncHandlers_()
+    const retainedHandlers = {}
     const removedTriggers = []
 
     ScriptApp.getProjectTriggers().forEach(function (trigger) {
       const handler = trigger.getHandlerFunction()
+      if (managedHandlers.indexOf(handler) === -1) return
 
-      if (managedHandlers.indexOf(handler) === -1) {
+      const isDesired = DASHBOARD_SYNC_TRIGGER_SCHEDULES.some(
+        function (schedule) {
+          return schedule.handler === handler
+        }
+      )
+
+      if (isDesired && !retainedHandlers[handler]) {
+        retainedHandlers[handler] = true
         return
       }
 
@@ -58,29 +83,36 @@ function migrateDashboardSyncTriggers() {
       ScriptApp.deleteTrigger(trigger)
     })
 
-    const createdTriggers = DASHBOARD_SYNC_TRIGGER_SCHEDULES.map(
-      function (schedule) {
-        const trigger = ScriptApp
-          .newTrigger(schedule.handler)
-          .timeBased()
-          .atHour(schedule.hour)
-          .nearMinute(schedule.minute)
-          .everyDays(1)
-          .inTimezone(DASHBOARD_SYNC_TRIGGER_TIMEZONE)
-          .create()
+    const createdTriggers = []
+    DASHBOARD_SYNC_TRIGGER_SCHEDULES.forEach(function (schedule) {
+      if (retainedHandlers[schedule.handler]) return
 
-        return {
-          handler: schedule.handler,
-          approximateTime: schedule.approximateTime,
-          timezone: DASHBOARD_SYNC_TRIGGER_TIMEZONE,
-          triggerId: trigger.getUniqueId()
-        }
-      }
-    )
+      const trigger = ScriptApp
+        .newTrigger(schedule.handler)
+        .timeBased()
+        .atHour(schedule.hour)
+        .nearMinute(schedule.minute)
+        .everyDays(1)
+        .inTimezone(DASHBOARD_SYNC_TRIGGER_TIMEZONE)
+        .create()
+
+      createdTriggers.push({
+        handler: schedule.handler,
+        approximateTime: schedule.approximateTime,
+        timezone: DASHBOARD_SYNC_TRIGGER_TIMEZONE,
+        triggerId: trigger.getUniqueId()
+      })
+    })
 
     const result = inspectDashboardSyncTriggers()
     result.removedTriggers = removedTriggers
     result.createdTriggers = createdTriggers
+
+    if (!result.valid) {
+      throw new Error(
+        'Dashboard sync triggers are incomplete or duplicated after installation.'
+      )
+    }
 
     console.log(JSON.stringify(result, null, 2))
     return result
@@ -139,17 +171,5 @@ function inspectDashboardSyncTriggers() {
   }
 
   console.log(JSON.stringify(result, null, 2))
-  return result
-}
-
-function testDashboardSyncV2Now() {
-  if (typeof syncAllDashboardData !== 'function') {
-    throw new Error(
-      'syncAllDashboardData is not defined in this Apps Script project.'
-    )
-  }
-
-  const result = syncAllDashboardData()
-  console.log(JSON.stringify(result || null, null, 2))
   return result
 }
