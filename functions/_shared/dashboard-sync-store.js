@@ -247,7 +247,7 @@ export async function validateProductivityIdentityHistory(
     const query =
       'agent_productivity?select=report_date,agent_key' +
       `&report_date=${encodedDates}&order=report_date.asc,agent_key.asc` +
-      `&limit=${PRODUCTIVITY_IDENTITY_PAGE_SIZE}&offset=${offset}`
+      `&limit=${PRODUCTIVITY_IDENTITY_PAGE_SIZE}`
 
     for (
       let offset = 0;
@@ -257,7 +257,7 @@ export async function validateProductivityIdentityHistory(
       const rows = await supabaseRequest(
         supabaseUrl,
         serviceRoleKey,
-        query,
+        query + `&offset=${offset}`,
         {
           method: 'GET'
         }
