@@ -1,0 +1,467 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Payroll Dashboard V2 | SocialLoop CS Base</title>
+  <link rel="stylesheet" href="./styles/site-theme.css?v=5">
+  <link rel="stylesheet" href="./styles/payroll-v2.css?v=10">
+  <script src="./scripts/site-theme.js?v=1"></script>
+</head>
+<body class="payroll-v2-access-pending">
+  <main class="payroll-v2-page">
+    <header class="payroll-v2-header">
+      <div>
+        <p class="payroll-v2-eyebrow">Payroll · V2</p>
+        <h1>Payroll Dashboard V2</h1>
+        <p>Start with a payroll period, then add an individual or group payslip.</p>
+      </div>
+      <nav class="payroll-v2-header-actions" aria-label="Payroll navigation">
+        <a class="plain-button" href="./home.html">Back to Home</a>
+        <a class="plain-button" href="./agent-rates.html">Agent Rates</a>
+        <button id="createPeriodButton" class="plain-button" type="button" disabled>Create Payroll Period</button>
+      </nav>
+    </header>
+
+    <p id="payrollV2Message" class="payroll-v2-message" role="status" aria-live="polite"></p>
+
+    <div class="payroll-v2-layout">
+      <section class="payroll-v2-main" aria-labelledby="periodsHeading">
+        <h2 id="periodsHeading">Payroll Periods / History</h2>
+        <div class="payroll-v2-table-wrap">
+          <table class="payroll-v2-period-table">
+            <colgroup>
+              <col class="period-start-column">
+              <col class="period-end-column">
+              <col class="period-payment-column">
+              <col class="period-status-column">
+              <col class="period-paypal-rate-column">
+              <col class="period-payslips-column">
+              <col class="period-actions-column">
+            </colgroup>
+            <thead>
+              <tr>
+                <th scope="col">Start Date</th>
+                <th scope="col">End Date</th>
+                <th scope="col">Payment Date</th>
+                <th scope="col">Status</th>
+                <th scope="col">PayPal Conversion Rate</th>
+                <th scope="col">Payslips</th>
+                <th scope="col">Actions</th>
+              </tr>
+            </thead>
+            <tbody id="periodTableBody">
+              <tr><td colspan="7">Loading payroll periods…</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </section>
+
+      <aside class="payroll-v2-side" aria-label="Payroll period actions and completed payslips">
+        <div class="payroll-v2-side-header">
+          <button id="addButton" class="plain-button" type="button" aria-haspopup="true" aria-expanded="false" disabled>+ Add</button>
+          <p id="selectedPeriodLabel">Select a payroll period first.</p>
+        </div>
+        <form id="periodPaypalRateForm" class="payroll-v2-period-rate-form" hidden>
+          <label for="selectedPeriodPaypalRate">
+            <span>PayPal Conversion Rate</span>
+            <input id="selectedPeriodPaypalRate" name="paypalConversionRate" type="number" min="0.000000001" step="any" inputmode="decimal" placeholder="56.75">
+          </label>
+          <p id="periodPaypalRateMessage" role="status" aria-live="polite"></p>
+          <button id="savePeriodPaypalRateButton" class="plain-button" type="submit">Save Conversion Rate</button>
+        </form>
+        <div id="addMenu" class="payroll-v2-menu" role="menu" hidden>
+          <button type="button" role="menuitem" data-workflow="individual">Individual Payslip</button>
+          <button type="button" role="menuitem" data-workflow="group">Group Payslip</button>
+        </div>
+        <section class="payroll-v2-completed" aria-labelledby="completedPayslipsHeading">
+          <h2 id="completedPayslipsHeading">Completed Payslips</h2>
+          <p id="completedPayslipsStatus" class="payroll-v2-completed-status" role="status" aria-live="polite">Select a payroll period first.</p>
+          <ul id="completedPayslipsList" class="payroll-v2-completed-list" aria-label="Completed payslips"></ul>
+        </section>
+        <section id="periodCloseSection" class="payroll-v2-period-close" aria-label="Close payroll period">
+          <p id="periodCloseReason" class="payroll-v2-period-close-reason" role="status" aria-live="polite" hidden></p>
+          <button id="closePeriodButton" class="plain-button payroll-v2-close-period-button" type="button" disabled hidden>Close Period</button>
+        </section>
+      </aside>
+    </div>
+
+    <section id="individualWorkspace" class="payroll-v2-workspace" aria-labelledby="individualWorkspaceTitle" hidden>
+      <div class="payroll-v2-workspace-heading">
+        <div>
+          <h2 id="individualWorkspaceTitle">Individual Payslip</h2>
+          <p id="individualWorkspaceMessage" role="status" aria-live="polite"></p>
+        </div>
+        <button id="closeIndividualWorkspaceButton" class="plain-button" type="button">Back to Periods</button>
+      </div>
+
+      <section aria-labelledby="individualPeriodHeading">
+        <h3 id="individualPeriodHeading">Payroll Period</h3>
+        <dl class="payroll-v2-summary-list">
+          <div><dt>Payroll Period</dt><dd id="individualPeriodRange">—</dd></div>
+          <div><dt>Start Date</dt><dd id="individualPeriodStart">—</dd></div>
+          <div><dt>End Date</dt><dd id="individualPeriodEnd">—</dd></div>
+          <div><dt>Payment Date</dt><dd id="individualPaymentDate">—</dd></div>
+          <div><dt>Status</dt><dd id="individualPeriodStatus">—</dd></div>
+        </dl>
+      </section>
+
+      <label class="payroll-v2-employee-picker">
+        <span>Select Employee</span>
+        <select id="individualEmployeeSelect" disabled>
+          <option value="">Loading employees…</option>
+        </select>
+      </label>
+
+      <div id="individualEmployeeSections" hidden>
+        <section aria-labelledby="individualEmployeeHeading">
+          <h3 id="individualEmployeeHeading">Employee</h3>
+          <dl class="payroll-v2-summary-list">
+            <div><dt>Employee Name</dt><dd id="employeeName">—</dd></div>
+            <div><dt>Employee Number</dt><dd id="employeeNumber">—</dd></div>
+            <div><dt>Payroll Period</dt><dd id="employeePeriod">—</dd></div>
+            <div><dt>Agent Rate</dt><dd id="employeeRate">—</dd></div>
+            <div><dt>Payslip Status</dt><dd id="employeePayslipStatus">Not Calculated</dd></div>
+          </dl>
+        </section>
+
+        <section aria-labelledby="individualReadinessHeading">
+          <h3 id="individualReadinessHeading">Readiness Summary</h3>
+          <ul id="individualReadinessList" class="payroll-v2-readiness-list"><li>Select an employee.</li></ul>
+        </section>
+
+        <section aria-labelledby="individualAttendanceHeading">
+          <h3 id="individualAttendanceHeading">Attendance</h3>
+          <p id="attendanceSectionStatus" class="payroll-v2-section-status"></p>
+          <div class="payroll-v2-table-wrap">
+            <table>
+              <thead><tr>
+                <th scope="col">Date</th><th scope="col">Schedule</th><th scope="col">Attendance Type</th>
+                <th scope="col">Regular Minutes</th><th scope="col">Additional / OT Minutes</th>
+                <th scope="col">Total Payable Minutes</th><th scope="col">Approval Status</th><th scope="col">Payroll Readiness</th>
+              </tr></thead>
+              <tbody id="individualAttendanceBody"><tr><td colspan="8">Select an employee.</td></tr></tbody>
+            </table>
+          </div>
+        </section>
+
+        <section aria-labelledby="individualCommittedHeading">
+          <h3 id="individualCommittedHeading">Committed Hours</h3>
+          <p id="committedHoursSectionStatus" class="payroll-v2-section-status"></p>
+          <dl class="payroll-v2-summary-list">
+            <div><dt>Daily Targets in Range</dt><dd id="commitmentTarget">—</dd></div>
+            <div><dt>Carryover into Range</dt><dd id="commitmentCarryover">—</dd></div>
+            <div><dt>Expected Committed Hours</dt><dd id="commitmentExpected">—</dd></div>
+            <div><dt>Approved / Payroll-Ready Hours</dt><dd id="commitmentReady">—</dd></div>
+            <div><dt>Covered Committed Hours</dt><dd id="commitmentCovered">—</dd></div>
+            <div><dt>Remaining Committed Hours</dt><dd id="commitmentRemaining">—</dd></div>
+            <div><dt>Status</dt><dd id="commitmentStatus">—</dd></div>
+          </dl>
+          <div class="payroll-v2-table-wrap">
+            <table>
+              <thead><tr><th scope="col">Date</th><th scope="col">Target</th><th scope="col">Carryover</th><th scope="col">Approved / Ready</th><th scope="col">Covered</th><th scope="col">Remaining</th><th scope="col">Payable</th><th scope="col">Day Type</th></tr></thead>
+              <tbody id="individualCommitmentBody"><tr><td colspan="8">Select an employee.</td></tr></tbody>
+            </table>
+          </div>
+        </section>
+
+        <section aria-labelledby="individualLeaveHeading">
+          <h3 id="individualLeaveHeading">Leave</h3>
+          <p id="leaveSectionStatus" class="payroll-v2-section-status"></p>
+          <div class="payroll-v2-table-wrap">
+            <table>
+              <thead><tr><th scope="col">Date</th><th scope="col">Leave Type</th><th scope="col">Paid Minutes</th><th scope="col">Rate</th><th scope="col">Amount</th><th scope="col">Status</th></tr></thead>
+              <tbody id="individualLeaveBody"><tr><td colspan="4">Select an employee.</td></tr></tbody>
+            </table>
+          </div>
+        </section>
+
+        <section aria-labelledby="individualManualEarningsHeading">
+          <h3 id="individualManualEarningsHeading">Manual Earnings</h3>
+          <div class="payroll-v2-adjustment-actions"><button id="addManualEarningButton" class="plain-button" type="button" hidden>+ Add Earning</button></div>
+          <p id="manualEarningsSectionStatus" class="payroll-v2-section-status"></p>
+          <div class="payroll-v2-table-wrap">
+            <table>
+              <thead><tr><th scope="col">Description</th><th scope="col">Amount</th><th scope="col">Status</th><th scope="col">Actions</th></tr></thead>
+              <tbody id="individualManualEarningsBody"><tr><td colspan="4">Select an employee.</td></tr></tbody>
+            </table>
+          </div>
+        </section>
+
+        <section aria-labelledby="individualDeductionsHeading">
+          <h3 id="individualDeductionsHeading">Deductions</h3>
+          <div class="payroll-v2-adjustment-actions"><button id="addDeductionButton" class="plain-button" type="button" hidden>+ Add Deduction</button></div>
+          <p id="deductionsSectionStatus" class="payroll-v2-section-status"></p>
+          <div class="payroll-v2-table-wrap">
+            <table>
+              <thead><tr><th scope="col">Description</th><th scope="col">Amount</th><th scope="col">Status</th><th scope="col">Actions</th></tr></thead>
+              <tbody id="individualDeductionsBody"><tr><td colspan="4">Select an employee.</td></tr></tbody>
+            </table>
+          </div>
+        </section>
+
+        <section aria-labelledby="individualPreviewHeading">
+          <h3 id="individualPreviewHeading">Payroll Preview</h3>
+          <div class="payroll-v2-preview-actions">
+            <button id="previewPayrollButton" class="plain-button" type="button" disabled>Preview Payroll</button>
+            <button id="calculateEmployeeButton" class="plain-button" type="button" hidden disabled>Calculate Employee</button>
+            <button id="recalculateEmployeeButton" class="plain-button" type="button" hidden disabled>Reopen for Recalculation</button>
+            <button id="approveEmployeeButton" class="plain-button" type="button" hidden disabled>Approve Employee</button>
+            <button id="finalizeEmployeeButton" class="plain-button" type="button" hidden disabled>Finalize Payroll</button>
+          </div>
+          <p id="payrollPreviewStatus" class="payroll-v2-section-status"></p>
+          <div class="payroll-v2-table-wrap">
+            <table>
+              <thead><tr><th scope="col">Item</th><th scope="col">Value</th></tr></thead>
+              <tbody id="individualPreviewBody"><tr><td colspan="2">Select an employee.</td></tr></tbody>
+            </table>
+          </div>
+          <h4 id="individualDailyBreakdownHeading">Daily Calculation Breakdown</h4>
+          <div class="payroll-v2-table-wrap">
+            <table>
+              <thead><tr>
+                <th scope="col">Date</th><th scope="col">Payable Minutes</th><th scope="col">Rate</th>
+                <th scope="col">Attendance</th><th scope="col">Leave</th>
+                <th scope="col">Committed Hours</th><th scope="col">Total</th>
+              </tr></thead>
+              <tbody id="individualDailyBreakdownBody"><tr><td colspan="7">Select an employee.</td></tr></tbody>
+            </table>
+          </div>
+        </section>
+      </div>
+    </section>
+  </main>
+
+  <dialog id="createPeriodDialog" aria-labelledby="createPeriodTitle">
+    <form id="createPeriodForm" method="dialog">
+      <h2 id="createPeriodTitle">Create Payroll Period</h2>
+      <label>
+        <span>Start Date</span>
+        <input id="periodStart" name="periodStart" type="date" required>
+      </label>
+      <label>
+        <span>End Date</span>
+        <input id="periodEnd" name="periodEnd" type="date" required>
+      </label>
+      <label>
+        <span>Payment Date</span>
+        <input id="paymentDate" name="paymentDate" type="date" required>
+      </label>
+      <label>
+        <span>PayPal Conversion Rate</span>
+        <input id="periodPaypalConversionRate" name="paypalConversionRate" type="number" min="0.000000001" step="any" inputmode="decimal" placeholder="56.75">
+      </label>
+      <p id="periodFormError" class="payroll-v2-form-error" role="alert"></p>
+      <div class="payroll-v2-dialog-actions">
+        <button id="savePeriodButton" class="plain-button" type="submit">Save</button>
+        <button id="cancelPeriodButton" class="plain-button" type="button">Cancel</button>
+      </div>
+    </form>
+  </dialog>
+
+  <dialog id="finalizeEmployeeDialog" aria-labelledby="finalizeEmployeeTitle">
+    <div class="payroll-v2-placeholder payroll-v2-finalize-review">
+      <h2 id="finalizeEmployeeTitle">Review Payslip</h2>
+      <p>Review this payslip before completing this employee’s payroll.</p>
+      <dl class="payroll-v2-summary-list">
+        <div><dt>Employee</dt><dd id="finalizeEmployeeName">—</dd></div>
+        <div><dt>Payroll Period</dt><dd id="finalizeEmployeePeriod">—</dd></div>
+        <div><dt>Payment Date</dt><dd id="finalizeEmployeePaymentDate">—</dd></div>
+        <div><dt>Current Status</dt><dd id="finalizeEmployeeStatus">Approved</dd></div>
+        <div><dt>Total Payable Hours</dt><dd id="finalizeEmployeeHours">—</dd></div>
+        <div><dt>Attendance Earnings</dt><dd id="finalizeEmployeeAttendance">—</dd></div>
+        <div><dt>Paid Leave</dt><dd id="finalizeEmployeeLeave">—</dd></div>
+        <div><dt>Committed Hours</dt><dd id="finalizeEmployeeCommitted">—</dd></div>
+        <div><dt>Manual Earnings</dt><dd id="finalizeEmployeeManual">—</dd></div>
+        <div><dt>Gross Pay</dt><dd id="finalizeEmployeeGross">—</dd></div>
+        <div><dt>Total Deductions</dt><dd id="finalizeEmployeeDeductions">—</dd></div>
+        <div><dt>Net Pay</dt><dd id="finalizeEmployeeNet">—</dd></div>
+      </dl>
+
+      <section aria-labelledby="finalizeRateHeading">
+        <h3 id="finalizeRateHeading">Rate Breakdown</h3>
+        <div class="payroll-v2-table-wrap">
+          <table>
+            <thead><tr><th scope="col">Effective Date</th><th scope="col">Hourly Rate</th><th scope="col">Work Dates</th><th scope="col">Attendance Hours</th><th scope="col">Paid Leave Hours</th><th scope="col">Committed Hours</th></tr></thead>
+            <tbody id="finalizeEmployeeRateBody"><tr><td colspan="6">No payable rate details.</td></tr></tbody>
+          </table>
+        </div>
+      </section>
+
+      <section aria-labelledby="finalizeCommitmentHeading">
+        <h3 id="finalizeCommitmentHeading">Committed Hours Snapshot</h3>
+        <p id="finalizeEmployeeCommittedStatus" class="payroll-v2-section-status">No commitment required</p>
+        <div class="payroll-v2-table-wrap">
+          <table>
+            <thead><tr><th scope="col">Work Date</th><th scope="col">Target</th><th scope="col">Credited</th><th scope="col">Remaining</th></tr></thead>
+            <tbody id="finalizeEmployeeCommittedBody"><tr><td colspan="4">No commitment required.</td></tr></tbody>
+          </table>
+        </div>
+      </section>
+
+      <section aria-labelledby="finalizeItemsHeading">
+        <h3 id="finalizeItemsHeading">Persisted Payslip Items</h3>
+        <div class="payroll-v2-table-wrap">
+          <table>
+            <thead><tr><th scope="col">Type</th><th scope="col">Work Date</th><th scope="col">Description</th><th scope="col">Hours</th><th scope="col">Rate</th><th scope="col">Amount</th></tr></thead>
+            <tbody id="finalizeEmployeeItemsBody"><tr><td colspan="6">No saved payslip items.</td></tr></tbody>
+          </table>
+        </div>
+      </section>
+
+      <section aria-labelledby="finalizeDeductionsHeading">
+        <h3 id="finalizeDeductionsHeading">Approved Deductions</h3>
+        <div class="payroll-v2-table-wrap">
+          <table>
+            <thead><tr><th scope="col">Description</th><th scope="col">Amount</th></tr></thead>
+            <tbody id="finalizeEmployeeDeductionsBody"><tr><td colspan="2">No approved deductions.</td></tr></tbody>
+          </table>
+        </div>
+      </section>
+
+      <p>This review uses the saved Approved payslip. Finalization does not recalculate or change its items or snapshots.</p>
+      <p id="finalizeEmployeeError" class="payroll-v2-form-error" role="alert"></p>
+      <div class="payroll-v2-dialog-actions">
+        <button id="cancelFinalizeEmployeeButton" class="plain-button" type="button">Back</button>
+        <button id="confirmFinalizeEmployeeButton" class="plain-button" type="button">Finalize Payslip</button>
+      </div>
+    </div>
+  </dialog>
+
+  <dialog id="calculateEmployeeDialog" aria-labelledby="calculateEmployeeTitle">
+    <div class="payroll-v2-placeholder">
+      <h2 id="calculateEmployeeTitle">Calculate Employee?</h2>
+      <dl class="payroll-v2-summary-list">
+        <div><dt>Employee</dt><dd id="calculateEmployeeName">—</dd></div>
+        <div><dt>Payroll Period</dt><dd id="calculateEmployeePeriod">—</dd></div>
+        <div><dt>Total Payable Hours</dt><dd id="calculateEmployeeHours">—</dd></div>
+        <div><dt>Attendance Earnings</dt><dd id="calculateEmployeeAttendance">—</dd></div>
+        <div><dt>Paid Leave Earnings</dt><dd id="calculateEmployeeLeave">—</dd></div>
+        <div><dt>Committed Hours Earnings</dt><dd id="calculateEmployeeCommitted">—</dd></div>
+        <div><dt>Manual Earnings</dt><dd id="calculateEmployeeManual">—</dd></div>
+        <div><dt>Deductions</dt><dd id="calculateEmployeeDeductions">—</dd></div>
+        <div><dt>Gross Pay</dt><dd id="calculateEmployeeGross">—</dd></div>
+        <div><dt>Net Pay</dt><dd id="calculateEmployeeNet">—</dd></div>
+      </dl>
+      <p id="calculateEmployeeError" class="payroll-v2-form-error" role="alert"></p>
+      <div class="payroll-v2-dialog-actions">
+        <button id="confirmCalculateEmployeeButton" class="plain-button" type="button">Calculate Employee</button>
+        <button id="cancelCalculateEmployeeButton" class="plain-button" type="button">Cancel</button>
+      </div>
+    </div>
+  </dialog>
+
+  <dialog id="recalculateEmployeeDialog" aria-labelledby="recalculateEmployeeTitle">
+    <form id="recalculateEmployeeForm" method="dialog">
+      <h2 id="recalculateEmployeeTitle">Reopen for Recalculation?</h2>
+      <p id="recalculateEmployeeMessage">The saved calculation remains unchanged until a new recalculation succeeds.</p>
+      <label>
+        <span>Reason</span>
+        <textarea id="recalculateEmployeeReason" name="reason" minlength="5" maxlength="240" rows="3" required></textarea>
+      </label>
+      <p id="recalculateEmployeeError" class="payroll-v2-form-error" role="alert"></p>
+      <div class="payroll-v2-dialog-actions">
+        <button id="confirmRecalculateEmployeeButton" class="plain-button" type="submit">Reopen for Recalculation</button>
+        <button id="cancelRecalculateEmployeeButton" class="plain-button" type="button">Cancel</button>
+      </div>
+    </form>
+  </dialog>
+
+  <dialog id="approveEmployeeDialog" aria-labelledby="approveEmployeeTitle">
+    <div class="payroll-v2-placeholder">
+      <h2 id="approveEmployeeTitle">Approve Employee?</h2>
+      <dl class="payroll-v2-summary-list">
+        <div><dt>Employee</dt><dd id="approveEmployeeName">—</dd></div>
+        <div><dt>Payroll Period</dt><dd id="approveEmployeePeriod">—</dd></div>
+        <div><dt>Calculated At</dt><dd id="approveEmployeeCalculatedAt">—</dd></div>
+        <div><dt>Total Payable Hours</dt><dd id="approveEmployeeHours">—</dd></div>
+        <div><dt>Attendance Earnings</dt><dd id="approveEmployeeAttendance">—</dd></div>
+        <div><dt>Paid Leave Earnings</dt><dd id="approveEmployeeLeave">—</dd></div>
+        <div><dt>Committed Hours Earnings</dt><dd id="approveEmployeeCommitted">—</dd></div>
+        <div><dt>Manual Earnings</dt><dd id="approveEmployeeManual">—</dd></div>
+        <div><dt>Deductions</dt><dd id="approveEmployeeDeductions">—</dd></div>
+        <div><dt>Gross Pay</dt><dd id="approveEmployeeGross">—</dd></div>
+        <div><dt>Net Pay</dt><dd id="approveEmployeeNet">—</dd></div>
+      </dl>
+      <p>This approves the already-calculated Payroll V2 payslip. Saved payroll values and snapshots will not be recalculated.</p>
+      <p id="approveEmployeeError" class="payroll-v2-form-error" role="alert"></p>
+      <div class="payroll-v2-dialog-actions">
+        <button id="confirmApproveEmployeeButton" class="plain-button" type="button">Approve Employee</button>
+        <button id="cancelApproveEmployeeButton" class="plain-button" type="button">Cancel</button>
+      </div>
+    </div>
+  </dialog>
+
+  <dialog id="employeeAdjustmentDialog" aria-labelledby="employeeAdjustmentTitle">
+    <form id="employeeAdjustmentForm" method="dialog">
+      <h2 id="employeeAdjustmentTitle">Add Payroll Adjustment</h2>
+      <label><span>Description</span><input id="employeeAdjustmentDescription" name="description" type="text" maxlength="200" required></label>
+      <label><span>Amount</span><input id="employeeAdjustmentAmount" name="amount" type="number" min="0.01" step="0.01" required></label>
+      <p id="employeeAdjustmentError" class="payroll-v2-form-error" role="alert"></p>
+      <div class="payroll-v2-dialog-actions">
+        <button id="saveEmployeeAdjustmentButton" class="plain-button" type="submit">Save Adjustment</button>
+        <button id="cancelEmployeeAdjustmentButton" class="plain-button" type="button">Cancel</button>
+      </div>
+    </form>
+  </dialog>
+
+  <dialog id="voidEmployeeAdjustmentDialog" aria-labelledby="voidEmployeeAdjustmentTitle">
+    <div class="payroll-v2-placeholder">
+      <h2 id="voidEmployeeAdjustmentTitle">Void Payroll Adjustment?</h2>
+      <p id="voidEmployeeAdjustmentSummary"></p>
+      <p>This adjustment will remain in Payroll V2 history and will no longer be included in Preview Payroll.</p>
+      <p id="voidEmployeeAdjustmentError" class="payroll-v2-form-error" role="alert"></p>
+      <div class="payroll-v2-dialog-actions">
+        <button id="confirmVoidEmployeeAdjustmentButton" class="plain-button" type="button">Void Adjustment</button>
+        <button id="cancelVoidEmployeeAdjustmentButton" class="plain-button" type="button">Cancel</button>
+      </div>
+    </div>
+  </dialog>
+
+  <dialog id="payslipPlaceholderDialog" aria-labelledby="placeholderTitle">
+    <div class="payroll-v2-placeholder">
+      <h2 id="placeholderTitle">Payslip</h2>
+      <p id="placeholderPeriod"></p>
+      <p>This V2 workflow location is ready for the next build step.</p>
+      <button id="closePlaceholderButton" class="plain-button" type="button">Close</button>
+    </div>
+  </dialog>
+
+  <dialog id="voidPeriodDialog" aria-labelledby="voidPeriodTitle">
+    <div class="payroll-v2-placeholder">
+      <h2 id="voidPeriodTitle">Void Payroll Period?</h2>
+      <dl class="payroll-v2-summary-list">
+        <div><dt>Start Date</dt><dd id="voidPeriodStart">—</dd></div>
+        <div><dt>End Date</dt><dd id="voidPeriodEnd">—</dd></div>
+        <div><dt>Payment Date</dt><dd id="voidPeriodPaymentDate">—</dd></div>
+      </dl>
+      <p>This period will remain in Payroll History but can no longer be used to create or calculate payslips.</p>
+      <p id="voidPeriodError" class="payroll-v2-form-error" role="alert"></p>
+      <div class="payroll-v2-dialog-actions">
+        <button id="confirmVoidPeriodButton" class="plain-button" type="button">Void Period</button>
+        <button id="cancelVoidPeriodButton" class="plain-button" type="button">Cancel</button>
+      </div>
+    </div>
+  </dialog>
+
+  <dialog id="closePeriodDialog" aria-labelledby="closePeriodTitle">
+    <div class="payroll-v2-placeholder">
+      <h2 id="closePeriodTitle">Close Payroll Period?</h2>
+      <dl class="payroll-v2-summary-list payroll-v2-close-summary">
+        <div><dt>Period</dt><dd id="closePeriodRange">—</dd></div>
+        <div><dt>Payslips included</dt><dd id="closePeriodPayslipCount">0</dd></div>
+        <div><dt>Approved</dt><dd id="closePeriodApprovedCount">0</dd></div>
+        <div><dt>Finalized</dt><dd id="closePeriodFinalizedCount">0</dd></div>
+      </dl>
+      <p>Closing this period confirms that all intended payslips have been added. New payslips can no longer be added to this period.</p>
+      <p id="closePeriodError" class="payroll-v2-form-error" role="alert"></p>
+      <div class="payroll-v2-dialog-actions">
+        <button id="cancelClosePeriodButton" class="plain-button" type="button">Cancel</button>
+        <button id="confirmClosePeriodButton" class="plain-button" type="button">Close Period</button>
+      </div>
+    </div>
+  </dialog>
+
+  <script type="module" src="./scripts/payroll-v2.js?v=23"></script>
+</body>
+</html>

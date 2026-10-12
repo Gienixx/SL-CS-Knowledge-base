@@ -198,7 +198,7 @@ test('payroll pages require explicit processing permissions and Home hides the l
 
   assert.match(
     home,
-    /id="homePayrollDashboardBtn"[\s\S]*?href="\.\/payroll-dashboard\.html"[\s\S]*?hidden/
+    /id="homePayrollDashboardBtn"[\s\S]*?href="\.\/payroll-v2\.html"[\s\S]*?hidden[\s\S]*?Payroll Management/
   )
   assert.match(home, /home-workforce-nav\.js\?v=10/)
   assert.match(

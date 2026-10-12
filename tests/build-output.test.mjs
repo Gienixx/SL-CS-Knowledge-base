@@ -90,14 +90,18 @@ test('production build publishes only browser assets', async () => {
   )
 
   for (const requiredPath of [
+    'dist/payroll-v2.html',
     'dist/announcement-management.html',
     'dist/index.html',
     'dist/partials',
+    'dist/scripts/payroll-v2.js',
+    'dist/scripts/payroll-v2-finalization.mjs',
     'dist/scripts/announcement-management.js',
     'dist/scripts/home-daily-overview.js',
     'dist/scripts/home-live-clocks.js',
     'dist/scripts',
     'dist/shared/workforce-access.js',
+    'dist/styles/payroll-v2.css',
     'dist/styles/announcement-management.css',
     'dist/styles'
   ]) {
