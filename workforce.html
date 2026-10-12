@@ -11,6 +11,7 @@
   <link rel="stylesheet" href="./styles/workforce-admin.css?v=15">
   <link rel="stylesheet" href="./styles/site-theme.css?v=5">
   <link rel="stylesheet" href="./styles/workforce-compact.css?v=1">
+  <link rel="stylesheet" href="./styles/workforce-committed-hours.css?v=1">
   <script src="./scripts/site-theme.js?v=1"></script>
 </head>
 <body>
@@ -18,6 +19,7 @@
     <nav class="wf-view-switcher" role="tablist" aria-label="Workforce management views">
       <button class="active" id="workforceViewButton" type="button" role="tab" aria-controls="workforceView" aria-selected="true" tabindex="0">Workforce Management</button>
       <button id="scheduleViewButton" type="button" role="tab" aria-controls="scheduleManagementSection" aria-selected="false" tabindex="-1" hidden>Schedule Management</button>
+      <button id="committedHoursViewButton" type="button" role="tab" aria-controls="committedHoursManagementSection" aria-selected="false" tabindex="-1" hidden>Committed Hours</button>
     </nav>
     <div id="workforceView" role="tabpanel" aria-labelledby="workforceViewButton">
     <header class="wf-topbar">
@@ -183,6 +185,33 @@
       </nav>
       <p id="scheduleMessage" class="wf-message" aria-live="polite"></p>
     </section>
+    <section class="wf-card wf-management-view" id="committedHoursManagementSection" role="tabpanel" aria-labelledby="committedHoursViewButton" hidden>
+      <div class="wf-card-header">
+        <div>
+          <h2>Committed Hours</h2>
+          <p class="wf-message">Set one daily target per employee. Approved, payroll-ready attendance fulfills the oldest outstanding target first.</p>
+        </div>
+        <div class="wf-actions">
+          <button class="wf-btn" id="addCommittedHoursButton" type="button">Add Commitment</button>
+          <button class="wf-btn secondary" id="refreshCommittedHoursButton" type="button">Refresh</button>
+        </div>
+      </div>
+
+      <div class="wf-toolbar wf-committed-hours-toolbar">
+        <label class="wf-field"><span>From</span><input class="wf-control" id="committedHoursStartDate" type="date"></label>
+        <label class="wf-field"><span>Through</span><input class="wf-control" id="committedHoursEndDate" type="date"></label>
+        <label class="wf-field"><span>Team</span><select class="wf-control" id="committedHoursTeamFilter"><option value="">All teams</option></select></label>
+        <label class="wf-field"><span>Employee</span><select class="wf-control" id="committedHoursEmployeeFilter"><option value="">All employees</option></select></label>
+      </div>
+
+      <div class="wf-table-wrap wf-committed-hours-table-wrap">
+        <table class="wf-table wf-compact-table wf-committed-hours-table">
+          <thead><tr><th>Employee</th><th>Work Date</th><th>Target</th><th>Fulfilled</th><th>Carryover</th><th>Remaining</th><th>Status</th><th>Action</th></tr></thead>
+          <tbody id="committedHoursTableBody"><tr><td colspan="8" class="wf-empty">Loading Committed Hours...</td></tr></tbody>
+        </table>
+      </div>
+      <p id="committedHoursMessage" class="wf-message" aria-live="polite"></p>
+    </section>
   </main>
 
   <div class="wf-modal" id="employeeInviteModal" role="dialog" aria-modal="true" aria-labelledby="employeeInviteModalTitle" hidden>
@@ -252,6 +281,31 @@
         </div>
       </form>
       <p id="employeeInviteMessage" class="wf-message" aria-live="polite"></p>
+    </section>
+  </div>
+
+  <div class="wf-modal" id="committedHoursModal" role="dialog" aria-modal="true" aria-labelledby="committedHoursModalTitle" hidden>
+    <button class="wf-backdrop" type="button" data-committed-hours-close aria-label="Close Committed Hours dialog"></button>
+    <section class="wf-dialog compact">
+      <div class="wf-dialog-header">
+        <h2 id="committedHoursModalTitle">Add Commitment</h2>
+        <button class="wf-close" type="button" data-committed-hours-close aria-label="Close">×</button>
+      </div>
+      <form id="committedHoursForm" class="wf-form">
+        <input id="committedHoursCommitmentId" type="hidden">
+        <div class="wf-form-grid">
+          <label class="wf-field full"><span>Employee</span><select class="wf-control" id="committedHoursEmployee" required><option value="">Select employee</option></select></label>
+          <label class="wf-field"><span>Work Date</span><input class="wf-control" id="committedHoursWorkDate" type="date" required></label>
+          <label class="wf-field"><span>Target Hours</span><input class="wf-control" id="committedHoursTargetHours" type="number" min="0.25" max="24" step="0.25" required></label>
+          <label class="wf-field full"><span>Note / Reason (optional)</span><textarea class="wf-control" id="committedHoursReason" maxlength="500" placeholder="Optional administrative note"></textarea></label>
+        </div>
+        <p class="wf-note">Targets are stored in minutes. If a target has already been used in a Payroll V2 record, it is locked for editing.</p>
+        <div class="wf-dialog-actions">
+          <button class="wf-btn secondary" type="button" data-committed-hours-close>Cancel</button>
+          <button class="wf-btn" id="saveCommittedHoursButton" type="submit">Save Commitment</button>
+        </div>
+      </form>
+      <p id="committedHoursFormMessage" class="wf-message" aria-live="polite"></p>
     </section>
   </div>
 
@@ -479,6 +533,7 @@
 
   <script type="module" src="./scripts/workforce.js?v=18"></script>
   <script type="module" src="./scripts/workforce-schedules-entry.js?v=17"></script>
-  <script type="module" src="./scripts/workforce-view-switcher.js?v=2"></script>
+  <script type="module" src="./scripts/workforce-committed-hours.js?v=1"></script>
+  <script type="module" src="./scripts/workforce-view-switcher.js?v=3"></script>
 </body>
 </html>

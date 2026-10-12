@@ -1,0 +1,422 @@
+.payslip-v2-access-pending .payslip-v2-page {
+  visibility: hidden;
+}
+
+.payslip-v2-page {
+  width: min(100% - 32px, 960px);
+  margin: 28px auto 56px;
+}
+
+.payslip-v2-page-header,
+.payslip-v2-toolbar,
+.payslip-v2-company-header,
+.payslip-v2-brand-lockup,
+.payslip-v2-section-heading {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+}
+
+.payslip-v2-page-header {
+  margin-bottom: 18px;
+}
+
+.payslip-v2-toolbar {
+  justify-content: flex-end;
+}
+
+.payslip-v2-message {
+  margin: 12px 0;
+}
+
+.payslip-v2-message.error {
+  color: #c43f38;
+}
+
+.payslip-v2-sheet {
+  padding: 38px 42px;
+  border: 1px solid #e4e2ee;
+  border-radius: 18px;
+  background: #fff;
+  box-shadow: 0 16px 45px rgb(28 24 69 / 8%);
+  color: #24233a;
+}
+
+.payslip-v2-company-header {
+  align-items: flex-start;
+  padding-bottom: 16px;
+  border-bottom: 1px solid #dedce7;
+}
+
+.payslip-v2-brand-lockup {
+  justify-content: flex-start;
+  gap: 12px;
+}
+
+.payslip-v2-brand-logo {
+  display: block;
+  width: 52px;
+  height: 52px;
+  flex: 0 0 52px;
+  object-fit: contain;
+}
+
+.payslip-v2-company-name h1 {
+  margin: 0;
+  color: #17162b;
+  font-size: 1.3rem;
+  line-height: 1.25;
+}
+
+.payslip-v2-company-name p {
+  margin: 3px 0 0;
+  color: #65647a;
+  font-size: .84rem;
+}
+
+.payslip-v2-company-name .payslip-v2-company-address,
+.payslip-v2-company-name .payslip-v2-company-phone {
+  color: #77768a;
+  font-size: .7rem;
+  line-height: 1.25;
+}
+
+.payslip-v2-company-name .payslip-v2-company-address { margin-top: 5px; }
+.payslip-v2-company-name .payslip-v2-company-phone { margin-top: 1px; }
+
+.my-payslips-v2-status {
+  display: inline-flex;
+  align-items: center;
+  min-height: 25px;
+  padding: 4px 9px;
+  border-radius: 999px;
+  color: #555170;
+  background: #efedf8;
+  font-size: .72rem;
+  font-weight: 800;
+  white-space: nowrap;
+}
+
+.my-payslips-v2-status.approved {
+  color: #176b53;
+  background: #e4f5ed;
+}
+
+.my-payslips-v2-status.finalized {
+  color: #5143af;
+  background: #edeafb;
+}
+
+.payslip-v2-payroll-info {
+  display: grid;
+  grid-template-columns: 1.35fr 1fr;
+  gap: 26px;
+  padding: 14px 0 17px;
+  border-bottom: 1px solid #ecebf2;
+}
+
+.payslip-v2-info-group {
+  display: grid;
+  align-content: start;
+  gap: 12px 18px;
+}
+
+.payslip-v2-employee-info {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.payslip-v2-period-info {
+  grid-template-columns: 1fr;
+}
+
+.payslip-v2-info-name {
+  grid-column: 1 / -1;
+}
+
+.payslip-v2-info-group div,
+.payslip-v2-totals div {
+  display: grid;
+  gap: 3px;
+}
+
+.payslip-v2-info-group span,
+.payslip-v2-totals span {
+  color: #737188;
+  font-size: .7rem;
+}
+
+.payslip-v2-info-group strong {
+  color: #24233a;
+  font-size: .83rem;
+  font-weight: 750;
+  font-variant-numeric: tabular-nums;
+}
+
+.payslip-v2-section {
+  margin-top: 24px;
+}
+
+.payslip-v2-section-heading {
+  margin-bottom: 10px;
+}
+
+.payslip-v2-section-heading h2 {
+  margin: 0;
+  color: #29283d;
+  font-size: 1rem;
+}
+
+.payslip-v2-section-heading span {
+  color: #737188;
+  font-size: .78rem;
+}
+
+.payslip-v2-table-wrap {
+  overflow-x: auto;
+}
+
+.payslip-v2-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: .8rem;
+}
+
+.payslip-v2-table th,
+.payslip-v2-table td {
+  padding: 9px 10px;
+  border-bottom: 1px solid #efedf4;
+  text-align: left;
+  vertical-align: top;
+}
+
+.payslip-v2-table th {
+  color: #727087;
+  font-size: .69rem;
+  font-weight: 800;
+  letter-spacing: .04em;
+  text-transform: uppercase;
+}
+
+.payslip-v2-table td.amount,
+.payslip-v2-table td.rate,
+.payslip-v2-table th:last-child {
+  text-align: right;
+  white-space: nowrap;
+  font-variant-numeric: tabular-nums;
+}
+
+.payslip-v2-earnings-table {
+  min-width: 780px;
+}
+
+.payslip-v2-earnings-table th:nth-child(n + 4),
+.payslip-v2-earnings-table td:nth-child(n + 4) {
+  text-align: right;
+  white-space: nowrap;
+  font-variant-numeric: tabular-nums;
+}
+
+.payslip-v2-table .empty {
+  color: #737188;
+  text-align: center;
+}
+
+.payslip-v2-totals {
+  width: min(100%, 390px);
+  margin: 28px 0 0 auto;
+  display: grid;
+  gap: 12px;
+}
+
+.payslip-v2-totals div {
+  grid-template-columns: 1fr auto;
+  align-items: baseline;
+  padding-bottom: 9px;
+  border-bottom: 1px solid #ecebf2;
+}
+
+.payslip-v2-totals strong {
+  color: #24233a;
+  font-size: .94rem;
+  font-variant-numeric: tabular-nums;
+}
+
+.payslip-v2-totals .net {
+  padding-top: 10px;
+  border-bottom: 0;
+  color: #176b53;
+}
+
+.payslip-v2-totals .net strong {
+  color: #176b53;
+  font-size: 1.2rem;
+}
+
+.payslip-v2-footnote {
+  margin-top: 32px;
+  padding-top: 12px;
+  border-top: 1px solid #ecebf2;
+  color: #858398;
+  font-size: .7rem;
+}
+
+/* Keep the saved payroll document independent from the application theme. */
+.payslip-v2-sheet {
+  color-scheme: light;
+  -webkit-print-color-adjust: exact;
+  print-color-adjust: exact;
+}
+
+html[data-site-theme] .payslip-v2-sheet {
+  border-color: #e4e2ee;
+  color: #24233a;
+  background: #fff;
+}
+
+html[data-site-theme] .payslip-v2-sheet :is(h1, h2, h3, h4) {
+  color: #241b5d;
+}
+
+html[data-site-theme] .payslip-v2-sheet .payslip-v2-table {
+  color: #2b2459;
+  background: transparent;
+}
+
+html[data-site-theme] .payslip-v2-sheet .payslip-v2-table th {
+  border-color: rgba(36, 27, 93, .14);
+  color: #241b5d;
+  background: rgba(246, 242, 252, .82);
+}
+
+html[data-site-theme] .payslip-v2-sheet .payslip-v2-table td {
+  border-color: rgba(36, 27, 93, .14);
+  color: #2b2459;
+}
+
+html[data-site-theme] .payslip-v2-sheet .payslip-v2-table tbody tr:hover {
+  background: rgba(245, 170, 24, .08);
+}
+
+@media (max-width: 640px) {
+  .payslip-v2-page {
+    width: min(100% - 20px, 960px);
+    margin-top: 16px;
+  }
+
+  .payslip-v2-page-header,
+  .payslip-v2-company-header {
+    align-items: flex-start;
+  }
+
+  .payslip-v2-toolbar {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .payslip-v2-sheet {
+    padding: 24px 18px;
+  }
+
+  .payslip-v2-payroll-info {
+    grid-template-columns: 1fr 1fr;
+    gap: 14px;
+  }
+
+  .payslip-v2-employee-info { grid-template-columns: 1fr; }
+  .payslip-v2-info-name { grid-column: auto; }
+}
+
+@page {
+  size: A4 portrait;
+  margin: 13mm;
+}
+
+@media print {
+  html,
+  body {
+    width: 100%;
+    margin: 0;
+    background: #fff !important;
+  }
+
+  body * {
+    visibility: hidden !important;
+  }
+
+  #payrollV2PayslipSheet,
+  #payrollV2PayslipSheet * {
+    visibility: visible !important;
+  }
+
+  .payslip-v2-page {
+    width: 100%;
+    margin: 0;
+  }
+
+  .payslip-v2-page-header,
+  .payslip-v2-message {
+    display: none !important;
+  }
+
+  .payslip-v2-sheet {
+    position: absolute;
+    inset: 0 auto auto 0;
+    width: 100%;
+    box-sizing: border-box;
+    padding: 0;
+    border: 0;
+    border-radius: 0;
+    box-shadow: none;
+  }
+
+  .payslip-v2-company-header,
+  .payslip-v2-payroll-info,
+  .payslip-v2-section,
+  .payslip-v2-totals,
+  .payslip-v2-table tr,
+  .payslip-v2-footnote {
+    break-inside: avoid;
+  }
+
+  .payslip-v2-table-wrap {
+    overflow: visible;
+  }
+
+  .payslip-v2-table {
+    font-size: 8.5pt;
+  }
+
+  .payslip-v2-earnings-table {
+    min-width: 0;
+    table-layout: fixed;
+    font-size: 7.5pt;
+  }
+
+  .payslip-v2-earnings-table th:nth-child(1) { width: 12%; }
+  .payslip-v2-earnings-table th:nth-child(2) { width: 22%; }
+  .payslip-v2-earnings-table th:nth-child(3) { width: 13%; }
+  .payslip-v2-earnings-table th:nth-child(4) { width: 10%; }
+  .payslip-v2-earnings-table th:nth-child(5) { width: 13%; }
+  .payslip-v2-earnings-table th:nth-child(6) { width: 9%; }
+  .payslip-v2-earnings-table th:nth-child(7) { width: 10%; }
+  .payslip-v2-earnings-table th:nth-child(8) { width: 11%; }
+
+  .payslip-v2-table th,
+  .payslip-v2-table td {
+    padding: 6px 7px;
+  }
+
+  .payslip-v2-totals {
+    margin-top: 18px;
+  }
+
+  .payslip-v2-brand-logo {
+    width: 44px;
+    height: 44px;
+    flex-basis: 44px;
+  }
+
+  .payslip-v2-company-name h1 { font-size: 1.12rem; }
+  .payslip-v2-payroll-info { padding: 10px 0 12px; }
+}
