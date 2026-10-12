@@ -345,7 +345,7 @@ export function validateMultiDatasetPayload(payload) {
   validateDatasetEnvelope(ticketProductivity, {
     datasetLabel: 'Ticket Productivity',
     sheetName: PRODUCTIVITY_MAPPING.source.sheetName,
-    columnCount: 25,
+    columnCount: 28,
     headerRows: 2,
     dataStartRow: 3
   })

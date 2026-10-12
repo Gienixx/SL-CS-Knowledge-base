@@ -27,7 +27,7 @@ export const PRODUCTIVITY_MAPPING = Object.freeze({
   source: Object.freeze({
     sheetName:
       WORKBOOK_SOURCE_INVENTORY.ticketProductivity.sheetName,
-    range: "'Ticket Productivity'!A:Y",
+    range: "'Ticket Productivity'!A:AB",
     headerRows: Object.freeze([1, 2]),
     dataStartRow:
       WORKBOOK_SOURCE_INVENTORY.ticketProductivity.dataStartRow,
@@ -57,7 +57,7 @@ export const PRODUCTIVITY_MAPPING = Object.freeze({
   })
 })
 
-export const PRODUCTIVITY_EXPECTED_COLUMN_COUNT = 25
+export const PRODUCTIVITY_EXPECTED_COLUMN_COUNT = 28
 
 function normalizeText(value) {
   return typeof value === 'string'

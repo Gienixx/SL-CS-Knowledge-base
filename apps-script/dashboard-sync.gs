@@ -13,7 +13,7 @@ const SIMPLE_DASHBOARD_SYNC = Object.freeze({
     ticketProductivity: Object.freeze({
       sheetName: 'Ticket Productivity',
       payloadSheetName: 'Ticket Productivity',
-      columnCount: 25,
+      columnCount: 28,
       headerRows: 2,
       dataStartRow: 3
     }),

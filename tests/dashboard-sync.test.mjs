@@ -45,8 +45,8 @@ function buildDailyVolumeHeaders() {
 function buildProductivityHeaders(agentNames = [
   'Amora', 'Ford', 'Gen', 'Arez', 'Tristan', 'Jerson', 'Jean', 'Arby'
 ]) {
-  const agentHeaders = blankRow(25)
-  const metricHeaders = blankRow(25)
+  const agentHeaders = blankRow(28)
+  const metricHeaders = blankRow(28)
   agentHeaders[0] = PRODUCTIVITY_MAPPING.source.dateColumn.sourceHeader
 
   agentNames.forEach((agentName, agentIndex) => {
@@ -99,22 +99,22 @@ function buildIntegrityPayload() {
   dailyFutureTemplateRow[0] = '2099-12-31'
 
   const [agentHeaders, metricHeaders] = buildProductivityHeaders()
-  const validAgentRow = blankRow(25)
+  const validAgentRow = blankRow(28)
   validAgentRow[0] = '2026-06-01'
   validAgentRow[1] = 0
   validAgentRow[2] = 0
   validAgentRow[3] = 0
 
-  const negativeAgentRow = blankRow(25)
+  const negativeAgentRow = blankRow(28)
   negativeAgentRow[0] = '2026-06-02'
   negativeAgentRow[4] = -1
 
-  const partialAgentRow = blankRow(25)
+  const partialAgentRow = blankRow(28)
   partialAgentRow[0] = '2026-06-03'
   partialAgentRow[7] = 2
   partialAgentRow[8] = -1
 
-  const missingAgentBlocksRow = blankRow(25)
+  const missingAgentBlocksRow = blankRow(28)
   missingAgentBlocksRow[0] = '2099-12-31'
 
   const [driverSourceHeaders, driverDisplayHeaders] = buildDriverHeaders()
@@ -146,7 +146,7 @@ function buildIntegrityPayload() {
       },
       ticketProductivity: {
         sheetName: PRODUCTIVITY_MAPPING.source.sheetName,
-        columnCount: 25,
+        columnCount: 28,
         headerRows: 2,
         dataStartRow: 3,
         values: [
@@ -255,13 +255,56 @@ test('multi-dataset processing handles Step 10 integrity edge cases', () => {
   )
 })
 
+test('Ticket Productivity imports Automated and the ninth agent Jean at Z-AB', () => {
+  const payload = buildIntegrityPayload()
+  const dataset = payload.datasets.ticketProductivity
+  const names = [
+    'Automated', 'Amora', 'Ford', 'Gen', 'Arby',
+    'Arez', 'Tristan', 'Jerson', 'Jean'
+  ]
+  const [agentHeaders, metricHeaders] = buildProductivityHeaders(names)
+  const row = blankRow(28)
+  row[0] = '2026-09-18'
+  names.forEach((_name, index) => {
+    const startIndex = 1 + index * 3
+    row[startIndex] = index + 1
+    row[startIndex + 1] = index + 2
+    row[startIndex + 2] = index + 3.5
+  })
+  dataset.values = [agentHeaders, metricHeaders, row]
+
+  assert.doesNotThrow(() => validateMultiDatasetPayload(payload))
+  const blocks = getProductivityAgentBlocks(dataset)
+  assert.deepEqual(
+    blocks.map(block => block.agentName),
+    names
+  )
+  assert.deepEqual(
+    blocks[8].metrics.map(metric => metric.sourceColumn),
+    ['Z', 'AA', 'AB']
+  )
+  const result = processMultiDatasetPayload(payload, 'nine-agents')
+  assert.equal(result.productivity.importedRecords.length, 9)
+  const keys = result.productivity.importedRecords.map(record => record.agent_key)
+  assert.deepEqual(keys, [
+    'automated', 'amora', 'ford', 'gen', 'arby',
+    'arez', 'tristan', 'jerson', 'jean'
+  ])
+  const jean = result.productivity.importedRecords.find(record =>
+    record.agent_key === 'jean'
+  )
+  assert.equal(jean.solved_tickets, 9)
+  assert.equal(jean.open_tickets, 10)
+  assert.equal(jean.aht_value, 11.5)
+})
+
 test('Ticket Productivity derives reordered and changed agent blocks from headers', () => {
   const payload = buildIntegrityPayload()
   const dataset = payload.datasets.ticketProductivity
   const [agentHeaders, metricHeaders] = buildProductivityHeaders([
     'New Support Agent', 'Amora'
   ])
-  const row = blankRow(25)
+  const row = blankRow(28)
   row[0] = '2026-06-05'
   row[1] = 4
   row[2] = 2
@@ -324,7 +367,7 @@ test('Ticket Productivity rejects data under unnamed blocks rather than dropping
   const payload = buildIntegrityPayload()
   const dataset = payload.datasets.ticketProductivity
   const [agentHeaders, metricHeaders] = buildProductivityHeaders(['Amora'])
-  const row = blankRow(25)
+  const row = blankRow(28)
   row[0] = '2026-06-05'
   row[1] = 1
   row[4] = 2
@@ -540,7 +583,7 @@ test('agent renames preserve identity and registered new agents can be imported'
     const [agentHeaders, metricHeaders] = buildProductivityHeaders([
       'Renamed Agent', 'New Support Agent'
     ])
-    const row = blankRow(25)
+    const row = blankRow(28)
     row[0] = '2026-06-01'
     row[1] = 8
     row[2] = 2
