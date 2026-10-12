@@ -1,36 +1,46 @@
-const workforceButton = document.getElementById('workforceViewButton')
-const scheduleButton = document.getElementById('scheduleViewButton')
-const workforceView = document.getElementById('workforceView')
-const scheduleView = document.getElementById('scheduleManagementSection')
+const views = [
+  {
+    key: 'workforce',
+    button: document.getElementById('workforceViewButton'),
+    panel: document.getElementById('workforceView')
+  },
+  {
+    key: 'schedules',
+    button: document.getElementById('scheduleViewButton'),
+    panel: document.getElementById('scheduleManagementSection')
+  },
+  {
+    key: 'committed-hours',
+    button: document.getElementById('committedHoursViewButton'),
+    panel: document.getElementById('committedHoursManagementSection')
+  }
+].filter(view => view.button && view.panel)
 
-function showManagementView(view) {
-  const showSchedules = view === 'schedules'
-  workforceView.hidden = showSchedules
-  scheduleView.hidden = !showSchedules
-  workforceButton.classList.toggle('active', !showSchedules)
-  scheduleButton.classList.toggle('active', showSchedules)
-  workforceButton.setAttribute('aria-selected', String(!showSchedules))
-  scheduleButton.setAttribute('aria-selected', String(showSchedules))
-  workforceButton.tabIndex = showSchedules ? -1 : 0
-  scheduleButton.tabIndex = showSchedules ? 0 : -1
+function showManagementView(key) {
+  views.forEach(view => {
+    const active = view.key === key
+    view.panel.hidden = !active
+    view.button.classList.toggle('active', active)
+    view.button.setAttribute('aria-selected', String(active))
+    view.button.tabIndex = active ? 0 : -1
+  })
 }
 
-workforceButton?.addEventListener('click', () => showManagementView('workforce'))
-scheduleButton?.addEventListener('click', () => showManagementView('schedules'))
-
-function handleTabKeydown(event) {
-  if (!['ArrowLeft', 'ArrowRight'].includes(event.key)) return
-
-  const visibleTabs = [workforceButton, scheduleButton].filter(button => !button.hidden)
-  if (visibleTabs.length < 2) return
-
-  event.preventDefault()
-  const nextTab = event.currentTarget === workforceButton
-    ? scheduleButton
-    : workforceButton
-  nextTab.click()
-  nextTab.focus()
-}
-
-workforceButton?.addEventListener('keydown', handleTabKeydown)
-scheduleButton?.addEventListener('keydown', handleTabKeydown)
+views.forEach(view => {
+  view.button.addEventListener('click', () => showManagementView(view.key))
+  view.button.addEventListener('keydown', event => {
+    if (!['ArrowLeft', 'ArrowRight', 'Home', 'End'].includes(event.key)) return
+    const visibleTabs = views.filter(tab => !tab.button.hidden)
+    const currentIndex = visibleTabs.findIndex(tab => tab === view)
+    if (currentIndex < 0 || visibleTabs.length < 2) return
+    event.preventDefault()
+    const nextIndex = event.key === 'Home'
+      ? 0
+      : event.key === 'End'
+        ? visibleTabs.length - 1
+        : (currentIndex + (event.key === 'ArrowRight' ? 1 : -1) + visibleTabs.length) % visibleTabs.length
+    const nextTab = visibleTabs[nextIndex]
+    showManagementView(nextTab.key)
+    nextTab.button.focus()
+  })
+})
