@@ -388,6 +388,126 @@ test('malformed workbook headers are recorded as failed and write no analytics r
   }
 })
 
+test('reimporting an existing report date after an agent rename is blocked before writes', async () => {
+  const payload = buildIntegrityPayload()
+  const originalFetch = globalThis.fetch
+  const productivityRows = []
+  const analyticsWrites = []
+  const syncRunUpdates = []
+  let nextSyncRun = 0
+
+  globalThis.fetch = async (url, options = {}) => {
+    const parsedUrl = new URL(String(url))
+    const path = parsedUrl.pathname
+    const method = options.method || 'GET'
+
+    if (path.endsWith('/rest/v1/sheet_sync_runs') && method === 'POST') {
+      nextSyncRun += 1
+      return new Response(JSON.stringify([{ id: `sync-${nextSyncRun}` }]), {
+        status: 201,
+        headers: { 'Content-Type': 'application/json' }
+      })
+    }
+
+    if (path.endsWith('/rest/v1/sheet_sync_runs') && method === 'PATCH') {
+      syncRunUpdates.push(JSON.parse(options.body))
+      return new Response(null, { status: 204 })
+    }
+
+    if (path.endsWith('/rest/v1/agent_productivity') && method === 'GET') {
+      const dateFilter = parsedUrl.searchParams.get('report_date') || ''
+      const requestedDates = dateFilter.startsWith('in.(')
+        ? new Set(dateFilter.slice(4, -1).split(','))
+        : new Set()
+      const rows = productivityRows.filter(row =>
+        requestedDates.has(row.report_date)
+      )
+      const range = options.headers?.Range || '0-499'
+      const [start, end] = range.split('-').map(Number)
+      return new Response(JSON.stringify(rows.slice(start, end + 1)), {
+        status: 200,
+        headers: { 'Content-Type': 'application/json' }
+      })
+    }
+
+    if (method === 'POST' && !path.endsWith('/rest/v1/sheet_sync_runs')) {
+      const records = JSON.parse(options.body || '[]')
+      analyticsWrites.push({ path, records })
+      if (path.endsWith('/rest/v1/agent_productivity')) {
+        productivityRows.push(...records)
+      }
+      return new Response(null, { status: 204 })
+    }
+
+    throw new Error(`Unexpected Supabase request: ${method} ${parsedUrl}`)
+  }
+
+  const sendSync = async () => onRequestPost({
+    request: new Request('https://example.test/api/sync-dashboard', {
+      method: 'POST',
+      headers: {
+        Authorization: 'Bearer test-secret',
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify(payload)
+    }),
+    env: {
+      SHEET_SYNC_SECRET: 'test-secret',
+      SUPABASE_URL: 'https://project.supabase.co',
+      SUPABASE_SERVICE_ROLE_KEY: 'test-service-role'
+    }
+  })
+
+  try {
+    const firstResponse = await sendSync()
+    assert.equal(firstResponse.status, 200)
+    assert.equal(productivityRows.length, 1)
+    assert.equal(productivityRows[0].agent_key, 'amora')
+    const writesAfterFirstImport = analyticsWrites.length
+
+    payload.datasets.ticketProductivity.values[0][1] = 'Renamed Agent'
+    const renamedResponse = await sendSync()
+    const renamedResult = await renamedResponse.json()
+
+    assert.equal(renamedResponse.status, 409)
+    assert.match(renamedResult.error, /new agent identity on report date 2026-06-01/)
+    assert.match(renamedResult.error, /may represent an agent rename/)
+    assert.equal(analyticsWrites.length, writesAfterFirstImport)
+    assert.deepEqual(
+      productivityRows.map(row => [row.report_date, row.agent_key]),
+      [['2026-06-01', 'amora']]
+    )
+    assert.equal(syncRunUpdates.at(-1).status, 'failed')
+    assert.equal(syncRunUpdates.at(-1).rows_imported, 0)
+
+    const [renamedAgentHeaders, metricHeaders] = buildProductivityHeaders([
+      'Renamed Agent'
+    ])
+    const firstSeenAgentRow = blankRow(25)
+    firstSeenAgentRow[0] = '2026-06-02'
+    firstSeenAgentRow[1] = 12
+    firstSeenAgentRow[2] = 3
+    firstSeenAgentRow[3] = 4.5
+    payload.datasets.ticketProductivity.values = [
+      renamedAgentHeaders,
+      metricHeaders,
+      firstSeenAgentRow
+    ]
+
+    const newDateResponse = await sendSync()
+    assert.equal(newDateResponse.status, 200)
+    assert.deepEqual(
+      productivityRows.map(row => [row.report_date, row.agent_key]),
+      [
+        ['2026-06-01', 'amora'],
+        ['2026-06-02', 'renamed_agent']
+      ]
+    )
+  } finally {
+    globalThis.fetch = originalFetch
+  }
+})
+
 test('unauthorized synchronization requests are rejected before database writes', async () => {
   const originalFetch = globalThis.fetch
   let databaseRequests = 0

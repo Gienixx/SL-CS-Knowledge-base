@@ -21,6 +21,8 @@ const RETIRED_DASHBOARD_SYNC_HANDLERS = Object.freeze([
   'syncAllDashboardData',
   'syncDashboardData'
 ])
+const DASHBOARD_SYNC_TRIGGER_INSTALLATION_PROPERTY =
+  'DASHBOARD_SYNC_TRIGGER_INSTALLATION'
 
 function syncDashboardAt9AmEastern() {
   return runDashboardSyncTrigger_('syncDashboardAt9AmEastern')
@@ -58,23 +60,14 @@ function migrateDashboardSyncTriggers() {
 
   try {
     const managedHandlers = getManagedDashboardSyncHandlers_()
-    const retainedHandlers = {}
     const removedTriggers = []
 
+    // Apps Script trigger objects do not expose their configured hour,
+    // minute, recurrence, or timezone. Reinstall every managed handler so an
+    // old trigger with the right name but wrong schedule cannot be retained.
     ScriptApp.getProjectTriggers().forEach(function (trigger) {
       const handler = trigger.getHandlerFunction()
       if (managedHandlers.indexOf(handler) === -1) return
-
-      const isDesired = DASHBOARD_SYNC_TRIGGER_SCHEDULES.some(
-        function (schedule) {
-          return schedule.handler === handler
-        }
-      )
-
-      if (isDesired && !retainedHandlers[handler]) {
-        retainedHandlers[handler] = true
-        return
-      }
 
       removedTriggers.push({
         handler: handler,
@@ -85,8 +78,6 @@ function migrateDashboardSyncTriggers() {
 
     const createdTriggers = []
     DASHBOARD_SYNC_TRIGGER_SCHEDULES.forEach(function (schedule) {
-      if (retainedHandlers[schedule.handler]) return
-
       const trigger = ScriptApp
         .newTrigger(schedule.handler)
         .timeBased()
@@ -104,13 +95,33 @@ function migrateDashboardSyncTriggers() {
       })
     })
 
+    PropertiesService.getScriptProperties().setProperty(
+      DASHBOARD_SYNC_TRIGGER_INSTALLATION_PROPERTY,
+      JSON.stringify({
+        timezone: DASHBOARD_SYNC_TRIGGER_TIMEZONE,
+        schedules: DASHBOARD_SYNC_TRIGGER_SCHEDULES.map(
+          function (schedule) {
+            const installed = createdTriggers.find(function (trigger) {
+              return trigger.handler === schedule.handler
+            })
+            return {
+              handler: schedule.handler,
+              hour: schedule.hour,
+              minute: schedule.minute,
+              triggerId: installed ? installed.triggerId : null
+            }
+          }
+        )
+      })
+    )
+
     const result = inspectDashboardSyncTriggers()
     result.removedTriggers = removedTriggers
     result.createdTriggers = createdTriggers
 
     if (!result.valid) {
       throw new Error(
-        'Dashboard sync triggers are incomplete or duplicated after installation.'
+        'Dashboard sync triggers could not be verified after reinstall.'
       )
     }
 
@@ -122,6 +133,17 @@ function migrateDashboardSyncTriggers() {
 }
 
 function inspectDashboardSyncTriggers() {
+  let installation = null
+  try {
+    installation = JSON.parse(
+      PropertiesService.getScriptProperties().getProperty(
+        DASHBOARD_SYNC_TRIGGER_INSTALLATION_PROPERTY
+      ) || 'null'
+    )
+  } catch (error) {
+    installation = null
+  }
+
   const managedHandlers = getManagedDashboardSyncHandlers_()
   const matchingTriggers = ScriptApp.getProjectTriggers()
     .filter(function (trigger) {
@@ -138,16 +160,42 @@ function inspectDashboardSyncTriggers() {
 
   const scheduleChecks = DASHBOARD_SYNC_TRIGGER_SCHEDULES.map(
     function (schedule) {
-      const count = matchingTriggers.filter(function (trigger) {
+      const matching = matchingTriggers.filter(function (trigger) {
         return trigger.handler === schedule.handler
-      }).length
+      })
+      const count = matching.length
+      const soleTrigger = matching[0]
+      const installedSchedule = Array.isArray(installation?.schedules)
+        ? installation.schedules.find(function (installed) {
+          return installed.handler === schedule.handler
+        })
+        : null
+      const installedHere = Boolean(
+        installation &&
+        installation.timezone === DASHBOARD_SYNC_TRIGGER_TIMEZONE &&
+        installedSchedule &&
+        installedSchedule.hour === schedule.hour &&
+        installedSchedule.minute === schedule.minute &&
+        installedSchedule.triggerId &&
+        count === 1 &&
+        soleTrigger.triggerId === installedSchedule.triggerId
+      )
+      const isClockTrigger = Boolean(
+        soleTrigger &&
+        soleTrigger.eventType === 'CLOCK' &&
+        soleTrigger.source === 'CLOCK'
+      )
 
       return {
         handler: schedule.handler,
         approximateTime: schedule.approximateTime,
         timezone: DASHBOARD_SYNC_TRIGGER_TIMEZONE,
         triggerCount: count,
-        valid: count === 1
+        eventType: soleTrigger ? soleTrigger.eventType : null,
+        source: soleTrigger ? soleTrigger.source : null,
+        scheduleMetadataAvailable: false,
+        verifiedByReinstall: installedHere,
+        valid: count === 1 && isClockTrigger && installedHere
       }
     }
   )
@@ -160,6 +208,10 @@ function inspectDashboardSyncTriggers() {
     valid: scheduleChecks.every(function (schedule) {
       return schedule.valid
     }) && retiredTriggerCount === 0,
+    scheduleMetadataAvailable: false,
+    verificationMethod: installation
+      ? 'current trigger IDs match the schedule installation record'
+      : 'unverified; run migrateDashboardSyncTriggers to reinstall safely',
     expected: {
       frequency: 'daily',
       timezone: DASHBOARD_SYNC_TRIGGER_TIMEZONE,

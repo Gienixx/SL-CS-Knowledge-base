@@ -39,11 +39,15 @@ repair the two managed daily synchronizations:
 
 Google Apps Script time triggers are approximate; they do not guarantee
 execution at the exact minute. The IANA timezone setting follows Eastern
-daylight-saving changes. The migration retains one of each desired trigger,
-removes duplicates and retired dashboard handlers, and creates only missing
-triggers. Re-running it is safe. Run `inspectDashboardSyncTriggers()` afterward
-and confirm that `valid` is `true` and that exactly two managed triggers are
-listed.
+daylight-saving changes. The migration deletes and reinstalls all managed
+triggers, including correctly named ones,
+and removes retired dashboard handlers. Apps Script does not expose the
+configured hour, minute, recurrence, or timezone for existing triggers, so
+reinstalling is required to replace a misconfigured trigger safely. The
+migration records the newly created trigger IDs and schedule configuration;
+`inspectDashboardSyncTriggers()` confirms that the current IDs still match
+that installation record. Re-running the migration is safe, but it replaces
+the managed triggers each time.
 
 The productivity importer reads each agent name and its three metric columns
 from the workbook's two header rows. Agent names and positions may change, but
@@ -56,6 +60,31 @@ duplicate metric records. Apps Script logs identify the failed stage, including
 source setup, properties, payload construction, and endpoint response. Authenticated
 malformed requests are also recorded as failed sync runs; unauthorized requests
 are rejected without creating a sync record.
+
+Agent keys are derived from workbook display names because the source does not
+provide immutable agent IDs. If a new key appears on a report date that already
+has productivity rows, the sync returns an identity conflict before writing any
+Analytics data. This may be a renamed header; resolve the identity explicitly
+before replaying those dates. The importer preserves historical rows and does
+not guess that two names belong to the same person.
+
+### Production release order
+
+1. Release the dashboard sync endpoint and its shared validation code through
+   the approved production site workflow.
+2. In the live workbook's Apps Script project, update `dashboard-sync.gs` and
+   `dashboard-trigger-migration.gs` from the same reviewed release commit.
+   Keep the existing `DASHBOARD_SYNC_URL` and `SHEET_SYNC_SECRET` script
+   properties.
+3. Run `migrateDashboardSyncTriggers()` and confirm its result is `valid: true`,
+   with exactly one trigger for each configured Eastern schedule. The migration
+   deletes and reinstalls all managed triggers because Apps Script does not
+   expose existing trigger schedule metadata.
+4. Run `syncAllDashboardData()` once as the controlled manual sync.
+5. Verify the latest `sheet_sync_runs` row is successful and covers the source
+   workbook's latest valid reporting date. Confirm Daily Volume,
+   Ticket Productivity, and Daily Drivers counts and keys, and verify
+   Reporting Operations no longer reports a stale synchronization.
 
 ## Operations
 

@@ -16,6 +16,7 @@ import {
   createSyncRun,
   insertRawRecords,
   updateSyncRun,
+  validateProductivityIdentityHistory,
   upsertDashboardRecords
 } from '../_shared/dashboard-sync-store.js'
 import {
@@ -182,10 +183,20 @@ async function persistMultiDatasetResult(environment, result) {
 async function runMultiDatasetSync(
   payload,
   environment,
-  syncRunId
+  syncRunId,
+  setStage
 ) {
+  setStage('process_analytics_data')
   const result = processMultiDatasetPayload(payload, syncRunId)
 
+  setStage('validate_productivity_identity')
+  await validateProductivityIdentityHistory(
+    environment.supabaseUrl,
+    environment.serviceRoleKey,
+    result.productivity.importedRecords
+  )
+
+  setStage('persist_analytics_data')
   await persistMultiDatasetResult(environment, result)
 
   const summary = getMultiDatasetSummary(result)
@@ -299,12 +310,13 @@ export async function onRequestPost(context) {
       validateSheetPayload(legacySheetData)
     }
 
-    stage = 'persist_analytics_data'
+    stage = 'process_analytics_data'
     const syncResult = isMultiDatasetPayload(payload)
       ? await runMultiDatasetSync(
           payload,
           environment,
-          syncRunId
+          syncRunId,
+          nextStage => { stage = nextStage }
         )
       : await runLegacySync(
           payload,
@@ -369,9 +381,11 @@ export async function onRequestPost(context) {
       }
     }
 
-    const status = stage === 'parse_payload' || stage === 'validate_payload'
-      ? 400
-      : 500
+    const status = error?.code === 'PRODUCTIVITY_IDENTITY_CONFLICT'
+      ? 409
+      : stage === 'parse_payload' || stage === 'validate_payload'
+        ? 400
+        : 500
 
     return jsonResponse(
       {
