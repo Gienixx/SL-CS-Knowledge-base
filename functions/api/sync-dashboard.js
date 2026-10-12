@@ -16,6 +16,7 @@ import {
   createSyncRun,
   insertRawRecords,
   updateSyncRun,
+  resolveProductivityIdentityMap,
   validateProductivityIdentityHistory,
   upsertDashboardRecords
 } from '../_shared/dashboard-sync-store.js'
@@ -188,6 +189,13 @@ async function runMultiDatasetSync(
 ) {
   setStage('process_analytics_data')
   const result = processMultiDatasetPayload(payload, syncRunId)
+
+  setStage('resolve_productivity_identity')
+  await resolveProductivityIdentityMap(
+    environment.supabaseUrl,
+    environment.serviceRoleKey,
+    result.productivity.importedRecords
+  )
 
   setStage('validate_productivity_identity')
   await validateProductivityIdentityHistory(

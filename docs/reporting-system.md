@@ -62,11 +62,16 @@ malformed requests are also recorded as failed sync runs; unauthorized requests
 are rejected without creating a sync record.
 
 Agent keys are derived from workbook display names because the source does not
-provide immutable agent IDs. If a new key appears on a report date that already
-has productivity rows, the sync returns an identity conflict before writing any
-Analytics data. This may be a renamed header; resolve the identity explicitly
-before replaying those dates. The importer preserves historical rows and does
-not guess that two names belong to the same person.
+provide immutable agent IDs. The importer first matches normalized source names
+against `agent_identity_map`, so a verified display-name change can keep using
+the existing stable key. If a new key appears on a report date that already has
+productivity rows, the sync returns an identity conflict before writing any
+Analytics data. Verify whether the changed header is the same person. For a
+verified rename, update that person's existing `agent_identity_map.agent_name`
+through authorized database administration while preserving `agent_key`, then
+replay the same reporting dates. For a different or new person, do not reuse an
+existing key. The importer preserves historical rows and does not guess that
+two names belong to the same person.
 
 ### Production release order
 

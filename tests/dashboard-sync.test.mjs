@@ -392,6 +392,7 @@ test('reimporting an existing report date after an agent rename is blocked befor
   const payload = buildIntegrityPayload()
   const originalFetch = globalThis.fetch
   const productivityRows = []
+  const identityRows = []
   const analyticsWrites = []
   const syncRunUpdates = []
   let nextSyncRun = 0
@@ -414,6 +415,13 @@ test('reimporting an existing report date after an agent rename is blocked befor
       return new Response(null, { status: 204 })
     }
 
+    if (path.endsWith('/rest/v1/agent_identity_map') && method === 'GET') {
+      return new Response(JSON.stringify(identityRows), {
+        status: 200,
+        headers: { 'Content-Type': 'application/json' }
+      })
+    }
+
     if (path.endsWith('/rest/v1/agent_productivity') && method === 'GET') {
       const dateFilter = parsedUrl.searchParams.get('report_date') || ''
       const requestedDates = dateFilter.startsWith('in.(')
@@ -434,7 +442,32 @@ test('reimporting an existing report date after an agent rename is blocked befor
       const records = JSON.parse(options.body || '[]')
       analyticsWrites.push({ path, records })
       if (path.endsWith('/rest/v1/agent_productivity')) {
-        productivityRows.push(...records)
+        records.forEach(record => {
+          const existingIndex = productivityRows.findIndex(existing =>
+            existing.report_date === record.report_date &&
+            existing.agent_key === record.agent_key
+          )
+          if (existingIndex === -1) {
+            productivityRows.push(record)
+          } else {
+            productivityRows[existingIndex] = {
+              ...productivityRows[existingIndex],
+              ...record
+            }
+          }
+
+          const mappedIdentity = identityRows.find(identity =>
+            identity.agent_key === record.agent_key
+          )
+          if (mappedIdentity) {
+            mappedIdentity.agent_name = record.agent_name
+          } else {
+            identityRows.push({
+              agent_key: record.agent_key,
+              agent_name: record.agent_name
+            })
+          }
+        })
       }
       return new Response(null, { status: 204 })
     }
@@ -480,28 +513,20 @@ test('reimporting an existing report date after an agent rename is blocked befor
     assert.equal(syncRunUpdates.at(-1).status, 'failed')
     assert.equal(syncRunUpdates.at(-1).rows_imported, 0)
 
-    const [renamedAgentHeaders, metricHeaders] = buildProductivityHeaders([
-      'Renamed Agent'
-    ])
-    const firstSeenAgentRow = blankRow(25)
-    firstSeenAgentRow[0] = '2026-06-02'
-    firstSeenAgentRow[1] = 12
-    firstSeenAgentRow[2] = 3
-    firstSeenAgentRow[3] = 4.5
-    payload.datasets.ticketProductivity.values = [
-      renamedAgentHeaders,
-      metricHeaders,
-      firstSeenAgentRow
-    ]
-
-    const newDateResponse = await sendSync()
-    assert.equal(newDateResponse.status, 200)
+    // Reconcile the verified rename by changing the display name on the
+    // existing stable identity-map row. The next replay reuses the old key.
+    identityRows[0].agent_name = 'Renamed Agent'
+    const writesBeforeReconciledReplay = analyticsWrites.length
+    const reconciledResponse = await sendSync()
+    assert.equal(reconciledResponse.status, 200)
+    assert.ok(analyticsWrites.length > writesBeforeReconciledReplay)
     assert.deepEqual(
-      productivityRows.map(row => [row.report_date, row.agent_key]),
-      [
-        ['2026-06-01', 'amora'],
-        ['2026-06-02', 'renamed_agent']
-      ]
+      productivityRows.map(row => [
+        row.report_date,
+        row.agent_key,
+        row.agent_name
+      ]),
+      [['2026-06-01', 'amora', 'Renamed Agent']]
     )
   } finally {
     globalThis.fetch = originalFetch

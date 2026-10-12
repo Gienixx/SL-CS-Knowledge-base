@@ -6,8 +6,8 @@ import {
 } from './mapped-record-batches.js'
 
 const RAW_INSERT_BATCH_SIZE = 100
-const PRODUCTIVITY_IDENTITY_DATE_BATCH_SIZE = 100
 const PRODUCTIVITY_IDENTITY_PAGE_SIZE = 500
+const PRODUCTIVITY_IDENTITY_DATE_BATCH_SIZE = 100
 
 async function supabaseRequest(
   supabaseUrl,
@@ -110,6 +110,94 @@ export async function updateSyncRun(
   )
 }
 
+function normalizeIdentityName(value) {
+  return typeof value === 'string'
+    ? value.normalize('NFKC').replace(/\s+/g, ' ').trim().toLowerCase()
+    : ''
+}
+
+/**
+ * Resolve explicitly reconciled source display names through the existing
+ * identity map. Unmapped names keep their dynamic header-derived key.
+ */
+export async function resolveProductivityIdentityMap(
+  supabaseUrl,
+  serviceRoleKey,
+  productivityRecords
+) {
+  const identityMap = []
+
+  for (
+    let offset = 0;
+    ;
+    offset += PRODUCTIVITY_IDENTITY_PAGE_SIZE
+  ) {
+    const rows = await supabaseRequest(
+      supabaseUrl,
+      serviceRoleKey,
+      'agent_identity_map?select=agent_key,agent_name' +
+        `&limit=${PRODUCTIVITY_IDENTITY_PAGE_SIZE}`,
+      {
+        method: 'GET',
+        headers: {
+          'Range-Unit': 'items',
+          Range: `${offset}-${offset + PRODUCTIVITY_IDENTITY_PAGE_SIZE - 1}`
+        }
+      }
+    )
+
+    if (!Array.isArray(rows)) {
+      throw new Error('Stored productivity identities could not be loaded.')
+    }
+
+    identityMap.push(...rows)
+    if (rows.length < PRODUCTIVITY_IDENTITY_PAGE_SIZE) break
+  }
+
+  const keyByNormalizedName = new Map()
+  identityMap.forEach(identity => {
+    const normalizedName = normalizeIdentityName(identity.agent_name)
+    if (!normalizedName) return
+
+    const existingKey = keyByNormalizedName.get(normalizedName)
+    if (existingKey && existingKey !== identity.agent_key) {
+      const error = new Error(
+        `Stored productivity identities contain an ambiguous name: ` +
+        `${identity.agent_name}. Resolve the identity map before syncing.`
+      )
+      error.code = 'PRODUCTIVITY_IDENTITY_CONFLICT'
+      throw error
+    }
+    keyByNormalizedName.set(normalizedName, identity.agent_key)
+  })
+
+  const keysByDate = new Map()
+  productivityRecords.forEach(record => {
+    const mappedKey = keyByNormalizedName.get(
+      normalizeIdentityName(record.agent_name)
+    )
+    if (mappedKey) record.agent_key = mappedKey
+
+    if (!record.report_date || !record.agent_key) return
+    if (!keysByDate.has(record.report_date)) {
+      keysByDate.set(record.report_date, new Map())
+    }
+
+    const namesByKey = keysByDate.get(record.report_date)
+    const previousName = namesByKey.get(record.agent_key)
+    if (previousName && previousName !== record.agent_name) {
+      const error = new Error(
+        `Ticket Productivity source names ${previousName} and ` +
+        `${record.agent_name} both resolve to key ${record.agent_key} ` +
+        `on ${record.report_date}. Resolve the identity map before syncing.`
+      )
+      error.code = 'PRODUCTIVITY_IDENTITY_CONFLICT'
+      throw error
+    }
+    namesByKey.set(record.agent_key, record.agent_name)
+  })
+}
+
 /**
  * A display-name-derived key cannot prove that a new source name is a new
  * person rather than a rename. Fail closed when a previously unseen key would
@@ -196,7 +284,9 @@ export async function validateProductivityIdentityHistory(
       'Ticket Productivity contains a new agent identity on report date ' +
       `${reportDate} that already has stored productivity history ` +
       `(${unseenKeys.join(', ')}). A changed header may represent an agent ` +
-      'rename. No Analytics rows were written; review the identity before retrying.'
+      'rename. No Analytics rows were written. Verify whether it is the same ' +
+      'person; if so, update that existing agent_identity_map display name ' +
+      'while preserving its agent_key, then retry.'
     )
     error.code = 'PRODUCTIVITY_IDENTITY_CONFLICT'
     throw error
