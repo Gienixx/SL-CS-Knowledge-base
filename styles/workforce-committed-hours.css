@@ -1,0 +1,32 @@
+.wf-committed-hours-toolbar {
+  grid-template-columns: repeat(4, minmax(150px, 1fr));
+}
+
+.wf-committed-hours-table {
+  min-width: 980px;
+}
+
+.wf-committed-hours-table td:last-child {
+  min-width: 96px;
+}
+
+.wf-committed-hours-table .wf-row-btn:disabled {
+  cursor: not-allowed;
+  opacity: .55;
+}
+
+.wf-committed-hours-table-wrap {
+  margin-top: 12px;
+}
+
+@media (max-width: 760px) {
+  .wf-committed-hours-toolbar {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 520px) {
+  .wf-committed-hours-toolbar {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}

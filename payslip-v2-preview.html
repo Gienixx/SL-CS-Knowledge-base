@@ -1,0 +1,76 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Payroll V2 Payslip | SocialLoop CS Base</title>
+  <link rel="stylesheet" href="./styles/button-theme.css?v=1">
+  <link rel="stylesheet" href="./styles/workforce-admin.css?v=2">
+  <link rel="stylesheet" href="./styles/payslip-v2-preview.css?v=5">
+  <link rel="stylesheet" href="./styles/site-theme.css?v=1">
+  <script src="./scripts/site-theme.js?v=1"></script>
+</head>
+<body class="payslip-v2-access-pending">
+  <main class="payslip-v2-page">
+    <header class="payslip-v2-page-header">
+      <a class="wf-link" id="payslipV2BackLink" href="./my-payslips.html">← My Payslips</a>
+      <div class="payslip-v2-toolbar" aria-label="Payslip actions">
+        <button class="wf-btn secondary" id="refreshPayrollV2PayslipButton" type="button">Refresh</button>
+        <button class="wf-btn primary" id="printPayrollV2PayslipButton" type="button" hidden>Print / Save as PDF</button>
+      </div>
+    </header>
+
+    <p id="payrollV2PayslipMessage" class="wf-message payslip-v2-message" aria-live="polite">Loading your saved Payroll V2 payslip…</p>
+
+    <article id="payrollV2PayslipSheet" class="payslip-v2-sheet" hidden>
+      <header class="payslip-v2-company-header">
+        <div class="payslip-v2-brand-lockup">
+          <img class="payslip-v2-brand-logo" src="./assets/ES.png" alt="Eureka Surveys logo">
+          <div class="payslip-v2-company-name">
+            <h1>Eureka Surveys</h1>
+            <p>SocialLoop LLC</p>
+            <p class="payslip-v2-company-address">1111 Brickell Ave Fl 10 Miami, FL 33131</p>
+            <p class="payslip-v2-company-phone">Phone: 435-234-3729</p>
+          </div>
+        </div>
+        <span id="payrollV2PayslipStatus" class="my-payslips-v2-status"></span>
+      </header>
+
+      <section class="payslip-v2-payroll-info" aria-label="Employee and payroll information">
+        <div class="payslip-v2-info-group payslip-v2-employee-info">
+          <div class="payslip-v2-info-name"><span>Name</span><strong id="payrollV2PayslipEmployeeName">—</strong></div>
+          <div><span>Hire Date</span><strong id="payrollV2PayslipHireDate">—</strong></div>
+          <div><span>Hourly Rate</span><strong id="payrollV2PayslipHourlyRate">—</strong></div>
+        </div>
+        <div class="payslip-v2-info-group payslip-v2-period-info">
+          <div><span>Pay Period</span><strong id="payrollV2PayslipPeriod">—</strong></div>
+          <div><span>Pay Out Date</span><strong id="payrollV2PayslipPaymentDate">—</strong></div>
+        </div>
+      </section>
+
+      <section class="payslip-v2-section" aria-labelledby="payrollV2ItemsHeading">
+        <div class="payslip-v2-section-heading">
+          <h2 id="payrollV2ItemsHeading">Earnings and deductions</h2>
+          <span id="payrollV2PayslipCurrency"></span>
+        </div>
+        <div class="payslip-v2-table-wrap">
+          <table class="payslip-v2-table payslip-v2-earnings-table">
+            <thead><tr><th>Type</th><th>Description</th><th>Date</th><th>Regular</th><th>Additional</th><th>Total</th><th>Rate</th><th>Amount</th></tr></thead>
+            <tbody id="payrollV2PayslipItemsBody"></tbody>
+          </table>
+        </div>
+      </section>
+
+      <section class="payslip-v2-totals" aria-label="Payroll totals">
+        <div><span>Gross pay</span><strong id="payrollV2PayslipGross">—</strong></div>
+        <div><span>Deductions</span><strong id="payrollV2PayslipDeductions">—</strong></div>
+        <div class="net"><span>Net pay</span><strong id="payrollV2PayslipNet">—</strong></div>
+        <div><span>PayPal Conversion Rate</span><strong id="payrollV2PayslipPaypalRate">—</strong></div>
+      </section>
+
+      <footer class="payslip-v2-footnote">This payslip displays the saved Payroll V2 calculation, items, and snapshots for this payroll record.</footer>
+    </article>
+  </main>
+  <script type="module" src="./scripts/payslip-v2-preview.js?v=6"></script>
+</body>
+</html>

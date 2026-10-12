@@ -111,3 +111,27 @@ test('V2 finalization prevents duplicate submissions and always releases its in-
   }), { error })
   assert.equal(state.finalizing, false)
 })
+
+test('Completed Payroll V2 payslip links open the restored protected V2 preview route', async () => {
+  const [payroll, page, script, stylesheet, formatting, visibility] = await Promise.all([
+    read('../scripts/payroll-v2.js'),
+    read('../payslip-v2-preview.html'),
+    read('../scripts/payslip-v2-preview.js'),
+    read('../styles/payslip-v2-preview.css'),
+    read('../shared/payroll-v2-payslip-formatting.mjs'),
+    read('../shared/payroll-v2-payslip-visibility.mjs')
+  ])
+
+  assert.match(payroll, /payslip-v2-preview\.html\?\$\{new URLSearchParams\(\{ record: recordId, admin: '1' \}\)\}/)
+  assert.match(page, /styles\/payslip-v2-preview\.css\?v=\d+/)
+  assert.match(page, /scripts\/payslip-v2-preview\.js\?v=\d+/)
+  assert.match(script, /'payroll_v2_get_admin_completed_payslip'/)
+  assert.match(script, /'payroll_v2_get_my_payslip'/)
+  assert.match(script, /hasWorkforcePermission\(access, permission\)/)
+  assert.match(script, /window\.location\.replace\(adminPreview \? '\.\/payroll-v2\.html' : '\.\/my-payslips\.html'\)/)
+  assert.match(script, /isVisiblePayrollV2Payslip\(data\)/)
+  assert.match(visibility, /status === 'finalized'/)
+  assert.match(visibility, /recalculation_pending !== true/)
+  assert.match(formatting, /createPayrollV2PayslipRow/)
+  assert.ok(stylesheet.length > 1000)
+})
