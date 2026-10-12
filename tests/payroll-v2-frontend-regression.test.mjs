@@ -5,6 +5,7 @@ import {
   canFinalizeEmployeeAction,
   submitEmployeeFinalization
 } from '../scripts/payroll-v2-finalization.mjs'
+import { visibleCompletedPayslips } from '../scripts/payroll-v2-completed-count.mjs'
 
 const read = path => readFile(new URL(path, import.meta.url), 'utf8')
 
@@ -134,4 +135,20 @@ test('Completed Payroll V2 payslip links open the restored protected V2 preview 
   assert.match(visibility, /recalculation_pending !== true/)
   assert.match(formatting, /createPayrollV2PayslipRow/)
   assert.ok(stylesheet.length > 1000)
+})
+
+test('Payroll History payslip count reconciles to the selected period completed payslip list', async () => {
+  const script = await read('../scripts/payroll-v2.js')
+  const rows = [
+    { payroll_v2_record_id: 'approved-1', status: 'Approved' },
+    { payroll_v2_record_id: 'finalized-1', status: 'finalized' },
+    { payroll_v2_record_id: 'calculated-1', status: 'calculated' },
+    { payroll_v2_record_id: '', status: 'approved' }
+  ]
+
+  assert.equal(visibleCompletedPayslips(rows).length, 2)
+  assert.deepEqual(visibleCompletedPayslips(null), [])
+  assert.match(script, /updatePeriodPayslipCount\(selectedPeriod\(\)\?\.period_id, completed\.length\)/)
+  assert.match(script, /updatePeriodPayslipCount\(period\.period_id, '…'\)/)
+  assert.match(script, /updatePeriodPayslipCount\(period\.period_id, '—'\)/)
 })
