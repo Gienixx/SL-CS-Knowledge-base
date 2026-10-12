@@ -72,10 +72,16 @@ function syncPhase3Step9Dashboard() {
 
 function syncAllDashboardData() {
   const lock = LockService.getScriptLock()
-  lock.waitLock(30000)
+  let lockAcquired = false
+  let stage = 'acquire_lock'
 
   try {
+    lock.waitLock(30000)
+    lockAcquired = true
+
+    stage = 'load_workbook'
     const spreadsheet = SpreadsheetApp.getActive()
+    stage = 'read_script_properties'
     const properties = PropertiesService.getScriptProperties()
     const configuredEndpoint = properties.getProperty(
       SIMPLE_DASHBOARD_SYNC.endpointProperty
@@ -84,16 +90,21 @@ function syncAllDashboardData() {
       SIMPLE_DASHBOARD_SYNC.secretProperty
     )
 
+    stage = 'validate_source_tabs'
     setupPhase3Step9Tabs()
 
+    stage = 'validate_script_properties'
     if (!configuredEndpoint || !secret) {
       throw new Error(
         'Set DASHBOARD_SYNC_URL and SHEET_SYNC_SECRET in Script Properties.'
       )
     }
 
+    stage = 'build_payload'
     const endpoint = resolveSimpleDashboardEndpoint_(configuredEndpoint)
     const payload = buildSimpleDashboardPayload_(spreadsheet)
+
+    stage = 'contact_sync_endpoint'
     const response = UrlFetchApp.fetch(endpoint, {
       method: 'post',
       contentType: 'application/json',
@@ -104,6 +115,7 @@ function syncAllDashboardData() {
       muteHttpExceptions: true
     })
 
+    stage = 'validate_endpoint_response'
     const status = response.getResponseCode()
     const responseText = response.getContentText()
     let result
@@ -132,8 +144,16 @@ function syncAllDashboardData() {
 
     console.log(JSON.stringify(result, null, 2))
     return result
+  } catch (error) {
+    console.error(JSON.stringify({
+      event: 'dashboard_sync_failed',
+      stage: stage,
+      timestamp: new Date().toISOString(),
+      error: String(error && error.message ? error.message : error)
+    }))
+    throw error
   } finally {
-    lock.releaseLock()
+    if (lockAcquired) lock.releaseLock()
   }
 }
 

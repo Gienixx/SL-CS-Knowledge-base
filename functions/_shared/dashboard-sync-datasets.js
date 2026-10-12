@@ -5,6 +5,7 @@ import {
   DISTRIBUTION_MAPPING
 } from '../../config/distribution-mapping.js'
 import {
+  getProductivityAgentBlocks,
   PRODUCTIVITY_MAPPING
 } from '../../config/productivity-mapping.js'
 import {
@@ -269,7 +270,6 @@ function validateDistributionHeaders(dataset) {
 
 function validateProductivityHeaders(dataset) {
   const agentHeaderRow = dataset.values[0]
-  const metricHeaderRow = dataset.values[1]
 
   assertHeader(
     agentHeaderRow[PRODUCTIVITY_MAPPING.source.dateColumn.sourceIndex],
@@ -277,30 +277,7 @@ function validateProductivityHeaders(dataset) {
     'Ticket Productivity date header'
   )
 
-  PRODUCTIVITY_MAPPING.agents.forEach(agent => {
-    const firstMetric = agent.metrics[0]
-    const acceptedNames = [
-      agent.sourceName,
-      ...agent.sourceNameAliases
-    ].map(normalizeText)
-
-    if (!acceptedNames.includes(
-      normalizeText(agentHeaderRow[firstMetric.sourceIndex])
-    )) {
-      throw new Error(
-        `Ticket Productivity agent header ${agent.agentName} ` +
-        'does not match the configured workbook mapping.'
-      )
-    }
-
-    agent.metrics.forEach(metric => {
-      assertHeader(
-        metricHeaderRow[metric.sourceIndex],
-        metric.sourceHeader,
-        `Ticket Productivity column ${metric.sourceColumn}`
-      )
-    })
-  })
+  return getProductivityAgentBlocks(dataset)
 }
 
 function validateDriverHeaders(dataset) {
@@ -465,6 +442,7 @@ function processDistributionDataset(dataset, importedAt) {
 
 function processProductivityDataset(dataset, syncRunId, importedAt) {
   const headerRows = dataset.values.slice(0, 2)
+  const agentBlocks = getProductivityAgentBlocks(dataset)
   const rows = dataset.values.slice(2)
   const importedRecords = []
   const rawRecords = []
@@ -478,7 +456,7 @@ function processProductivityDataset(dataset, syncRunId, importedAt) {
       PRODUCTIVITY_MAPPING.source.dateColumn.sourceIndex
     ]
     const reportDate = normalizeDate(rawDate)
-    const hasAnyMetricValue = PRODUCTIVITY_MAPPING.agents.some(
+    const hasAnyMetricValue = agentBlocks.some(
       agent => agent.metrics.some(
         metric => !isBlank(row[metric.sourceIndex])
       )
@@ -511,7 +489,7 @@ function processProductivityDataset(dataset, syncRunId, importedAt) {
       return
     }
 
-    PRODUCTIVITY_MAPPING.agents.forEach(agent => {
+    agentBlocks.forEach(agent => {
       const valuesByTarget = new Map(
         agent.metrics.map(metric => [
           metric.targetColumn,

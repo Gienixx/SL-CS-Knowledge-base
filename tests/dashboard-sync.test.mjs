@@ -8,6 +8,7 @@ import {
   DISTRIBUTION_MAPPING
 } from '../config/distribution-mapping.js'
 import {
+  getProductivityAgentBlocks,
   PRODUCTIVITY_MAPPING
 } from '../config/productivity-mapping.js'
 import {
@@ -21,6 +22,7 @@ import {
   processMultiDatasetPayload,
   validateMultiDatasetPayload
 } from '../functions/_shared/dashboard-sync-datasets.js'
+import { onRequestPost } from '../functions/api/sync-dashboard.js'
 
 function blankRow(length) {
   return Array.from({ length }, () => '')
@@ -40,15 +42,18 @@ function buildDailyVolumeHeaders() {
   return headers
 }
 
-function buildProductivityHeaders() {
+function buildProductivityHeaders(agentNames = [
+  'Amora', 'Ford', 'Gen', 'Arez', 'Tristan', 'Jerson', 'Jean', 'Arby'
+]) {
   const agentHeaders = blankRow(25)
   const metricHeaders = blankRow(25)
   agentHeaders[0] = PRODUCTIVITY_MAPPING.source.dateColumn.sourceHeader
 
-  PRODUCTIVITY_MAPPING.agents.forEach(agent => {
-    agentHeaders[agent.metrics[0].sourceIndex] = agent.sourceName
-    agent.metrics.forEach(metric => {
-      metricHeaders[metric.sourceIndex] = metric.sourceHeader
+  agentNames.forEach((agentName, agentIndex) => {
+    const startIndex = 1 + agentIndex * PRODUCTIVITY_MAPPING.agentBlockWidth
+    agentHeaders[startIndex] = agentName
+    PRODUCTIVITY_MAPPING.metrics.forEach((metric, metricIndex) => {
+      metricHeaders[startIndex + metricIndex] = metric.sourceHeader
     })
   })
 
@@ -96,21 +101,18 @@ function buildIntegrityPayload() {
   const [agentHeaders, metricHeaders] = buildProductivityHeaders()
   const validAgentRow = blankRow(25)
   validAgentRow[0] = '2026-06-01'
-  const amora = PRODUCTIVITY_MAPPING.agents[0]
-  validAgentRow[amora.metrics[0].sourceIndex] = 0
-  validAgentRow[amora.metrics[1].sourceIndex] = 0
-  validAgentRow[amora.metrics[2].sourceIndex] = 0
+  validAgentRow[1] = 0
+  validAgentRow[2] = 0
+  validAgentRow[3] = 0
 
   const negativeAgentRow = blankRow(25)
   negativeAgentRow[0] = '2026-06-02'
-  const ford = PRODUCTIVITY_MAPPING.agents[1]
-  negativeAgentRow[ford.metrics[0].sourceIndex] = -1
+  negativeAgentRow[4] = -1
 
   const partialAgentRow = blankRow(25)
   partialAgentRow[0] = '2026-06-03'
-  const gen = PRODUCTIVITY_MAPPING.agents[2]
-  partialAgentRow[gen.metrics[0].sourceIndex] = 2
-  partialAgentRow[gen.metrics[1].sourceIndex] = -1
+  partialAgentRow[7] = 2
+  partialAgentRow[8] = -1
 
   const missingAgentBlocksRow = blankRow(25)
   missingAgentBlocksRow[0] = '2099-12-31'
@@ -251,4 +253,349 @@ test('multi-dataset processing handles Step 10 integrity edge cases', () => {
       warning.includes('not a valid non-negative integer')
     )
   )
+})
+
+test('Ticket Productivity derives reordered and changed agent blocks from headers', () => {
+  const payload = buildIntegrityPayload()
+  const dataset = payload.datasets.ticketProductivity
+  const [agentHeaders, metricHeaders] = buildProductivityHeaders([
+    'New Support Agent', 'Amora'
+  ])
+  const row = blankRow(25)
+  row[0] = '2026-06-05'
+  row[1] = 4
+  row[2] = 2
+  row[3] = 6.5
+  row[4] = 7
+  row[5] = 3
+  row[6] = 5.25
+  dataset.values = [agentHeaders, metricHeaders, row]
+
+  assert.doesNotThrow(() => validateMultiDatasetPayload(payload))
+  const blocks = getProductivityAgentBlocks(dataset)
+  assert.deepEqual(
+    blocks.map(block => [block.agentKey, block.agentName]),
+    [['new_support_agent', 'New Support Agent'], ['amora', 'Amora']]
+  )
+
+  const result = processMultiDatasetPayload(payload, 'dynamic-agent-test')
+  assert.deepEqual(
+    result.productivity.importedRecords.map(record => [
+      record.agent_key,
+      record.solved_tickets,
+      record.open_tickets,
+      record.aht_value
+    ]),
+    [['new_support_agent', 4, 2, 6.5], ['amora', 7, 3, 5.25]]
+  )
+})
+
+test('Ticket Productivity rejects a shifted agent header instead of mis-mapping it', () => {
+  const payload = buildIntegrityPayload()
+  const headers = payload.datasets.ticketProductivity.values[0]
+  headers[2] = headers[1]
+  headers[1] = ''
+
+  assert.throws(
+    () => validateMultiDatasetPayload(payload),
+    /agent header at column C is inside a metric block/
+  )
+})
+
+test('Ticket Productivity rejects missing or malformed metric headers before import', () => {
+  const payload = buildIntegrityPayload()
+  payload.datasets.ticketProductivity.values[1][2] = 'Solved Tickets'
+
+  assert.throws(
+    () => validateMultiDatasetPayload(payload),
+    /Amora column C must be Open Tickets/
+  )
+
+  const missingAgentPayload = buildIntegrityPayload()
+  missingAgentPayload.datasets.ticketProductivity.values[0][1] = ''
+
+  assert.throws(
+    () => validateMultiDatasetPayload(missingAgentPayload),
+    /metric block at column B is missing its agent header/
+  )
+})
+
+test('Ticket Productivity rejects data under unnamed blocks rather than dropping it', () => {
+  const payload = buildIntegrityPayload()
+  const dataset = payload.datasets.ticketProductivity
+  const [agentHeaders, metricHeaders] = buildProductivityHeaders(['Amora'])
+  const row = blankRow(25)
+  row[0] = '2026-06-05'
+  row[1] = 1
+  row[4] = 2
+  dataset.values = [agentHeaders, metricHeaders, row]
+
+  assert.throws(
+    () => validateMultiDatasetPayload(payload),
+    /data under the unnamed block at column E/
+  )
+})
+
+test('malformed workbook headers are recorded as failed and write no analytics rows', async () => {
+  const payload = buildIntegrityPayload()
+  payload.datasets.ticketProductivity.values[1][2] = 'Solved Tickets'
+  const originalFetch = globalThis.fetch
+  const requests = []
+
+  globalThis.fetch = async (url, options = {}) => {
+    requests.push({
+      url: String(url),
+      method: options.method,
+      body: options.body ? JSON.parse(options.body) : null
+    })
+    if (String(url).endsWith('/rest/v1/sheet_sync_runs')) {
+      return new Response(JSON.stringify([{ id: 'sync-test-id' }]), {
+        status: 201,
+        headers: { 'Content-Type': 'application/json' }
+      })
+    }
+    return new Response(null, { status: 204 })
+  }
+
+  try {
+    const response = await onRequestPost({
+      request: new Request('https://example.test/api/sync-dashboard', {
+        method: 'POST',
+        headers: {
+          Authorization: 'Bearer test-secret',
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify(payload)
+      }),
+      env: {
+        SHEET_SYNC_SECRET: 'test-secret',
+        SUPABASE_URL: 'https://project.supabase.co',
+        SUPABASE_SERVICE_ROLE_KEY: 'test-service-role'
+      }
+    })
+    const result = await response.json()
+
+    assert.equal(response.status, 400)
+    assert.match(result.error, /Amora column C must be Open Tickets/)
+    assert.deepEqual(
+      requests.map(request => request.method + ' ' + request.url.split('/').pop()),
+      ['POST sheet_sync_runs', 'PATCH sheet_sync_runs?id=eq.sync-test-id']
+    )
+    assert.equal(requests[1].body.status, 'failed')
+    assert.match(requests[1].body.error_message, /Amora column C must be Open Tickets/)
+  } finally {
+    globalThis.fetch = originalFetch
+  }
+})
+
+test('agent renames preserve identity and registered new agents can be imported', async () => {
+  const payload = buildIntegrityPayload()
+  const originalFetch = globalThis.fetch
+  const productivityRows = []
+  const identityRows = []
+  const analyticsWrites = []
+  const syncRunUpdates = []
+  let nextSyncRun = 0
+
+  globalThis.fetch = async (url, options = {}) => {
+    const parsedUrl = new URL(String(url))
+    const path = parsedUrl.pathname
+    const method = options.method || 'GET'
+
+    if (path.endsWith('/rest/v1/sheet_sync_runs') && method === 'POST') {
+      nextSyncRun += 1
+      return new Response(JSON.stringify([{ id: `sync-${nextSyncRun}` }]), {
+        status: 201,
+        headers: { 'Content-Type': 'application/json' }
+      })
+    }
+
+    if (path.endsWith('/rest/v1/sheet_sync_runs') && method === 'PATCH') {
+      syncRunUpdates.push(JSON.parse(options.body))
+      return new Response(null, { status: 204 })
+    }
+
+    if (path.endsWith('/rest/v1/agent_identity_map') && method === 'GET') {
+      return new Response(JSON.stringify(identityRows), {
+        status: 200,
+        headers: { 'Content-Type': 'application/json' }
+      })
+    }
+
+    if (path.endsWith('/rest/v1/agent_productivity') && method === 'GET') {
+      const dateFilter = parsedUrl.searchParams.get('report_date') || ''
+      const requestedDates = dateFilter.startsWith('in.(')
+        ? new Set(dateFilter.slice(4, -1).split(','))
+        : new Set()
+      const rows = productivityRows.filter(row =>
+        requestedDates.has(row.report_date)
+      )
+      const range = options.headers?.Range || '0-499'
+      const [start, end] = range.split('-').map(Number)
+      return new Response(JSON.stringify(rows.slice(start, end + 1)), {
+        status: 200,
+        headers: { 'Content-Type': 'application/json' }
+      })
+    }
+
+    if (method === 'POST' && !path.endsWith('/rest/v1/sheet_sync_runs')) {
+      const records = JSON.parse(options.body || '[]')
+      analyticsWrites.push({ path, records })
+      if (path.endsWith('/rest/v1/agent_productivity')) {
+        records.forEach(record => {
+          const existingIndex = productivityRows.findIndex(existing =>
+            existing.report_date === record.report_date &&
+            existing.agent_key === record.agent_key
+          )
+          if (existingIndex === -1) {
+            productivityRows.push(record)
+          } else {
+            productivityRows[existingIndex] = {
+              ...productivityRows[existingIndex],
+              ...record
+            }
+          }
+
+          const mappedIdentity = identityRows.find(identity =>
+            identity.agent_key === record.agent_key
+          )
+          if (mappedIdentity) {
+            mappedIdentity.agent_name = record.agent_name
+          } else {
+            identityRows.push({
+              agent_key: record.agent_key,
+              agent_name: record.agent_name,
+              dashboard_sync_approved: false
+            })
+          }
+        })
+      }
+      return new Response(null, { status: 204 })
+    }
+
+    throw new Error(`Unexpected Supabase request: ${method} ${parsedUrl}`)
+  }
+
+  const sendSync = async () => onRequestPost({
+    request: new Request('https://example.test/api/sync-dashboard', {
+      method: 'POST',
+      headers: {
+        Authorization: 'Bearer test-secret',
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify(payload)
+    }),
+    env: {
+      SHEET_SYNC_SECRET: 'test-secret',
+      SUPABASE_URL: 'https://project.supabase.co',
+      SUPABASE_SERVICE_ROLE_KEY: 'test-service-role'
+    }
+  })
+
+  try {
+    const firstResponse = await sendSync()
+    assert.equal(firstResponse.status, 200)
+    assert.equal(productivityRows.length, 1)
+    assert.equal(productivityRows[0].agent_key, 'amora')
+    const writesAfterFirstImport = analyticsWrites.length
+
+    payload.datasets.ticketProductivity.values[0][1] = 'Renamed Agent'
+    const renamedResponse = await sendSync()
+    const renamedResult = await renamedResponse.json()
+
+    assert.equal(renamedResponse.status, 409)
+    assert.match(renamedResult.error, /new agent identity on report date 2026-06-01/)
+    assert.match(renamedResult.error, /may represent an agent rename/)
+    assert.equal(analyticsWrites.length, writesAfterFirstImport)
+    assert.deepEqual(
+      productivityRows.map(row => [row.report_date, row.agent_key]),
+      [['2026-06-01', 'amora']]
+    )
+    assert.equal(syncRunUpdates.at(-1).status, 'failed')
+    assert.equal(syncRunUpdates.at(-1).rows_imported, 0)
+
+    // Reconcile the verified rename by changing the display name on the
+    // existing stable identity-map row. The next replay reuses the old key.
+    identityRows[0].agent_name = 'Renamed Agent'
+    const writesBeforeReconciledReplay = analyticsWrites.length
+    const reconciledResponse = await sendSync()
+    assert.equal(reconciledResponse.status, 200)
+    assert.ok(analyticsWrites.length > writesBeforeReconciledReplay)
+    assert.deepEqual(
+      productivityRows.map(row => [
+        row.report_date,
+        row.agent_key,
+        row.agent_name
+      ]),
+      [['2026-06-01', 'amora', 'Renamed Agent']]
+    )
+
+    // A genuinely new agent must be registered and explicitly approved
+    // before its first import onto a date that already has team history.
+    identityRows.push({
+      agent_key: 'new_support_agent',
+      agent_name: 'New Support Agent',
+      dashboard_sync_approved: true
+    })
+    const [agentHeaders, metricHeaders] = buildProductivityHeaders([
+      'Renamed Agent', 'New Support Agent'
+    ])
+    const row = blankRow(25)
+    row[0] = '2026-06-01'
+    row[1] = 8
+    row[2] = 2
+    row[3] = 5.25
+    row[4] = 4
+    row[5] = 1
+    row[6] = 6.5
+    payload.datasets.ticketProductivity.values = [
+      agentHeaders,
+      metricHeaders,
+      row
+    ]
+
+    const registeredAgentResponse = await sendSync()
+    assert.equal(registeredAgentResponse.status, 200)
+    assert.deepEqual(
+      productivityRows
+        .filter(productivityRow => productivityRow.report_date === '2026-06-01')
+        .map(productivityRow => productivityRow.agent_key)
+        .sort(),
+      ['amora', 'new_support_agent']
+    )
+  } finally {
+    globalThis.fetch = originalFetch
+  }
+})
+
+test('unauthorized synchronization requests are rejected before database writes', async () => {
+  const originalFetch = globalThis.fetch
+  let databaseRequests = 0
+  globalThis.fetch = async () => {
+    databaseRequests += 1
+    throw new Error('unauthorized requests must not access Supabase')
+  }
+
+  try {
+    const response = await onRequestPost({
+      request: new Request('https://example.test/api/sync-dashboard', {
+        method: 'POST',
+        headers: {
+          Authorization: 'Bearer wrong-secret',
+          'Content-Type': 'application/json'
+        },
+        body: '{}'
+      }),
+      env: {
+        SHEET_SYNC_SECRET: 'test-secret',
+        SUPABASE_URL: 'https://project.supabase.co',
+        SUPABASE_SERVICE_ROLE_KEY: 'test-service-role'
+      }
+    })
+
+    assert.equal(response.status, 401)
+    assert.equal(databaseRequests, 0)
+  } finally {
+    globalThis.fetch = originalFetch
+  }
 })
