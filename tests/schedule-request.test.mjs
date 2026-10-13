@@ -1,6 +1,7 @@
 import assert from 'node:assert/strict'
 import { readFile } from 'node:fs/promises'
 import test from 'node:test'
+import { canSubmitOwnScheduleRequest } from '../shared/schedule-request-capabilities.mjs'
 
 const read = path => readFile(new URL(`../${path}`, import.meta.url), 'utf8')
 
@@ -47,11 +48,19 @@ test('Schedule Request uses three role-aware accessible tabs', async () => {
   assert.match(page, /id="newScheduleRequestPanel"[^>]*role="tabpanel"/)
   assert.match(page, /id="scheduleRequestApprovalPanel"[^>]*role="tabpanel"/)
   assert.match(page, /id="scheduleRequestHistoryPanel"[^>]*role="tabpanel"/)
-  assert.match(script, /elements\.newRequestTab\.disabled = isApproverView/)
+  assert.match(script, /elements\.newRequestTab\.disabled = !canSubmitRequests/)
   assert.match(script, /elements\.approvalTab\.disabled = !isApproverView/)
-  assert.match(script, /activateRequestTab\(isApproverView \? 'approval' : 'new'\)/)
+  assert.match(script, /activateRequestTab\(canSubmitRequests \? 'new' : 'approval'\)/)
+  assert.match(script, /canSubmitRequests = canSubmitOwnScheduleRequest\(access\)/)
   assert.match(script, /event\.key === 'ArrowRight'/)
   assert.match(script, /event\.key === 'Home'/)
+})
+
+test('dual-role admin-agent can submit and approve their own requests', () => {
+  assert.equal(canSubmitOwnScheduleRequest({ allowed: true, is_admin: true, is_agent: true }), true)
+  assert.equal(canSubmitOwnScheduleRequest({ allowed: true, is_admin: true, is_agent: false }), false)
+  assert.equal(canSubmitOwnScheduleRequest({ allowed: true, is_admin: false, is_agent: true }), true)
+  assert.equal(canSubmitOwnScheduleRequest({ allowed: false, is_admin: true, is_agent: true }), false)
 })
 
 test('production-forward request migration reuses the leave ledger and canonical schedules', async () => {

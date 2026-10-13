@@ -273,9 +273,12 @@
         <div><dt>Paid Leave</dt><dd id="finalizeEmployeeLeave">—</dd></div>
         <div><dt>Committed Hours</dt><dd id="finalizeEmployeeCommitted">—</dd></div>
         <div><dt>Manual Earnings</dt><dd id="finalizeEmployeeManual">—</dd></div>
+        <div><dt>Earnings Subtotal</dt><dd id="finalizeEmployeeEarningsSubtotal">—</dd></div>
+        <div><dt>Deductions Subtotal</dt><dd id="finalizeEmployeeDeductionsSubtotal">—</dd></div>
         <div><dt>Gross Pay</dt><dd id="finalizeEmployeeGross">—</dd></div>
-        <div><dt>Total Deductions</dt><dd id="finalizeEmployeeDeductions">—</dd></div>
         <div><dt>Net Pay</dt><dd id="finalizeEmployeeNet">—</dd></div>
+        <div><dt>PayPal Conversion Rate</dt><dd id="finalizeEmployeePaypalRate">—</dd></div>
+        <div><dt>PayPal payout (PHP)</dt><dd id="finalizeEmployeePaypalAmount">—</dd></div>
       </dl>
 
       <section aria-labelledby="finalizeRateHeading">
@@ -300,21 +303,21 @@
       </section>
 
       <section aria-labelledby="finalizeItemsHeading">
-        <h3 id="finalizeItemsHeading">Persisted Payslip Items</h3>
+        <h3 id="finalizeItemsHeading">Earnings</h3>
         <div class="payroll-v2-table-wrap">
           <table>
             <thead><tr><th scope="col">Type</th><th scope="col">Work Date</th><th scope="col">Description</th><th scope="col">Hours</th><th scope="col">Rate</th><th scope="col">Amount</th></tr></thead>
-            <tbody id="finalizeEmployeeItemsBody"><tr><td colspan="6">No saved payslip items.</td></tr></tbody>
+            <tbody id="finalizeEmployeeItemsBody"><tr><td colspan="6">No saved earnings.</td></tr></tbody>
           </table>
         </div>
       </section>
 
       <section aria-labelledby="finalizeDeductionsHeading">
-        <h3 id="finalizeDeductionsHeading">Approved Deductions</h3>
+        <h3 id="finalizeDeductionsHeading">Deductions</h3>
         <div class="payroll-v2-table-wrap">
           <table>
-            <thead><tr><th scope="col">Description</th><th scope="col">Amount</th></tr></thead>
-            <tbody id="finalizeEmployeeDeductionsBody"><tr><td colspan="2">No approved deductions.</td></tr></tbody>
+            <thead><tr><th scope="col">Type</th><th scope="col">Work Date</th><th scope="col">Description</th><th scope="col">Hours</th><th scope="col">Rate</th><th scope="col">Amount</th></tr></thead>
+            <tbody id="finalizeEmployeeDeductionsBody"><tr><td colspan="6">No deductions.</td></tr></tbody>
           </table>
         </div>
       </section>
@@ -409,6 +412,10 @@
     <div class="payroll-v2-placeholder">
       <h2 id="voidEmployeeAdjustmentTitle">Void Payroll Adjustment?</h2>
       <p id="voidEmployeeAdjustmentSummary"></p>
+      <label id="voidEmployeeAdjustmentReasonField" hidden>
+        <span>Reason (required)</span>
+        <textarea id="voidEmployeeAdjustmentReason" name="voidReason" minlength="5" maxlength="1000" rows="3"></textarea>
+      </label>
       <p>This adjustment will remain in Payroll V2 history and will no longer be included in Preview Payroll.</p>
       <p id="voidEmployeeAdjustmentError" class="payroll-v2-form-error" role="alert"></p>
       <div class="payroll-v2-dialog-actions">
@@ -462,6 +469,6 @@
     </div>
   </dialog>
 
-  <script type="module" src="./scripts/payroll-v2.js?v=23"></script>
+  <script type="module" src="./scripts/payroll-v2.js?v=24"></script>
 </body>
 </html>

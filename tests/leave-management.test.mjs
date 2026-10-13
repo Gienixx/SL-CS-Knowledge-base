@@ -26,7 +26,7 @@ test('leave requests provide separate agent submission and administrator approva
   assert.match(script, /workforce_cancel_leave_request/)
   assert.match(script, /workforce_review_leave_request/)
   assert.match(script, /hasWorkforcePermission\(access, 'approve_leave'\)/)
-  assert.match(script, /elements\.submissionSection\.hidden = isApproverView/)
+  assert.match(script, /elements\.submissionSection\.hidden = !canSubmitRequests/)
   assert.match(script, /elements\.approvalSection\.hidden = !isApproverView/)
   assert.match(script, /elements\.page\.hidden = false/)
   assert.match(script, /classList\.remove\('leave-role-pending'\)/)

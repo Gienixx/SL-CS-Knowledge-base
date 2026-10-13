@@ -7,10 +7,13 @@ import {
 import { isVisiblePayrollV2Payslip } from '../shared/payroll-v2-payslip-visibility.mjs'
 import {
   createPayrollV2PayslipRow,
+  formatPaypalPayout,
   formatPayrollMoney,
   formatPayrollV2HourlyRate,
-  formatPayrollWorkDate
-} from '../shared/payroll-v2-payslip-formatting.mjs?v=2'
+  formatPayrollWorkDate,
+  payrollV2ItemGroup,
+  payrollV2ItemTypeLabel
+} from '../shared/payroll-v2-payslip-formatting.mjs?v=3'
 
 const parameters = new URLSearchParams(window.location.search)
 const recordId = parameters.get('record') || ''
@@ -31,7 +34,8 @@ const elements = {
   print: document.getElementById('printPayrollV2PayslipButton'),
   message: document.getElementById('payrollV2PayslipMessage'),
   sheet: document.getElementById('payrollV2PayslipSheet'),
-  items: document.getElementById('payrollV2PayslipItemsBody')
+  earnings: document.getElementById('payrollV2PayslipEarningsBody'),
+  deductions: document.getElementById('payrollV2PayslipDeductionsBody')
 }
 
 function isValidUuid(value) {
@@ -59,33 +63,22 @@ function appendEmptyRow(body, colspan, message) {
   body.replaceChildren(row)
 }
 
-function itemTypeLabel(value) {
-  const labels = {
-    attendance: 'Attendance',
-    paid_leave: 'Paid leave',
-    committed_hours: 'Committed Hours',
-    manual_earning: 'Manual earning',
-    deduction: 'Deduction'
-  }
-  return labels[value] || String(value || 'Payroll item').replaceAll('_', ' ')
-}
-
 function formatPaypalRate(value) {
   if (value === null || value === undefined || String(value).trim() === '') return '—'
   return String(value).trim()
 }
 
 function renderItems(items, currencyCode, savedAttendanceSnapshots = []) {
-  if (!items.length) {
-    appendEmptyRow(elements.items, 8, 'No payroll items were saved for this record.')
-    return
+  const fragments = {
+    earnings: document.createDocumentFragment(),
+    deductions: document.createDocumentFragment()
   }
-
-  const fragment = document.createDocumentFragment()
+  const counts = { earnings: 0, deductions: 0 }
   const snapshotsByDate = new Map(
     savedAttendanceSnapshots.map(snapshot => [snapshot.work_date, snapshot])
   )
   for (const item of items) {
+    const group = payrollV2ItemGroup(item)
     const cells = createPayrollV2PayslipRow(
       item,
       snapshotsByDate.get(item.work_date),
@@ -93,7 +86,7 @@ function renderItems(items, currencyCode, savedAttendanceSnapshots = []) {
     )
     const row = document.createElement('tr')
     row.append(
-      node('td', '', itemTypeLabel(item.item_type)),
+      node('td', '', payrollV2ItemTypeLabel(item)),
       node('td', '', cells.description),
       node('td', '', cells.date),
       node('td', '', cells.regular),
@@ -102,9 +95,13 @@ function renderItems(items, currencyCode, savedAttendanceSnapshots = []) {
       node('td', 'rate', cells.rate),
       node('td', 'amount', cells.amount)
     )
-    fragment.append(row)
+    fragments[group].append(row)
+    counts[group] += 1
   }
-  elements.items.replaceChildren(fragment)
+  elements.earnings.replaceChildren(fragments.earnings)
+  elements.deductions.replaceChildren(fragments.deductions)
+  if (!counts.earnings) appendEmptyRow(elements.earnings, 8, 'No earnings were saved for this record.')
+  if (!counts.deductions) appendEmptyRow(elements.deductions, 8, 'No deductions were saved for this record.')
 }
 
 function renderPayslip(payslip) {
@@ -129,14 +126,18 @@ function renderPayslip(payslip) {
   document.getElementById('payrollV2PayslipHourlyRate').textContent =
     formatPayrollV2HourlyRate(items, currencyCode)
   document.getElementById('payrollV2PayslipCurrency').textContent = currencyCode
+  document.getElementById('payrollV2PayslipEarningsSubtotal').textContent =
+    formatPayrollMoney(totals.gross_pay, currencyCode)
+  document.getElementById('payrollV2PayslipDeductionsSubtotal').textContent =
+    `−${formatPayrollMoney(Math.abs(Number(totals.total_deductions || 0)), currencyCode)}`
   document.getElementById('payrollV2PayslipGross').textContent =
     formatPayrollMoney(totals.gross_pay, currencyCode)
-  document.getElementById('payrollV2PayslipDeductions').textContent =
-    `−${formatPayrollMoney(Math.abs(Number(totals.total_deductions || 0)), currencyCode)}`
   document.getElementById('payrollV2PayslipNet').textContent =
     formatPayrollMoney(totals.net_pay, currencyCode)
   document.getElementById('payrollV2PayslipPaypalRate').textContent =
     formatPaypalRate(period.paypal_conversion_rate)
+  document.getElementById('payrollV2PayslipPaypalAmount').textContent =
+    formatPaypalPayout(totals.net_pay, currencyCode, period.paypal_conversion_rate)
 
   renderItems(
     items,
