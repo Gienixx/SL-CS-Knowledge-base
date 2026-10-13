@@ -53,19 +53,19 @@ declare
   v_function_oid oid;
   v_source text;
   v_definition text;
-  v_old_leave_fields constant text := $old$coalesce(nullif(schedule.leave_type, ''), request.leave_type) as leave_type,
-      schedule.id as schedule_id$old$;
-  v_new_leave_fields constant text := $new$coalesce(nullif(schedule.leave_type, ''), request.leave_type) as leave_type,
+  v_old_leave_fields constant text := pg_catalog.replace($old$coalesce(nullif(schedule.leave_type, ''), request.leave_type) as leave_type,
+      schedule.id as schedule_id$old$, E'\r', '');
+  v_new_leave_fields constant text := pg_catalog.replace($new$coalesce(nullif(schedule.leave_type, ''), request.leave_type) as leave_type,
       coalesce(request.leave_duration, 'whole_day') as leave_duration,
       request.requested_leave_minutes,
-      schedule.id as schedule_id$new$;
+      schedule.id as schedule_id$new$, E'\r', '');
   v_old_paid_minutes constant text := $old$'paid_minutes', 480,$old$;
-  v_new_paid_minutes constant text := $new$'paid_minutes',
+  v_new_paid_minutes constant text := pg_catalog.replace($new$'paid_minutes',
       case
         when leave_date.leave_duration in ('half_day', 'specific_time')
           then coalesce(leave_date.requested_leave_minutes, 0)
         else 480
-      end,$new$;
+      end,$new$, E'\r', '');
 begin
   select function_row.oid, function_row.prosrc
   into v_function_oid, v_source
@@ -101,7 +101,7 @@ declare
   v_source text;
   v_definition text;
   v_old_prior_boundary constant text := $old$  v_coverage := public.payroll_get_expected_committed_hours_summary($old$;
-  v_new_prior_boundary constant text := $new$  if exists (
+  v_new_prior_boundary constant text := pg_catalog.replace($new$  if exists (
     select 1
     from public.payroll_audit_logs audit
     where audit.action = 'payroll_v2_prior_committed_hours_shortfall_voided'
@@ -140,13 +140,13 @@ declare
   if v_current.status <> 'draft' then
     v_can_void := false;
   end if;
-  v_coverage := public.payroll_get_expected_committed_hours_summary($new$;
+  v_coverage := public.payroll_get_expected_committed_hours_summary($new$, E'\r', '');
   v_old_void_declaration constant text := $old$v_rate_missing boolean := false;$old$;
-  v_new_void_declaration constant text := $new$v_rate_missing boolean := false;
-  v_can_void boolean := false;$new$;
+  v_new_void_declaration constant text := pg_catalog.replace($new$v_rate_missing boolean := false;
+  v_can_void boolean := false;$new$, E'\r', '');
   v_old_can_void constant text := $old$'can_void', false,$old$;
-  v_new_can_void constant text := $new$'can_void', v_can_void,
-      'requires_reason', true,$new$;
+  v_new_can_void constant text := pg_catalog.replace($new$'can_void', v_can_void,
+      'requires_reason', true,$new$, E'\r', '');
 begin
   select function_row.oid, function_row.prosrc
   into v_function_oid, v_source

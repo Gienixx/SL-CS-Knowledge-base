@@ -27,6 +27,21 @@ test('Payroll V2 leave calculation respects whole-day, half-day, and exact-time 
   assert.match(migration, /Payroll V2 leave calculation differs from the verified patch baseline/)
 })
 
+test('Payroll V2 guarded migration replacements normalize Windows line endings', async () => {
+  const migration = await read('supabase/migrations/20261014120000_payroll_v2_leave_and_shortfall_void.sql')
+
+  for (const template of [
+    /v_old_leave_fields constant text := pg_catalog\.replace\(\$old\$[\s\S]*?\$old\$, E'\\r', ''\)/,
+    /v_new_leave_fields constant text := pg_catalog\.replace\(\$new\$[\s\S]*?\$new\$, E'\\r', ''\)/,
+    /v_new_paid_minutes constant text := pg_catalog\.replace\(\$new\$[\s\S]*?\$new\$, E'\\r', ''\)/,
+    /v_new_prior_boundary constant text := pg_catalog\.replace\(\$new\$[\s\S]*?\$new\$, E'\\r', ''\)/,
+    /v_new_void_declaration constant text := pg_catalog\.replace\(\$new\$[\s\S]*?\$new\$, E'\\r', ''\)/,
+    /v_new_can_void constant text := pg_catalog\.replace\(\$new\$[\s\S]*?\$new\$, E'\\r', ''\)/
+  ]) {
+    assert.match(migration, template)
+  }
+})
+
 test('prior-cutoff voiding is employee-scoped, reasoned, audited, duplicate-safe, and immutable', async () => {
   const migration = await read('supabase/migrations/20261014120000_payroll_v2_leave_and_shortfall_void.sql')
   const [payrollScript, payrollPage] = await Promise.all([
