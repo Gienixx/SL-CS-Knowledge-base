@@ -55,13 +55,14 @@ test('prior-cutoff voiding is employee-scoped, reasoned, audited, duplicate-safe
   assert.match(payrollPage, /id="voidEmployeeAdjustmentReason"[^>]*minlength="5"[^>]*maxlength="1000"/)
 })
 
-test('payslip previews separate earning and deduction categories without changing saved totals', async () => {
-  const [payslip, payslipPage, payrollAdmin, payrollAdminPage, formatting] = await Promise.all([
+test('payslip previews separate earnings and deductions in finalization, completed, and print views', async () => {
+  const [payslip, payslipPage, payrollAdmin, payrollAdminPage, formatting, printStyles] = await Promise.all([
     read('scripts/payslip-v2-preview.js'),
     read('payslip-v2-preview.html'),
     read('scripts/payroll-v2.js'),
     read('payroll-v2.html'),
-    read('shared/payroll-v2-payslip-formatting.mjs')
+    read('shared/payroll-v2-payslip-formatting.mjs'),
+    read('styles/payslip-v2-preview.css')
   ])
 
   assert.match(payslipPage, /<h2 id="payrollV2EarningsHeading">Earnings<\/h2>/)
@@ -74,6 +75,11 @@ test('payslip previews separate earning and deduction categories without changin
   assert.match(payrollAdminPage, /<h3 id="finalizeItemsHeading">Earnings<\/h3>/)
   assert.match(payrollAdminPage, /<h3 id="finalizeDeductionsHeading">Deductions<\/h3>/)
   assert.match(payrollAdmin, /payrollV2ItemGroup\(item\)/)
+  assert.match(payslipPage, /payslip-v2-earnings-table/)
+  assert.match(payslipPage, /payslip-v2-deductions-table/)
+  assert.match(payslipPage, /id="printPayrollV2PayslipButton"/)
+  assert.match(printStyles, /@media print[\s\S]*?#payrollV2PayslipSheet,[\s\S]*?#payrollV2PayslipSheet \*/)
+  assert.match(payslip, /window\.print\(\)/)
   assert.match(formatting, /return String\(item\?\.item_type \|\| ''\)\.toLowerCase\(\) === 'deduction'/)
 
   assert.equal(payrollV2ItemGroup({ item_type: 'attendance' }), 'earnings')
@@ -112,6 +118,7 @@ test('saved USD net pay converts one time at the period rate and final preview r
   assert.equal(summary.grossPay, 600)
   assert.equal(summary.deductionsSubtotal, 100)
   assert.equal(summary.netPay, 500)
+  assert.equal(summary.paypalConversionRate, 60.8007)
   assert.equal(summary.paypalPayout, formatPaypalPayout(500, 'USD', 60.8007))
   assert.deepEqual(savedItems, [
     { item_type: 'attendance', amount: 600 },

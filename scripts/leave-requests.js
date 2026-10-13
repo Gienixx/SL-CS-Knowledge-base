@@ -19,6 +19,7 @@ const SCHEDULE_REQUEST_LABELS = Object.freeze({
 const elements = {
   page: document.getElementById('leaveRequestsPage'), pageTitle: document.getElementById('leaveRequestsPageTitle'),
   pageDescription: document.getElementById('leaveRequestsPageDescription'), workforceLink: document.getElementById('leaveRequestsWorkforceLink'),
+  formDescription: document.getElementById('leaveRequestFormDescription'),
   totalCount: document.getElementById('leaveRequestTotalCount'), pendingCount: document.getElementById('leaveRequestPendingCount'),
   approvedCount: document.getElementById('leaveRequestApprovedCount'), rejectedCount: document.getElementById('leaveRequestRejectedCount'),
   newRequestTab: document.getElementById('newScheduleRequestTab'), approvalTab: document.getElementById('scheduleRequestApprovalTab'),
@@ -61,6 +62,7 @@ let schedules = []
 let selectedReviewRequest = null
 let isApproverView = false
 let canSubmitRequests = false
+let canSubmitLeaveRequests = false
 
 const scheduleRequestTabs = [
   { name: 'new', tab: elements.newRequestTab, panel: elements.newRequestPanel },
@@ -343,7 +345,13 @@ function updateFormFields() {
   refreshScheduleRequestPreview()
   refreshDurationPreview()
 }
-function resetForm({ clearMessage = true } = {}) { elements.form?.reset(); populateRequestTypes(); updateFormFields(); if (clearMessage) setMessage(elements.formMessage, '') }
+function resetForm({ clearMessage = true } = {}) {
+  elements.form?.reset()
+  if (!canSubmitLeaveRequests) elements.category.value = 'schedule_change'
+  populateRequestTypes()
+  updateFormFields()
+  if (clearMessage) setMessage(elements.formMessage, '')
+}
 
 function renderSummary(rows) { elements.totalCount.textContent = rows.length; elements.pendingCount.textContent = rows.filter(row => row.status === 'pending').length; elements.approvedCount.textContent = rows.filter(row => row.status === 'approved').length; elements.rejectedCount.textContent = rows.filter(row => row.status === 'rejected').length }
 function canReview(request) { return isApproverView && request.status === 'pending' && (request.request_category !== 'schedule_change' || access?.can_manage_schedules === true) }
@@ -394,6 +402,7 @@ async function cancelRequest(requestId) {
 async function submitRequest(event) {
   event.preventDefault(); const category = elements.category.value; const type = elements.type.value; const startDate = elements.startDate.value; const endDate = elements.endDate.value; const reason = elements.reason.value.trim()
   if (!type || !startDate || !reason) { setMessage(elements.formMessage, 'Request type, target date, and reason are required.', 'error'); return }
+  if (category === 'leave' && !canSubmitLeaveRequests) { setMessage(elements.formMessage, 'Leave requests require an active agent profile.', 'error'); return }
   if (category === 'leave') {
     const duration = elements.duration.value
     if (duration === 'whole_day') {
@@ -487,16 +496,22 @@ async function reviewRequest(event) {
   closeReviewModal(); await loadRequests(); activateRequestTab('history'); setMessage(elements.tableMessage, status === 'approved' ? 'Request approved and Schedule Management was updated.' : 'Request denied; the reason is now visible to the agent.', 'success')
 }
 function configureRoleView() {
+  const leaveOption = elements.category.querySelector('option[value="leave"]')
+  if (leaveOption) { leaveOption.hidden = !canSubmitLeaveRequests; leaveOption.disabled = !canSubmitLeaveRequests }
+  if (!canSubmitLeaveRequests) elements.category.value = 'schedule_change'
+  elements.formDescription.textContent = canSubmitLeaveRequests
+    ? 'Choose leave or a schedule change, then provide the target date and request details.'
+    : 'Submit a schedule change for your own work date and provide a reason.'
   elements.submissionSection.hidden = !canSubmitRequests; elements.approvalSection.hidden = !isApproverView
   elements.newRequestTab.disabled = !canSubmitRequests
   elements.newRequestTab.setAttribute('aria-disabled', String(!canSubmitRequests))
-  elements.newRequestTab.title = canSubmitRequests ? '' : 'New requests are available to agent profiles.'
+  elements.newRequestTab.title = canSubmitRequests ? '' : 'New requests are available to active agent and admin profiles.'
   elements.approvalTab.disabled = !isApproverView
   elements.approvalTab.setAttribute('aria-disabled', String(!isApproverView))
   elements.approvalTab.title = isApproverView ? '' : 'Approval access is limited to authorized administrators.'
   activateRequestTab(canSubmitRequests ? 'new' : 'approval')
   if (isApproverView) { elements.pageTitle.textContent = canSubmitRequests ? 'Schedule Requests & Approvals' : 'Schedule Request Approvals'; elements.pageDescription.textContent = canSubmitRequests ? 'Submit your own request or review requests in your authorized workforce scope.' : 'Review agent leave and schedule-change requests through Schedule Management.'; elements.tableTitle.textContent = 'Request history'; elements.tableDescription.textContent = 'Reviewed requests in your authorized workforce scope.' }
-  else { elements.pageTitle.textContent = 'My Schedule Requests'; elements.pageDescription.textContent = 'Request leave or a schedule change and track the administrator’s decision.'; elements.tableTitle.textContent = 'My schedule requests'; elements.tableDescription.textContent = 'Denied requests display the administrator’s reason here.' }
+  else { elements.pageTitle.textContent = 'My Schedule Requests'; elements.pageDescription.textContent = canSubmitLeaveRequests ? 'Request leave or a schedule change and track the administrator’s decision.' : 'Request a schedule change for your own work date and track the administrator’s decision.'; elements.tableTitle.textContent = 'My schedule requests'; elements.tableDescription.textContent = 'Denied requests display the administrator’s reason here.' }
 }
 function bindEvents() {
   scheduleRequestTabs.forEach(item => {
@@ -523,6 +538,7 @@ async function initialize() {
   access.can_manage_schedules = access.is_admin === true && hasWorkforcePermission(access, 'manage_schedules')
   isApproverView = access.is_admin === true && (hasWorkforcePermission(access, 'approve_leave') || access.can_manage_schedules)
   canSubmitRequests = canSubmitOwnScheduleRequest(access)
+  canSubmitLeaveRequests = access.is_agent === true
   if (!isApproverView && !canSubmitRequests) { window.alert('You do not have access to schedule requests.'); window.location.replace('./home.html'); return }
   elements.workforceLink.hidden = !(access.is_admin === true && hasWorkforcePermission(access, 'manage_employees'))
   if (!isApproverView) elements.reviewModal?.remove()
