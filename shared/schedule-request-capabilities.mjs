@@ -3,8 +3,15 @@ export function canSubmitOwnScheduleRequest(access) {
 }
 
 export function linkedScheduleProfileIds(access) {
-  if (access?.allowed !== true || !Array.isArray(access.linked_profile_ids)) return []
-  return [...new Set(access.linked_profile_ids.filter(id => typeof id === 'string' && id.trim()))]
+  const profileId = access?.user_id
+  if (
+    access?.allowed !== true ||
+    typeof profileId !== 'string' ||
+    !profileId.trim() ||
+    !Array.isArray(access.linked_profile_ids) ||
+    !access.linked_profile_ids.includes(profileId)
+  ) return []
+  return [profileId]
 }
 
 export function filterSchedulesToLinkedProfiles(schedules, profileIds) {
@@ -16,3 +23,4 @@ export function filterSchedulesToLinkedProfiles(schedules, profileIds) {
   if (!allowedProfileIds.size || !Array.isArray(schedules)) return []
   return schedules.filter(schedule => allowedProfileIds.has(schedule?.user_id))
 }
+
