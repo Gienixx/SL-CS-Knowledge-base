@@ -1,7 +1,11 @@
 import { supabase } from './supabaseClient.js?v=11'
 import { hasWorkforcePermission, loadCurrentWorkforceAccess } from './workforce-permissions.js?v=1'
 import { calculatePartialLeaveInterval, formatLeaveMinutes, partialLeaveScheduleEligibility } from '../shared/leave-duration.js?v=1'
-import { canSubmitOwnScheduleRequest } from '../shared/schedule-request-capabilities.mjs?v=1'
+import {
+  canSubmitOwnScheduleRequest,
+  filterSchedulesToLinkedProfiles,
+  linkedScheduleProfileIds
+} from '../shared/schedule-request-capabilities.mjs?v=2'
 
 const STATUS_LABELS = Object.freeze({ pending: 'Pending', approved: 'Approved', rejected: 'Denied', cancelled: 'Cancelled' })
 const LEAVE_TYPE_LABELS = Object.freeze({
@@ -379,9 +383,17 @@ function updateReviewNotesRequirement() { const denied = elements.reviewAction.v
 
 async function loadSchedules() {
   if (!canSubmitRequests) return
-  const { data, error } = await supabase.from('work_schedules').select('id, user_id, shift_date, shift_sequence, shift_start, shift_end, timezone, status, is_rest_day, is_holiday, is_leave, is_absent, leave_type').order('shift_date', { ascending: false })
+  const profileIds = linkedScheduleProfileIds(access)
+  if (!profileIds.length) {
+    schedules = []
+    populateTargetSchedules()
+    refreshDurationPreview()
+    setMessage(elements.formMessage, 'No verified employee profile is linked to this account.', 'error')
+    return
+  }
+  const { data, error } = await supabase.from('work_schedules').select('id, user_id, shift_date, shift_sequence, shift_start, shift_end, timezone, status, is_rest_day, is_holiday, is_leave, is_absent, leave_type').in('user_id', profileIds).order('shift_date', { ascending: false })
   if (error) { schedules = []; setMessage(elements.formMessage, 'Existing schedules could not be loaded; Whole Day requests can still specify dates.', 'error'); refreshDurationPreview(); return }
-  schedules = data || []; populateTargetSchedules(); refreshDurationPreview()
+  schedules = filterSchedulesToLinkedProfiles(data || [], profileIds); populateTargetSchedules(); refreshDurationPreview()
 }
 async function loadRequests() {
   setMessage(elements.tableMessage, 'Loading schedule requests...'); elements.refreshButton.disabled = true

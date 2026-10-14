@@ -45,13 +45,31 @@ jobs:
           set -o pipefail
           npm run test:workforce-permissions 2>&1 | tee workforce-permission-test.log
 
+      - name: Verify Docker and preload PostgreSQL 17
+        id: postgres17_image
+        shell: bash
+        run: |
+          set -euo pipefail
+          docker version
+          docker info
+          docker pull postgres:17-alpine
+          docker image inspect --format '{{.Id}}' postgres:17-alpine | tee postgres-image-inspect.log
+
       - name: Run complete regression suite
         id: regression_suite
         if: always()
         shell: bash
         run: |
-          set -o pipefail
+          set -euo pipefail
           npm test 2>&1 | tee complete-regression-test.log
+          grep -F '# Subtest: conversion payroll guards and real concurrent PostgreSQL lock orders' complete-regression-test.log
+          grep -Eq '^ok [0-9]+ - conversion payroll guards and real concurrent PostgreSQL lock orders$' complete-regression-test.log
+          grep -Fx '# fail 0' complete-regression-test.log
+          grep -Fx '# skipped 0' complete-regression-test.log
+
+      - name: Build site
+        if: always()
+        run: npm run build
 
       - name: Upload complete test logs
         if: always()
@@ -60,6 +78,8 @@ jobs:
           name: workforce-step6-test-logs
           path: |
             workforce-permission-test.log
+            postgres-image-inspect.log
             complete-regression-test.log
           if-no-files-found: warn
           retention-days: 14
+

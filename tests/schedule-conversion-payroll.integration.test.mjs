@@ -87,7 +87,9 @@ test('conversion payroll guards and real concurrent PostgreSQL lock orders', { s
   assert.ok(versionStart >= 0 && versionEnd > versionStart, 'actual schedule version trigger source exists')
   const scheduleVersioning = scheduleVersioningSource.slice(versionStart, versionEnd)
   const migration = await read('supabase/migrations/20261009173417_add_rest_day_regular_shift_request_types.sql')
+  const adminAuthorizationMigration = await read('supabase/migrations/20261014160000_pr68_admin_schedule_conversion_requests.sql')
   const behavior = await read('tests/fixtures/schedule-conversion-payroll-check.sql')
+  const adminBehavior = await read('tests/fixtures/schedule-conversion-admin-check.sql')
 
   try {
     execFileSync('docker', ['run', '--detach', '--rm', '--name', container, '-e', 'POSTGRES_PASSWORD=postgres', '-e', 'POSTGRES_HOST_AUTH_METHOD=trust', 'postgres:17-alpine'], { stdio: 'ignore' })
@@ -99,7 +101,27 @@ test('conversion payroll guards and real concurrent PostgreSQL lock orders', { s
     }
     assert.ok(ready, 'disposable PostgreSQL container became ready')
     psql(container, `${setup}\n${scheduleVersioning}\n${scheduleSave}\n${migration}`)
+    psql(container, `create schema pr68_test;
+      create table pr68_test.conversion_function_security as
+      select p.proacl,p.prosecdef,p.proconfig,pg_get_function_identity_arguments(p.oid) identity_args
+      from pg_proc p join pg_namespace n on n.oid=p.pronamespace
+      where n.nspname='public' and p.proname='workforce_submit_schedule_conversion_request';`)
+    psql(container, adminAuthorizationMigration)
+    // The guard is safe to re-encounter when Production already has the patch.
+    psql(container, adminAuthorizationMigration)
+    psql(container, `do $$ begin
+      if exists (
+        select 1 from pr68_test.conversion_function_security original
+        join pg_proc p on pg_get_function_identity_arguments(p.oid)=original.identity_args
+        join pg_namespace n on n.oid=p.pronamespace and n.nspname='public'
+        where p.proname='workforce_submit_schedule_conversion_request'
+          and (p.proacl is distinct from original.proacl
+            or p.prosecdef is distinct from original.prosecdef
+            or p.proconfig is distinct from original.proconfig)
+      ) then raise exception 'Migration changed conversion RPC ACL or security settings'; end if;
+    end $$;`)
     assert.match(psql(container, behavior), /schedule conversion behavior checks passed/)
+    assert.match(psql(container, adminBehavior), /admin schedule conversion checks passed/)
 
     psql(container, `
       create schema test;

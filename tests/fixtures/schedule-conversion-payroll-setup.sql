@@ -48,7 +48,12 @@ create table public.workforce_audit_logs(
   entity_id uuid, before_data jsonb, after_data jsonb, reason text, created_at timestamptz default now()
 );
 create function public.workforce_current_profile_id() returns uuid language sql stable as $$ select auth.uid() $$;
-create function public.workforce_current_user_is_active() returns boolean language sql stable as $$ select auth.uid() is not null $$;
+create function public.workforce_current_user_is_active() returns boolean language sql stable as $$
+  select exists (
+    select 1 from public.profiles
+    where user_id = auth.uid() and employment_status = 'active'
+  )
+$$;
 create function public.workforce_current_user_is_agent() returns boolean language sql stable as $$ select coalesce(current_setting('test.is_agent', true), 'false') = 'true' $$;
 create function public.workforce_is_admin() returns boolean language sql stable as $$ select coalesce(current_setting('test.is_admin', true), 'false') = 'true' $$;
 create function public.workforce_can_manage_user(p_user_id uuid, p_permission text) returns boolean language sql stable as $$ select public.workforce_is_admin() and coalesce(current_setting('test.can_manage', true), 'false') = 'true' $$;
@@ -56,3 +61,7 @@ create function public.workforce_effective_weekly_assignment(p_user_id uuid, p_w
 returns table(assignment_id uuid, template_id uuid) language sql stable as $$ select null::uuid, null::uuid where false $$;
 insert into public.profiles(user_id, is_agent, employment_status)
 values ('11111111-1111-1111-1111-111111111111', true, 'active');
+insert into public.profiles(user_id, is_agent, employment_status)
+values
+  ('33333333-3333-3333-3333-333333333333', false, 'active'),
+  ('44444444-4444-4444-4444-444444444444', false, 'inactive');
