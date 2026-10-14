@@ -55,28 +55,17 @@ jobs:
           docker pull postgres:17-alpine
           docker image inspect --format '{{.Id}}' postgres:17-alpine | tee postgres-image-inspect.log
 
-      - name: Run real PostgreSQL 17 concurrency gate
-        id: postgres_concurrency
-        shell: bash
-        run: |
-          set -euo pipefail
-          node --test --test-reporter=tap tests/schedule-conversion-payroll.integration.test.mjs 2>&1 | tee postgres-concurrency-test.log
-          grep -Eq '^ok 1 - conversion payroll guards and real concurrent PostgreSQL lock orders([[:space:]]|$)' postgres-concurrency-test.log
-          grep -Fx '# pass 1' postgres-concurrency-test.log
-          grep -Fx '# fail 0' postgres-concurrency-test.log
-          grep -Fx '# skipped 0' postgres-concurrency-test.log
-          if grep -Eq '^not ok |^ok [0-9]+ .*# SKIP' postgres-concurrency-test.log; then
-            echo 'PostgreSQL concurrency test failed or was skipped.' >&2
-            exit 1
-          fi
-
       - name: Run complete regression suite
         id: regression_suite
         if: always()
         shell: bash
         run: |
-          set -o pipefail
+          set -euo pipefail
           npm test 2>&1 | tee complete-regression-test.log
+          grep -F '# Subtest: conversion payroll guards and real concurrent PostgreSQL lock orders' complete-regression-test.log
+          grep -Eq '^ok [0-9]+ - conversion payroll guards and real concurrent PostgreSQL lock orders$' complete-regression-test.log
+          grep -Fx '# fail 0' complete-regression-test.log
+          grep -Fx '# skipped 0' complete-regression-test.log
 
       - name: Build site
         if: always()
@@ -90,7 +79,6 @@ jobs:
           path: |
             workforce-permission-test.log
             postgres-image-inspect.log
-            postgres-concurrency-test.log
             complete-regression-test.log
           if-no-files-found: warn
           retention-days: 14
