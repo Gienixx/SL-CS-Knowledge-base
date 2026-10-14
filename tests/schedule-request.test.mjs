@@ -83,12 +83,13 @@ test('active admin-only and dual-role admin-agent accounts can submit their own 
   assert.match(script, /slide_shift/)
 })
 
-test('self-service selector and date-conversion candidates are limited to linked profiles', async () => {
+test('self-service selector and date-conversion candidates use only the canonical linked profile', async () => {
   const script = await read('scripts/leave-requests.js')
   const access = {
     allowed: true,
     is_admin: true,
     is_agent: false,
+    user_id: 'employee-a',
     linked_profile_ids: ['employee-a', 'employee-b', 'employee-a', '', null]
   }
   const profileIds = linkedScheduleProfileIds(access)
@@ -99,8 +100,8 @@ test('self-service selector and date-conversion candidates are limited to linked
   ]
   const ownSchedules = filterSchedulesToLinkedProfiles(schedules, profileIds)
 
-  assert.deepEqual(profileIds, ['employee-a', 'employee-b'])
-  assert.deepEqual(ownSchedules.map(schedule => schedule.id), ['own-rest', 'linked-shift'])
+  assert.deepEqual(profileIds, ['employee-a'])
+  assert.deepEqual(ownSchedules.map(schedule => schedule.id), ['own-rest'])
   assert.deepEqual(filterSchedulesToLinkedProfiles(schedules, []), [])
   assert.deepEqual(linkedScheduleProfileIds({ ...access, allowed: false }), [])
   assert.match(script, /linkedScheduleProfileIds\(access\)/)
@@ -174,3 +175,4 @@ test('request feature leaves Attendance and payroll data paths untouched', async
   assert.match(migration, /voided_at is null/)
   assert.match(migration, /attendance_row\.voided_at is null/)
 })
+
