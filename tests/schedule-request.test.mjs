@@ -1,7 +1,11 @@
 import assert from 'node:assert/strict'
 import { readFile } from 'node:fs/promises'
 import test from 'node:test'
-import { canSubmitOwnScheduleRequest } from '../shared/schedule-request-capabilities.mjs'
+import {
+  canSubmitOwnScheduleRequest,
+  filterSchedulesToLinkedProfiles,
+  linkedScheduleProfileIds
+} from '../shared/schedule-request-capabilities.mjs'
 
 const read = path => readFile(new URL(`../${path}`, import.meta.url), 'utf8')
 
@@ -72,6 +76,37 @@ test('active admin-only and dual-role admin-agent accounts can submit their own 
   assert.match(script, /isApproverView = access\.is_admin === true && \(hasWorkforcePermission\(access, 'approve_leave'\) \|\| access\.can_manage_schedules\)/)
   assert.match(script, /elements\.submissionSection\.hidden = !canSubmitRequests; elements\.approvalSection\.hidden = !isApproverView/)
   assert.match(script, /canSubmitRequests = canSubmitOwnScheduleRequest\(access\)/)
+  assert.match(script, /canSubmitLeaveRequests = access\.is_agent === true/)
+  assert.match(script, /if \(!canSubmitLeaveRequests\) elements\.category\.value = 'schedule_change'/)
+  assert.match(script, /workforce_submit_schedule_request/)
+  assert.match(script, /open_schedule/)
+  assert.match(script, /slide_shift/)
+})
+
+test('self-service selector and date-conversion candidates are limited to linked profiles', async () => {
+  const script = await read('scripts/leave-requests.js')
+  const access = {
+    allowed: true,
+    is_admin: true,
+    is_agent: false,
+    linked_profile_ids: ['employee-a', 'employee-b', 'employee-a', '', null]
+  }
+  const profileIds = linkedScheduleProfileIds(access)
+  const schedules = [
+    { id: 'own-rest', user_id: 'employee-a', shift_date: '2026-10-30', is_rest_day: true, status: 'published' },
+    { id: 'linked-shift', user_id: 'employee-b', shift_date: '2026-10-30', is_rest_day: false, status: 'published' },
+    { id: 'coworker-shift', user_id: 'coworker', shift_date: '2026-10-30', is_rest_day: false, status: 'published' }
+  ]
+  const ownSchedules = filterSchedulesToLinkedProfiles(schedules, profileIds)
+
+  assert.deepEqual(profileIds, ['employee-a', 'employee-b'])
+  assert.deepEqual(ownSchedules.map(schedule => schedule.id), ['own-rest', 'linked-shift'])
+  assert.deepEqual(filterSchedulesToLinkedProfiles(schedules, []), [])
+  assert.deepEqual(linkedScheduleProfileIds({ ...access, allowed: false }), [])
+  assert.match(script, /linkedScheduleProfileIds\(access\)/)
+  assert.match(script, /\.in\('user_id', profileIds\)/)
+  assert.match(script, /schedules = filterSchedulesToLinkedProfiles\(data \|\| \[\], profileIds\)/)
+  assert.match(script, /const activeForDate = schedules\.filter/)
 })
 
 test('production-forward request migration reuses the leave ledger and canonical schedules', async () => {

@@ -117,3 +117,15 @@ test('existing denial, cancellation, and recurring Rest Day Change paths remain 
   assert.match(script, /workforce_review_schedule_request/)
   assert.match(migration, /request_type = 'rest_day_change'[\s\S]*current_rest_weekdays/)
 })
+
+test('PR #68 guards only the conversion RPC admin check and preserves its grants', async () => {
+  const migration = await read('supabase/migrations/20261014160000_pr68_admin_schedule_conversion_requests.sql')
+
+  assert.match(migration, /workforce_submit_schedule_conversion_request/)
+  assert.match(migration, /p_request_type text, p_work_date date, p_target_schedule_id uuid[\s\S]*?p_reason text/)
+  assert.match(migration, /workforce_current_user_is_agent\(\) or public\.workforce_is_admin\(\)/)
+  assert.match(migration, /v_old_guard constant text[\s\S]*?workforce_current_user_is_agent\(\) then/)
+  assert.match(migration, /pg_get_functiondef\(v_function_oid\)/)
+  assert.match(migration, /Schedule conversion authorization differs from the verified baseline/)
+  assert.doesNotMatch(migration, /grant execute|revoke .*function|update public\.work_schedules|insert into public\.leave_requests/i)
+})
