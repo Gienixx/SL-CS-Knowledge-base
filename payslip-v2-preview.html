@@ -48,29 +48,43 @@
         </div>
       </section>
 
-      <section class="payslip-v2-section" aria-labelledby="payrollV2ItemsHeading">
+      <section class="payslip-v2-section" aria-labelledby="payrollV2EarningsHeading">
         <div class="payslip-v2-section-heading">
-          <h2 id="payrollV2ItemsHeading">Earnings and deductions</h2>
+          <h2 id="payrollV2EarningsHeading">Earnings</h2>
           <span id="payrollV2PayslipCurrency"></span>
         </div>
         <div class="payslip-v2-table-wrap">
           <table class="payslip-v2-table payslip-v2-earnings-table">
             <thead><tr><th>Type</th><th>Description</th><th>Date</th><th>Regular</th><th>Additional</th><th>Total</th><th>Rate</th><th>Amount</th></tr></thead>
-            <tbody id="payrollV2PayslipItemsBody"></tbody>
+            <tbody id="payrollV2PayslipEarningsBody"></tbody>
+          </table>
+        </div>
+      </section>
+
+      <section class="payslip-v2-section" aria-labelledby="payrollV2DeductionsHeading">
+        <div class="payslip-v2-section-heading">
+          <h2 id="payrollV2DeductionsHeading">Deductions</h2>
+        </div>
+        <div class="payslip-v2-table-wrap">
+          <table class="payslip-v2-table payslip-v2-deductions-table">
+            <thead><tr><th>Type</th><th>Description</th><th>Date</th><th>Regular</th><th>Additional</th><th>Total</th><th>Rate</th><th>Amount</th></tr></thead>
+            <tbody id="payrollV2PayslipDeductionsBody"></tbody>
           </table>
         </div>
       </section>
 
       <section class="payslip-v2-totals" aria-label="Payroll totals">
+        <div><span>Earnings subtotal</span><strong id="payrollV2PayslipEarningsSubtotal">—</strong></div>
+        <div><span>Deductions subtotal</span><strong id="payrollV2PayslipDeductionsSubtotal">—</strong></div>
         <div><span>Gross pay</span><strong id="payrollV2PayslipGross">—</strong></div>
-        <div><span>Deductions</span><strong id="payrollV2PayslipDeductions">—</strong></div>
         <div class="net"><span>Net pay</span><strong id="payrollV2PayslipNet">—</strong></div>
         <div><span>PayPal Conversion Rate</span><strong id="payrollV2PayslipPaypalRate">—</strong></div>
+        <div><span>PayPal payout (PHP)</span><strong id="payrollV2PayslipPaypalAmount">—</strong></div>
       </section>
 
       <footer class="payslip-v2-footnote">This payslip displays the saved Payroll V2 calculation, items, and snapshots for this payroll record.</footer>
     </article>
   </main>
-  <script type="module" src="./scripts/payslip-v2-preview.js?v=6"></script>
+  <script type="module" src="./scripts/payslip-v2-preview.js?v=7"></script>
 </body>
 </html>

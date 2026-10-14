@@ -1,6 +1,7 @@
 import assert from 'node:assert/strict'
 import { readFile } from 'node:fs/promises'
 import test from 'node:test'
+import { canSubmitOwnScheduleRequest } from '../shared/schedule-request-capabilities.mjs'
 
 const read = path => readFile(new URL(`../${path}`, import.meta.url), 'utf8')
 
@@ -19,6 +20,7 @@ test('Home and agent UI expose the unified Schedule Request workflow', async () 
   assert.match(page, /Birthday Leave.*Birthday VL/)
   assert.match(page, /Leave Without Pay/)
   assert.match(page, /Explain why you are requesting this change/)
+  assert.match(page, /id="leaveRequestFormDescription"/)
   assert.doesNotMatch(page, /Explain why you are requesting leave/)
   assert.doesNotMatch(page, /Loading leave requests\.\.\./)
   assert.match(script, /open_schedule/)
@@ -47,11 +49,29 @@ test('Schedule Request uses three role-aware accessible tabs', async () => {
   assert.match(page, /id="newScheduleRequestPanel"[^>]*role="tabpanel"/)
   assert.match(page, /id="scheduleRequestApprovalPanel"[^>]*role="tabpanel"/)
   assert.match(page, /id="scheduleRequestHistoryPanel"[^>]*role="tabpanel"/)
-  assert.match(script, /elements\.newRequestTab\.disabled = isApproverView/)
+  assert.match(script, /elements\.newRequestTab\.disabled = !canSubmitRequests/)
+  assert.match(script, /leaveOption\.hidden = !canSubmitLeaveRequests; leaveOption\.disabled = !canSubmitLeaveRequests/)
+  assert.match(script, /if \(!canSubmitLeaveRequests\) elements\.category\.value = 'schedule_change'/)
+  assert.match(script, /category === 'leave' && !canSubmitLeaveRequests/)
   assert.match(script, /elements\.approvalTab\.disabled = !isApproverView/)
-  assert.match(script, /activateRequestTab\(isApproverView \? 'approval' : 'new'\)/)
+  assert.match(script, /activateRequestTab\(canSubmitRequests \? 'new' : 'approval'\)/)
+  assert.match(script, /canSubmitRequests = canSubmitOwnScheduleRequest\(access\)/)
+  assert.match(script, /New requests are available to active agent and admin profiles/)
   assert.match(script, /event\.key === 'ArrowRight'/)
   assert.match(script, /event\.key === 'Home'/)
+})
+
+test('active admin-only and dual-role admin-agent accounts can submit their own requests', async () => {
+  const script = await read('scripts/leave-requests.js')
+
+  assert.equal(canSubmitOwnScheduleRequest({ allowed: true, is_admin: true, is_agent: false }), true)
+  assert.equal(canSubmitOwnScheduleRequest({ allowed: true, is_admin: true, is_agent: true }), true)
+  assert.equal(canSubmitOwnScheduleRequest({ allowed: true, is_admin: false, is_agent: true }), true)
+  assert.equal(canSubmitOwnScheduleRequest({ allowed: false, is_admin: true, is_agent: true }), false)
+
+  assert.match(script, /isApproverView = access\.is_admin === true && \(hasWorkforcePermission\(access, 'approve_leave'\) \|\| access\.can_manage_schedules\)/)
+  assert.match(script, /elements\.submissionSection\.hidden = !canSubmitRequests; elements\.approvalSection\.hidden = !isApproverView/)
+  assert.match(script, /canSubmitRequests = canSubmitOwnScheduleRequest\(access\)/)
 })
 
 test('production-forward request migration reuses the leave ledger and canonical schedules', async () => {
@@ -93,6 +113,20 @@ test('schedule request approval is atomic, scoped, auditable, and payroll-safe',
   assert.match(migration, /A denial reason is required/)
   assert.match(migration, /revoke all on function public\.workforce_submit_schedule_request/)
   assert.match(migration, /grant execute on function public\.workforce_review_schedule_request/)
+})
+
+test('admin self-submission preserves the active-user and own-profile backend checks', async () => {
+  const [migration, baseline] = await Promise.all([
+    read('supabase/migrations/20261014120000_payroll_v2_leave_and_shortfall_void.sql'),
+    read('supabase/migrations/20260817125628_unified_schedule_requests.sql')
+  ])
+  assert.match(migration, /v_old_guard constant text[\s\S]*?workforce_current_user_is_agent\(\) then/)
+  assert.match(migration, /v_new_guard constant text[\s\S]*?workforce_current_user_is_agent\(\) or public\.workforce_is_admin\(\)/)
+  assert.match(migration, /If Production already has the approved admin gate, leave it untouched/i)
+  assert.match(migration, /pg_get_functiondef\(v_function_oid\)/)
+  assert.doesNotMatch(migration, /workforce_submit_leave_request/)
+  assert.match(baseline, /v_user_id uuid := public\.workforce_current_profile_id\(\)/)
+  assert.match(baseline, /auth\.uid\(\) is null[\s\S]*?v_user_id is null[\s\S]*?not public\.workforce_current_user_is_active\(\)/)
 })
 
 test('request feature leaves Attendance and payroll data paths untouched', async () => {

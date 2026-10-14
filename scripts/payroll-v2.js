@@ -9,6 +9,10 @@ import {
   submitEmployeeFinalization
 } from './payroll-v2-finalization.mjs?v=2'
 import { visibleCompletedPayslips } from './payroll-v2-completed-count.mjs?v=1'
+import {
+  payrollV2ItemGroup,
+  payrollV2ItemTypeLabel
+} from '../shared/payroll-v2-payslip-formatting.mjs?v=3'
 
 const VIEW_PERMISSIONS = [
   'create_payroll',
@@ -148,6 +152,8 @@ const elements = {
   cancelAdjustmentButton: document.getElementById('cancelEmployeeAdjustmentButton'),
   voidAdjustmentDialog: document.getElementById('voidEmployeeAdjustmentDialog'),
   voidAdjustmentSummary: document.getElementById('voidEmployeeAdjustmentSummary'),
+  voidAdjustmentReasonField: document.getElementById('voidEmployeeAdjustmentReasonField'),
+  voidAdjustmentReason: document.getElementById('voidEmployeeAdjustmentReason'),
   voidAdjustmentError: document.getElementById('voidEmployeeAdjustmentError'),
   confirmVoidAdjustmentButton: document.getElementById('confirmVoidEmployeeAdjustmentButton'),
   cancelVoidAdjustmentButton: document.getElementById('cancelVoidEmployeeAdjustmentButton'),
@@ -208,9 +214,12 @@ const elements = {
   finalizeEmployeeLeave: document.getElementById('finalizeEmployeeLeave'),
   finalizeEmployeeCommitted: document.getElementById('finalizeEmployeeCommitted'),
   finalizeEmployeeManual: document.getElementById('finalizeEmployeeManual'),
+  finalizeEmployeeEarningsSubtotal: document.getElementById('finalizeEmployeeEarningsSubtotal'),
+  finalizeEmployeeDeductionsSubtotal: document.getElementById('finalizeEmployeeDeductionsSubtotal'),
   finalizeEmployeeGross: document.getElementById('finalizeEmployeeGross'),
-  finalizeEmployeeDeductions: document.getElementById('finalizeEmployeeDeductions'),
   finalizeEmployeeNet: document.getElementById('finalizeEmployeeNet'),
+  finalizeEmployeePaypalRate: document.getElementById('finalizeEmployeePaypalRate'),
+  finalizeEmployeePaypalAmount: document.getElementById('finalizeEmployeePaypalAmount'),
   finalizeEmployeeRateBody: document.getElementById('finalizeEmployeeRateBody'),
   finalizeEmployeeCommittedStatus: document.getElementById('finalizeEmployeeCommittedStatus'),
   finalizeEmployeeCommittedBody: document.getElementById('finalizeEmployeeCommittedBody'),
@@ -476,15 +485,24 @@ function canEditAdjustments() {
     && elements.employeeSelect.value && (!state.calculated || state.recalculationPending))
 }
 
+function canVoidPriorShortfall() {
+  const period = selectedPeriod()
+  return Boolean((state.canCreate || state.canApprove) && period
+    && String(period.status).toLowerCase() === 'draft'
+    && elements.employeeSelect.value && (!state.calculated || state.recalculationPending))
+}
+
 function renderAdjustmentRows(body, rows, kind) {
   body.replaceChildren()
   for (const adjustment of rows) {
     const row = document.createElement('tr')
+    const isPriorShortfall = adjustment.source_type === 'payroll_v2_committed_hours_shortfall'
+    const canVoid = isPriorShortfall ? canVoidPriorShortfall() : canEditAdjustments()
     makeCell(row, adjustment.description || (kind === 'earning' ? 'Manual earning' : 'Deduction'))
     makeCell(row, adjustment.amount == null ? '—' : `${adjustment.currency_code || 'USD'} ${Number(adjustment.amount).toFixed(2)}`)
     makeCell(row, adjustment.status || 'Approved')
     const actionCell = document.createElement('td')
-    if (canEditAdjustments() && (adjustment.can_void || String(adjustment.status).toLowerCase() === 'approved')) {
+    if (canVoid && (adjustment.can_void || String(adjustment.status).toLowerCase() === 'approved')) {
       const button = document.createElement('button')
       button.type = 'button'
       button.className = 'plain-button payroll-v2-inline-action'
@@ -493,6 +511,9 @@ function renderAdjustmentRows(body, rows, kind) {
       button.dataset.adjustmentKind = kind
       button.dataset.adjustmentDescription = adjustment.description || ''
       button.dataset.adjustmentAmount = String(adjustment.amount || '')
+      button.dataset.adjustmentSourceType = adjustment.source_type || ''
+      button.dataset.priorPeriodId = adjustment.prior_period_id || ''
+      button.dataset.requiresReason = String(adjustment.requires_reason === true)
       actionCell.append(button)
     } else {
       actionCell.textContent = '—'
@@ -1109,7 +1130,7 @@ function openFinalizeConfirmation() {
 
   state.pendingFinalizationRecordId = persistence.payroll_v2_record_id
   const summary = finalizeEmployeeSummary(saved, period)
-  const currency = saved.currency_code || 'USD'
+  const currency = summary.currencyCode
   const employeeName = summary.employee === '—'
     ? (elements.employeeName.textContent || '—')
     : summary.employee
@@ -1121,12 +1142,15 @@ function openFinalizeConfirmation() {
   elements.finalizeEmployeeHours.textContent = formatHours(summary.totalPayableMinutes)
   elements.finalizeEmployeeAttendance.textContent = formatMoney(summary.attendanceEarnings, currency)
   elements.finalizeEmployeeLeave.textContent = formatMoney(summary.paidLeaveEarnings, currency)
-  elements.finalizeEmployeeCommitted.textContent = formatMoney(summary.committedHours.monetaryEffect, currency)
+  elements.finalizeEmployeeCommitted.textContent = formatMoney(summary.committedHours.monetary_effect || 0, currency)
   elements.finalizeEmployeeManual.textContent = formatMoney(summary.manualEarnings, currency)
+  elements.finalizeEmployeeEarningsSubtotal.textContent = formatMoney(summary.earningsSubtotal, currency)
+  elements.finalizeEmployeeDeductionsSubtotal.textContent = `−${formatMoney(Math.abs(Number(summary.deductionsSubtotal || 0)), currency)}`
   elements.finalizeEmployeeGross.textContent = formatMoney(summary.grossPay, currency)
-  elements.finalizeEmployeeDeductions.textContent = formatMoney(summary.deductions, currency)
   elements.finalizeEmployeeNet.textContent = formatMoney(summary.netPay, currency)
-  elements.finalizeEmployeeCommittedStatus.textContent = summary.committedHours.status
+  elements.finalizeEmployeePaypalRate.textContent = formatPaypalRate(summary.paypalConversionRate)
+  elements.finalizeEmployeePaypalAmount.textContent = summary.paypalPayout
+  elements.finalizeEmployeeCommittedStatus.textContent = summary.committedHours.status || 'No commitment required'
 
   elements.finalizeEmployeeRateBody.replaceChildren()
   for (const rate of summary.rateBreakdown) {
@@ -1160,10 +1184,14 @@ function openFinalizeConfirmation() {
   }
 
   elements.finalizeEmployeeItemsBody.replaceChildren()
+  elements.finalizeEmployeeDeductionsBody.replaceChildren()
   for (const item of summary.items) {
     const itemCurrency = item.metadata?.currency_code || currency
-    appendTableRow(elements.finalizeEmployeeItemsBody, [
-      String(item.item_type || 'payroll item').replaceAll('_', ' '),
+    const body = payrollV2ItemGroup(item) === 'deductions'
+      ? elements.finalizeEmployeeDeductionsBody
+      : elements.finalizeEmployeeItemsBody
+    appendTableRow(body, [
+      payrollV2ItemTypeLabel(item),
       item.work_date ? formatDate(item.work_date) : '—',
       item.description || '—',
       item.minutes == null ? '—' : formatHours(item.minutes),
@@ -1171,19 +1199,8 @@ function openFinalizeConfirmation() {
       item.amount == null ? '—' : formatMoney(item.amount, itemCurrency)
     ])
   }
-  if (!summary.items.length) setEmptyRow(elements.finalizeEmployeeItemsBody, 'No saved payslip items.', 6)
-
-  elements.finalizeEmployeeDeductionsBody.replaceChildren()
-  for (const deduction of summary.approvedDeductions) {
-    const itemCurrency = deduction.metadata?.currency_code || currency
-    appendTableRow(elements.finalizeEmployeeDeductionsBody, [
-      deduction.description || 'Deduction',
-      deduction.amount == null ? '—' : formatMoney(deduction.amount, itemCurrency)
-    ])
-  }
-  if (!summary.approvedDeductions.length) {
-    setEmptyRow(elements.finalizeEmployeeDeductionsBody, 'No approved deductions.', 2)
-  }
+  if (!elements.finalizeEmployeeItemsBody.children.length) setEmptyRow(elements.finalizeEmployeeItemsBody, 'No saved earnings.', 6)
+  if (!elements.finalizeEmployeeDeductionsBody.children.length) setEmptyRow(elements.finalizeEmployeeDeductionsBody, 'No saved deductions.', 6)
 
   elements.finalizeEmployeeError.textContent = ''
   elements.confirmFinalizeButton.disabled = false
@@ -1234,13 +1251,17 @@ async function saveEmployeeAdjustment(event) {
 
 function openVoidAdjustment(event) {
   const button = event.target.closest('[data-void-adjustment]')
-  if (!button || !canEditAdjustments()) return
+  const isPriorShortfall = button?.dataset.adjustmentSourceType === 'payroll_v2_committed_hours_shortfall'
+  if (!button || !(isPriorShortfall ? canVoidPriorShortfall() : canEditAdjustments())) return
   const period = selectedPeriod()
   const input = state.previewInput
   if (!period || !input || input.periodId !== period.period_id) return
   state.pendingVoidAdjustment = {
     id: button.dataset.voidAdjustment,
     kind: button.dataset.adjustmentKind,
+    sourceType: button.dataset.adjustmentSourceType,
+    priorPeriodId: button.dataset.priorPeriodId,
+    requiresReason: button.dataset.requiresReason === 'true',
     description: button.dataset.adjustmentDescription || 'Payroll adjustment',
     amount: button.dataset.adjustmentAmount,
     periodId: input.periodId,
@@ -1248,6 +1269,10 @@ function openVoidAdjustment(event) {
   }
   elements.voidAdjustmentSummary.textContent = `${state.pendingVoidAdjustment.kind === 'earning' ? 'Manual earning' : 'Deduction'}: ${state.pendingVoidAdjustment.description} — USD ${Number(state.pendingVoidAdjustment.amount || 0).toFixed(2)}`
   elements.voidAdjustmentError.textContent = ''
+  elements.voidAdjustmentReason.value = ''
+  elements.voidAdjustmentReason.required = state.pendingVoidAdjustment.requiresReason
+  elements.voidAdjustmentReasonField.hidden = !state.pendingVoidAdjustment.requiresReason
+  elements.confirmVoidAdjustmentButton.textContent = state.pendingVoidAdjustment.requiresReason ? 'Void Shortfall' : 'Void Adjustment'
   elements.confirmVoidAdjustmentButton.disabled = false
   elements.voidAdjustmentDialog.showModal()
 }
@@ -1255,21 +1280,37 @@ function openVoidAdjustment(event) {
 async function confirmVoidEmployeeAdjustment() {
   const pending = state.pendingVoidAdjustment
   const period = selectedPeriod()
-  if (!pending || !period || !canEditAdjustments() || state.voidingAdjustment
+  const canVoid = pending?.sourceType === 'payroll_v2_committed_hours_shortfall'
+    ? canVoidPriorShortfall()
+    : canEditAdjustments()
+  const reason = String(elements.voidAdjustmentReason.value || '').trim()
+  if (!pending || !period || !canVoid || state.voidingAdjustment
       || period.period_id !== pending.periodId || elements.employeeSelect.value !== pending.employeeUserId) return
+  if (pending.requiresReason && (reason.length < 5 || reason.length > 1000)) {
+    elements.voidAdjustmentError.textContent = 'Enter a reason between 5 and 1000 characters.'
+    elements.voidAdjustmentReason.focus()
+    return
+  }
   state.voidingAdjustment = true
   elements.confirmVoidAdjustmentButton.disabled = true
   elements.confirmVoidAdjustmentButton.textContent = 'Voiding…'
   elements.voidAdjustmentError.textContent = ''
-  const { error } = await supabase.rpc('payroll_v2_void_employee_adjustment', {
-    p_payroll_v2_period_id: pending.periodId,
-    p_employee_user_id: pending.employeeUserId,
-    p_adjustment_id: pending.id,
-    p_kind: pending.kind
-  })
+  const { error } = pending.sourceType === 'payroll_v2_committed_hours_shortfall'
+    ? await supabase.rpc('payroll_v2_void_prior_committed_hours_shortfall', {
+        p_payroll_v2_period_id: pending.periodId,
+        p_employee_user_id: pending.employeeUserId,
+        p_prior_period_id: pending.priorPeriodId,
+        p_reason: reason
+      })
+    : await supabase.rpc('payroll_v2_void_employee_adjustment', {
+        p_payroll_v2_period_id: pending.periodId,
+        p_employee_user_id: pending.employeeUserId,
+        p_adjustment_id: pending.id,
+        p_kind: pending.kind
+      })
   state.voidingAdjustment = false
   elements.confirmVoidAdjustmentButton.disabled = false
-  elements.confirmVoidAdjustmentButton.textContent = 'Void Adjustment'
+  elements.confirmVoidAdjustmentButton.textContent = pending.requiresReason ? 'Void Shortfall' : 'Void Adjustment'
   if (error) {
     elements.voidAdjustmentError.textContent = error.message || 'Adjustment could not be voided.'
     return
@@ -2035,6 +2076,8 @@ elements.cancelAdjustmentButton.addEventListener('click', () => {
 elements.confirmVoidAdjustmentButton.addEventListener('click', confirmVoidEmployeeAdjustment)
 elements.cancelVoidAdjustmentButton.addEventListener('click', () => {
   state.pendingVoidAdjustment = null
+  elements.voidAdjustmentReason.value = ''
+  elements.voidAdjustmentReasonField.hidden = true
   elements.voidAdjustmentDialog.close()
 })
 elements.calculateButton.addEventListener('click', openCalculateConfirmation)

@@ -18,6 +18,53 @@ export function formatPayrollMoney(value, currencyCode = 'USD') {
   }).format(Number(value || 0))
 }
 
+export function payrollV2ItemGroup(item) {
+  return String(item?.item_type || '').toLowerCase() === 'deduction'
+    ? 'deductions'
+    : 'earnings'
+}
+
+export function payrollV2ItemTypeLabel(item) {
+  const type = String(item?.item_type || '').toLowerCase()
+  const description = String(item?.description || '').toLowerCase()
+  if (type === 'attendance') return 'Attendance'
+  if (type === 'committed_hours') return 'Committed Hours'
+  if (type === 'paid_leave') return 'Paid VL'
+  if (type === 'manual_earning' || type === 'bonus') {
+    return /\bbonus\b/.test(description) || type === 'bonus' ? 'Bonus' : 'Manual Earnings'
+  }
+  if (type === 'deduction') {
+    if (/cash\s+advance/.test(description)) return 'Cash Advance'
+    if (/hour\s+offset/.test(description)) return 'Hour Offset'
+    if (/previous\s+cutoff|prior\s+cutoff|committed hours shortfall/.test(description)) {
+      return 'Previous Cutoff Shortfall'
+    }
+    return 'Other deduction'
+  }
+  return String(item?.item_type || 'Payroll item').replaceAll('_', ' ')
+}
+
+export function calculatePaypalPayout(netPay, payrollCurrencyCode, conversionRate) {
+  if (netPay === null || netPay === undefined || String(netPay).trim() === '') return null
+  const net = Number(netPay)
+  const rate = Number(conversionRate)
+  if (String(payrollCurrencyCode || '').toUpperCase() !== 'USD'
+      || !Number.isFinite(net) || !Number.isFinite(rate) || rate <= 0) return null
+  return Math.round((net * rate + Number.EPSILON) * 100) / 100
+}
+
+export function formatPaypalPayout(netPay, payrollCurrencyCode, conversionRate) {
+  const converted = calculatePaypalPayout(netPay, payrollCurrencyCode, conversionRate)
+  return converted === null
+    ? '—'
+    : new Intl.NumberFormat('en-PH', {
+        style: 'currency',
+        currency: 'PHP',
+        minimumFractionDigits: 2,
+        maximumFractionDigits: 2
+      }).format(converted)
+}
+
 export function formatPayrollV2HourlyRate(items, currencyCode = 'USD') {
   const savedRates = [...new Set(
     (Array.isArray(items) ? items : [])
