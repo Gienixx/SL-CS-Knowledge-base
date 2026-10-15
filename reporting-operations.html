@@ -39,6 +39,19 @@
       <div id="operationsContent" class="detail-content" hidden>
         <section id="operationsSummary" class="detail-summary-grid operations-summary-grid" aria-label="Reporting operations summary"></section>
 
+        <section id="identityApprovalSection" class="detail-card" aria-labelledby="identityApprovalTitle" hidden>
+          <div class="detail-card-heading">
+            <div>
+              <span class="detail-eyebrow">Identity controls</span>
+              <h2 id="identityApprovalTitle">Dashboard identity approvals</h2>
+              <p>Approve one existing mapping at a time after confirming reporting-source authorization and the October 11 blank metrics.</p>
+            </div>
+            <span id="identityApprovalMeta" class="detail-table-meta">Checking approval permission</span>
+          </div>
+          <div id="identityApprovalList" class="identity-approval-list" aria-live="polite"></div>
+          <p id="identityApprovalStatus" class="detail-filter-validation" role="status"></p>
+        </section>
+
         <section class="detail-card operations-alert-card" aria-labelledby="operationsAlertTitle">
           <div class="detail-card-heading">
             <div>
