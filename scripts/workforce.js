@@ -802,7 +802,7 @@ async function saveEmployee(event) {
 
   if (profile?.is_system_admin === true) {
     WORKFORCE_PERMISSION_KEYS.forEach(key => {
-      permissions[key] = true
+      if (key !== 'approve_dashboard_identities') permissions[key] = true
     })
   }
 
@@ -893,3 +893,4 @@ initialize().catch(error => {
   console.error('Workforce initialization failed:', error)
   setMessage(pageMessage, errorMessage(error), 'error')
 })
+

@@ -37,6 +37,66 @@
   gap: 0.8rem;
 }
 
+.identity-approval-list {
+  display: grid;
+  gap: 1rem;
+}
+
+.identity-approval-card {
+  padding: 1rem;
+  border: 1px solid rgba(93, 77, 150, 0.2);
+  border-radius: 12px;
+  background: rgba(255, 255, 255, 0.72);
+}
+
+.identity-approval-card h3 {
+  margin: 0;
+  color: var(--sl-text, #2b2459);
+}
+
+.identity-approval-card p {
+  color: var(--sl-muted, #6f678f);
+}
+
+.identity-approval-form {
+  display: grid;
+  gap: 0.75rem;
+  max-width: 720px;
+}
+
+.identity-approval-form label {
+  display: grid;
+  gap: 0.35rem;
+  color: var(--sl-text, #2b2459);
+  font-weight: 650;
+}
+
+.identity-approval-form label:has(input[type="checkbox"]) {
+  grid-template-columns: 1.2rem minmax(0, 1fr);
+  align-items: start;
+}
+
+.identity-approval-form input:not([type="checkbox"]),
+.identity-approval-form textarea {
+  width: 100%;
+  padding: 0.65rem 0.75rem;
+  border: 1px solid rgba(93, 77, 150, 0.32);
+  border-radius: 8px;
+  color: var(--sl-text, #2b2459);
+  font: inherit;
+}
+
+.identity-approval-form textarea {
+  min-height: 5rem;
+  resize: vertical;
+}
+
+@media (min-width: 900px) {
+  .identity-approval-list {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
 .operations-alert {
   display: grid;
   grid-template-columns: auto minmax(0, 1fr) auto;
@@ -168,3 +228,4 @@
     grid-template-columns: 1fr;
   }
 }
+

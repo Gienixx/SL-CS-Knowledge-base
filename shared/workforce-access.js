@@ -16,7 +16,8 @@ export const WORKFORCE_PERMISSION_KEYS = Object.freeze([
   'view_own_payslips',
   'export_payslips',
   'reopen_payroll',
-  'manage_payroll'
+  'manage_payroll',
+  'approve_dashboard_identities'
 ])
 
 export const PAYROLL_PERMISSION_KEYS = Object.freeze([
@@ -190,6 +191,7 @@ export function normalizeWorkforceAccess(
     can_reopen_payroll: permissions.reopen_payroll === true,
     can_correct_attendance: permissions.correct_attendance === true,
     can_approve_attendance: permissions.approve_attendance === true,
+    can_approve_dashboard_identities: permissions.approve_dashboard_identities === true,
     legacy: data.legacy && typeof data.legacy === 'object'
       ? data.legacy
       : null,
@@ -295,3 +297,4 @@ export function hasWorkforcePermission(access, permissionKey) {
     access?.permissions?.[permissionKey] === true
   )
 }
+
