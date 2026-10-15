@@ -34,14 +34,14 @@ Configure these Google Apps Script properties:
 Run `migrateDashboardSyncTriggers()` from the workbook script to install or
 repair the two managed daily synchronizations:
 
-- approximately 9:00 AM `America/New_York`
-- approximately 12:00 PM `America/New_York`
+- approximately 9:00 PM `Asia/Manila`
+- approximately 12:00 AM `Asia/Manila`
 
 Google Apps Script time triggers are approximate; they do not guarantee
-execution at the exact minute. The IANA timezone setting follows Eastern
-daylight-saving changes. The migration deletes and reinstalls all managed
-triggers, including correctly named ones,
-and removes retired dashboard handlers. Apps Script does not expose the
+execution at the exact minute. The IANA timezone setting keeps the schedule
+anchored to Manila local time throughout the year. The migration deletes and
+reinstalls all managed triggers, including correctly named ones, and removes
+retired dashboard handlers. Apps Script does not expose the
 configured hour, minute, recurrence, or timezone for existing triggers, so
 reinstalling is required to replace a misconfigured trigger safely. The
 migration records the newly created trigger IDs and schedule configuration;
@@ -108,7 +108,7 @@ that two names belong to the same person.
    Keep the existing `DASHBOARD_SYNC_URL` and `SHEET_SYNC_SECRET` script
    properties.
 4. Run `migrateDashboardSyncTriggers()` and confirm its result is `valid: true`,
-   with exactly one trigger for each configured Eastern schedule. The migration
+   with exactly one trigger for each configured Manila schedule. The migration
    deletes and reinstalls all managed triggers because Apps Script does not
    expose existing trigger schedule metadata.
 5. Run `syncAllDashboardData()` once as the controlled manual sync.
@@ -135,3 +135,4 @@ A freshness warning appears when no successful synchronization completed within 
 ## Missing data
 
 The UI never reconstructs unsupported metrics. Response time, resolution time, dimensions, targets, or comparisons are displayed only when the corresponding synchronized fields or configuration rows exist.
+

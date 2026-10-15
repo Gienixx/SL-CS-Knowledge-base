@@ -1,35 +1,35 @@
-const DASHBOARD_SYNC_TRIGGER_TIMEZONE = 'America/New_York'
+const DASHBOARD_SYNC_TRIGGER_TIMEZONE = 'Asia/Manila'
 
 const DASHBOARD_SYNC_TRIGGER_SCHEDULES = Object.freeze([
   Object.freeze({
-    handler: 'syncDashboardAt9AmEastern',
-    hour: 9,
+    handler: 'syncDashboardAt9Pm',
+    hour: 21,
     minute: 0,
-    approximateTime: '9:00 AM America/New_York'
+    approximateTime: '9:00 PM Asia/Manila'
   }),
   Object.freeze({
-    handler: 'syncDashboardAtNoonEastern',
-    hour: 12,
+    handler: 'syncDashboardAtMidnight',
+    hour: 0,
     minute: 0,
-    approximateTime: '12:00 PM America/New_York'
+    approximateTime: '12:00 AM Asia/Manila'
   })
 ])
 
 const RETIRED_DASHBOARD_SYNC_HANDLERS = Object.freeze([
-  'syncDashboardAt9Pm',
-  'syncDashboardAtMidnight',
+  'syncDashboardAt9AmEastern',
+  'syncDashboardAtNoonEastern',
   'syncAllDashboardData',
   'syncDashboardData'
 ])
 const DASHBOARD_SYNC_TRIGGER_INSTALLATION_PROPERTY =
   'DASHBOARD_SYNC_TRIGGER_INSTALLATION'
 
-function syncDashboardAt9AmEastern() {
-  return runDashboardSyncTrigger_('syncDashboardAt9AmEastern')
+function syncDashboardAt9Pm() {
+  return runDashboardSyncTrigger_('syncDashboardAt9Pm')
 }
 
-function syncDashboardAtNoonEastern() {
-  return runDashboardSyncTrigger_('syncDashboardAtNoonEastern')
+function syncDashboardAtMidnight() {
+  return runDashboardSyncTrigger_('syncDashboardAtMidnight')
 }
 
 function runDashboardSyncTrigger_(handler) {
@@ -225,3 +225,4 @@ function inspectDashboardSyncTriggers() {
   console.log(JSON.stringify(result, null, 2))
   return result
 }
+
