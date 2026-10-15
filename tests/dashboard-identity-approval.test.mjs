@@ -78,6 +78,7 @@ test('Reporting Operations requires one explicit, evidence-backed confirmation p
   assert.match(ui, /p_source_evidence_reference: confirmation\.evidenceReference/)
   assert.match(ui, /Type \$\{mapping\.agent_key\} to confirm this single mapping/)
   assert.match(ui, /p_expected_updated_at: selected\.updated_at/)
+  assert.match(ui, /was approved and audited, but the list could not refresh/)
   assert.match(migration, /p_source_authorized is distinct from true/)
   assert.match(migration, /p_october_11_blank_metrics_verified is distinct from true/)
 })
@@ -128,6 +129,12 @@ test('PostgreSQL 17 enforces approval authorization, audit atomicity, stale stat
     await rejected(callAs(ADMIN_WITH_APPROVAL, `'fixture-agent','Fixture Agent','zd-fixture',now() - interval '1 year',${goodTail}`))
     await rejected(callAs(ADMIN_WITH_APPROVAL, `'inactive-agent','Inactive Agent','zd-inactive','${timestamp}'::timestamptz,${goodTail}`))
     await rejected(callAs(ADMIN_WITH_APPROVAL, `'fixture-agent','Fixture Agent','zd-fixture','${timestamp}'::timestamptz,'too short','',true,true`))
+
+    psql(container, `insert into public.agent_identity_map(agent_key,agent_name,zendesk_agent_key,active) values ('null-zendesk-agent','Null Zendesk Agent',null,true);`)
+    const insertedNullZendeskTimestamp = psql(container, `select to_char(updated_at at time zone 'UTC','YYYY-MM-DD HH24:MI:SS.US') from public.agent_identity_map where agent_key='null-zendesk-agent';`).trim()
+    const validNullZendeskArgs = `'null-zendesk-agent','Null Zendesk Agent',null,'${insertedNullZendeskTimestamp}'::timestamptz,${goodTail}`
+    psql(container, callAs(ADMIN_WITH_APPROVAL, validNullZendeskArgs))
+    assert.equal(psql(container, `select dashboard_sync_approved::text || ':' || (zendesk_agent_key is null)::text from public.agent_identity_map where agent_key='null-zendesk-agent';`).trim(), 'true:true', 'a null Zendesk mapping remains an exact nullable-key match')
 
     psql(container, callAs(ADMIN_WITH_APPROVAL, `${base},${goodTail}`))
     assert.equal(psql(container, `select agent_name || ':' || zendesk_agent_key || ':' || dashboard_sync_approved::text from public.agent_identity_map where agent_key='fixture-agent';`).trim(), 'Fixture Agent:zd-fixture:true', 'only approval state changed; stable identity fields remain unchanged')

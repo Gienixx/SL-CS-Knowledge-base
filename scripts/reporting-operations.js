@@ -53,7 +53,7 @@ function renderIdentityApprovalCard(mapping, onApprove) {
   state.textContent = mapping.dashboard_sync_approved ? 'Already approved' : 'Pending approval'
   card.append(heading, details, state)
 
-  if (!mapping.dashboard_sync_approved && mapping.active && mapping.zendesk_agent_key) {
+  if (!mapping.dashboard_sync_approved && mapping.active) {
     const form = document.createElement('form')
     form.className = 'identity-approval-form'
     const authorization = document.createElement('label')
@@ -111,9 +111,7 @@ function renderIdentityApprovalCard(mapping, onApprove) {
     })
     card.appendChild(form)
   } else if (!mapping.dashboard_sync_approved) {
-    state.textContent = mapping.active
-      ? 'This mapping has no Zendesk key and cannot be approved.'
-      : 'Inactive mappings cannot be approved.'
+    state.textContent = 'Inactive mappings cannot be approved.'
   }
 
   return card
@@ -148,11 +146,17 @@ async function initializeIdentityApprovals(ui) {
           })
           if (approvalError) throw approvalError
           ui.identityApprovalStatus.textContent = `${selected.agent_key} was approved and recorded in the identity audit.`
-          await refresh()
         } catch (error) {
           console.error('Dashboard identity approval failed:', error)
           ui.identityApprovalStatus.textContent = error?.message || 'Approval failed. Refresh and review the mapping again.'
           confirmation.button.disabled = false
+          return
+        }
+        try {
+          await refresh()
+        } catch (error) {
+          console.error('Approved mapping list could not be refreshed:', error)
+          ui.identityApprovalStatus.textContent = `${selected.agent_key} was approved and audited, but the list could not refresh. Reload Reporting Operations to verify its status.`
         }
       }))
     })

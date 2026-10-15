@@ -201,7 +201,6 @@ begin
 
   if p_agent_key is null or length(btrim(p_agent_key)) = 0
      or p_expected_agent_name is null or length(btrim(p_expected_agent_name)) = 0
-     or p_expected_zendesk_agent_key is null or length(btrim(p_expected_zendesk_agent_key)) = 0
      or p_expected_updated_at is null
      or p_reason is null or length(btrim(p_reason)) < 10 or length(btrim(p_reason)) > 2000
      or p_source_evidence_reference is null
@@ -241,7 +240,7 @@ begin
       updated_at = v_approved_at
   where mapping.agent_key = p_agent_key
     and mapping.agent_name = p_expected_agent_name
-    and mapping.zendesk_agent_key = p_expected_zendesk_agent_key
+    and mapping.zendesk_agent_key is not distinct from p_expected_zendesk_agent_key
     and mapping.active is true
     and mapping.dashboard_sync_approved is false
     and mapping.updated_at = p_expected_updated_at;
