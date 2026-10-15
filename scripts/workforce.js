@@ -893,4 +893,3 @@ initialize().catch(error => {
   console.error('Workforce initialization failed:', error)
   setMessage(pageMessage, errorMessage(error), 'error')
 })
-

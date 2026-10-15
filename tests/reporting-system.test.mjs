@@ -289,4 +289,3 @@ test('current database operations and verification files are present', async () 
   )
   assert.match(identityApprovalMigration, /dashboard_sync_approved boolean not null default false/i)
 })
-

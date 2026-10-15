@@ -150,4 +150,3 @@ test('PostgreSQL 17 enforces approval authorization, audit atomicity, stale stat
     spawnSync('docker', ['rm', '--force', container], { stdio: 'ignore' })
   }
 })
-

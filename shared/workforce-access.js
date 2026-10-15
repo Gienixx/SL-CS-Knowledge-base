@@ -297,4 +297,3 @@ export function hasWorkforcePermission(access, permissionKey) {
     access?.permissions?.[permissionKey] === true
   )
 }
-

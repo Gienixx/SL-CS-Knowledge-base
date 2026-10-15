@@ -292,4 +292,3 @@ comment on function public.approve_dashboard_agent_identity(
 ) is 'Approves one existing dashboard identity after explicit reporting-admin authorization, source evidence, and blank-metric verification; mapping change and append-only audit commit atomically.';
 
 commit;
-

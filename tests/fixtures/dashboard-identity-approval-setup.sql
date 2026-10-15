@@ -123,4 +123,3 @@ values
 grant usage on schema public to authenticated;
 grant select on public.agent_identity_map to authenticated;
 grant execute on function auth.uid() to authenticated;
-
