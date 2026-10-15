@@ -611,6 +611,133 @@ test('agent renames preserve identity and registered new agents can be imported'
   }
 })
 
+test('a partial dataset write is marked failed and a replay recovers without duplicate analytics rows', async () => {
+  const payload = buildIntegrityPayload()
+  const originalFetch = globalThis.fetch
+  const analyticsRows = new Map()
+  const rawImports = []
+  const syncRunUpdates = []
+  const upsertRequests = []
+  let nextSyncRun = 0
+  let failDriversOnce = true
+
+  const upsert = (tableName, records, conflictColumns) => {
+    if (!analyticsRows.has(tableName)) analyticsRows.set(tableName, new Map())
+    const table = analyticsRows.get(tableName)
+
+    for (const record of records) {
+      const key = JSON.stringify(conflictColumns.map(column => record[column]))
+      table.set(key, { ...(table.get(key) || {}), ...record })
+    }
+  }
+
+  globalThis.fetch = async (url, options = {}) => {
+    const parsedUrl = new URL(String(url))
+    const tableName = parsedUrl.pathname.split('/').at(-1)
+    const method = options.method || 'GET'
+
+    if (tableName === 'sheet_sync_runs' && method === 'POST') {
+      nextSyncRun += 1
+      return new Response(JSON.stringify([{ id: `recovery-${nextSyncRun}` }]), {
+        status: 201,
+        headers: { 'Content-Type': 'application/json' }
+      })
+    }
+
+    if (tableName === 'sheet_sync_runs' && method === 'PATCH') {
+      syncRunUpdates.push(JSON.parse(options.body))
+      return new Response(null, { status: 204 })
+    }
+
+    if (tableName === 'agent_identity_map' && method === 'GET') {
+      return new Response('[]', { status: 200 })
+    }
+
+    if (tableName === 'agent_productivity' && method === 'GET') {
+      return new Response(JSON.stringify([
+        ...(analyticsRows.get('agent_productivity')?.values() || [])
+      ]), { status: 200 })
+    }
+
+    if (tableName === 'raw_sheet_imports' && method === 'POST') {
+      rawImports.push(...JSON.parse(options.body))
+      return new Response(null, { status: 204 })
+    }
+
+    if (method === 'POST') {
+      if (tableName === 'ticket_driver_metrics' && failDriversOnce) {
+        failDriversOnce = false
+        return new Response('isolated test failure', { status: 504 })
+      }
+
+      const records = JSON.parse(options.body)
+      const conflictColumns = parsedUrl.searchParams.get('on_conflict').split(',')
+      upsertRequests.push({
+        tableName,
+        prefer: options.headers?.Prefer,
+        records
+      })
+      upsert(tableName, records, conflictColumns)
+      return new Response(null, { status: 204 })
+    }
+
+    throw new Error(`Unexpected Supabase request: ${method} ${parsedUrl}`)
+  }
+
+  const sendSync = () => onRequestPost({
+    request: new Request('https://example.test/api/sync-dashboard', {
+      method: 'POST',
+      headers: {
+        Authorization: 'Bearer test-secret',
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify(payload)
+    }),
+    env: {
+      SHEET_SYNC_SECRET: 'test-secret',
+      SUPABASE_URL: 'https://project.supabase.co',
+      SUPABASE_SERVICE_ROLE_KEY: 'test-service-role'
+    }
+  })
+
+  try {
+    const failedResponse = await sendSync()
+    assert.equal(failedResponse.status, 500)
+    assert.match((await failedResponse.json()).error, /status 504/)
+    assert.deepEqual(syncRunUpdates.map(update => update.status), ['failed'])
+
+    const countsAfterPartialWrite = Object.fromEntries(
+      [...analyticsRows].map(([tableName, rows]) => [tableName, rows.size])
+    )
+    assert.ok(Object.keys(countsAfterPartialWrite).length >= 3)
+    assert.ok(Object.values(countsAfterPartialWrite).every(count => count > 0))
+
+    const recoveredResponse = await sendSync()
+    assert.equal(recoveredResponse.status, 200)
+    assert.deepEqual(syncRunUpdates.map(update => update.status), [
+      'failed', 'success'
+    ])
+
+    const countsAfterRecovery = Object.fromEntries(
+      [...analyticsRows].map(([tableName, rows]) => [tableName, rows.size])
+    )
+    Object.entries(countsAfterPartialWrite).forEach(([tableName, count]) => {
+      assert.equal(countsAfterRecovery[tableName], count)
+    })
+    assert.ok(countsAfterRecovery.ticket_driver_metrics > 0)
+    assert.ok([...analyticsRows.values()].every(rows =>
+      [...rows.values()].every(row => row.report_date)
+    ))
+    assert.ok(upsertRequests.every(request =>
+      request.prefer === 'resolution=merge-duplicates,return=minimal'
+    ))
+    assert.equal(rawImports.length > 0, true)
+    assert.ok(rawImports.every(record => record.sync_run_id))
+  } finally {
+    globalThis.fetch = originalFetch
+  }
+})
+
 test('unauthorized synchronization requests are rejected before database writes', async () => {
   const originalFetch = globalThis.fetch
   let databaseRequests = 0
@@ -642,3 +769,4 @@ test('unauthorized synchronization requests are rejected before database writes'
     globalThis.fetch = originalFetch
   }
 })
+

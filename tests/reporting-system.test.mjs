@@ -32,14 +32,14 @@ test('the workbook script targets the current synchronization endpoint', async (
   assert.match(script, /Daily Drivers/)
 })
 
-test('the workbook installs the requested Eastern-time daily sync triggers', async () => {
+test('the workbook installs the requested Manila-time daily sync triggers', async () => {
   const script = await read('apps-script/dashboard-trigger-migration.gs')
 
-  assert.match(script, /DASHBOARD_SYNC_TRIGGER_TIMEZONE = 'America\/New_York'/)
-  assert.match(script, /handler: 'syncDashboardAt9AmEastern'/)
-  assert.match(script, /hour: 9/)
-  assert.match(script, /handler: 'syncDashboardAtNoonEastern'/)
-  assert.match(script, /hour: 12/)
+  assert.match(script, /DASHBOARD_SYNC_TRIGGER_TIMEZONE = 'Asia\/Manila'/)
+  assert.match(script, /handler: 'syncDashboardAt9Pm'/)
+  assert.match(script, /hour: 21/)
+  assert.match(script, /handler: 'syncDashboardAtMidnight'/)
+  assert.match(script, /hour: 0/)
   assert.match(script, /function migrateDashboardSyncTriggers\(\)/)
   assert.match(script, /\.everyDays\(1\)/)
   assert.match(script, /\.nearMinute\(schedule\.minute\)/)
@@ -52,15 +52,15 @@ test('trigger migration removes managed duplicates and is repeatable', async () 
   const script = await read('apps-script/dashboard-trigger-migration.gs')
   let nextId = 1
   const triggers = [
-    makeTrigger('syncDashboardAt9AmEastern'),
-    makeTrigger('syncDashboardAt9AmEastern'),
-    makeTrigger('syncDashboardAtNoonEastern', {
+    makeTrigger('syncDashboardAt9Pm'),
+    makeTrigger('syncDashboardAt9Pm'),
+    makeTrigger('syncDashboardAtMidnight', {
       hour: 23,
       minute: 45,
       days: 1,
-      timezone: 'Asia/Manila'
+      timezone: 'America/New_York'
     }),
-    makeTrigger('syncDashboardAtMidnight'),
+    makeTrigger('syncDashboardAt9AmEastern'),
     makeTrigger('unrelatedHandler')
   ]
   const scriptProperties = {}
@@ -128,8 +128,8 @@ test('trigger migration removes managed duplicates and is repeatable', async () 
   const firstIds = first.createdTriggers.map(trigger => trigger.triggerId)
   const second = context.migrateDashboardSyncTriggers()
   const managed = triggers.filter(trigger => [
-    'syncDashboardAt9AmEastern', 'syncDashboardAtNoonEastern',
     'syncDashboardAt9Pm', 'syncDashboardAtMidnight',
+    'syncDashboardAt9AmEastern', 'syncDashboardAtNoonEastern',
     'syncAllDashboardData', 'syncDashboardData'
   ].includes(trigger.handler))
 
@@ -148,36 +148,36 @@ test('trigger migration removes managed duplicates and is repeatable', async () 
   ), true)
   assert.deepEqual(
     managed.map(trigger => trigger.handler).sort(),
-    ['syncDashboardAt9AmEastern', 'syncDashboardAtNoonEastern']
+    ['syncDashboardAt9Pm', 'syncDashboardAtMidnight']
   )
-  assert.equal(triggers.find(trigger => trigger.handler === 'syncDashboardAtNoonEastern').schedule.timezone,
-    'America/New_York')
-  assert.equal(triggers.find(trigger => trigger.handler === 'syncDashboardAtNoonEastern').schedule.hour, 12)
-  assert.equal(triggers.find(trigger => trigger.handler === 'syncDashboardAt9AmEastern').schedule.timezone,
-    'America/New_York')
-  assert.equal(triggers.find(trigger => trigger.handler === 'syncDashboardAt9AmEastern').schedule.hour, 9)
+  assert.equal(triggers.find(trigger => trigger.handler === 'syncDashboardAtMidnight').schedule.timezone,
+    'Asia/Manila')
+  assert.equal(triggers.find(trigger => trigger.handler === 'syncDashboardAtMidnight').schedule.hour, 0)
+  assert.equal(triggers.find(trigger => trigger.handler === 'syncDashboardAt9Pm').schedule.timezone,
+    'Asia/Manila')
+  assert.equal(triggers.find(trigger => trigger.handler === 'syncDashboardAt9Pm').schedule.hour, 21)
 
   const installedNoon = triggers.find(trigger =>
-    trigger.handler === 'syncDashboardAtNoonEastern'
+    trigger.handler === 'syncDashboardAtMidnight'
   )
   const installedNoonId = installedNoon.id
   triggers.splice(triggers.indexOf(installedNoon), 1)
-  triggers.push(makeTrigger('syncDashboardAtNoonEastern', {
-    hour: 23,
+  triggers.push(makeTrigger('syncDashboardAtMidnight', {
+    hour: 12,
     minute: 30,
     days: 1,
-    timezone: 'Asia/Manila'
+    timezone: 'America/New_York'
   }))
   const manuallyReplaced = context.inspectDashboardSyncTriggers()
   assert.equal(manuallyReplaced.valid, false)
   assert.equal(
     manuallyReplaced.scheduleChecks.find(check =>
-      check.handler === 'syncDashboardAtNoonEastern'
+      check.handler === 'syncDashboardAtMidnight'
     ).verifiedByReinstall,
     false
   )
   assert.notEqual(
-    triggers.find(trigger => trigger.handler === 'syncDashboardAtNoonEastern').id,
+    triggers.find(trigger => trigger.handler === 'syncDashboardAtMidnight').id,
     installedNoonId
   )
 
@@ -185,25 +185,22 @@ test('trigger migration removes managed duplicates and is repeatable', async () 
   assert.equal(repaired.valid, true)
 })
 
-test('Eastern trigger timezone follows daylight-saving transitions', () => {
+test('Manila trigger schedule stays fixed across Eastern daylight-saving transitions', () => {
   const localClock = instant => {
     const parts = new Intl.DateTimeFormat('en-US', {
-      timeZone: 'America/New_York',
+      timeZone: 'Asia/Manila',
       hour: 'numeric',
-      hour12: true,
-      timeZoneName: 'shortOffset'
+      hour12: true
     }).formatToParts(new Date(instant))
     return Object.fromEntries(parts.map(part => [part.type, part.value]))
   }
 
-  const beforeDst = localClock('2026-03-07T14:00:00Z')
+  const beforeDst = localClock('2026-03-07T13:00:00Z')
   const afterDst = localClock('2026-03-09T13:00:00Z')
   assert.equal(beforeDst.hour, '9')
-  assert.equal(beforeDst.dayPeriod, 'AM')
-  assert.equal(beforeDst.timeZoneName, 'GMT-5')
+  assert.equal(beforeDst.dayPeriod, 'PM')
   assert.equal(afterDst.hour, '9')
-  assert.equal(afterDst.dayPeriod, 'AM')
-  assert.equal(afterDst.timeZoneName, 'GMT-4')
+  assert.equal(afterDst.dayPeriod, 'PM')
 })
 
 test('Reporting Operations exposes a computed stale-sync alert after 30 hours', async () => {
@@ -243,7 +240,7 @@ test('Apps Script logs failures that happen before endpoint contact', async () =
   }
 
   runInNewContext(syncScript + '\n' + triggerScript, context)
-  assert.throws(() => context.syncDashboardAt9AmEastern(), /Set DASHBOARD_SYNC_URL/)
+  assert.throws(() => context.syncDashboardAt9Pm(), /Set DASHBOARD_SYNC_URL/)
   assert.equal(endpointCalls, 0)
   assert.ok(errorLogs.some(log =>
     log.event === 'dashboard_sync_failed' &&
@@ -251,7 +248,7 @@ test('Apps Script logs failures that happen before endpoint contact', async () =
   ))
   assert.ok(errorLogs.some(log =>
     log.event === 'dashboard_sync_trigger_failed' &&
-    log.handler === 'syncDashboardAt9AmEastern'
+    log.handler === 'syncDashboardAt9Pm'
   ))
 })
 
@@ -289,3 +286,4 @@ test('current database operations and verification files are present', async () 
   )
   assert.match(identityApprovalMigration, /dashboard_sync_approved boolean not null default false/i)
 })
+
