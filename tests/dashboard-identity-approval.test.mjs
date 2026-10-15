@@ -57,7 +57,10 @@ test('dashboard identity approval is an independent, explicit Workforce permissi
   const editor = await read('scripts/workforce.js')
   const invitation = await read('functions/create-user.js')
   const migration = await read('supabase/migrations/20261015113409_dashboard_identity_approval_workflow.sql')
-  assert.match(workforce, /value="approve_dashboard_identities"><span>Approve dashboard identities<\/span>/)
+  assert.equal((workforce.match(/value="approve_dashboard_identities"/g) || []).length, 1)
+  assert.match(workforce, /id="permissionGrid"[\s\S]*value="approve_dashboard_identities"/)
+  const invitePermissionGrid = workforce.match(/id="invitePermissionGrid"([\s\S]*?)<\/div>/)?.[1] || ''
+  assert.doesNotMatch(invitePermissionGrid, /approve_dashboard_identities/)
   assert.match(editor, /if \(key !== 'approve_dashboard_identities'\) permissions\[key\] = true/)
   assert.match(invitation, /legacyAdmin && key !== 'approve_dashboard_identities'/)
   assert.match(migration, /'approve_dashboard_identities'::text/)
