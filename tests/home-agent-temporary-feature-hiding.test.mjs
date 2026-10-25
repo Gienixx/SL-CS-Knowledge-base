@@ -4,7 +4,7 @@ import test from 'node:test'
 
 const read = path => readFile(new URL(`../${path}`, import.meta.url), 'utf8')
 
-test('Home exposes leave requests to agents while My payslips remains temporarily hidden', async () => {
+test('Home exposes leave requests and Payroll V2 payslips to agents', async () => {
   const [page, navigation] = await Promise.all([
     read('home.html'),
     read('scripts/home-workforce-nav.js')
@@ -12,14 +12,14 @@ test('Home exposes leave requests to agents while My payslips remains temporaril
 
   assert.match(page, /id="homeLeaveRequestsBtn"[^>]+href="\.\/leave-requests\.html"[^>]+hidden/)
   assert.match(page, /id="homeLeaveRequestsPendingBadge"/)
-  assert.match(page, /id="homeMyPayslipsBtn"[^>]+href="\.\/my-payslips\.html"[^>]+hidden/)
-  assert.match(page, /scripts\/home-workforce-nav\.js\?v=10/)
+  assert.match(page, /id="homeMyPayslipsBtn"[^>]+href="\.\/my-payslips-v2\.html"[^>]+hidden/)
+  assert.match(page, /scripts\/home-workforce-nav\.js\?v=11/)
   assert.match(navigation, /const canApproveLeave =/)
-  assert.match(navigation, /const canUseLeaveRequests = access\.is_agent === true \|\| canApproveLeave/)
+  assert.match(navigation, /const canUseLeaveRequests = access\.is_agent === true \|\| canApproveLeave \|\| canManageSchedules/)
   assert.match(navigation, /leaveRequestsButton\.hidden = !canUseLeaveRequests/)
   assert.match(navigation, /\.eq\('status', 'pending'\)/)
   assert.match(navigation, /leaveRequestsPendingBadge\.hidden = pendingCount === 0/)
-  assert.match(navigation, /myPayslipsButton\.hidden = isRegularAgentView \|\| !canViewOwnPayslips/)
+  assert.match(navigation, /myPayslipsButton\.hidden = !canViewOwnPayslips/)
 })
 
 test('leave access keeps the approval permission boundary and feature page', async () => {
