@@ -210,7 +210,7 @@ async function requirePayrollDashboardAccess() {
 
 async function initialize() {
   if (!isValidUuid(recordId)) {
-    window.location.replace(adminPreview ? './payroll-v2.html' : './my-payslips.html')
+    window.location.replace(adminPreview ? './payroll-v2.html' : './my-payslips-v2.html')
     return
   }
 
@@ -245,7 +245,7 @@ if (adminPreview) {
   elements.refresh.hidden = true
   elements.print.hidden = true
 } else {
-  elements.back.href = './my-payslips.html'
+  elements.back.href = './my-payslips-v2.html'
 }
 elements.refresh.addEventListener('click', loadPayslip)
 elements.print.addEventListener('click', () => window.print())
