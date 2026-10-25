@@ -129,7 +129,7 @@ test('Completed Payroll V2 payslip links open the restored protected V2 preview 
   assert.match(script, /'payroll_v2_get_admin_completed_payslip'/)
   assert.match(script, /'payroll_v2_get_my_payslip'/)
   assert.match(script, /hasWorkforcePermission\(access, permission\)/)
-  assert.match(script, /window\.location\.replace\(adminPreview \? '\.\/payroll-v2\.html' : '\.\/my-payslips\.html'\)/)
+  assert.match(script, /window\.location\.replace\(adminPreview \? '\.\/payroll-v2\.html' : '\.\/my-payslips-v2\.html'\)/)
   assert.match(script, /isVisiblePayrollV2Payslip\(data\)/)
   assert.match(visibility, /status === 'finalized'/)
   assert.match(visibility, /recalculation_pending !== true/)
