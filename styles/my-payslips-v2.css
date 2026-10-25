@@ -1,0 +1,19 @@
+.my-payslips-v2-table { min-width: 880px; }
+.my-payslips-v2-table th:nth-child(4),
+.my-payslips-v2-table td:nth-child(4) { text-align: right; }
+.my-payslips-v2-badge {
+  display: inline-flex;
+  border-radius: 999px;
+  padding: 5px 10px;
+  font-size: .74rem;
+  font-weight: 800;
+  background: #e8f6f1;
+  color: #176b53;
+}
+.my-payslips-v2-badge.finalized {
+  background: #eeeafb;
+  color: #5143af;
+}
+@media (max-width: 680px) {
+  .my-payslips-v2-table { min-width: 780px; }
+}
