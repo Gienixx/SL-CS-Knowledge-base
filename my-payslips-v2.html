@@ -1,0 +1,75 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>My Payroll V2 Payslips | SocialLoop CS Base</title>
+  <link rel="stylesheet" href="./styles/button-theme.css?v=1">
+  <link rel="stylesheet" href="./styles/workforce-admin.css?v=2">
+  <link rel="stylesheet" href="./styles/my-payslips.css?v=1">
+  <link rel="stylesheet" href="./styles/my-payslips-v2.css?v=1">
+  <link rel="stylesheet" href="./styles/site-theme.css?v=1">
+  <script src="./scripts/site-theme.js?v=1"></script>
+</head>
+<body class="my-payslips-access-pending">
+  <main class="wf-page my-payslips-page">
+    <header class="wf-topbar">
+      <div class="wf-title">
+        <h1>My Payslips</h1>
+        <p>View or print your own approved and finalized Payroll V2 payslips.</p>
+      </div>
+      <nav class="wf-nav" aria-label="Payslip navigation">
+        <a class="wf-link" href="./home.html">← Back to Home</a>
+      </nav>
+    </header>
+
+    <section class="wf-summary-grid" aria-label="My Payroll V2 payslip summary">
+      <article class="wf-summary">
+        <span class="wf-stat-copy"><span>Available payslips</span><strong id="myV2PayslipCount">—</strong></span>
+      </article>
+      <article class="wf-summary">
+        <span class="wf-stat-copy"><span>Finalized payslips</span><strong id="myV2FinalizedCount">—</strong></span>
+      </article>
+      <article class="wf-summary">
+        <span class="wf-stat-copy"><span>Latest payment</span><strong id="myV2LatestPayment">—</strong></span>
+      </article>
+      <article class="wf-summary">
+        <span class="wf-stat-copy"><span>Latest net pay</span><strong id="myV2LatestNet">—</strong></span>
+      </article>
+    </section>
+
+    <section class="wf-card my-payslips-card">
+      <div class="wf-card-header">
+        <div>
+          <h2>Payroll V2 payslips</h2>
+          <p class="wf-message">Only your own approved or finalized records are shown. Payslips awaiting recalculation are unavailable.</p>
+        </div>
+        <div class="wf-actions">
+          <button class="wf-btn secondary" id="refreshMyV2PayslipsButton" type="button">Refresh</button>
+        </div>
+      </div>
+
+      <div class="wf-table-wrap">
+        <table class="wf-table my-payslips-table my-payslips-v2-table">
+          <thead>
+            <tr>
+              <th>Payroll period</th>
+              <th>Payment date</th>
+              <th>Status</th>
+              <th>Gross pay</th>
+              <th>Deductions</th>
+              <th>Net pay</th>
+              <th>Actions</th>
+            </tr>
+          </thead>
+          <tbody id="myV2PayslipsTableBody">
+            <tr><td colspan="7" class="wf-empty">Loading your Payroll V2 payslips…</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <p id="myV2PayslipsMessage" class="wf-message" role="status" aria-live="polite"></p>
+    </section>
+  </main>
+  <script type="module" src="./scripts/my-payslips-v2.js?v=1"></script>
+</body>
+</html>

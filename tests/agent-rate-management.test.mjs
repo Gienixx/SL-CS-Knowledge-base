@@ -267,7 +267,7 @@ test('Agent Rates is reached through the payroll dashboard instead of Home', asy
   ])
 
   assert.doesNotMatch(home, /homeAgentRatesBtn|href="\.\/agent-rates\.html"/)
-  assert.match(home, /scripts\/home-workforce-nav\.js\?v=10/)
+  assert.match(home, /scripts\/home-workforce-nav\.js\?v=11/)
   assert.match(
     page,
     /href="\.\/payroll-dashboard\.html">← Back to payroll dashboard<\/a>/

@@ -72,7 +72,7 @@ test('Step 13 page offers own preview, private download, print, and prepaid summ
   assert.match(script, /prepaid_summary/)
   assert.doesNotMatch(script, /console\./)
   assert.match(css, /\.my-payslips-actions/)
-  assert.match(home, /id="homeMyPayslipsBtn"[\s\S]*?my-payslips\.html/)
+  assert.match(home, /id="homeMyPayslipsBtn"[\s\S]*?my-payslips-v2\.html/)
   assert.match(homeNav, /view_own_payslips/)
   assert.match(preview, /printRequested[\s\S]*?window\.print\(\)/)
   assert.match(preview, /: '\.\/my-payslips\.html'/)
