@@ -15,7 +15,7 @@ test('Payroll V2 leave calculation respects whole-day, half-day, and exact-time 
   const [migration, leaveUi, oldLeaveMigration] = await Promise.all([
     read('supabase/migrations/20261014120000_payroll_v2_leave_and_shortfall_void.sql'),
     read('leave-requests.html'),
-    read('supabase/migrations/20261007105945_partial_day_leave_support.sql')
+    read('supabase/migrations/20261007115407_partial_day_leave_support.sql')
   ])
 
   assert.match(leaveUi, /option value="whole_day">Whole Day \(8 paid hours\)/)

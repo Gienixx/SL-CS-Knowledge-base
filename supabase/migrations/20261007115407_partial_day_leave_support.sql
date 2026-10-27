@@ -586,3 +586,5 @@ revoke all on function public.payroll_apply_paid_leave_earnings()
   from public, anon, authenticated;
 
 commit;
+
+;

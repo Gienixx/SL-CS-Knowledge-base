@@ -724,3 +724,5 @@ comment on function private.workforce_schedule_active_transition_lock() is
   'Serializes activation or reassignment of schedule rows with Schedule Request date conversions without waiting on a row lock cycle.';
 
 commit;
+
+;

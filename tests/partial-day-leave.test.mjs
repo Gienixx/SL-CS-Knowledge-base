@@ -6,7 +6,7 @@ import {
   partialLeaveScheduleEligibility
 } from '../shared/leave-duration.js'
 
-const migrationUrl = new URL('../supabase/migrations/20261007105945_partial_day_leave_support.sql', import.meta.url)
+const migrationUrl = new URL('../supabase/migrations/20261007115407_partial_day_leave_support.sql', import.meta.url)
 const paidLeavePolicyUrl = new URL('../supabase/migrations/20260810122500_paid_leave_attendance_coexistence.sql', import.meta.url)
 const reviewMigrationUrl = new URL('../supabase/migrations/20260817125628_unified_schedule_requests.sql', import.meta.url)
 const leaveUiUrl = new URL('../scripts/leave-requests.js', import.meta.url)

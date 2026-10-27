@@ -86,7 +86,7 @@ test('conversion payroll guards and real concurrent PostgreSQL lock orders', { s
   const versionEnd = scheduleVersioningSource.indexOf('-- Payroll calculation must distinguish', versionStart)
   assert.ok(versionStart >= 0 && versionEnd > versionStart, 'actual schedule version trigger source exists')
   const scheduleVersioning = scheduleVersioningSource.slice(versionStart, versionEnd)
-  const migration = await read('supabase/migrations/20261009173417_add_rest_day_regular_shift_request_types.sql')
+  const migration = await read('supabase/migrations/20261010150523_add_rest_day_regular_shift_request_types.sql')
   const adminAuthorizationMigration = await read('supabase/migrations/20261014160000_pr68_admin_schedule_conversion_requests.sql')
   const behavior = await read('tests/fixtures/schedule-conversion-payroll-check.sql')
   const adminBehavior = await read('tests/fixtures/schedule-conversion-admin-check.sql')

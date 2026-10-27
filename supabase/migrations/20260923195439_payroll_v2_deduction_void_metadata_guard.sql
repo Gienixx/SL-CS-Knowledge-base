@@ -1,0 +1,1 @@
+alter table public.payroll_v2_deductions drop constraint payroll_v2_deductions_void_metadata_check; alter table public.payroll_v2_deductions add constraint payroll_v2_deductions_void_metadata_check check ((status = 'void' and voided_at is not null and voided_by is not null) or (status = 'approved' and voided_at is null and voided_by is null));;
