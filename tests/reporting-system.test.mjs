@@ -272,7 +272,7 @@ test('current database operations and verification files are present', async () 
     'supabase/migrations-legacy/2026070402_reporting_operations.sql',
     'supabase/migrations-legacy/2026070403_sync_history_visibility_fix.sql',
     'supabase/migrations-legacy/2026070607_reporting_operations_admin_access.sql',
-    'supabase/migrations/20261012132044_dashboard_agent_identity_approval.sql',
+    'supabase/migrations/20261012155931_dashboard_agent_identity_approval.sql',
     'supabase/verification/google_sheet_contract_check.sql',
     'supabase/verification/sheet_only_reporting_check.sql',
     'supabase/verification/reporting_acceptance_check.sql',
@@ -282,7 +282,7 @@ test('current database operations and verification files are present', async () 
   for (const path of paths) assert.ok((await read(path)).trim().length > 0, `${path} should not be empty`)
 
   const identityApprovalMigration = await read(
-    'supabase/migrations/20261012132044_dashboard_agent_identity_approval.sql'
+    'supabase/migrations/20261012155931_dashboard_agent_identity_approval.sql'
   )
   assert.match(identityApprovalMigration, /dashboard_sync_approved boolean not null default false/i)
 })
