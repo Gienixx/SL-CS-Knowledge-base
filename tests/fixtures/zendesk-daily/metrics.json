@@ -1,0 +1,5 @@
+{
+  "701":{"ticket_id":701,"solved_at":"2026-10-21T03:00:00Z","reply_time_in_minutes":{"calendar":60},"requester_wait_time_in_minutes":{"calendar":90},"full_resolution_time_in_minutes":{"calendar":240},"replies":1,"reopens":0},
+  "702":{"ticket_id":702,"solved_at":"2026-10-21T04:00:00Z","reply_time_in_minutes":{"calendar":0},"requester_wait_time_in_minutes":{"calendar":null},"full_resolution_time_in_minutes":{"calendar":null},"replies":0,"reopens":1},
+  "703":{"ticket_id":703,"solved_at":null,"reply_time_in_minutes":null,"requester_wait_time_in_minutes":null,"full_resolution_time_in_minutes":null,"replies":0,"reopens":0}
+}

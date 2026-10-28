@@ -1,0 +1,6 @@
+{
+  "name": "sl-cs-zendesk-daily-worker",
+  "private": true,
+  "type": "module",
+  "engines": { "node": ">=20" }
+}

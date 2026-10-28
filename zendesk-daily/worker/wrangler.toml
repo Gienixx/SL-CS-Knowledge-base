@@ -1,0 +1,24 @@
+name = "sl-cs-zendesk-daily"
+main = "./src/index.js"
+compatibility_date = "2026-10-23"
+workers_dev = false
+
+[assets]
+directory = "../dashboard"
+binding = "ASSETS"
+run_worker_first = ["/api/*"]
+
+[triggers]
+crons = ["0 22 * * *"]
+
+[[d1_databases]]
+binding = "REPORTING_DB"
+database_name = "sl-cs-zendesk-daily"
+database_id = "SET_AFTER_RELEASE_REVIEW"
+migrations_dir = "migrations"
+
+[vars]
+ZENDESK_SUBDOMAIN = "SET_AFTER_RELEASE_REVIEW"
+ACCESS_TEAM_DOMAIN = "SET_AFTER_RELEASE_REVIEW.cloudflareaccess.com"
+ACCESS_AUD = "SET_AFTER_RELEASE_REVIEW"
+ZENDESK_AGENT_IDS_JSON = "{}"
