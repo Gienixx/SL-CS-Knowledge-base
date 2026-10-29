@@ -45,6 +45,30 @@ export function median(values) {
   return sorted.length % 2 ? sorted[mid] : (sorted[mid - 1] + sorted[mid]) / 2;
 }
 
+// Audits carry publicComment only after Zendesk roles have classified the author.
+export function countPublicAgentReplies(audits) {
+  return audits.filter(audit => audit.publicComment).length;
+}
+
+export function oneTouchResult(audits, metric, channel) {
+  return channel === "api" ? null : countPublicAgentReplies(audits) <= 1 && Number(metric.reopens || 0) === 0;
+}
+
+export function assigneeAtSolve(audits, solvedAt) {
+  const solvedAtMs = Date.parse(solvedAt || "");
+  if (!Number.isFinite(solvedAtMs)) return null;
+  let currentAssignee = null, solveActor = null;
+  const history = audits.filter(a => Number.isFinite(Date.parse(a.at)) && Date.parse(a.at) <= solvedAtMs)
+    .slice().sort((a, b) => Date.parse(a.at) - Date.parse(b.at));
+  for (const audit of history) {
+    if (audit.assigneeChanged) currentAssignee = audit.assigneeId == null ? null : Number(audit.assigneeId);
+    if (audit.status === "solved" && Date.parse(audit.at) === solvedAtMs) solveActor = Number(audit.authorId);
+  }
+  // An out-of-scope assignee must not be replaced by an in-scope solve actor.
+  if (Number.isSafeInteger(currentAssignee) && currentAssignee > 0) return currentAssignee;
+  return Number.isSafeInteger(solveActor) && solveActor > 0 ? solveActor : null;
+}
+
 export function buildDailyRows({ day, tickets, metricsByTicket, auditsByTicket, ratings, agentIds = {} }) {
   const { start, end } = dayBoundsPht(day);
   const agentById = new Map(AGENTS.map(a => [Number(agentIds[a.key]), a]).filter(([id]) => Number.isSafeInteger(id) && id > 0));
@@ -54,17 +78,12 @@ export function buildDailyRows({ day, tickets, metricsByTicket, auditsByTicket, 
     const metric = metricsByTicket.get(String(ticket.id));
     if (!metric || !isWithin(metric.solved_at, start, end)) continue;
     const audits = auditsByTicket.get(String(ticket.id)) || [];
-    let currentAssignee = null, solve = null, lastAssignment = null;
+    let lastAssignment = null;
     for (const audit of audits) {
-      if (audit.assigneeChanged) currentAssignee = audit.assigneeId;
       if (audit.assigneeChanged && audit.assigneeId !== null && Date.parse(audit.at) <= Date.parse(metric.solved_at)) lastAssignment = audit;
-      if (audit.status === "solved" && audit.at === metric.solved_at) solve = { ...audit, currentAssignee };
     }
-    const solvedBy = solve && agentById.get(solve.authorId);
-    const assignedAtSolve = solve?.currentAssignee && agentById.get(solve.currentAssignee);
-    const agent = solve?.currentAssignee !== null && solve?.currentAssignee !== undefined ? assignedAtSolve : solvedBy;
+    const agent = agentById.get(assigneeAtSolve(audits, metric.solved_at));
     if (!agent) continue;
-    const publicAgentReplies = audits.reduce((n, a) => n + (a.publicComment && agentById.has(a.authorId) ? 1 : 0), 0);
     const ticketRatings = ratings.filter(r => String(r.ticket_id) === String(ticket.id) && isWithin(r.created_at, start, end));
     const score = ticketRatings.find(r => r.score === "good" || r.score === "bad")?.score ?? null;
     byAgent.get(agent.key).push({
@@ -74,7 +93,7 @@ export function buildDailyRows({ day, tickets, metricsByTicket, auditsByTicket, 
       lastAssignToResolution: lastAssignment ? minutesBetween(metric.solved_at, lastAssignment.at) : null,
       fullResolution: metric.full_resolution_time_in_minutes?.calendar ?? null,
       csat: score,
-      oneTouch: ticket.via_channel === "api" ? null : publicAgentReplies <= 1 && Number(metric.reopens || 0) === 0
+      oneTouch: oneTouchResult(audits, metric, ticket.via_channel)
     });
   }
 

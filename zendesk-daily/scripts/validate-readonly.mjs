@@ -1,4 +1,4 @@
-import { dayBoundsPht, isWithin } from "../worker/src/analytics.js";
+import { assigneeAtSolve, countPublicAgentReplies, dayBoundsPht, isWithin, oneTouchResult } from "../worker/src/analytics.js";
 import { apiBase, getTicketAudits, getTicketMetrics, requestWithRetry } from "../worker/src/zendesk.js";
 import { pathToFileURL } from "node:url";
 
@@ -72,23 +72,7 @@ export async function fetchSearchExport(query, accessToken, { subdomain, fetchIm
   return { results, pages };
 }
 
-export function assigneeAtSolve(audits, solvedAt) {
-  const solvedAtMs = Date.parse(solvedAt || "");
-  if (!Number.isFinite(solvedAtMs)) return null;
-  let currentAssignee = null;
-  let solveActor = null;
-  for (const audit of audits) {
-    if (Date.parse(audit.at || "") > solvedAtMs) continue;
-    if (audit.assigneeChanged) currentAssignee = audit.assigneeId == null ? null : Number(audit.assigneeId);
-    if (audit.status === "solved") solveActor = Number(audit.authorId);
-  }
-  if (currentAssignee !== null && Number.isSafeInteger(currentAssignee) && currentAssignee > 0) return currentAssignee;
-  return Number.isSafeInteger(solveActor) && solveActor > 0 ? solveActor : null;
-}
-
-export function countPublicAgentReplies(audits) {
-  return audits.filter(audit => audit.publicComment).length;
-}
+export { assigneeAtSolve, countPublicAgentReplies };
 
 async function mapLimit(items, limit, fn) {
   const output = new Array(items.length);
@@ -118,13 +102,12 @@ export async function validateDay(day, { subdomain, accessToken, fetchImpl = fet
     ]);
     if (!metric || !isWithin(metric.solved_at, start, end)) return null;
     const attributionId = assigneeAtSolve(audits, metric.solved_at);
-    const agentReplies = countPublicAgentReplies(audits);
     return {
       id: String(ticket.id),
       assigneeId: attributionId,
       viaChannel: ticket.via?.channel ?? null,
       oneTouchEligible: ticket.via?.channel !== "api",
-      oneTouch: ticket.via?.channel === "api" ? null : agentReplies <= 1 && Number(metric.reopens || 0) === 0,
+      oneTouch: oneTouchResult(audits, metric, ticket.via?.channel),
       replies: metric.replies,
       reopens: metric.reopens
     };

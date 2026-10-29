@@ -1,4 +1,4 @@
-import { AGENTS, METRICS, buildDailyRows, dayBoundsPht, emptyRows, previousPhtDay } from "./analytics.js";
+import { AGENTS, METRICS, assigneeAtSolve, oneTouchResult, isWithin, dayBoundsPht, emptyRows, previousPhtDay } from "./analytics.js";
 import { getAccessToken } from "./oauth.js";
 import { apiBase, fetchCursorPages, getSatisfactionRatings, getTicketAudits, getTicketMetrics, minimalTicket, sourceTimestamp } from "./zendesk.js";
 
@@ -96,31 +96,25 @@ async function runSnapshot(day, env, scheduledTime = new Date()) {
           if (!Number.isSafeInteger(Number(ticket.id))) continue;
           if (ticket.status !== "solved" && ticket.status !== "closed") continue;
           const metric = await getTicketMetrics(env.ZENDESK_SUBDOMAIN, ticket.id, accessToken);
-          if (!metric?.solved_at || Date.parse(metric.solved_at) < Date.parse(bounds.start) || Date.parse(metric.solved_at) >= Date.parse(bounds.end)) continue;
+          if (!metric || !isWithin(metric.solved_at, bounds.start, bounds.end)) continue;
           const audits = await getTicketAudits(env.ZENDESK_SUBDOMAIN, ticket.id, accessToken, fetch, roleCache);
-          const [row] = buildDailyRows({ day, tickets: [ticket], metricsByTicket: new Map([[String(ticket.id), metric]]), auditsByTicket: new Map([[String(ticket.id), audits]]), ratings, agentIds: ids });
-          const agentRow = row.solved_tickets ? row : null;
           // Stage only the per-ticket aggregate inputs. Ticket text, comments, requester IDs, names, and emails are discarded.
-          const auditSolve = [...audits].reverse().find(a => a.status === "solved" && a.at === metric.solved_at);
-          let assigneeAtSolve = null, lastAssignment = null;
+          let lastAssignment = null;
           for (const audit of audits) {
             if (Date.parse(audit.at) > Date.parse(metric.solved_at)) break;
-            if (audit.assigneeChanged) assigneeAtSolve = audit.assigneeId;
             if (audit.assigneeChanged && audit.assigneeId !== null && Date.parse(audit.at) <= Date.parse(metric.solved_at)) lastAssignment = audit;
-            if (audit.at === metric.solved_at && audit.status === "solved") break;
           }
-          const chosenAgentId = assigneeAtSolve ?? auditSolve?.authorId;
+          const chosenAgentId = assigneeAtSolve(audits, metric.solved_at);
           const chosenAgent = AGENTS.find(a => ids[a.key] === chosenAgentId);
-          if (agentRow && chosenAgent) {
+          if (chosenAgent) {
             const rating = ratings.find(r => String(r.ticket_id) === String(ticket.id) && (r.score === "good" || r.score === "bad"));
-            const publicReplies = audits.filter(a => a.publicComment).length;
             const values = {
               first_reply_minutes: Number(metric.replies) === 0 ? null : metric.reply_time_in_minutes?.calendar ?? null,
               requester_wait_minutes: metric.requester_wait_time_in_minutes?.calendar ?? null,
               last_assignment_to_resolution_minutes: lastAssignment ? Math.max(0, (Date.parse(metric.solved_at) - Date.parse(lastAssignment.at)) / 60000) : null,
               full_resolution_minutes: metric.full_resolution_time_in_minutes?.calendar ?? null,
               csat: rating?.score ?? null,
-              one_touch: ticket.via_channel === "api" ? null : publicReplies <= 1 && Number(metric.reopens || 0) === 0
+              one_touch: oneTouchResult(audits, metric, ticket.via_channel)
             };
             await db.prepare("INSERT INTO staged_metrics(run_id,ticket_id,agent_key,metric_json) VALUES (?,?,?,?) ON CONFLICT(run_id,ticket_id) DO UPDATE SET agent_key=excluded.agent_key,metric_json=excluded.metric_json")
               .bind(activeRunId, ticket.id, chosenAgent.key, JSON.stringify(values)).run();

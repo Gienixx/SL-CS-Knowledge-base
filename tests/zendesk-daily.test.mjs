@@ -1,10 +1,11 @@
+import worker from "../zendesk-daily/worker/src/index.js";
 import test from "node:test";
 import assert from "node:assert/strict";
 import { readFile } from "node:fs/promises";
 import { AGENTS, buildDailyRows, dayBoundsPht, median, previousPhtDay } from "../zendesk-daily/worker/src/analytics.js";
 import { fetchCursorPages, minimalAudit, minimalTicket, requestWithRetry, sourceTimestamp } from "../zendesk-daily/worker/src/zendesk.js";
 import { getAccessToken } from "../zendesk-daily/worker/src/oauth.js";
-import { assigneeAtSolve, countPublicAgentReplies, CANDIDATE_USERS, fetchSearchExport, resolveReadOnlyAuth, runValidation, verifyCandidateUsers } from "../zendesk-daily/scripts/validate-readonly.mjs";
+import { assigneeAtSolve, countPublicAgentReplies, CANDIDATE_USERS, fetchSearchExport, resolveReadOnlyAuth, runValidation, validateDay, verifyCandidateUsers } from "../zendesk-daily/scripts/validate-readonly.mjs";
 
 const fixture = async name => JSON.parse(await readFile(new URL(`./fixtures/zendesk-daily/${name}.json`, import.meta.url), "utf8"));
 
@@ -187,3 +188,129 @@ test("D1 proposal contains append-only snapshots and correction audit safeguards
   assert.match(sql,/effective_daily_snapshot/);
   assert.match(sql,/next_page_url/);
 });
+
+// Exercise the scheduled collector through mocked Zendesk responses and in-memory
+// D1 statements, including staging and final aggregation. No remote calls occur.
+const collectorIds = {amora:101, gen:202, arby:303, ford:404, tommy:505};
+const solveTime = "2026-10-21T12:00:00Z";
+function rawAudit(at, author, events) {
+  return {id:1, ticket_id:1, created_at:at, author_id:author, events};
+}
+const assign = id => ({type:"Change", field_name:"assignee_id", value:id});
+const solveEvent = {type:"Change", field_name:"status", value:"solved"};
+const comment = {type:"Comment", public:true};
+
+async function collectScenario(t, {assignee=202, actor=202, audits, channel="email", reopens=0, solvedAt=solveTime} = {}) {
+  audits ??= [rawAudit("2026-10-21T10:00:00Z", actor, [assign(assignee)]), rawAudit(solveTime, actor, [solveEvent, comment])];
+  const staged = [], snapshots = [];
+  const db = {
+    prepare(sql) {
+      const statement = {
+        sql, args:[],
+        bind(...args) { this.args=args; return this; },
+        async first() { return null; },
+        async all() { assert.match(sql,/SELECT agent_key,metric_json FROM staged_metrics/); return {results:staged}; },
+        async run() {
+          if (sql.startsWith("INSERT INTO staged_metrics")) staged.push({agent_key:this.args[2],metric_json:this.args[3]});
+          return {meta:{changes:1}};
+        }
+      };
+      return statement;
+    },
+    async batch(statements) {
+      for (const statement of statements) if (statement.sql.startsWith("INSERT INTO daily_snapshot")) snapshots.push(statement.args);
+      return [];
+    }
+  };
+  const ticket={id:1,status:"solved",updated_at:solveTime,via:{channel}};
+  const metric={ticket_id:1,solved_at:solvedAt,replies:1,reopens};
+  const fetchImpl=async (url, init={}) => {
+    const path=new URL(url).pathname;
+    let body;
+    if(path==="/oauth/tokens") body={access_token:"mock-access",refresh_token:"mock-refresh"};
+    else {
+      assert.equal(init.method || "GET","GET");
+      if(path==="/api/v2/incremental/tickets/cursor") body={tickets:[ticket],next_page:null};
+      else if(path==="/api/v2/search/export") body={results:[ticket],links:{next:null}};
+      else if(path==="/api/v2/satisfaction_ratings") body={satisfaction_ratings:[],next_page:null};
+      else if(path==="/api/v2/tickets/1/metrics") body={ticket_metric:metric};
+      else if(path==="/api/v2/tickets/1/audits") body={audits,next_page:null};
+      else if(path==="/api/v2/users/show_many") body={users:[...Object.values(collectorIds),606,888].map(id=>({id,role:id===888?"end-user":"agent"}))};
+      else assert.fail(`Unexpected mocked request path: ${path}`);
+    }
+    return new Response(JSON.stringify(body),{status:200});
+  };
+  t.mock.method(globalThis,"fetch",fetchImpl);
+  const env={REPORTING_DB:db,ZENDESK_SUBDOMAIN:"example",ZENDESK_AGENT_IDS_JSON:JSON.stringify(collectorIds),ZENDESK_OAUTH_CLIENT_ID:"mock-client",ZENDESK_OAUTH_CLIENT_SECRET:"mock-secret",ZENDESK_REFRESH_TOKEN:"mock-initial",OAUTH_ENCRYPTION_KEY:Buffer.alloc(32,7).toString("base64")};
+  let pending;
+  await worker.scheduled({scheduledTime:Date.parse("2026-10-21T22:00:00Z")},env,{waitUntil(p){pending=p;}});
+  await pending;
+  const normalizedAudits=audits.map(a=>minimalAudit(a,new Set([...Object.values(collectorIds),606])));
+  const analytics=buildDailyRows({day:"2026-10-21",tickets:[minimalTicket(ticket)],metricsByTicket:new Map([["1",metric]]),auditsByTicket:new Map([["1",normalizedAudits]]),ratings:[],agentIds:collectorIds});
+  // Use actual candidate IDs for validator scope, keeping test fixtures synthetic.
+  const mapping=new Map(Object.entries(collectorIds).map(([key,id])=>[id,Number(CANDIDATE_USERS.find(u=>u.key===key).id)]));
+  mapping.set(606,Number(CANDIDATE_USERS.find(u=>u.key==="arez").id));
+  const validatorFetch=async(url,init)=>{
+    const response=await fetchImpl(url,init);
+    const body=await response.json();
+    if(body.audits) body.audits=body.audits.map(a=>({...a,author_id:mapping.get(a.author_id)??a.author_id,events:a.events.map(e=>e.field_name==="assignee_id"?{...e,value:mapping.get(Number(e.value))??e.value}:e)}));
+    if(body.users) body.users=body.users.map(u=>({...u,id:mapping.get(u.id)??u.id}));
+    return new Response(JSON.stringify(body),{status:200});
+  };
+  const validation=await validateDay("2026-10-21",{subdomain:"example",accessToken:"mock-access",fetchImpl:validatorFetch});
+  return {staged,snapshots,analytics,validation};
+}
+
+for (const [key,id] of Object.entries(collectorIds)) {
+  test(`scheduled collector stages ${key} independently and finalizes its solved count`, async t=>{
+    const {staged,snapshots,analytics,validation}=await collectScenario(t,{assignee:id,actor:606});
+    assert.equal(staged.length,1);
+    assert.equal(staged[0].agent_key,key);
+    assert.equal(snapshots.find(row=>row[1]===key)[3],1);
+    assert.equal(analytics.find(row=>row.agentKey===key).solved_tickets,1);
+    assert.equal(validation.ticketsWithSolvedAtInPhtDay,1);
+    if(key!=="amora") assert.equal(snapshots.find(row=>row[1]==="amora")[3],0);
+  });
+}
+
+test("collector, analytics and validator count outside-scope agent replies without counting requester replies",async t=>{
+  const audits=[rawAudit("2026-10-21T10:00:00Z",202,[assign(202),comment]),rawAudit("2026-10-21T11:00:00Z",606,[comment]),rawAudit("2026-10-21T11:30:00Z",888,[comment]),rawAudit(solveTime,202,[solveEvent])];
+  const {staged,snapshots,analytics,validation}=await collectScenario(t,{audits});
+  assert.equal(JSON.parse(staged[0].metric_json).one_touch,false);
+  assert.equal(snapshots.find(r=>r[1]==="gen")[9],0);
+  assert.equal(analytics.find(r=>r.agentKey==="gen").one_touch_percent,0);
+  assert.equal(validation.byAssignee[0].oneTouch,0);
+});
+
+for(const scenario of [
+  {name:"Arez assignment is excluded even when a reporting agent solves",assignee:606,actor:202,expected:null},
+  {name:"unassigned solve falls back to final solve actor",assignee:null,actor:404,expected:"ford"},
+  {name:"post-solve assignment does not change attribution",audits:[rawAudit("2026-10-21T10:00:00Z",202,[assign(202)]),rawAudit(solveTime,404,[solveEvent]),rawAudit("2026-10-21T13:00:00Z",101,[assign(101)])],expected:"gen"},
+  {name:"assigned ticket without exact solve event uses assignee",audits:[rawAudit("2026-10-21T10:00:00Z",202,[assign(202)])],expected:"gen"},
+  {name:"prior solve actor cannot substitute for missing final solve",audits:[rawAudit("2026-10-21T10:00:00Z",202,[solveEvent])],expected:null}
+]) test(`attribution parity: ${scenario.name}`,async t=>{
+  const {staged,analytics,validation}=await collectScenario(t,scenario);
+  assert.deepEqual(staged.map(r=>r.agent_key),scenario.expected?[scenario.expected]:[]);
+  assert.equal(analytics.reduce((n,r)=>n+r.solved_tickets,0),scenario.expected?1:0);
+  assert.equal(validation.ticketsWithSolvedAtInPhtDay,scenario.expected?1:0);
+});
+
+for(const scenario of [{channel:"api",expected:null},{reopens:1,expected:false},{expected:true},{audits:[rawAudit("2026-10-21T10:00:00Z",202,[assign(202),comment]),rawAudit("2026-10-21T11:00:00Z",888,[comment]),rawAudit(solveTime,202,[solveEvent])],expected:true}]) {
+  test(`one-touch parity: ${scenario.audits ? "requester reply is ignored" : JSON.stringify(scenario)}`,async t=>{
+    const {staged,snapshots,analytics,validation}=await collectScenario(t,scenario);
+    assert.equal(JSON.parse(staged[0].metric_json).one_touch,scenario.expected);
+    assert.equal(snapshots.find(r=>r[1]==="gen")[11],scenario.expected===null?0:1);
+    assert.equal(analytics.find(r=>r.agentKey==="gen").one_touch_denominator,scenario.expected===null?0:1);
+    assert.equal(validation.byAssignee[0].oneTouchEligible,scenario.expected===null?0:1);
+    assert.equal(validation.byAssignee[0].oneTouch,scenario.expected===true?1:0);
+  });
+}
+
+for (const solvedAt of ["invalid", "2026-10-21T16:00:00Z", "2026-10-20T15:59:59Z"]) {
+  test(`collector rejects ineligible solved timestamp ${solvedAt}`, async t => {
+    const {staged,analytics,validation}=await collectScenario(t,{solvedAt});
+    assert.equal(staged.length,0);
+    assert.equal(analytics.reduce((n,r)=>n+r.solved_tickets,0),0);
+    assert.equal(validation.ticketsWithSolvedAtInPhtDay,0);
+  });
+}
