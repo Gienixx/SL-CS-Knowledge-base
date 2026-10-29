@@ -1,3 +1,4 @@
+import { createClientCredentialsAuth } from "../worker/src/oauth.js";
 import { assigneeAtSolve, countPublicAgentReplies, dayBoundsPht, isWithin, oneTouchResult } from "../worker/src/analytics.js";
 import { apiBase, getTicketAudits, getTicketMetrics, requestWithRetry } from "../worker/src/zendesk.js";
 import { pathToFileURL } from "node:url";
@@ -11,7 +12,8 @@ export const CANDIDATE_USERS = [
   { key: "tommy", label: "Tommy Fang / AUTOMATED", id: "1905152069227", reporting: true }
 ];
 
-export function resolveReadOnlyAuth(env = process.env) {
+export function resolveReadOnlyAuth(env = process.env, fetchImpl = fetch) {
+  if (env.ZENDESK_OAUTH_CLIENT_ID || env.ZENDESK_OAUTH_CLIENT_SECRET) return createClientCredentialsAuth(env, fetchImpl);
   if (env.ZENDESK_ACCESS_TOKEN) {
     return { method: "OAuth Bearer", authorization: `Bearer ${env.ZENDESK_ACCESS_TOKEN}` };
   }
@@ -138,7 +140,7 @@ export async function validateDay(day, { subdomain, accessToken, fetchImpl = fet
 export async function runValidation({ env = process.env, fetchImpl = fetch } = {}) {
   const subdomain = env.ZENDESK_SUBDOMAIN;
   if (!subdomain) throw new Error("ZENDESK_SUBDOMAIN is required");
-  const auth = resolveReadOnlyAuth(env);
+  const auth = resolveReadOnlyAuth(env, fetchImpl);
   const candidates = await verifyCandidateUsers(subdomain, auth, fetchImpl);
   const identitiesVerified = candidates.every(user => user.verified);
   const identities = candidates.map(({ key, label, reporting, verified, identity }) => ({ key, label, reporting, verified, ...identity }));

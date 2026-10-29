@@ -32,7 +32,7 @@ async function saveRefreshToken(db, token, env) {
     .bind(ciphertext).run();
 }
 
-export async function getAccessToken(env, fetchImpl = fetch) {
+export async function getRefreshAccessToken(env, fetchImpl = fetch) {
   const db = env.REPORTING_DB;
   if (!db || !env.ZENDESK_SUBDOMAIN || !env.ZENDESK_OAUTH_CLIENT_ID || !env.ZENDESK_OAUTH_CLIENT_SECRET) {
     throw new Error("Zendesk OAuth Worker secrets and REPORTING_DB are not configured");
@@ -57,4 +57,50 @@ export async function getAccessToken(env, fetchImpl = fetch) {
     if (response.status !== 400 && response.status !== 401) break;
   }
   throw new Error(`Zendesk OAuth refresh failed (${lastStatus}); rotate the OAuth refresh token and check its expiry`);
+}
+
+// Tokens are held only in the auth closure; never in D1, environment, or logs.
+export function createClientCredentialsAuth(env, fetchImpl = fetch, now = Date.now) {
+  const subdomain = env.ZENDESK_SUBDOMAIN;
+  if (!/^[a-z0-9-]+$/i.test(subdomain || "")) throw new Error("invalid Zendesk subdomain");
+  if (!env.ZENDESK_OAUTH_CLIENT_ID || !env.ZENDESK_OAUTH_CLIENT_SECRET) {
+    throw new Error("Zendesk OAuth Client Credentials are not configured");
+  }
+  const origin = `https://${subdomain}.zendesk.com`;
+  let token, expiresAt = 0, pending;
+  async function acquire() {
+    const started = now();
+    let response;
+    try {
+      response = await fetchImpl(`${origin}/oauth/tokens`, {
+        method: "POST", redirect: "error",
+        headers: { "Content-Type": "application/json", Accept: "application/json" },
+        body: JSON.stringify({ grant_type: "client_credentials", client_id: env.ZENDESK_OAUTH_CLIENT_ID,
+          client_secret: env.ZENDESK_OAUTH_CLIENT_SECRET, scope: "read" })
+      });
+    } catch { throw new Error("Zendesk OAuth token request failed (network)"); }
+    if (!response.ok) throw new Error(`Zendesk OAuth token request failed (${response.status})`);
+    let body;
+    try { body = await response.json(); } catch { throw new Error("Invalid Zendesk OAuth token response"); }
+    if (!body || typeof body !== "object") throw new Error("Invalid Zendesk OAuth token response");
+    const lifetime = Number(body.expires_in);
+    if (typeof body.access_token !== "string" || !body.access_token || /\s/.test(body.access_token)
+      || !Number.isFinite(lifetime) || lifetime <= 0
+      || (body.token_type !== undefined && (typeof body.token_type !== "string" || body.token_type.toLowerCase() !== "bearer"))
+      || (body.scope && body.scope !== "read")) throw new Error("Invalid Zendesk OAuth token response");
+    token = body.access_token;
+    expiresAt = started + lifetime * 1000;
+    return token;
+  }
+  async function getToken(rejectedToken) {
+    if (rejectedToken && token === rejectedToken) expiresAt = 0;
+    if (token && now() < expiresAt) return token;
+    if (!pending) pending = acquire().finally(() => { pending = undefined; });
+    return pending;
+  }
+  return Object.freeze({ method: "OAuth Client Credentials", origin, getToken });
+}
+
+export async function getAccessToken(env, fetchImpl = fetch) {
+  return createClientCredentialsAuth(env, fetchImpl).getToken();
 }

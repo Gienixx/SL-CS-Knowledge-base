@@ -1,5 +1,5 @@
 import { AGENTS, METRICS, assigneeAtSolve, oneTouchResult, isWithin, dayBoundsPht, emptyRows, previousPhtDay } from "./analytics.js";
-import { getAccessToken } from "./oauth.js";
+import { createClientCredentialsAuth } from "./oauth.js";
 import { apiBase, fetchCursorPages, getSatisfactionRatings, getTicketAudits, getTicketMetrics, minimalTicket, sourceTimestamp } from "./zendesk.js";
 
 const MAX_PAGES_PER_INVOCATION = 12;
@@ -80,7 +80,7 @@ async function runSnapshot(day, env, scheduledTime = new Date()) {
     if (!resume) await db.prepare("INSERT INTO run_log(run_id,reporting_day,status,scheduled_for,started_at) VALUES (?,?, 'running', ?, ?)").bind(runId, day, scheduledFor, now).run();
     else await db.prepare("UPDATE run_log SET status='running',message=NULL,error_code=NULL WHERE run_id=?").bind(activeRunId).run();
 
-    const accessToken = await getAccessToken(env);
+    const accessToken = createClientCredentialsAuth(env);
     const base = apiBase(env.ZENDESK_SUBDOMAIN);
     const knownIds = new Set(Object.values(ids));
     const roleCache = new Map(Object.values(ids).map(id => [id,true]));

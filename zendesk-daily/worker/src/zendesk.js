@@ -7,10 +7,27 @@ export function apiBase(subdomain) {
 }
 
 export async function requestWithRetry(url, accessToken, fetchImpl = fetch, sleep = ms => new Promise(r => setTimeout(r, ms))) {
-  const authorization = typeof accessToken === "string" ? `Bearer ${accessToken}` : accessToken?.authorization;
+  const managed = typeof accessToken?.getToken === "function";
+  if (managed && new URL(url).origin !== accessToken.origin) throw new Error("Unexpected Zendesk API origin");
+  let token = managed ? await accessToken.getToken() : null;
+  let renewed = false;
+  let authorization = managed ? `Bearer ${token}` : typeof accessToken === "string" ? `Bearer ${accessToken}` : accessToken?.authorization;
   if (!authorization || !/^(Bearer|Basic)\s+\S+$/i.test(authorization)) throw new Error("Zendesk authorization is required");
   for (let attempt = 0; attempt <= MAX_RETRIES; attempt++) {
-    const response = await fetchImpl(url, { headers: { Authorization: authorization, Accept: "application/json" } });
+    if (managed) {
+      token = await accessToken.getToken();
+      authorization = `Bearer ${token}`;
+    }
+    let response;
+    try { response = await fetchImpl(url, { redirect: "error", headers: { Authorization: authorization, Accept: "application/json" } }); }
+    catch { throw new Error("Zendesk API request failed (network)"); }
+    if (response.status === 401 && managed && !renewed) {
+      renewed = true;
+      token = await accessToken.getToken(token);
+      authorization = `Bearer ${token}`;
+      try { response = await fetchImpl(url, { redirect: "error", headers: { Authorization: authorization, Accept: "application/json" } }); }
+      catch { throw new Error("Zendesk API request failed (network)"); }
+    }
     if (response.ok) return response;
     if (response.status !== 429 && response.status < 500) throw new Error(`Zendesk API request failed (${response.status})`);
     if (attempt === MAX_RETRIES) throw new Error(`Zendesk API retry limit reached (${response.status})`);

@@ -63,3 +63,29 @@ Run `npm run test:zendesk-daily`. It uses synthetic ticket, metric, audit, and r
 `node zendesk-daily/scripts/validate-readonly.mjs` performs a bounded validation for October 21–22, 2026. Configure `ZENDESK_SUBDOMAIN` and either a pre-issued OAuth access token in `ZENDESK_ACCESS_TOKEN`, or both `ZENDESK_EMAIL` and `ZENDESK_API_TOKEN`. OAuth uses `Authorization: Bearer`; standard API-token authentication uses HTTP Basic with `email/token:api_token`. OAuth takes precedence when both are configured. The validator only sends GET requests; it does not refresh credentials, write to a database, or store the credentials. It verifies the six supplied candidate IDs with `GET /users/show_many`, then paginates Search Export results, reads ticket metrics and audits, filters solved timestamps to Asia/Manila day bounds, attributes tickets to the assignee at solve time, and reports counts and one-touch numerators by numeric assignee ID. Arez is verified as an identity candidate but excluded from all five-agent reporting totals. No identity mapping is finalized from candidate names.
 
 Search date filters use Zendesk account-local dates and may miss tickets whose current status changed after the benchmark date. Metric and audit endpoints expose current ticket state/history, not a general as-of snapshot. Results from this script must therefore be reconciled against verified IDs and Explore definitions before any parity claim.
+
+
+## Client Credentials authentication restoration (October 30, 2026)
+
+The collector and read-only validator use `ZENDESK_SUBDOMAIN`,
+`ZENDESK_OAUTH_CLIENT_ID`, and `ZENDESK_OAUTH_CLIENT_SECRET` to request
+`grant_type=client_credentials` with `scope=read`. Configured client credentials
+have priority over `ZENDESK_ACCESS_TOKEN`; a failed grant never falls back to it.
+Incomplete client credentials fail closed. The validator retains its existing
+Bearer/API-token options when neither client credential is configured.
+
+Access tokens remain in memory for the auth session, are renewed at the returned
+`expires_in` boundary, and share concurrent acquisition. API reads allow one
+renewal and replay after a 401. Redirects and foreign origins are rejected for
+managed credentials. Token responses, secrets, and raw network exceptions are
+excluded from authentication error messages. No token persistence or new database
+migration is required. The previous encrypted refresh-token implementation remains
+available as `getRefreshAccessToken` for legacy integrations.
+
+Run `node zendesk-daily/scripts/verify-auth.mjs` to obtain a token and read the
+current identity plus all six candidate identities. The command exits unsuccessfully
+if any candidate is missing, inactive, or lacks agent/admin role. Arez remains
+visible for identity verification and excluded from the five reporting agents.
+This script reads no tickets and performs no ticket writes. Use the Cloud runtime's
+inherited proxy and CA trust (and Node's `--use-env-proxy` where required).
+Run `npm run test:zendesk-daily` for the existing and focused authentication tests.

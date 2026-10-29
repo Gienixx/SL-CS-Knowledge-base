@@ -4,7 +4,7 @@ import assert from "node:assert/strict";
 import { readFile } from "node:fs/promises";
 import { AGENTS, buildDailyRows, dayBoundsPht, median, previousPhtDay } from "../zendesk-daily/worker/src/analytics.js";
 import { fetchCursorPages, minimalAudit, minimalTicket, requestWithRetry, sourceTimestamp } from "../zendesk-daily/worker/src/zendesk.js";
-import { getAccessToken } from "../zendesk-daily/worker/src/oauth.js";
+import { getRefreshAccessToken as getAccessToken } from "../zendesk-daily/worker/src/oauth.js";
 import { assigneeAtSolve, countPublicAgentReplies, CANDIDATE_USERS, fetchSearchExport, resolveReadOnlyAuth, runValidation, validateDay, verifyCandidateUsers } from "../zendesk-daily/scripts/validate-readonly.mjs";
 
 const fixture = async name => JSON.parse(await readFile(new URL(`./fixtures/zendesk-daily/${name}.json`, import.meta.url), "utf8"));
@@ -227,7 +227,7 @@ async function collectScenario(t, {assignee=202, actor=202, audits, channel="ema
   const fetchImpl=async (url, init={}) => {
     const path=new URL(url).pathname;
     let body;
-    if(path==="/oauth/tokens") body={access_token:"mock-access",refresh_token:"mock-refresh"};
+    if(path==="/oauth/tokens") body={access_token:"mock-access",expires_in:3600,token_type:"bearer"};
     else {
       assert.equal(init.method || "GET","GET");
       if(path==="/api/v2/incremental/tickets/cursor") body={tickets:[ticket],next_page:null};
