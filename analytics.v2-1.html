@@ -1,0 +1,33 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="robots" content="noindex, nofollow">
+  <title>Analytics v2-1 · SocialLoop CS</title>
+  <link rel="stylesheet" href="./styles/analytics-v2-1.css">
+</head>
+<body>
+  <main class="shell">
+    <header class="masthead"><a class="brand" href="./home.html"><span class="brand-mark">sl</span>SocialLoop <span class="brand-cs">CS</span></a><span class="version">ANALYTICS.V2-1 <span>PREVIEW</span></span></header>
+    <div class="page-heading"><div><p class="eyebrow">SUPPORT OPERATIONS / ZENDESK</p><h1>Agent updates<span>.</span></h1><p class="subtitle">A closer look at the work behind every ticket.</p></div><button id="download" class="button secondary" disabled>Download CSV <span aria-hidden="true">↗</span></button></div>
+    <div class="source-note"><span class="status-dot"></span><div><strong>Saved verification · October 30, 2026</strong><p>Reconstructed from Support API. Explore comparison pending. This preview does not refresh live.</p></div><span class="timezone">America/New_York</span></div>
+    <form id="filters" class="filters">
+      <fieldset class="date-field"><legend>Time · Custom range</legend><div class="date-inputs"><label class="sr-only" for="start">Start date</label><input id="start" type="date" value="2026-10-30" required><span>—</span><label class="sr-only" for="end">End date</label><input id="end" type="date" value="2026-10-30" required></div></fieldset>
+      <label class="group-field">Ticket group<select id="group"><option>Support</option></select></label>
+      <div class="agent-field"><span id="agent-label">Agent name</span><details id="agent-picker"><summary aria-labelledby="agent-label agent-summary"><span id="agent-summary">4 selected</span><span aria-hidden="true">⌄</span></summary><div class="picker-panel"><label for="agent-search">Search by value</label><input id="agent-search" type="search" placeholder="Find an agent…" autocomplete="off"><div class="picker-actions"><button type="button" id="select-all">Select all</button><button type="button" id="clear-all">Clear all</button></div><div id="agent-options"></div><p id="no-matches" hidden>No matching agents.</p><div class="picker-footer"><button type="button" id="cancel-agents">Cancel</button><button type="submit" class="button">Apply</button></div></div></details></div>
+      <button type="submit" class="button apply">Apply filters</button><button type="button" id="reset" class="reset">Reset</button>
+    </form>
+    <p id="message" class="message" role="status" aria-live="polite">Checking access and loading the saved verification…</p>
+    <noscript><p>Enable JavaScript to sign in and view the analytics preview.</p></noscript>
+    <div id="results" hidden aria-busy="false">
+      <div class="section-heading"><h2>At a glance</h2><span id="range-caption">October 30, 2026 · 4 agents</span></div>
+      <section id="kpis" class="kpis" aria-label="Selected agent metrics"></section>
+      <section class="card table-card"><div class="card-heading"><div><p class="eyebrow">UPDATER ACTIVITY</p><h2>Agent breakdown</h2></div><span class="pill">Support API reconstruction</span></div><div class="table-wrap" tabindex="0" role="region" aria-label="Agent update metrics; scroll for all columns"><table><caption class="sr-only">October 30, 2026, America/New_York. Saved Support API reconstruction.</caption><thead><tr><th scope="col">Updater name</th><th scope="col">Updates</th><th scope="col">Comments</th><th scope="col">Public comments</th><th scope="col">Internal comments</th><th scope="col">Tickets updated<br>w/comment</th><th scope="col">Tickets solved</th><th scope="col">Tickets created</th></tr></thead><tbody id="agent-rows"></tbody><tfoot id="totals"></tfoot></table></div><p class="table-note">Tickets updated w/comment counts distinct tickets. The total removes tickets shared between agents.</p></section>
+      <div class="bottom-grid"><section class="card"><div class="card-heading"><div><p class="eyebrow">COMMENT MIX</p><h2>Conversations &amp; collaboration</h2></div></div><div class="legend"><span><i class="public-key"></i>Public comments</span><span><i class="internal-key"></i>Internal notes</span></div><div id="comment-chart" class="comment-chart"></div></section><aside class="card definition-card"><p class="eyebrow">READING THIS REPORT</p><h2>Activity, attributed correctly.</h2><p>Updates belong to the agent who made the change, regardless of the ticket’s current assignee.</p><dl><dt>Tickets solved</dt><dd>Uses the latest solve timestamp and current solved or closed status.</dd><dt>Reporting day</dt><dd>Midnight to midnight in America/New_York, based on update time.</dd><dt>Coverage</dt><dd id="coverage"></dd></dl></aside></div>
+    </div>
+    <footer>SocialLoop CS <span>Zendesk Agent updates · Preview v2-1</span></footer>
+  </main>
+  <script type="module" src="./scripts/analytics-v2-1.js"></script>
+</body>
+</html>
