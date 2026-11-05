@@ -9,6 +9,10 @@ import {
   CSV_DATASETS,
   exportCsvDataset
 } from './csv-export.js?v=1'
+import {
+  hasWorkforcePermission,
+  loadCurrentWorkforceAccess
+} from './workforce-permissions.js?v=1'
 
 function elements() {
   return {
@@ -30,8 +34,135 @@ function elements() {
     exportStart: document.getElementById('operationsExportStart'),
     exportEnd: document.getElementById('operationsExportEnd'),
     exportButton: document.getElementById('operationsExportButton'),
-    exportStatus: document.getElementById('operationsExportStatus')
+    exportStatus: document.getElementById('operationsExportStatus'),
+    identityApprovalSection: document.getElementById('identityApprovalSection'),
+    identityApprovalMeta: document.getElementById('identityApprovalMeta'),
+    identityApprovalList: document.getElementById('identityApprovalList'),
+    identityApprovalStatus: document.getElementById('identityApprovalStatus')
   }
+}
+
+function renderIdentityApprovalCard(mapping, onApprove) {
+  const card = document.createElement('article')
+  card.className = 'identity-approval-card'
+  const heading = document.createElement('h3')
+  heading.textContent = `${mapping.agent_name} (${mapping.agent_key})`
+  const details = document.createElement('p')
+  details.textContent = `Zendesk key: ${mapping.zendesk_agent_key || 'Missing'} · Mapping updated ${formatTimestamp(mapping.updated_at)}`
+  const state = document.createElement('p')
+  state.textContent = mapping.dashboard_sync_approved ? 'Already approved' : 'Pending approval'
+  card.append(heading, details, state)
+
+  if (!mapping.dashboard_sync_approved && mapping.active) {
+    const form = document.createElement('form')
+    form.className = 'identity-approval-form'
+    const authorization = document.createElement('label')
+    const authorizationInput = document.createElement('input')
+    authorizationInput.type = 'checkbox'
+    authorizationInput.required = true
+    authorization.append(authorizationInput, document.createTextNode(' I verified this source is authorized for this dashboard.'))
+    const blankMetrics = document.createElement('label')
+    const blankMetricsInput = document.createElement('input')
+    blankMetricsInput.type = 'checkbox'
+    blankMetricsInput.required = true
+    blankMetrics.append(blankMetricsInput, document.createTextNode(' I verified the October 11 blank metrics are legitimate.'))
+
+    const reasonLabel = document.createElement('label')
+    reasonLabel.textContent = 'Approval reason'
+    const reason = document.createElement('textarea')
+    reason.required = true
+    reason.minLength = 10
+    reason.maxLength = 2000
+    reasonLabel.appendChild(reason)
+
+    const evidenceLabel = document.createElement('label')
+    evidenceLabel.textContent = 'Source verification evidence reference'
+    const evidence = document.createElement('input')
+    evidence.required = true
+    evidence.minLength = 3
+    evidence.maxLength = 1000
+    evidenceLabel.appendChild(evidence)
+
+    const keyLabel = document.createElement('label')
+    keyLabel.textContent = `Type ${mapping.agent_key} to confirm this single mapping`
+    const confirmation = document.createElement('input')
+    confirmation.required = true
+    confirmation.autocomplete = 'off'
+    confirmation.addEventListener('input', () => {
+      confirmation.setCustomValidity(confirmation.value === mapping.agent_key ? '' : 'Enter the exact agent key shown above.')
+    })
+    keyLabel.appendChild(confirmation)
+
+    const button = document.createElement('button')
+    button.className = 'detail-filter-button'
+    button.type = 'submit'
+    button.textContent = 'Approve this identity'
+    form.append(authorization, blankMetrics, reasonLabel, evidenceLabel, keyLabel, button)
+    form.addEventListener('submit', event => {
+      event.preventDefault()
+      if (!form.reportValidity()) return
+      onApprove(mapping, {
+        sourceAuthorized: authorizationInput.checked,
+        blankMetricsVerified: blankMetricsInput.checked,
+        reason: reason.value.trim(),
+        evidenceReference: evidence.value.trim(),
+        button
+      })
+    })
+    card.appendChild(form)
+  } else if (!mapping.dashboard_sync_approved) {
+    state.textContent = 'Inactive mappings cannot be approved.'
+  }
+
+  return card
+}
+
+async function initializeIdentityApprovals(ui) {
+  const access = await loadCurrentWorkforceAccess(supabase)
+  if (!hasWorkforcePermission(access, 'approve_dashboard_identities')) return
+
+  ui.identityApprovalSection.hidden = false
+  const refresh = async () => {
+    const { data, error } = await supabase
+      .from('agent_identity_map')
+      .select('agent_key, agent_name, zendesk_agent_key, active, dashboard_sync_approved, updated_at')
+      .order('agent_key', { ascending: true })
+    if (error) throw error
+    ui.identityApprovalList.replaceChildren()
+    ;(Array.isArray(data) ? data : []).forEach(mapping => {
+      ui.identityApprovalList.appendChild(renderIdentityApprovalCard(mapping, async (selected, confirmation) => {
+        confirmation.button.disabled = true
+        ui.identityApprovalStatus.textContent = `Approving ${selected.agent_key}…`
+        try {
+          const { error: approvalError } = await supabase.rpc('approve_dashboard_agent_identity', {
+            p_agent_key: selected.agent_key,
+            p_expected_agent_name: selected.agent_name,
+            p_expected_zendesk_agent_key: selected.zendesk_agent_key,
+            p_expected_updated_at: selected.updated_at,
+            p_reason: confirmation.reason,
+            p_source_evidence_reference: confirmation.evidenceReference,
+            p_source_authorized: confirmation.sourceAuthorized,
+            p_october_11_blank_metrics_verified: confirmation.blankMetricsVerified
+          })
+          if (approvalError) throw approvalError
+          ui.identityApprovalStatus.textContent = `${selected.agent_key} was approved and recorded in the identity audit.`
+        } catch (error) {
+          console.error('Dashboard identity approval failed:', error)
+          ui.identityApprovalStatus.textContent = error?.message || 'Approval failed. Refresh and review the mapping again.'
+          confirmation.button.disabled = false
+          return
+        }
+        try {
+          await refresh()
+        } catch (error) {
+          console.error('Approved mapping list could not be refreshed:', error)
+          ui.identityApprovalStatus.textContent = `${selected.agent_key} was approved and audited, but the list could not refresh. Reload Reporting Operations to verify its status.`
+        }
+      }))
+    })
+    ui.identityApprovalMeta.textContent = `${(data || []).filter(row => row.dashboard_sync_approved).length} approved · ${(data || []).filter(row => row.active && !row.dashboard_sync_approved).length} active pending`
+  }
+  await refresh()
 }
 
 function formatTimestamp(value) {
@@ -331,6 +462,14 @@ async function initialize() {
   try {
     const user = await requireApprovedUser()
     if (!user) return
+
+    try {
+      await initializeIdentityApprovals(ui)
+    } catch (error) {
+      console.error('Dashboard identity approvals could not be initialized:', error)
+      ui.identityApprovalStatus.textContent = 'Identity approval access could not be verified. Refresh Reporting Operations before retrying.'
+      ui.identityApprovalMeta.textContent = 'Approval access unavailable'
+    }
 
     const renderAll = async () => {
       const data = await loadOperationsData()
