@@ -479,6 +479,7 @@ test('Open Schedule early clock-in migration executes against PostgreSQL and pre
     assert.notEqual(active.status, 0, 'active session prevents a second clock-in')
     assert.match(active.stderr, /already clocked in/)
     psql(container, `update public.attendance set clock_out=clock_in + interval '1 hour';`)
+    psql(container, `update public.test_clock set instant='2026-11-24 04:00:00+00';`)
     const duplicate = spawnSync('docker', ['exec', '-i', container, 'psql', '-U', 'postgres', '-d', 'postgres', '-X', '-A', '-t', '-v', 'ON_ERROR_STOP=1', '-c', "select public.workforce_clock_in('22222222-2222-2222-2222-222222222222');"], { encoding: 'utf8' })
     assert.notEqual(duplicate.status, 0, 'a second session for the selected Open Schedule is rejected')
     assert.match(duplicate.stderr, /already been recorded/)
