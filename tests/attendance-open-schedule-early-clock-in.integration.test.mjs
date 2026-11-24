@@ -81,10 +81,9 @@ test('Open Schedule early clock-in migration executes against PostgreSQL and pre
           raise exception 'Schedule is not eligible';
         end if;
 
-        if v_schedule.shift_start is null and v_schedule.shift_end is null
-           and v_schedule.shift_date not in (v_local_date - 1, v_local_date) then
-          raise exception 'Open Schedule clock-in is available only on yesterday or the scheduled work date.';
-        end if;
+      if v_schedule.shift_date not in (v_local_date - 1, v_local_date) then
+        raise exception 'Open Schedule clock-in is available only on yesterday or the scheduled work date.';
+      end if;
 
         if exists (select 1 from public.attendance a where a.user_id = v_profile_user_id and a.clock_out is null and a.voided_at is null) then
           raise exception 'You are already clocked in to another shift.';
