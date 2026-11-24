@@ -392,7 +392,7 @@ test('Open Schedule early clock-in migration executes against PostgreSQL and pre
         v_existing public.attendance%rowtype;
         v_attendance_id uuid;
       begin
-        select * into schedule from public.work_schedules schedule where schedule.id = p_schedule_id;
+        select ws.* into schedule from public.work_schedules ws where ws.id = p_schedule_id;
         if not found then raise exception 'Schedule not found'; end if;
         v_schedule := schedule;
         v_timezone := v_schedule.timezone;
