@@ -447,7 +447,10 @@ test('Open Schedule early clock-in migration executes against PostgreSQL and pre
     const functionDefinition = psql(container, `select pg_get_functiondef('public.workforce_clock_in(uuid)'::regprocedure);`).replace(/\r/g, '')
     assert.equal(originalGuards.length, 3, 'migration has three expected live RPC anchors')
     for (let index = 0; index < originalGuards.length; index += 1) {
-      assert.ok(functionDefinition.includes(originalGuards[index]), `PostgreSQL fixture RPC contains migration anchor ${index + 1}: ${JSON.stringify(functionDefinition.slice(Math.max(0, functionDefinition.indexOf('v_schedule.shift_date not in') - 12), functionDefinition.indexOf('v_schedule.shift_date not in') + 180))}`)
+      const anchorBody = originalGuards[index].trim()
+      const anchorStart = functionDefinition.indexOf(anchorBody.split('\n')[0].trim())
+      const actualAnchor = anchorStart < 0 ? '' : functionDefinition.slice(Math.max(0, anchorStart - 12), anchorStart + anchorBody.length + 20)
+      assert.ok(functionDefinition.includes(originalGuards[index]), `PostgreSQL fixture RPC contains migration anchor ${index + 1}; expected=${JSON.stringify(anchorBody)} actual=${JSON.stringify(actualAnchor)}`)
     }
     psql(container, migration)
     const securityAfter = psql(container, `select p.proacl::text || '|' || p.prosecdef::text || '|' || p.proconfig::text
