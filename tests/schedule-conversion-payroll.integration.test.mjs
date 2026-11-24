@@ -423,11 +423,14 @@ test('Open Schedule early clock-in migration executes against PostgreSQL and pre
           raise exception 'You are already clocked in to another shift.';
         end if;
 
-        if p_schedule_id is null then
-          select * into v_existing from public.attendance a
-          where a.user_id = v_profile_user_id and a.work_date = v_local_date
-          order by a.clock_in desc limit 1;
-        end if;
+  if p_schedule_id is null then
+    select *
+      into v_existing
+    from public.attendance a
+    where a.user_id = v_profile_user_id
+      and a.work_date = v_local_date
+    order by a.clock_in desc limit 1;
+  end if;
 
         insert into public.attendance(user_id, schedule_id, work_date, clock_in)
         values (v_profile_user_id, p_schedule_id, v_schedule.shift_date, v_clock_time)
