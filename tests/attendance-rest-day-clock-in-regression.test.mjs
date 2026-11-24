@@ -62,7 +62,7 @@ test('ordinary future schedules remain disabled by the existing state guard', as
 
   assert.match(
     script,
-    /const scheduleClockInOpen = adminAssistMode[\s\S]*: schedule[\s\S]*\['next-day-special', 'next-day-overnight', 'special', 'early', 'active'\]\.includes\(availability\.state\)[\s\S]*isUntimedRestDayWithinClockInWindow\(schedule\)/
+    /const scheduleClockInOpen = adminAssistMode[\s\S]*: schedule[\s\S]*\['next-day-open', 'next-day-special', 'next-day-overnight', 'special', 'early', 'active'\]\.includes\(availability\.state\)[\s\S]*isUntimedRestDayWithinClockInWindow\(schedule\)/
   )
 })
 
