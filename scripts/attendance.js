@@ -99,7 +99,10 @@ let committedHoursDateRange = null
 let historyPage = 1
 let activeHistoryRange = null
 let busy = false
+let attendanceWriteVersion = 0
 let clockTimer = null
+let scheduleRefreshTimer = null
+let scheduleChangeChannels = []
 let activeLocalDate = ''
 let localDateRefreshPending = false
 let adminAssistAllowed = false
@@ -441,6 +444,9 @@ function scheduleAvailability(schedule, now = new Date()) {
     if (schedule.shift_date === today) {
       return { state: 'open', startsAt: null, endsAt: null }
     }
+    if (isOpenSchedulePreMidnightEligible(schedule, now)) {
+      return { state: 'next-day-open', startsAt: null, endsAt: null }
+    }
     return {
       state: schedule.shift_date < today ? 'ended' : 'future',
       startsAt: null,
@@ -466,6 +472,15 @@ function scheduleAvailability(schedule, now = new Date()) {
   if (nowMs >= endsAt.getTime()) return { state: 'ended', startsAt, endsAt }
   if (nowMs < startsAt.getTime()) return { state: 'early', startsAt, endsAt }
   return { state: 'active', startsAt, endsAt }
+}
+
+function isOpenSchedulePreMidnightEligible(schedule, now = new Date()) {
+  if (!isOpenSchedule(schedule)) return false
+  if (schedule.shift_date !== offsetDateKey(localDateKey(now), 1)) return false
+
+  const timezone = access?.timezone || 'America/New_York'
+  const localParts = timeZoneDateParts(now, timezone)
+  return Number(localParts.hour) >= 22
 }
 
 function isUntimedRestDayWithinClockInWindow(schedule, now = new Date()) {
@@ -527,6 +542,7 @@ function assistSnapshotRange() {
 }
 
 async function loadAdminAssistSnapshot() {
+  const writeVersion = attendanceWriteVersion
   const range = assistSnapshotRange()
   const { data, error } = await supabase.rpc('workforce_admin_assist_snapshot', {
     p_target_user_id: adminAssistTarget.user_id,
@@ -534,6 +550,7 @@ async function loadAdminAssistSnapshot() {
     p_end_date: range.end
   })
   if (error) throw error
+  if (writeVersion !== attendanceWriteVersion) return
 
   adminAssistSnapshot = data || {}
   if (adminAssistTarget?.timezone) {
@@ -1105,6 +1122,7 @@ function renderScheduleChooser() {
       )
       const availability = scheduleAvailability(schedule, now)
       return !alreadyRecorded && [
+        'next-day-open',
         'next-day-special',
         'special',
         'early',
@@ -1232,6 +1250,8 @@ function updateScheduleHelp() {
       : 'Today’s attendance is complete. You can clock in early for tomorrow’s holiday, and all credited worked minutes will count as overtime.'
   } else if (availability.state === 'next-day-overnight') {
     elements.scheduleHelp.textContent = 'This early-morning shift is available for clock-in before midnight. The attendance will belong to the scheduled work date.'
+  } else if (availability.state === 'next-day-open') {
+    elements.scheduleHelp.textContent = 'This Open Schedule is available starting at 10:00 PM workforce time. Attendance will belong to the selected work date.'
   } else if (availability.state === 'special') {
     elements.scheduleHelp.textContent = schedule.is_rest_day
       ? 'Clock-in is available for this rest day. All credited worked minutes count as RDOT, subject to the 20-hour work-date limit.'
@@ -1273,11 +1293,11 @@ function updateActionState() {
   const scheduleClockInOpen = adminAssistMode
     ? Boolean(schedule) &&
       !hasAttendanceForSchedule(schedule) &&
-      (['ended', 'next-day-special', 'next-day-overnight', 'special', 'early', 'active'].includes(availability.state) ||
+      (['ended', 'next-day-open', 'next-day-special', 'next-day-overnight', 'special', 'early', 'active'].includes(availability.state) ||
         isUntimedRestDayWithinClockInWindow(schedule))
     : schedule
       ? isPreviousDayScheduleEligible(schedule) ||
-        ['next-day-special', 'next-day-overnight', 'special', 'early', 'active'].includes(availability.state) ||
+        ['next-day-open', 'next-day-special', 'next-day-overnight', 'special', 'early', 'active'].includes(availability.state) ||
         availability.state === 'open' ||
         isUntimedRestDayWithinClockInWindow(schedule)
       : (isAdditionalWorkSessionSelected() && canClockAdditionalSession()) ||
@@ -1537,6 +1557,7 @@ function renderHistory() {
 }
 
 async function loadToday() {
+  const writeVersion = attendanceWriteVersion
   if (adminAssistMode) {
     await loadAdminAssistSnapshot()
     return
@@ -1569,6 +1590,7 @@ async function loadToday() {
   const [scheduleResult, attendanceResult] = await Promise.all([scheduleQuery, attendanceQuery])
   if (scheduleResult.error) throw scheduleResult.error
   if (attendanceResult.error) throw attendanceResult.error
+  if (writeVersion !== attendanceWriteVersion) return
 
   todaySchedules = scheduleResult.data || []
   visibleSchedules = todaySchedules.filter(schedule => !schedule.is_leave && !schedule.is_absent)
@@ -1638,6 +1660,46 @@ async function refreshAll({ silent = false } = {}) {
   }
 }
 
+async function refreshEligibility() {
+  if (busy || document.hidden) return
+  try {
+    await loadToday()
+  } catch (error) {
+    console.warn('Unable to refresh attendance eligibility:', error)
+  }
+}
+
+async function refreshAttendanceAfterWriteFailure() {
+  try {
+    await loadToday()
+  } catch (error) {
+    console.warn('Unable to refresh attendance after a failed write:', error)
+  }
+}
+
+function startEligibilityRefresh() {
+  scheduleChangeChannels = profileIds.map(userId =>
+    supabase
+      .channel(`attendance-schedule-${pageSessionId}-${userId}`)
+      .on('postgres_changes', {
+        event: 'UPDATE',
+        schema: 'public',
+        table: 'work_schedules',
+        filter: `user_id=eq.${userId}`
+      }, () => void refreshEligibility())
+      .subscribe()
+  )
+
+  scheduleRefreshTimer = window.setInterval(() => void refreshEligibility(), 30_000)
+  document.addEventListener('visibilitychange', refreshEligibility)
+  window.addEventListener('pagehide', () => {
+    if (scheduleRefreshTimer) window.clearInterval(scheduleRefreshTimer)
+    document.removeEventListener('visibilitychange', refreshEligibility)
+    scheduleChangeChannels.forEach(channel => void supabase.removeChannel(channel))
+    scheduleChangeChannels = []
+  }, { once: true })
+}
+
 async function clockIn() {
   if (busy || elements.clockInButton.disabled) return
   const selectedValue = elements.scheduleSelect.value
@@ -1659,6 +1721,7 @@ async function clockIn() {
       setActionMessage(historicalClockIn.error, 'error')
       return
     }
+    attendanceWriteVersion += 1
     setBusy(true, 'clock-in')
     try {
       const payload = {
@@ -1673,12 +1736,14 @@ async function clockIn() {
       await applyAttendanceWriteResult(data)
       setActionMessage('Admin-assisted clock-in recorded.', 'success')
     } catch (error) {
+      await refreshAttendanceAfterWriteFailure()
       setActionMessage(errorMessage(error), 'error')
     } finally {
       setBusy(false)
     }
     return
   }
+  attendanceWriteVersion += 1
   setBusy(true, 'clock-in')
   setActionMessage(
     workOnVLSelected
@@ -1711,6 +1776,7 @@ async function clockIn() {
       'success'
     )
   } catch (error) {
+    await refreshAttendanceAfterWriteFailure()
     setActionMessage(errorMessage(error), 'error')
   } finally {
     setBusy(false)
@@ -1726,6 +1792,7 @@ async function clockOut() {
       setActionMessage('A reason of at least 5 characters is required.', 'error')
       return
     }
+    attendanceWriteVersion += 1
     setBusy(true, 'clock-out')
     try {
       const { data, error } = await supabase.rpc('workforce_admin_assist_clock_out', {
@@ -1736,6 +1803,7 @@ async function clockOut() {
       await applyAttendanceWriteResult(data)
       setActionMessage('Admin-assisted clock-out recorded.', 'success')
     } catch (error) {
+      await refreshAttendanceAfterWriteFailure()
       setActionMessage(errorMessage(error), 'error')
     } finally {
       setBusy(false)
@@ -1757,6 +1825,7 @@ async function clockOut() {
   if (!confirmed) return
 
   const clientRequestId = crypto.randomUUID()
+  attendanceWriteVersion += 1
   setBusy(true, 'clock-out')
   setActionMessage('Recording your clock-out...')
 
@@ -1772,6 +1841,7 @@ async function clockOut() {
     await applyAttendanceWriteResult(data)
     setActionMessage('Clock-out recorded successfully.', 'success')
   } catch (error) {
+    await refreshAttendanceAfterWriteFailure()
     setActionMessage(errorMessage(error), 'error')
   } finally {
     setBusy(false)
@@ -1854,6 +1924,7 @@ async function initialize() {
   }, { once: true })
 
   await refreshAll({ silent: true })
+  startEligibilityRefresh()
   setActionMessage('Attendance is ready.')
 }
 
