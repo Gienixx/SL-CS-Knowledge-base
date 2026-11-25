@@ -98,6 +98,29 @@ test('schedule edits refresh eligibility and the existing live clock re-evaluate
   assert.match(updateLiveClock, /localDateRefreshPending[\s\S]*refreshAll/)
 })
 
+test('attendance writes invalidate in-flight eligibility reads and failed writes reload current attendance', async () => {
+  const script = await read('scripts/attendance.js')
+  const loadToday = extractFunction(script, 'loadToday')
+  const loadAssistSnapshot = extractFunction(script, 'loadAdminAssistSnapshot')
+  const clockIn = extractFunction(script, 'clockIn')
+  const clockOut = extractFunction(script, 'clockOut')
+  const count = (source, pattern) => [...source.matchAll(pattern)].length
+
+  const loadTodayResponse = loadToday.indexOf('await Promise.all([scheduleQuery, attendanceQuery])')
+  const loadTodayGuard = loadToday.indexOf('if (writeVersion !== attendanceWriteVersion) return')
+  const loadTodayAssignment = loadToday.indexOf('todaySchedules = scheduleResult.data || []')
+  assert.ok(loadTodayResponse < loadTodayGuard && loadTodayGuard < loadTodayAssignment)
+
+  const assistResponse = loadAssistSnapshot.indexOf('await supabase.rpc(\'workforce_admin_assist_snapshot\'')
+  const assistGuard = loadAssistSnapshot.indexOf('if (writeVersion !== attendanceWriteVersion) return')
+  const assistAssignment = loadAssistSnapshot.indexOf('recentAttendance = adminAssistSnapshot.attendance || []')
+  assert.ok(assistResponse < assistGuard && assistGuard < assistAssignment)
+
+  assert.equal(count(clockIn, /attendanceWriteVersion \+= 1/g), 2)
+  assert.equal(count(clockOut, /attendanceWriteVersion \+= 1/g), 2)
+  assert.equal(count(script, /await refreshAttendanceAfterWriteFailure\(\)/g), 4)
+})
+
 test('early Open Schedule change leaves attendance approval and payroll calculation code untouched', async () => {
   const [migration, payrollV2, committedHours] = await Promise.all([
     read('supabase/migrations/20261124041634_allow_open_schedule_clock_in_two_hours_early.sql'),

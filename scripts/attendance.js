@@ -99,6 +99,7 @@ let committedHoursDateRange = null
 let historyPage = 1
 let activeHistoryRange = null
 let busy = false
+let attendanceWriteVersion = 0
 let clockTimer = null
 let scheduleRefreshTimer = null
 let scheduleChangeChannels = []
@@ -541,6 +542,7 @@ function assistSnapshotRange() {
 }
 
 async function loadAdminAssistSnapshot() {
+  const writeVersion = attendanceWriteVersion
   const range = assistSnapshotRange()
   const { data, error } = await supabase.rpc('workforce_admin_assist_snapshot', {
     p_target_user_id: adminAssistTarget.user_id,
@@ -548,6 +550,7 @@ async function loadAdminAssistSnapshot() {
     p_end_date: range.end
   })
   if (error) throw error
+  if (writeVersion !== attendanceWriteVersion) return
 
   adminAssistSnapshot = data || {}
   if (adminAssistTarget?.timezone) {
@@ -1554,6 +1557,7 @@ function renderHistory() {
 }
 
 async function loadToday() {
+  const writeVersion = attendanceWriteVersion
   if (adminAssistMode) {
     await loadAdminAssistSnapshot()
     return
@@ -1586,6 +1590,7 @@ async function loadToday() {
   const [scheduleResult, attendanceResult] = await Promise.all([scheduleQuery, attendanceQuery])
   if (scheduleResult.error) throw scheduleResult.error
   if (attendanceResult.error) throw attendanceResult.error
+  if (writeVersion !== attendanceWriteVersion) return
 
   todaySchedules = scheduleResult.data || []
   visibleSchedules = todaySchedules.filter(schedule => !schedule.is_leave && !schedule.is_absent)
@@ -1664,6 +1669,14 @@ async function refreshEligibility() {
   }
 }
 
+async function refreshAttendanceAfterWriteFailure() {
+  try {
+    await loadToday()
+  } catch (error) {
+    console.warn('Unable to refresh attendance after a failed write:', error)
+  }
+}
+
 function startEligibilityRefresh() {
   scheduleChangeChannels = profileIds.map(userId =>
     supabase
@@ -1708,6 +1721,7 @@ async function clockIn() {
       setActionMessage(historicalClockIn.error, 'error')
       return
     }
+    attendanceWriteVersion += 1
     setBusy(true, 'clock-in')
     try {
       const payload = {
@@ -1722,12 +1736,14 @@ async function clockIn() {
       await applyAttendanceWriteResult(data)
       setActionMessage('Admin-assisted clock-in recorded.', 'success')
     } catch (error) {
+      await refreshAttendanceAfterWriteFailure()
       setActionMessage(errorMessage(error), 'error')
     } finally {
       setBusy(false)
     }
     return
   }
+  attendanceWriteVersion += 1
   setBusy(true, 'clock-in')
   setActionMessage(
     workOnVLSelected
@@ -1760,6 +1776,7 @@ async function clockIn() {
       'success'
     )
   } catch (error) {
+    await refreshAttendanceAfterWriteFailure()
     setActionMessage(errorMessage(error), 'error')
   } finally {
     setBusy(false)
@@ -1775,6 +1792,7 @@ async function clockOut() {
       setActionMessage('A reason of at least 5 characters is required.', 'error')
       return
     }
+    attendanceWriteVersion += 1
     setBusy(true, 'clock-out')
     try {
       const { data, error } = await supabase.rpc('workforce_admin_assist_clock_out', {
@@ -1785,6 +1803,7 @@ async function clockOut() {
       await applyAttendanceWriteResult(data)
       setActionMessage('Admin-assisted clock-out recorded.', 'success')
     } catch (error) {
+      await refreshAttendanceAfterWriteFailure()
       setActionMessage(errorMessage(error), 'error')
     } finally {
       setBusy(false)
@@ -1806,6 +1825,7 @@ async function clockOut() {
   if (!confirmed) return
 
   const clientRequestId = crypto.randomUUID()
+  attendanceWriteVersion += 1
   setBusy(true, 'clock-out')
   setActionMessage('Recording your clock-out...')
 
@@ -1821,6 +1841,7 @@ async function clockOut() {
     await applyAttendanceWriteResult(data)
     setActionMessage('Clock-out recorded successfully.', 'success')
   } catch (error) {
+    await refreshAttendanceAfterWriteFailure()
     setActionMessage(errorMessage(error), 'error')
   } finally {
     setBusy(false)
