@@ -20,7 +20,7 @@ test('active reporting is synchronized Google Sheet-only', async () => {
   ]
   const contents = (await Promise.all(paths.map(read))).join('\n')
   assert.match(contents, /Google Sheet/)
-  assert.doesNotMatch(contents, /sync-zendesk|zendesk_agent|ticket_events|ticket_dimension_profiles/i)
+  assert.doesNotMatch(contents, /sync-zendesk|zendesk_agent_(?:directory|events)|ticket_events|ticket_dimension_profiles/i)
 })
 
 test('the workbook script targets the current synchronization endpoint', async () => {

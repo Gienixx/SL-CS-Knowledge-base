@@ -48,7 +48,7 @@ function permissionMap(body, accessType) {
   const legacyAdmin = body.isAdmin === true
   return Object.fromEntries(WORKFORCE_PERMISSION_KEYS.map(key => {
     let granted = source[key] === true
-    if (!body.permissions && legacyAdmin) granted = true
+    if (!body.permissions && legacyAdmin && key !== 'approve_dashboard_identities') granted = true
     if (key === 'edit_articles' && body.canEditArticles === true) granted = true
     return [key, granted]
   }))
