@@ -6,6 +6,7 @@ import { hasWorkforcePermission, normalizeWorkforceAccess } from '../shared/work
 
 const root = new URL('../', import.meta.url)
 const read = path => readFile(new URL(path, root), 'utf8')
+const pagesWithDedicatedTheme = new Set(['analytics.v2-1.html'])
 
 function relativeLuminance(hex) {
   const channels = hex
@@ -25,17 +26,35 @@ function contrastRatio(first, second) {
   return (brightest + 0.05) / (darkest + 0.05)
 }
 
-test('every website page loads the shared attendance theme', async () => {
+test('every shared-theme website page loads the shared attendance theme', async () => {
   const files = (await readdir(root, { withFileTypes: true }))
     .filter(entry => entry.isFile() && entry.name.endsWith('.html'))
     .map(entry => entry.name)
 
   assert.ok(files.length > 20)
-  for (const file of files) {
+  for (const file of files.filter(name => !pagesWithDedicatedTheme.has(name))) {
     const page = await read(file)
     assert.match(page, /styles\/site-theme\.css\?v=\d+/, `${file} should load the shared theme`)
     assert.match(page, /scripts\/site-theme\.js\?v=1/, `${file} should load the theme controller`)
   }
+})
+
+test('isolated Zendesk Analytics v2-1 preview keeps its dedicated theme and protected data client', async () => {
+  const page = await read('analytics.v2-1.html')
+  const [stylesheet, script] = await Promise.all([
+    read('styles/analytics-v2-1.css'),
+    read('scripts/analytics-v2-1.js')
+  ])
+
+  assert.match(page, /<meta name="robots" content="noindex, nofollow">/)
+  assert.match(page, /styles\/analytics-v2-1\.css/)
+  assert.match(page, /scripts\/analytics-v2-1\.js/)
+  assert.match(page, /ANALYTICS\.V2-1 <span>PREVIEW<\/span>/)
+  assert.doesNotMatch(page, /styles\/site-theme\.css/)
+  assert.match(stylesheet, /color-scheme:\s*light/)
+  assert.match(stylesheet, /--ink:\s*#182c30/)
+  assert.match(script, /supabase\.auth\.getSession\(\)/)
+  assert.match(script, /fetch\('\.\/api\/analytics-v2-1'/)
 })
 
 test('Admin Tool reuses the shared theme controller and theme variables', async () => {
